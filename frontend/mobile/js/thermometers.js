@@ -79,15 +79,15 @@ export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax, story }) {
     <div onclick="openMetricModal('velocity')" class="flex flex-col items-center gap-0.5 flex-1 min-w-[70px] cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect Tape Tick Velocity">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">⚡ VELOCITY</div>
       <!-- Story Number (Above Tube) -->
-      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-emerald-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
-        ${storyTop.text || 'EXP: --'}
+      <div class="w-full px-1 py-0.5 rounded bg-[#061826] border border-emerald-400/60 shadow-[0_0_6px_rgba(16,185,129,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
+        ${storyTop.text || '▲ 0s EXP'}
       </div>
-      <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▲140+</div>
+      <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▲140+</div>
       <div class="relative flex items-center justify-center w-full">${svg}</div>
-      <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▼0</div>
+      <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▼0</div>
       <!-- Story Number (Below Tube) -->
-      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-amber-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
-        ${storyBottom.text || 'COIL: --'}
+      <div class="w-full px-1 py-0.5 rounded bg-[#211206] border border-amber-400/60 shadow-[0_0_6px_rgba(245,158,11,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#fbbf24'};">
+        ${storyBottom.text || '▼ 0s STALL'}
       </div>
       <div class="flex justify-between w-full px-0.5 mt-0.5 text-center">
         <div>
@@ -176,10 +176,10 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
     <div onclick="openMetricModal('${metricKey}')" class="flex flex-col items-center gap-0.5 flex-1 ${hasSide ? 'min-w-[78px]' : 'min-w-[58px]'} cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect ${title}">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">${title}</div>
       <!-- Story Number (Above Tube) -->
-      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-emerald-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
-        ${storyTop.text || '--'}
+      <div class="w-full px-1 py-0.5 rounded bg-[#061826] border border-emerald-400/60 shadow-[0_0_6px_rgba(16,185,129,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
+        ${storyTop.text || '▲ 0'}
       </div>
-      <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▲${highLabel}</div>
+      <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▲${highLabel}</div>
       <div class="relative flex items-center justify-center w-full">
         ${svg}
         ${hasSide ? `
@@ -188,10 +188,10 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
         </div>
         ` : ''}
       </div>
-      <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▼${lowLabel}</div>
+      <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▼${lowLabel}</div>
       <!-- Story Number (Below Tube) -->
-      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-amber-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
-        ${storyBottom.text || '--'}
+      <div class="w-full px-1 py-0.5 rounded bg-[#211206] border border-amber-400/60 shadow-[0_0_6px_rgba(245,158,11,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#fbbf24'};">
+        ${storyBottom.text || '▼ 0'}
       </div>
       <div class="text-[14px] font-black font-mono text-center leading-none" style="color:${fillColor};">${current}</div>
       <div class="text-[8.5px] font-bold text-center whitespace-nowrap" style="color:${fillColor};">${currentLabel}</div>

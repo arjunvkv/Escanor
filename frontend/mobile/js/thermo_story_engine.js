@@ -47,60 +47,50 @@ export function updateGaugeStoryNumbers(tel) {
   const now = Date.now();
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 1. VELOCITY (EXP vs COIL)
+  // 1. VELOCITY (UP EXPANSION PACE vs DOWN STALL TIME)
   // ─────────────────────────────────────────────────────────────────────────
   const vel1m = tape.vel_1m !== undefined ? Number(tape.vel_1m) : (Number(tape.tick_velocity) || 0);
 
-  let velTop = { text: 'EXP: --', color: '#64748b' };
-  let velBottom = { text: 'COIL: --', color: '#64748b' };
+  let velTop, velBottom;
 
-  if (vel1m >= 100) {
+  if (vel1m >= 50) {
     if (!state.kineticStart) state.kineticStart = now;
     state.stallStart = null;
-    const durSec = (now - state.kineticStart) / 1000;
+    const durSec = Math.max(1, (now - state.kineticStart) / 1000);
     velTop = {
-      text: `EXP: +${formatDuration(durSec)}`,
+      text: `▲ +${formatDuration(durSec)} EXP`,
       color: durSec >= 15 ? '#10b981' : '#34d399'
     };
+    velBottom = { text: '▼ 0s STALL', color: '#94a3b8' };
   } else {
     state.kineticStart = null;
-  }
-
-  if (vel1m <= 40) {
     if (!state.stallStart) state.stallStart = now;
-    state.kineticStart = null;
-    const durSec = (now - state.stallStart) / 1000;
+    const durSec = Math.max(1, (now - state.stallStart) / 1000);
+    velTop = { text: '▲ 0s EXP', color: '#64748b' };
     velBottom = {
-      text: `COIL: ${formatDuration(durSec)}`,
-      color: durSec >= 120 ? '#f59e0b' : '#cbd5e1'
+      text: `▼ ${formatDuration(durSec)} STALL`,
+      color: durSec >= 60 ? '#f59e0b' : '#fbbf24'
     };
-  } else {
-    state.stallStart = null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 2. CVD (ACC vs DIST)
+  // 2. CVD (AGGRESSIVE BUY ACCUMULATION vs SELL DISTRIBUTION LOTS)
   // ─────────────────────────────────────────────────────────────────────────
   const cvd = Number(tape.cvd_delta) || 0;
-  let cvdTop = { text: 'ACC: 0Δ', color: '#64748b' };
-  let cvdBottom = { text: 'DIST: 0Δ', color: '#64748b' };
+  const accVal = Math.max(0, Math.round(cvd));
+  const distVal = Math.abs(Math.min(0, Math.round(cvd)));
 
-  if (cvd > 0) {
-    cvdTop = {
-      text: `ACC: +${Math.round(cvd)}Δ`,
-      color: cvd >= 200 ? '#10b981' : '#34d399'
-    };
-    cvdBottom = { text: 'DIST: 0Δ', color: '#475569' };
-  } else if (cvd < 0) {
-    cvdTop = { text: 'ACC: 0Δ', color: '#475569' };
-    cvdBottom = {
-      text: `DIST: ${Math.round(cvd)}Δ`,
-      color: cvd <= -200 ? '#ef4444' : '#f87171'
-    };
-  }
+  const cvdTop = {
+    text: `▲ +${accVal}Δ ACC`,
+    color: accVal >= 100 ? '#10b981' : (accVal > 0 ? '#34d399' : '#64748b')
+  };
+  const cvdBottom = {
+    text: `▼ -${distVal}Δ DIST`,
+    color: distVal >= 100 ? '#ef4444' : (distVal > 0 ? '#f87171' : '#94a3b8')
+  };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 3. FOOTPRINT (LIFT vs DUMP Block Ratios)
+  // 3. FOOTPRINT (LIFT vs DUMP 4-BLOCK RATIO)
   // ─────────────────────────────────────────────────────────────────────────
   const rawBlocks = tape.recent_fp_blocks || tape.footprint_4m_blocks || tape.footprint_4m || [];
   const fpBlocks = rawBlocks.slice(-4);
@@ -110,52 +100,47 @@ export function updateGaugeStoryNumbers(tel) {
   const liftCount = blockVals.filter(v => v > 0).length;
   const dumpCount = blockVals.filter(v => v < 0).length;
 
-  let fpTop = {
-    text: `LIFT: ${liftCount}/${totalBlk}`,
+  const fpTop = {
+    text: `▲ ${liftCount}/4 LIFT`,
     color: liftCount >= 3 ? '#10b981' : (liftCount >= 2 ? '#34d399' : '#64748b')
   };
-  let fpBottom = {
-    text: `DUMP: ${dumpCount}/${totalBlk}`,
-    color: dumpCount >= 3 ? '#ef4444' : (dumpCount >= 2 ? '#f87171' : '#64748b')
+  const fpBottom = {
+    text: `▼ ${dumpCount}/4 DUMP`,
+    color: dumpCount >= 3 ? '#ef4444' : (dumpCount >= 2 ? '#f87171' : '#94a3b8')
   };
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 4. IMPULSE (SURGE vs COIL)
+  // 4. IMPULSE (SPATIAL DISPLACEMENT SURGE vs BOX COIL DURATION)
   // ─────────────────────────────────────────────────────────────────────────
   const ratePtMin = impulseData.rate_pt_min !== undefined ? Number(impulseData.rate_pt_min) : (Number(tape.impulse_rate) || 0);
 
-  let impTop = { text: 'SURGE: --', color: '#64748b' };
-  let impBottom = { text: 'COIL: --', color: '#64748b' };
+  let impTop, impBottom;
 
-  if (Math.abs(ratePtMin) >= 0.8) {
+  if (Math.abs(ratePtMin) >= 0.5) {
     if (!state.surgeStart) state.surgeStart = now;
     state.impulseCoilStart = null;
-    const durSec = (now - state.surgeStart) / 1000;
+    const durSec = Math.max(1, (now - state.surgeStart) / 1000);
     const isBull = ratePtMin > 0;
     impTop = {
-      text: `${isBull ? 'SURGE' : 'DROP'}: +${formatDuration(durSec)}`,
+      text: `▲ +${formatDuration(durSec)} ${isBull ? 'SURGE' : 'DROP'}`,
       color: isBull ? '#10b981' : '#ef4444'
     };
+    impBottom = { text: '▼ 0s COIL', color: '#94a3b8' };
   } else {
     state.surgeStart = null;
-  }
-
-  if (Math.abs(ratePtMin) <= 0.4) {
     if (!state.impulseCoilStart) state.impulseCoilStart = now;
-    state.surgeStart = null;
-    const durSec = (now - state.impulseCoilStart) / 1000;
+    const durSec = Math.max(1, (now - state.impulseCoilStart) / 1000);
+    impTop = { text: '▲ 0s SURGE', color: '#64748b' };
     impBottom = {
-      text: `COIL: ${formatDuration(durSec)}`,
-      color: durSec >= 120 ? '#f59e0b' : '#cbd5e1'
+      text: `▼ ${formatDuration(durSec)} COIL`,
+      color: durSec >= 60 ? '#f59e0b' : '#fbbf24'
     };
-  } else {
-    state.impulseCoilStart = null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
-  // 5. INTERMARKET LEAD (BETA vs DRAG)
+  // 5. INTERMARKET LEAD (BETA LEAD STREAK vs HEADWIND DRAG DURATION)
   // ─────────────────────────────────────────────────────────────────────────
-  const activeSym = window.selectedLeadGauge || 'XAG';
+  const activeSym = (typeof window !== 'undefined' && window.selectedLeadGauge) || 'XAG';
   const xauPct = Number(silver.xau_pct !== undefined ? silver.xau_pct : (tel?.spot?.xau_pct || 0.0));
   let curPct = 0;
   if (activeSym === 'XAG') {
@@ -165,32 +150,31 @@ export function updateGaugeStoryNumbers(tel) {
   }
   const activeScore = Math.round((curPct - xauPct) * 100);
 
-  let leadTop = { text: 'BETA: 0s', color: '#64748b' };
-  let leadBottom = { text: 'DRAG: 0s ✔', color: '#64748b' };
+  let leadTop, leadBottom;
 
-  if (activeScore >= 5) {
+  if (activeScore > 2) {
     if (!state.leadStart) state.leadStart = now;
     state.dragStart = null;
-    const durSec = (now - state.leadStart) / 1000;
+    const durSec = Math.max(1, (now - state.leadStart) / 1000);
     leadTop = {
-      text: `BETA: +${formatDuration(durSec)} ▲`,
-      color: activeScore >= 15 ? '#10b981' : '#34d399'
+      text: `▲ +${formatDuration(durSec)} LEAD`,
+      color: activeScore >= 10 ? '#10b981' : '#34d399'
     };
-    leadBottom = { text: 'DRAG: 0s ✔', color: '#10b981' };
-  } else if (activeScore <= -5) {
+    leadBottom = { text: '▼ 0s DRAG', color: '#10b981' };
+  } else if (activeScore < -2) {
     if (!state.dragStart) state.dragStart = now;
     state.leadStart = null;
-    const durSec = (now - state.dragStart) / 1000;
-    leadTop = { text: 'BETA: --', color: '#475569' };
+    const durSec = Math.max(1, (now - state.dragStart) / 1000);
+    leadTop = { text: '▲ 0s LEAD', color: '#64748b' };
     leadBottom = {
-      text: `DRAG: ${formatDuration(durSec)} ⚠`,
-      color: activeScore <= -15 ? '#ef4444' : '#f87171'
+      text: `▼ ${formatDuration(durSec)} DRAG`,
+      color: activeScore <= -10 ? '#ef4444' : '#f87171'
     };
   } else {
     state.leadStart = null;
     state.dragStart = null;
-    leadTop = { text: 'SYNC (00)', color: '#94a3b8' };
-    leadBottom = { text: 'DRAG: 0s ✔', color: '#94a3b8' };
+    leadTop = { text: '▲ 0s SYNC', color: '#38bdf8' };
+    leadBottom = { text: '▼ 0s DRAG', color: '#94a3b8' };
   }
 
   return {
