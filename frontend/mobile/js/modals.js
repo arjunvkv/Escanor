@@ -638,15 +638,64 @@ export function renderMetricModalContent(key) {
     'velocity': {
       title: 'TICK VELOCITY & KINETIC TAPE SPEED',
       html: `
-        <div class="space-y-2">
-          <div class="p-2 bg-slate-900 rounded border border-white/10">
-            <div class="text-amber-300 font-bold">1M Tick Rate: ${tape.vel_1m || tape.tick_velocity || 0} t/m · 5M Avg: ${tape.vel_5m_avg || tape.vel_5m || 0} t/m</div>
-            <div class="text-[11px] text-slate-400 mt-1">Measures physical quotes frequency per minute on MT5.</div>
+        <div class="space-y-3">
+          <div class="p-2 bg-slate-900 rounded-xl border border-white/10">
+            <div class="text-amber-300 font-bold font-mono text-xs">1M Tick Rate: ${tape.vel_1m || tape.tick_velocity || 0} t/m · 5M Avg: ${tape.vel_5m_avg || tape.vel_5m || 0} t/m</div>
+            <div class="text-[10px] text-slate-400 mt-1">Measures physical quotes frequency per minute on MT5.</div>
           </div>
-          <div class="space-y-1 text-slate-300">
+          <div class="space-y-1.5 text-slate-300 text-[11px]">
             <div><strong class="text-emerald-400">≥ 100 t/m (Kinetic Expansion):</strong> Institutional momentum in flight. Prong C market order authorized. Never stage counter-trend limits.</div>
             <div><strong class="text-amber-400">45 to 95 t/m (Active Tape):</strong> Normal rotation, structural reclaims, and Turtle Soup sweeps.</div>
             <div><strong class="text-slate-400">≤ 40 t/m (Quiet Absorption):</strong> Safe zone for Prong A structural resting limits. Pullback tip retests on drying velocity.</div>
+          </div>
+
+          <!-- 📖 DEDICATED AUCTION STORY NUMBERS & TRADER'S STORY SECTION -->
+          <div class="mt-3 p-2.5 rounded-xl bg-[#0b1329] border border-amber-500/40 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-amber-500/20">
+              <div class="flex items-center gap-1.5 text-xs font-black text-amber-300 font-mono">
+                <span>📖</span>
+                <span>AUCTION STORY NUMBERS & TRADER'S STORY</span>
+              </div>
+              <span class="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold font-mono">LIVE TAPE READING</span>
+            </div>
+
+            <!-- WHAT IT COUNTS -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🔢</span>
+                <span>WHAT THE INCREMENTING NUMBERS COUNT:</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-1 font-mono text-[9.5px]">
+                <div><span class="text-emerald-400 font-bold">▲ TOP [EXP: +Xs]:</span> <strong>Kinetic Expansion Clock.</strong> Counts consecutive seconds where 1M tick velocity is actively exploding ≥ 100 t/m into order books.</div>
+                <div><span class="text-amber-400 font-bold">▼ BOTTOM [COIL: Xm Xs]:</span> <strong>Quiet Consolidation Stall Clock.</strong> Counts uninterrupted duration price has spent trading in quiet compression tape (≤ 40 t/m).</div>
+              </div>
+            </div>
+
+            <!-- THE TRADER'S STORY & DECISION MATRIX -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🎯</span>
+                <span>AT-A-GLANCE TRADER'S STORY (DECISION MATRIX):</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-2 text-[9.5px] leading-relaxed">
+                <div>
+                  <span class="text-amber-300 font-bold">1. Stalling vs. Building Power:</span>
+                  <span class="text-slate-300"> When COIL ticks past 2 to 4 minutes at an Order Block or FVG floor, the tape is NOT dead—it is coiling potential energy like a loaded spring under limit absorption.</span>
+                </div>
+                <div>
+                  <span class="text-cyan-300 font-bold">2. Powerful Enough to Break That Line?</span>
+                  <span class="text-slate-300"> A genuine level breach <strong>requires EXP to ignite (+10s to +20s at ≥ 100 t/m)</strong>. If price taps a resistance line while COIL is running or velocity is &lt; 50 t/m, price will <em>FAIL to break</em> and bounce back.</span>
+                </div>
+                <div>
+                  <span class="text-emerald-400 font-bold">3. Trend Strength to Follow:</span>
+                  <span class="text-slate-300"> In a healthy sovereign trend, impulse legs ignite EXP bursts, while pullbacks dry up into low velocity (≤ 40 t/m). If pullbacks happen on high velocity, opposing institutional aggression is in control.</span>
+                </div>
+                <div>
+                  <span class="text-rose-400 font-bold">4. How Far Will It Go / Exhaustion:</span>
+                  <span class="text-slate-300"> An uninterrupted EXP run of &gt; 60 to 90 seconds without a 38.2% retracement marks climactic exhaustion. Do not chase late; wait for the secondary test retrace.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       `
@@ -654,15 +703,64 @@ export function renderMetricModalContent(key) {
     'cvd': {
       title: 'CVD (CUMULATIVE VOLUME DELTA)',
       html: `
-        <div class="space-y-2">
-          <div class="p-2 bg-slate-900 rounded border border-white/10">
-            <div class="text-emerald-300 font-bold">Live Delta: ${tape.cvd_delta || 0} Lots</div>
-            <div class="text-[11px] text-slate-400 mt-1">Measures market aggressor net buying vs selling pressure across MT5 ticks.</div>
+        <div class="space-y-3">
+          <div class="p-2 bg-slate-900 rounded-xl border border-white/10">
+            <div class="text-emerald-300 font-bold font-mono text-xs">Live Delta: ${tape.cvd_delta || 0} Lots</div>
+            <div class="text-[10px] text-slate-400 mt-1">Measures market aggressor net buying vs selling pressure across MT5 ticks.</div>
           </div>
-          <div class="space-y-1 text-slate-300">
+          <div class="space-y-1.5 text-slate-300 text-[11px]">
             <div><strong class="text-emerald-400">+CVD with Rising Price:</strong> Organic kinetic buy cascade. Trend continuation favored.</div>
             <div><strong class="text-amber-400">+CVD with Falling Price (Effort vs Result):</strong> Institutional iceberg limits absorbing retail selling. Energy coiling for violent reversal UP.</div>
             <div><strong class="text-red-400">-CVD with Falling Price:</strong> Heavy aggressive sell liquidation.</div>
+          </div>
+
+          <!-- 📖 DEDICATED AUCTION STORY NUMBERS & TRADER'S STORY SECTION -->
+          <div class="mt-3 p-2.5 rounded-xl bg-[#0b1329] border border-amber-500/40 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-amber-500/20">
+              <div class="flex items-center gap-1.5 text-xs font-black text-amber-300 font-mono">
+                <span>📖</span>
+                <span>AUCTION STORY NUMBERS & TRADER'S STORY</span>
+              </div>
+              <span class="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold font-mono">LIVE TAPE READING</span>
+            </div>
+
+            <!-- WHAT IT COUNTS -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🔢</span>
+                <span>WHAT THE INCREMENTING NUMBERS COUNT:</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-1 font-mono text-[9.5px]">
+                <div><span class="text-emerald-400 font-bold">▲ TOP [ACC: +XΔ]:</span> <strong>Accumulation Aggressor Delta.</strong> Net volume lots where aggressive market orders lifted the ask offer.</div>
+                <div><span class="text-red-400 font-bold">▼ BOTTOM [DIST: -XΔ]:</span> <strong>Distribution Aggressor Delta.</strong> Net volume lots where aggressive market orders slammed the bid floor.</div>
+              </div>
+            </div>
+
+            <!-- THE TRADER'S STORY & DECISION MATRIX -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🎯</span>
+                <span>AT-A-GLANCE TRADER'S STORY (DECISION MATRIX):</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-2 text-[9.5px] leading-relaxed">
+                <div>
+                  <span class="text-amber-300 font-bold">1. Stalling vs. Building Power:</span>
+                  <span class="text-slate-300"> If price is pinned in a tight box but ACC is incrementing rapidly (+300Δ to +600Δ), passive institutional icebergs are absorbing all market selling. Price is coiling for an explosive spring UP.</span>
+                </div>
+                <div>
+                  <span class="text-cyan-300 font-bold">2. Powerful Enough to Break That Line?</span>
+                  <span class="text-slate-300"> To shatter a key resistance shelf (PDH / Asian High), CVD delta MUST expand in the breakout direction (+200Δ or higher). If price touches a line while CVD is flat or negative, it is an empty vacuum trap—expect immediate rejection.</span>
+                </div>
+                <div>
+                  <span class="text-emerald-400 font-bold">3. Trend Strength to Follow:</span>
+                  <span class="text-slate-300"> Ascending price highs accompanied by higher ACC delta peaks prove aggressive institutional fuel is funding the trend.</span>
+                </div>
+                <div>
+                  <span class="text-rose-400 font-bold">4. How Far Will It Go / Exhaustion:</span>
+                  <span class="text-slate-300"> When CVD surges to extreme climax (&gt; +800Δ) but price displacement flattens into wicks, buyer ammo is exhausted into institutional supply. Arm Breakeven Armor immediately.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       `
@@ -670,13 +768,62 @@ export function renderMetricModalContent(key) {
     'footprint': {
       title: '4M FOOTPRINT DELTA BLOCKS',
       html: `
-        <div class="space-y-2">
-          <div class="p-2 bg-slate-900 rounded border border-white/10">
-            <div class="text-amber-300 font-bold">Net 4M Delta: ${tape.footprint_delta || 0} L</div>
-            <div class="text-[11px] text-slate-400 mt-1">Aggregated orderflow footprint blocks across the last 4 minutes (FP-3, FP-2, FP-1, FP0).</div>
+        <div class="space-y-3">
+          <div class="p-2 bg-slate-900 rounded-xl border border-white/10">
+            <div class="text-amber-300 font-bold font-mono text-xs">Net 4M Delta: ${tape.footprint_delta || 0} L</div>
+            <div class="text-[10px] text-slate-400 mt-1">Aggregated orderflow footprint blocks across the last 4 minutes (FP-3, FP-2, FP-1, FP0).</div>
           </div>
-          <div class="text-slate-300">
+          <div class="text-slate-300 text-[11px]">
             Consecutive emerald blocks confirm institutional bid accumulation. A flip from red to green at a key structural shelf signals high-conviction absorption.
+          </div>
+
+          <!-- 📖 DEDICATED AUCTION STORY NUMBERS & TRADER'S STORY SECTION -->
+          <div class="mt-3 p-2.5 rounded-xl bg-[#0b1329] border border-amber-500/40 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-amber-500/20">
+              <div class="flex items-center gap-1.5 text-xs font-black text-amber-300 font-mono">
+                <span>📖</span>
+                <span>AUCTION STORY NUMBERS & TRADER'S STORY</span>
+              </div>
+              <span class="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold font-mono">LIVE TAPE READING</span>
+            </div>
+
+            <!-- WHAT IT COUNTS -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🔢</span>
+                <span>WHAT THE INCREMENTING NUMBERS COUNT:</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-1 font-mono text-[9.5px]">
+                <div><span class="text-emerald-400 font-bold">▲ TOP [LIFT: X/4]:</span> <strong>Bullish Block Lift Ratio.</strong> Number of the last 4 1-minute candle blocks with net positive delta (buyers lifting the offer).</div>
+                <div><span class="text-red-400 font-bold">▼ BOTTOM [DUMP: X/4]:</span> <strong>Bearish Block Dump Ratio.</strong> Number of the last 4 1-minute candle blocks with net negative delta (sellers hitting bids).</div>
+              </div>
+            </div>
+
+            <!-- THE TRADER'S STORY & DECISION MATRIX -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🎯</span>
+                <span>AT-A-GLANCE TRADER'S STORY (DECISION MATRIX):</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-2 text-[9.5px] leading-relaxed">
+                <div>
+                  <span class="text-amber-300 font-bold">1. Stalling vs. Building Power:</span>
+                  <span class="text-slate-300"> A flip from DUMP 3/4 to LIFT 3/4 at a demand shelf pinpoints the exact minute institutional limit buying turned into aggressive upward initiative.</span>
+                </div>
+                <div>
+                  <span class="text-cyan-300 font-bold">2. Powerful Enough to Break That Line?</span>
+                  <span class="text-slate-300"> Clean line breaks require <strong>LIFT 3/4 or 4/4 block dominance</strong>. Split blocks (2/4 vs 2/4) show two-sided balanced chop—price will NOT sustain a breakout without unified blocks.</span>
+                </div>
+                <div>
+                  <span class="text-emerald-400 font-bold">3. Trend Strength to Follow:</span>
+                  <span class="text-slate-300"> 4/4 aligned blocks represent an unyielding institutional freight train. Align market entries with the 4/4 block flow.</span>
+                </div>
+                <div>
+                  <span class="text-rose-400 font-bold">4. How Far Will It Go / Exhaustion:</span>
+                  <span class="text-slate-300"> If block size collapses from +300L to +15L despite price pushing higher, buyers have reached auction plateau.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       `
@@ -684,10 +831,59 @@ export function renderMetricModalContent(key) {
     'impulse': {
       title: 'IMPULSE DISPLACEMENT VELOCITY',
       html: `
-        <div class="space-y-2">
-          <div class="p-2 bg-slate-900 rounded border border-white/10">
-            <div class="text-amber-300 font-bold">Rate: ${tel.impulse?.rate_pt_min || tape.impulse_rate || 0} pt/min</div>
-            <div class="text-[11px] text-slate-400 mt-1">True spatial displacement per unit time. High displacement with low ticks indicates open air pocket vacuum.</div>
+        <div class="space-y-3">
+          <div class="p-2 bg-slate-900 rounded-xl border border-white/10">
+            <div class="text-amber-300 font-bold font-mono text-xs">Rate: ${tel.impulse?.rate_pt_min || tape.impulse_rate || 0} pt/min</div>
+            <div class="text-[10px] text-slate-400 mt-1">True spatial displacement per unit time. High displacement with low ticks indicates open air pocket vacuum.</div>
+          </div>
+
+          <!-- 📖 DEDICATED AUCTION STORY NUMBERS & TRADER'S STORY SECTION -->
+          <div class="mt-3 p-2.5 rounded-xl bg-[#0b1329] border border-amber-500/40 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-amber-500/20">
+              <div class="flex items-center gap-1.5 text-xs font-black text-amber-300 font-mono">
+                <span>📖</span>
+                <span>AUCTION STORY NUMBERS & TRADER'S STORY</span>
+              </div>
+              <span class="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold font-mono">LIVE TAPE READING</span>
+            </div>
+
+            <!-- WHAT IT COUNTS -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🔢</span>
+                <span>WHAT THE INCREMENTING NUMBERS COUNT:</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-1 font-mono text-[9.5px]">
+                <div><span class="text-emerald-400 font-bold">▲ TOP [SURGE / DROP: +Xs]:</span> <strong>Spatial Displacement Run Duration.</strong> Counts uninterrupted seconds price is displacing with high kinetic speed (≥ 0.8 pt/min).</div>
+                <div><span class="text-amber-400 font-bold">▼ BOTTOM [COIL: Xm Xs]:</span> <strong>Box Range Compression Duration.</strong> Counts elapsed time price has spent locked in low displacement spatial coiling (≤ 0.4 pt/min).</div>
+              </div>
+            </div>
+
+            <!-- THE TRADER'S STORY & DECISION MATRIX -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🎯</span>
+                <span>AT-A-GLANCE TRADER'S STORY (DECISION MATRIX):</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-2 text-[9.5px] leading-relaxed">
+                <div>
+                  <span class="text-amber-300 font-bold">1. Stalling vs. Building Power:</span>
+                  <span class="text-slate-300"> Extended COIL (&gt; 5 minutes) in a narrow 3.0-pt box indicates extreme volatility compression. The longer the coil, the larger the impending vacuum breakout.</span>
+                </div>
+                <div>
+                  <span class="text-cyan-300 font-bold">2. Powerful Enough to Break That Line?</span>
+                  <span class="text-slate-300"> Slicing through HTF levels demands <strong>SURGE ≥ 1.5 to 2.5 pt/min</strong> into open vacuum. Touching a boundary while in COIL means price lacks spatial punch and will remain range-bound.</span>
+                </div>
+                <div>
+                  <span class="text-emerald-400 font-bold">3. Trend Strength to Follow:</span>
+                  <span class="text-slate-300"> Rhythmic SURGE expansions interspersed with brief COIL pauses indicate an institutional staircase trend.</span>
+                </div>
+                <div>
+                  <span class="text-rose-400 font-bold">4. How Far Will It Go / Exhaustion:</span>
+                  <span class="text-slate-300"> An impulse leg displaced &gt; 18-20 points without a 50% equilibrium test enters climax exhaustion. Take TP or lock Breakeven Armor.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       `
@@ -695,10 +891,59 @@ export function renderMetricModalContent(key) {
     'silver': {
       title: 'SILVER BETA & INTERMARKET CONFIRMATION',
       html: `
-        <div class="space-y-2">
-          <div class="p-2 bg-slate-900 rounded border border-white/10">
-            <div class="text-slate-300 font-bold">Silver leads Gold with ~1.8x beta in authentic macro-sovereign trends.</div>
-            <div class="text-[11px] text-slate-400 mt-1">A gold move without silver confirmation is a high-probability thin-book trap.</div>
+        <div class="space-y-3">
+          <div class="p-2 bg-slate-900 rounded-xl border border-white/10">
+            <div class="text-slate-300 font-bold font-mono text-xs">Silver leads Gold with ~1.8x beta in authentic macro-sovereign trends.</div>
+            <div class="text-[10px] text-slate-400 mt-1">A gold move without silver confirmation is a high-probability thin-book trap.</div>
+          </div>
+
+          <!-- 📖 DEDICATED AUCTION STORY NUMBERS & TRADER'S STORY SECTION -->
+          <div class="mt-3 p-2.5 rounded-xl bg-[#0b1329] border border-amber-500/40 space-y-2">
+            <div class="flex items-center justify-between pb-1 border-b border-amber-500/20">
+              <div class="flex items-center gap-1.5 text-xs font-black text-amber-300 font-mono">
+                <span>📖</span>
+                <span>AUCTION STORY NUMBERS & TRADER'S STORY</span>
+              </div>
+              <span class="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-400/30 font-bold font-mono">LIVE TAPE READING</span>
+            </div>
+
+            <!-- WHAT IT COUNTS -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🔢</span>
+                <span>WHAT THE INCREMENTING NUMBERS COUNT:</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-1 font-mono text-[9.5px]">
+                <div><span class="text-emerald-400 font-bold">▲ TOP [BETA: +Xs ▲]:</span> <strong>Lead Outperformance Streak.</strong> Counts how long the selected satellite (Silver, DXY, Yields) has maintained a strong lead divergence (Score ≥ +5).</div>
+                <div><span class="text-amber-400 font-bold">▼ BOTTOM [DRAG: Xs ⚠ / 0s ✔]:</span> <strong>Adverse Headwind Resistance Clock.</strong> Counts how long the satellite has dragged against Gold with negative divergence (Score ≤ -5).</div>
+              </div>
+            </div>
+
+            <!-- THE TRADER'S STORY & DECISION MATRIX -->
+            <div class="space-y-1 text-[10.5px]">
+              <div class="font-bold text-slate-200 flex items-center gap-1">
+                <span class="text-amber-400">🎯</span>
+                <span>AT-A-GLANCE TRADER'S STORY (DECISION MATRIX):</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-950/80 border border-white/5 space-y-2 text-[9.5px] leading-relaxed">
+                <div>
+                  <span class="text-amber-300 font-bold">1. Stalling vs. Building Power:</span>
+                  <span class="text-slate-300"> When Gold is resting flat at support while Silver prints BETA +30s (breaking higher), Silver is the advance scout—Gold will catch up and rip higher.</span>
+                </div>
+                <div>
+                  <span class="text-cyan-300 font-bold">2. Powerful Enough to Break That Line?</span>
+                  <span class="text-slate-300"> Never trust a Gold breakout when DRAG is active. If Gold wicks above resistance while Silver shows DRAG ⚠, it is a classic dealer liquidity harvest trap. Only trust line breaks when DRAG is 0s ✔ and BETA is surging.</span>
+                </div>
+                <div>
+                  <span class="text-emerald-400 font-bold">3. Trend Strength to Follow:</span>
+                  <span class="text-slate-300"> When Silver leads with &gt;1.5x beta and DXY/Yields are inverse-aligned, trend probability is at peak institutional conviction.</span>
+                </div>
+                <div>
+                  <span class="text-rose-400 font-bold">4. How Far Will It Go / Exhaustion:</span>
+                  <span class="text-slate-300"> When Silver stops making new highs and begins diverging downward while Gold floats higher on thin tape, macro momentum has evaporated.</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       `

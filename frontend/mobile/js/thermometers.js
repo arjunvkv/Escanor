@@ -4,6 +4,7 @@
  */
 
 import { calcShiftScore, formatShiftScore, formatPrice } from './constants.js';
+import { updateGaugeStoryNumbers } from './thermo_story_engine.js';
 
 let selectedLeadGauge = 'XAG';
 
@@ -16,7 +17,10 @@ export function selectLeadGauge(sym) {
 }
 window.selectLeadGauge = selectLeadGauge;
 
-export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax }) {
+export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax, story }) {
+  const storyTop = story?.top || { text: 'EXP: --', color: '#64748b' };
+  const storyBottom = story?.bottom || { text: 'COIL: --', color: '#64748b' };
+
   const v1 = Number(vel1m) || 0;
   const v5 = Number(vel5m) || 0;
   const p1 = Math.max(0.01, Math.min(0.99, v1 / 140));
@@ -74,9 +78,17 @@ export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax }) {
   return `
     <div onclick="openMetricModal('velocity')" class="flex flex-col items-center gap-0.5 flex-1 min-w-[70px] cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect Tape Tick Velocity">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">⚡ VELOCITY</div>
+      <!-- Story Number (Above Tube) -->
+      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
+        ${storyTop.text || 'EXP: --'}
+      </div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▲140+</div>
       <div class="relative flex items-center justify-center w-full">${svg}</div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▼0</div>
+      <!-- Story Number (Below Tube) -->
+      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
+        ${storyBottom.text || 'COIL: --'}
+      </div>
       <div class="flex justify-between w-full px-0.5 mt-0.5 text-center">
         <div>
           <div class="text-[13.5px] font-black font-mono leading-none" style="color:${c1};">${v1.toFixed(0)}</div>
@@ -98,7 +110,7 @@ export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax }) {
 }
 
 export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
-                       current, currentLabel, markers, highLabel, lowLabel, footer, extraHtml, sideHtml }) {
+                       current, currentLabel, markers, highLabel, lowLabel, footer, extraHtml, sideHtml, story }) {
   const hasSide = Boolean(sideHtml);
   const COL_W = hasSide ? 78 : 58;
   const TUBE_W = 14;
@@ -109,6 +121,9 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
   const BULB_CY = TUBE_Y + TUBE_H + BULB_R + 2;
   const SVG_H = BULB_CY + BULB_R + 3;
   const BULB_CX = TUBE_X + TUBE_W / 2;
+
+  const storyTop = story?.top || { text: '--', color: '#64748b' };
+  const storyBottom = story?.bottom || { text: '--', color: '#64748b' };
 
   const p = Math.max(0.01, Math.min(0.99, Number(pct) || 0.5));
 
@@ -160,6 +175,10 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
   return `
     <div onclick="openMetricModal('${metricKey}')" class="flex flex-col items-center gap-0.5 flex-1 ${hasSide ? 'min-w-[78px]' : 'min-w-[58px]'} cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect ${title}">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">${title}</div>
+      <!-- Story Number (Above Tube) -->
+      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
+        ${storyTop.text || '--'}
+      </div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▲${highLabel}</div>
       <div class="relative flex items-center justify-center w-full">
         ${svg}
@@ -170,6 +189,10 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
         ` : ''}
       </div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▼${lowLabel}</div>
+      <!-- Story Number (Below Tube) -->
+      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
+        ${storyBottom.text || '--'}
+      </div>
       <div class="text-[14px] font-black font-mono text-center leading-none" style="color:${fillColor};">${current}</div>
       <div class="text-[8.5px] font-bold text-center whitespace-nowrap" style="color:${fillColor};">${currentLabel}</div>
       <div class="text-[7.5px] text-slate-400 text-center leading-tight whitespace-nowrap font-mono min-h-[12px] flex items-center justify-center">${footer || ''}</div>
@@ -185,11 +208,14 @@ export function renderMobileThermometers(tel) {
   const tape = (tel && tel.tape) || {};
   const silver = (tel && tel.silver) || {};
 
+  // Accumulate & format Live Story Numbers across all 5 gauges
+  const story = updateGaugeStoryNumbers(tel) || {};
+
   // 1. Velocity (Dual Tube 1M & 5M)
   const vel1m = tape.vel_1m !== undefined ? Number(tape.vel_1m) : (Number(tape.tick_velocity) || 0);
   const vel5m = tape.vel_5m_avg !== undefined ? Number(tape.vel_5m_avg) : (Number(tape.vel_5m) || vel1m);
   const vel10mMax = tape.vel_10m_max || tape.vel_10m || vel1m;
-  const thermoVel = buildDualVelocityThermo({ vel1m, vel5m, vel10mMax });
+  const thermoVel = buildDualVelocityThermo({ vel1m, vel5m, vel10mMax, story: story.velocity });
 
   // 2. CVD Delta (+/- 1200)
   const cvd = Number(tape.cvd_delta) || 0;
@@ -205,7 +231,8 @@ export function renderMobileThermometers(tel) {
     markers: [{ pct: 0.5, label: '0', color: '#fff', side: 'right' }],
     highLabel: '+600', lowLabel: '-600',
     footer: `Slope:${cvd > 0 ? '▲' : '▼'} ${cvdLabel}`,
-    extraHtml: `<div style="font-size:8px;color:#10b981;text-align:center;font-weight:900;letter-spacing:0.02em;">FLOW DELTA</div>`
+    extraHtml: `<div style="font-size:8px;color:#10b981;text-align:center;font-weight:900;letter-spacing:0.02em;">FLOW DELTA</div>`,
+    story: story.cvd
   });
 
   // 3. 4M Footprint Delta (+/- 1600 with 4 BLOCKS Column)
@@ -231,7 +258,8 @@ export function renderMobileThermometers(tel) {
     highLabel: '+800', lowLabel: '-800',
     footer: `Net:${fp >= 0 ? '+' : ''}${fp.toFixed(0)}L`,
     sideHtml: fpPillsHtml ? `<div style="font-size:6.5px;color:#94a3b8;font-weight:900;text-align:center;margin-bottom:1.5px;letter-spacing:0.04em;">BLOCKS</div>${fpPillsHtml}` : '',
-    extraHtml: `<div style="font-size:8px;color:#f59e0b;text-align:center;font-weight:800;white-space:nowrap;">4M DELTA</div>`
+    extraHtml: `<div style="font-size:8px;color:#f59e0b;text-align:center;font-weight:800;white-space:nowrap;">4M DELTA</div>`,
+    story: story.footprint
   });
 
   // 4. Impulse (Price Displacement Velocity pt/m)
@@ -261,7 +289,8 @@ export function renderMobileThermometers(tel) {
     ],
     highLabel: '+6.0 pt/m', lowLabel: '-6.0 pt/m',
     footer: `1M:${disp1m >= 0 ? '+' : ''}${disp1m.toFixed(1)}pt · 5M:${disp5m >= 0 ? '+' : ''}${disp5m.toFixed(1)}pt`,
-    extraHtml: `<div style="font-size:8px;color:${impulseColor};text-align:center;font-weight:900;letter-spacing:0.02em;">DISP VELOCITY</div>`
+    extraHtml: `<div style="font-size:8px;color:${impulseColor};text-align:center;font-weight:900;letter-spacing:0.02em;">DISP VELOCITY</div>`,
+    story: story.impulse
   });
 
   // 5. Intermarket Lead Gauge (Silver or Selected)
@@ -342,7 +371,8 @@ export function renderMobileThermometers(tel) {
     highLabel: '+99',
     lowLabel: '-99',
     footer: `${dispFromGold >= 0 ? '+' : ''}${dispFromGold.toFixed(2)}% vs XAU`,
-    extraHtml: `<div style="font-size:8px;color:${curColor};text-align:center;font-weight:900;letter-spacing:0.02em;">${curStatus}</div>`
+    extraHtml: `<div style="font-size:8px;color:${curColor};text-align:center;font-weight:900;letter-spacing:0.02em;">${curStatus}</div>`,
+    story: story.silver
   });
 
   container.innerHTML = thermoVel + thermoCvd + thermoFp + thermoImpulse + thermoLead;

@@ -786,7 +786,7 @@
   <!-- ========================================================================= -->
   <!-- 🔔 GAUGE PHYSICS ALARMS CONFIGURATION MODAL                               -->
   <!-- ========================================================================= -->
-  <div id="gaugeAlarmsModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4 font-mono">
+  <div id="gaugeAlarmsModal" style="display: none;" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4 font-mono">
     <div class="bg-[#0c1223] border border-amber-500/40 rounded-2xl w-full max-w-md max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
       
       <!-- Modal Header -->
@@ -955,6 +955,27 @@
 
     </div>
   </div>
+
+  <!-- Instant Global Modal Bridge (handles click before or during module boot) -->
+  <script>
+    window.openGaugeAlarmsModal = function() {
+      var m = document.getElementById('gaugeAlarmsModal');
+      if (m) {
+        m.style.display = 'flex';
+        m.classList.remove('hidden');
+      }
+      if (typeof window.__realOpenGaugeAlarmsModal === 'function') {
+        window.__realOpenGaugeAlarmsModal();
+      }
+    };
+    window.closeGaugeAlarmsModal = function() {
+      var m = document.getElementById('gaugeAlarmsModal');
+      if (m) {
+        m.style.display = 'none';
+        m.classList.add('hidden');
+      }
+    };
+  </script>
 
   <!-- MODULAR SCRIPTS (ZERO MONOLITH, NO HTTP POLLING) -->
   <script type="module" src="/mobile/js/app.js"></script>

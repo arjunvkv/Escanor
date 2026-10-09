@@ -473,6 +473,18 @@ function showAlarmBanner(alarm, vals) {
 export function initGaugeAlarms() {
   loadAlarms();
 
+  const btn = document.getElementById('openGaugeAlarmsBtn');
+  if (btn) {
+    btn.onclick = (e) => {
+      if (e) e.preventDefault();
+      openGaugeAlarmsModal();
+    };
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      openGaugeAlarmsModal();
+    });
+  }
+
   // Request browser Notification permission on first click
   if ('Notification' in window && Notification.permission === 'default') {
     document.addEventListener('click', () => {
@@ -487,19 +499,28 @@ export function initGaugeAlarms() {
 }
 
 export function openGaugeAlarmsModal() {
+  console.log('[GaugeAlarms] Opening gauge alarms modal...');
   const modal = document.getElementById('gaugeAlarmsModal');
-  if (!modal) return;
+  if (!modal) {
+    console.error('[GaugeAlarms] Modal #gaugeAlarmsModal element not found!');
+    return;
+  }
+  modal.style.display = 'flex';
   modal.classList.remove('hidden');
-  getAudioContext();
-  switchAlarmsTab('active');
-  renderActiveAlarmsList();
-  renderTelegramTab();
+  try { getAudioContext(); } catch (e) {}
+  try { switchAlarmsTab('active'); } catch (e) {}
+  try { renderActiveAlarmsList(); } catch (e) {}
+  try { renderTelegramTab(); } catch (e) {}
 }
 window.openGaugeAlarmsModal = openGaugeAlarmsModal;
+window.__realOpenGaugeAlarmsModal = openGaugeAlarmsModal;
 
 export function closeGaugeAlarmsModal() {
   const modal = document.getElementById('gaugeAlarmsModal');
-  if (modal) modal.classList.add('hidden');
+  if (modal) {
+    modal.style.display = 'none';
+    modal.classList.add('hidden');
+  }
 }
 window.closeGaugeAlarmsModal = closeGaugeAlarmsModal;
 
