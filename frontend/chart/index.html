@@ -175,44 +175,180 @@
       </button>
     </div>
 
-    <!-- Drawing Settings Modal (Zero Browser Default Alerts) -->
-    <div id="tvSettingsModal" class="tv-modal-backdrop" style="display: none;">
-      <div class="tv-modal-card">
+    <!-- ========================================================================= -->
+    <!-- 📐 LINE TRADING SETTINGS MODAL (APPLICABLE TO ALL LINE TYPES)              -->
+    <!-- ========================================================================= -->
+    <div id="tvLineTradingModal" class="tv-modal-backdrop" style="display: none;">
+      <div class="tv-modal-card tv-line-modal-card">
         <div class="tv-modal-header">
-          <span>Drawing Settings</span>
-          <button id="tvCloseSettingsBtn" class="tv-modal-close">✕</button>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">📐</span>
+            <span style="font-weight: 700; letter-spacing: 0.5px;">LINE TRADING SETTINGS</span>
+            <span id="tvLineColorIndicator" class="line-color-badge-green">⚪ DISARMED</span>
+          </div>
+          <button id="tvCloseLineModalBtn" class="tv-modal-close">✕</button>
         </div>
-        <div class="tv-modal-body">
-          <div class="tv-setting-row">
-            <label>Color</label>
-            <input type="color" id="tvSettingColor" value="#2962ff">
+
+        <div class="tv-modal-body" style="gap: 12px;">
+          <!-- Line Label / Name -->
+          <div class="tv-modal-row">
+            <label class="tv-modal-lbl">Line Label / Name</label>
+            <input type="text" id="tvLineNameInput" class="tv-modal-input" placeholder="e.g. Breakout Trendline">
           </div>
-          <div class="tv-setting-row">
-            <label>Line Width</label>
-            <select id="tvSettingWidth">
-              <option value="1">1px</option>
-              <option value="2">2px</option>
-              <option value="3">3px</option>
-              <option value="4">4px</option>
-            </select>
+
+          <!-- Touch Trigger Actions (Mutually Exclusive) -->
+          <div class="tv-modal-section">
+            <div class="tv-section-hdr">⚡ TOUCH TRIGGER ACTION</div>
+            <div class="tv-exclusive-hint">Either trigger can be armed, but not both at a time:</div>
+
+            <div class="tv-toggle-row">
+              <label class="tv-choice-lbl">
+                <input type="checkbox" id="tvLineChkExecute" class="tv-chk" checked>
+                <span>⚡ Execute Trade on Touch</span>
+              </label>
+            </div>
+
+            <div class="tv-toggle-row">
+              <label class="tv-choice-lbl">
+                <input type="checkbox" id="tvLineChkExit" class="tv-chk">
+                <span class="text-rose">🚨 Exit / Close Position on Touch</span>
+              </label>
+            </div>
+
+            <!-- Execute Parameters -->
+            <div id="tvLineExecGroup" class="tv-sub-group">
+              <div class="tv-sub-hdr">EXECUTION PARAMETERS</div>
+              
+              <div class="tv-modal-row">
+                <label class="tv-modal-lbl">Direction</label>
+                <div class="tv-dir-btn-group">
+                  <button type="button" id="tvLineDirBuy" class="tv-dir-btn buy active">BUY</button>
+                  <button type="button" id="tvLineDirSell" class="tv-dir-btn sell">SELL</button>
+                </div>
+              </div>
+
+              <div class="tv-modal-row">
+                <label class="tv-modal-lbl">Volume (Lots)</label>
+                <input type="number" id="tvLineVolume" class="tv-modal-input" value="0.50" step="0.05" min="0.01" max="10.0">
+              </div>
+
+              <div class="tv-modal-row-2col">
+                <div>
+                  <label class="tv-modal-lbl">SL Points</label>
+                  <input type="number" id="tvLineSlPts" class="tv-modal-input" value="6.0" step="0.5" min="0.5">
+                </div>
+                <div>
+                  <label class="tv-modal-lbl">TP Points</label>
+                  <input type="number" id="tvLineTpPts" class="tv-modal-input" value="12.0" step="0.5" min="0.5">
+                </div>
+              </div>
+
+              <!-- Calculated Estimated Dollar ($) Profit & Loss Box -->
+              <div class="tv-dollar-pnl-box">
+                <div class="tv-pnl-hdr">ESTIMATED DOLLAR ($) P&L</div>
+                <div class="tv-pnl-grid">
+                  <div class="tv-pnl-item tp">
+                    <span class="tv-pnl-lbl">TP TARGET</span>
+                    <span id="tvLineDollarTp" class="tv-pnl-val text-green">+$600.00</span>
+                    <span id="tvLineDollarTpSub" class="tv-pnl-sub">+12.0 pt</span>
+                  </div>
+                  <div class="tv-pnl-item sl">
+                    <span class="tv-pnl-lbl">MAX RISK</span>
+                    <span id="tvLineDollarSl" class="tv-pnl-val text-rose">-$300.00</span>
+                    <span id="tvLineDollarSlSub" class="tv-pnl-sub">-6.0 pt</span>
+                  </div>
+                  <div class="tv-pnl-item rr">
+                    <span class="tv-pnl-lbl">REWARD : RISK</span>
+                    <span id="tvLineRrRatio" class="tv-pnl-val text-blue">1 : 2.0</span>
+                    <span class="tv-pnl-sub">Asymmetry</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Auto-Close Timer -->
+              <div class="tv-timer-box">
+                <div class="tv-modal-row" style="margin-bottom: 4px;">
+                  <label class="tv-choice-lbl">
+                    <input type="checkbox" id="tvLineChkTimer" class="tv-chk">
+                    <span>⏳ Auto-Close Timer</span>
+                  </label>
+                </div>
+                <div id="tvLineTimerControls" class="tv-timer-controls" style="display: none;">
+                  <div class="tv-modal-row">
+                    <span class="tv-modal-lbl">Duration (Minutes):</span>
+                    <input type="number" id="tvLineTimerMins" class="tv-modal-input" value="5.0" step="0.5" min="0.5" max="240">
+                  </div>
+                  <div class="tv-timer-pills">
+                    <button type="button" class="tv-timer-pill" data-mins="1">1m</button>
+                    <button type="button" class="tv-timer-pill" data-mins="3">3m</button>
+                    <button type="button" class="tv-timer-pill active" data-mins="5">5m</button>
+                    <button type="button" class="tv-timer-pill" data-mins="10">10m</button>
+                    <button type="button" class="tv-timer-pill" data-mins="15">15m</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Exit / Close All Description -->
+            <div id="tvLineExitGroup" class="tv-sub-group" style="display: none;">
+              <div class="tv-sub-hdr text-rose">EXIT ON TOUCH RULES</div>
+              <div class="tv-exit-desc">
+                Immediately closes and flattens all open MT5 positions as soon as price touches or crosses this line.
+              </div>
+            </div>
           </div>
-          <div class="tv-setting-row" id="tvSettingFillRow">
-            <label>Fill Color</label>
-            <input type="color" id="tvSettingFillColor" value="#2962ff">
-          </div>
-          <div class="tv-setting-row">
-            <label>Line Style</label>
-            <select id="tvSettingLineStyle">
-              <option value="solid">Solid</option>
-              <option value="dashed">Dashed</option>
-            </select>
+
+          <!-- Line Geometry -->
+          <div class="tv-modal-section">
+            <div class="tv-section-hdr">LINE GEOMETRY & COLOR CODES</div>
+            <div class="tv-color-legend">
+              <span class="tv-legend-pill green">🟢 Green = Armed BUY</span>
+              <span class="tv-legend-pill red">🔴 Red = Armed SELL</span>
+              <span class="tv-legend-pill yellow">🟡 Yellow = Close All</span>
+              <span class="tv-legend-pill gray">⚪ Gray = Disarmed</span>
+            </div>
+            <div class="tv-toggle-row" style="margin-top: 6px;">
+              <label class="tv-choice-lbl">
+                <input type="checkbox" id="tvLineChkExtendRay" class="tv-chk">
+                <span>Extend Line to Right (Ray into Future)</span>
+              </label>
+            </div>
           </div>
         </div>
-        <div class="tv-modal-footer">
-          <button id="tvSaveSettingsBtn" class="tv-btn-primary">Apply</button>
+
+        <div class="tv-modal-footer" style="justify-content: space-between;">
+          <button type="button" id="tvLineDeleteBtn" class="tv-btn-danger">🗑 Delete</button>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" id="tvLineSaveDisarmBtn" class="tv-btn-secondary">Save (Disarmed)</button>
+            <button type="button" id="tvLineArmBtn" class="tv-btn-arm">🟢 Arm & Activate</button>
+          </div>
         </div>
       </div>
     </div>
+
+    <!-- ========================================================================= -->
+    <!-- 📦 RECTANGLE SETTINGS MODAL (THEMING OPTIONS REMOVED / EMPTY)              -->
+    <!-- ========================================================================= -->
+    <div id="tvRectSettingsModal" class="tv-modal-backdrop" style="display: none;">
+      <div class="tv-modal-card" style="max-width: 340px;">
+        <div class="tv-modal-header">
+          <span>Rectangle Box Settings</span>
+          <button id="tvCloseRectModalBtn" class="tv-modal-close">✕</button>
+        </div>
+        <div class="tv-modal-body">
+          <div style="color: var(--tv-text-secondary); font-size: 12px; line-height: 1.5; padding: 12px 4px; text-align: center;">
+            Rectangle styles follow the unified TradingView rose & fill theme. Theming options are disabled.
+          </div>
+        </div>
+        <div class="tv-modal-footer" style="justify-content: space-between;">
+          <button id="tvDeleteRectBtn" class="tv-btn-danger">🗑 Delete</button>
+          <button id="tvCloseRectBtn" class="tv-btn-primary">Done</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Redesigned Bottom-Left Floating Armed Lines HUD -->
+    <div id="tvLineTradingHud" class="tv-bottom-hud" style="display: none;"></div>
 
     <!-- In-App Confirmation Dialog (Zero Browser Default Alerts) -->
     <div id="tvConfirmModal" class="tv-modal-backdrop" style="display: none;">

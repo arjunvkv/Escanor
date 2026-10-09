@@ -27,7 +27,7 @@ export function syncDrawingsToServer(symbol, chart, showToast = true) {
       const allOverlays = chart.getOverlays() || [];
       // Filter out temporary measure boxes or system markers
       const userDrawings = allOverlays
-        .filter(ov => ov.name !== 'measureBox' && !ov.id?.startsWith('sys_'))
+        .filter(ov => ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_'))
         .map(ov => ({
           id: ov.id,
           name: ov.name,

@@ -161,20 +161,38 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     }
   });
 
+  const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'].includes(name);
+
   // Create Drawing with Shift Snapping & Event Hooks
   function createDrawing(overlayName) {
+    if (isLineOverlay(overlayName) && window.__lineTradingManager) {
+      window.__lineTradingManager.setDrawing(true);
+    }
     try {
       chart.createOverlay({
         name: overlayName,
-        onDrawEnd: () => {
+        onDrawEnd: ({ overlay }) => {
+          if (isLineOverlay(overlayName) && window.__lineTradingManager && overlay) {
+            window.__lineTradingManager.setDrawing(false);
+            window.__lineTradingManager.registerLineOverlay(overlay, overlayName);
+          }
           syncDrawingsToServer(currentSymbolRef, chart);
           setActive(toolCrosshair, 'crosshair');
         },
         performEventPressedMove: ({ points, performPointIndex }) => {
+          if (isLineOverlay(overlayName) && window.__lineTradingManager) {
+            window.__lineTradingManager.setDragging(true);
+          }
           // If Shift is pressed, lock to horizontal level
           if (window.__isShiftPressed && points.length >= 2 && performPointIndex === 1) {
             points[1].value = points[0].value;
           }
+        },
+        onPressedMoveEnd: () => {
+          if (isLineOverlay(overlayName) && window.__lineTradingManager) {
+            window.__lineTradingManager.setDragging(false);
+          }
+          syncDrawingsToServer(currentSymbolRef, chart);
         },
         onSelected: (event) => {
           handleOverlaySelected(event);
@@ -191,13 +209,31 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   // Wrap global createOverlay to ensure all restored & created overlays support selection & shift lock
   const origCreateOverlay = chart.createOverlay.bind(chart);
   chart.createOverlay = function (params) {
+    const ovName = params.name;
     const customParams = {
       ...params,
+      onDrawEnd: (args) => {
+        if (params.onDrawEnd) params.onDrawEnd(args);
+        if (isLineOverlay(ovName) && window.__lineTradingManager && args?.overlay) {
+          window.__lineTradingManager.setDrawing(false);
+          window.__lineTradingManager.registerLineOverlay(args.overlay, ovName);
+        }
+      },
       performEventPressedMove: (args) => {
         if (params.performEventPressedMove) params.performEventPressedMove(args);
+        if (isLineOverlay(ovName) && window.__lineTradingManager) {
+          window.__lineTradingManager.setDragging(true);
+        }
         if (window.__isShiftPressed && args.points?.length >= 2 && args.performPointIndex === 1) {
           args.points[1].value = args.points[0].value;
         }
+      },
+      onPressedMoveEnd: (args) => {
+        if (params.onPressedMoveEnd) params.onPressedMoveEnd(args);
+        if (isLineOverlay(ovName) && window.__lineTradingManager) {
+          window.__lineTradingManager.setDragging(false);
+        }
+        syncDrawingsToServer(currentSymbolRef, chart);
       },
       onSelected: (event) => {
         if (params.onSelected) params.onSelected(event);
@@ -212,12 +248,19 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   };
 
   // =========================================================================
-  // 🎛️ FLOATING ACTION TOOLBAR (MATCHES IMAGE 2)
+  // 🎛️ FLOATING ACTION TOOLBAR (MATCHES TRADINGVIEW)
   // =========================================================================
 
   function handleOverlaySelected(event) {
     selectedOverlay = event.overlay;
     if (!selectedOverlay) return;
+
+    // Measurement tool: User explicitly requested:
+    // "no need for for settings delete or floating box for measurement tool . let it be auto removed when clicked ouside -- same as trading view"
+    if (selectedOverlay.name === 'measureBox') {
+      hideFloatingBar();
+      return;
+    }
 
     // Show floating bar
     floatingBar.style.display = 'flex';
@@ -248,7 +291,11 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   function deleteSelectedOverlay() {
     if (!selectedOverlay) return;
     try {
-      chart.removeOverlay(selectedOverlay.id);
+      const id = selectedOverlay.id;
+      chart.removeOverlay(id);
+      if (window.__lineTradingManager) {
+        window.__lineTradingManager.removeLineOverlay(id);
+      }
       selectedOverlay = null;
       hideFloatingBar();
       syncDrawingsToServer(currentSymbolRef, chart);
@@ -269,46 +316,37 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     e.stopPropagation();
     if (!selectedOverlay) return;
 
-    // Populate current styles
-    const styles = selectedOverlay.styles || {};
-    if (settingColor) settingColor.value = styles.borderColor || styles.color || '#2962ff';
-    if (settingWidth) settingWidth.value = String(styles.borderSize || styles.size || 1);
-    if (settingFillColor) settingFillColor.value = styles.color || '#2962ff';
+    const ovName = selectedOverlay.name;
 
-    settingsModal.style.display = 'flex';
-  });
-
-  closeSettingsBtn?.addEventListener('click', () => {
-    settingsModal.style.display = 'none';
-  });
-
-  saveSettingsBtn?.addEventListener('click', () => {
-    if (selectedOverlay) {
-      const col = settingColor?.value || '#2962ff';
-      const size = Number(settingWidth?.value || 1);
-      const isDashed = settingLineStyle?.value === 'dashed';
-
-      const newStyles = {
-        color: col,
-        borderColor: col,
-        borderSize: size,
-        size: size,
-        borderStyle: isDashed ? 'dashed' : 'solid',
-        style: isDashed ? 'dashed' : 'solid'
-      };
-
-      try {
-        chart.overrideOverlay({
-          id: selectedOverlay.id,
-          styles: newStyles
-        });
-        syncDrawingsToServer(currentSymbolRef, chart);
-        showChartToast('Styles updated');
-      } catch (err) {
-        console.error('Failed to override overlay styles:', err);
-      }
+    // 1. Line Tools -> Open Line Trading Settings Modal (applicable to all line types)
+    if (isLineOverlay(ovName) && window.__lineTradingManager) {
+      window.__lineTradingManager.openSettingsModal(selectedOverlay.id);
+      return;
     }
-    settingsModal.style.display = 'none';
+
+    // 2. Rectangle Box -> Open Rectangle Settings Modal (theming options removed/empty)
+    if (ovName === 'rect') {
+      const rectModal = document.getElementById('tvRectSettingsModal');
+      if (rectModal) rectModal.style.display = 'flex';
+      return;
+    }
+  });
+
+  // Rectangle Settings Modal Buttons
+  document.getElementById('tvCloseRectModalBtn')?.addEventListener('click', () => {
+    const rectModal = document.getElementById('tvRectSettingsModal');
+    if (rectModal) rectModal.style.display = 'none';
+  });
+
+  document.getElementById('tvCloseRectBtn')?.addEventListener('click', () => {
+    const rectModal = document.getElementById('tvRectSettingsModal');
+    if (rectModal) rectModal.style.display = 'none';
+  });
+
+  document.getElementById('tvDeleteRectBtn')?.addEventListener('click', () => {
+    deleteSelectedOverlay();
+    const rectModal = document.getElementById('tvRectSettingsModal');
+    if (rectModal) rectModal.style.display = 'none';
   });
 
   // Draggable Floating Toolbar Handle
@@ -385,10 +423,17 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   });
 
   // 6. Shift + Drag anywhere on chart canvas triggers Measurement Tool
+  // When clicking anywhere without Shift, measurement ruler is auto-removed (same as TradingView)
   const chartCanvas = document.getElementById('klineChart');
   chartCanvas?.addEventListener('mousedown', (e) => {
     if (e.shiftKey && e.button === 0) {
       createDrawing('measureBox');
+    } else if (activeTool !== 'measureBox') {
+      const all = chart.getOverlays() || [];
+      const measures = all.filter(o => o.name === 'measureBox');
+      if (measures.length > 0) {
+        measures.forEach(m => chart.removeOverlay(m.id));
+      }
     }
   });
 }

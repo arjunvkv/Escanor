@@ -172,6 +172,8 @@ async def trade_modify(request: Request):
     sl = float(data["sl"]) if "sl" in data and data["sl"] is not None else None
     tp = float(data["tp"]) if "tp" in data and data["tp"] is not None else None
     res = modify_position(ticket=ticket, sl=sl, tp=tp)
+    if res and res.get("status") == "MODIFIED":
+        res["status"] = "OK"
     return JSONResponse(content=res)
 
 

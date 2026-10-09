@@ -42,9 +42,9 @@ function registerCustomOverlays() {
               },
               styles: {
                 style: 'stroke_fill',
-                color: 'rgba(41, 98, 255, 0.15)',
-                borderColor: '#2962ff',
-                borderSize: 1
+                color: 'rgba(236, 64, 122, 0.12)',
+                borderColor: '#ec407a',
+                borderSize: 1.5
               }
             }
           ];
@@ -54,6 +54,108 @@ function registerCustomOverlays() {
       performEventPressedMove: ({ points, performPointIndex }) => {
         if (window.__isShiftPressed && points.length >= 2 && performPointIndex === 1) {
           points[1].value = points[0].value;
+        }
+      }
+    });
+  }
+
+  // 2. Active MT5 Position & Pending Order Line (Draggable SL & TP)
+  if (!supported.includes('activeTradeOrder')) {
+    klinecharts.registerOverlay({
+      name: 'activeTradeOrder',
+      totalStep: 2,
+      needDefaultPointFigure: false,
+      needDefaultXAxisFigure: false,
+      needDefaultYAxisFigure: true,
+      createPointFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+        const data = overlay.extendData || {};
+        const price = overlay.points[0]?.value;
+        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+          ? yAxis.convertToPixel(price)
+          : (coordinates[0]?.y ?? 0);
+
+        const width = bounding.width;
+        const isSl = data.orderType === 'SL';
+        const isTp = data.orderType === 'TP';
+        const isPending = Boolean(data.isPending);
+
+        let color = '#38bdf8';
+        if (isSl) color = '#ef4444';
+        else if (isTp) color = '#10b981';
+        else if (isPending) color = '#f59e0b';
+        else color = data.isBuy ? '#00f5a0' : '#ef4444';
+
+        const lineStyle = (isSl || isTp || isPending) ? 'dashed' : 'solid';
+        const lineSize = (isSl || isTp) ? 2 : 1.5;
+
+        return [
+          {
+            type: 'line',
+            attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
+            styles: {
+              style: lineStyle,
+              dashedValue: [4, 4],
+              color: color,
+              size: lineSize
+            }
+          },
+          {
+            type: 'text',
+            attrs: { x: 14, y: y - 14, text: data.title || '', baseline: 'top' },
+            styles: {
+              color: '#ffffff',
+              size: 10,
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              weight: 'bold',
+              backgroundColor: color,
+              borderRadius: 3,
+              paddingLeft: 6,
+              paddingRight: 6,
+              paddingTop: 2,
+              paddingBottom: 2
+            }
+          }
+        ];
+      },
+      createYAxisFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+        const data = overlay.extendData || {};
+        const price = overlay.points[0]?.value;
+        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+          ? yAxis.convertToPixel(price)
+          : (coordinates[0]?.y ?? 0);
+
+        const isSl = data.orderType === 'SL';
+        const isTp = data.orderType === 'TP';
+        let color = '#38bdf8';
+        if (isSl) color = '#ef4444';
+        else if (isTp) color = '#10b981';
+        else if (data.isPending) color = '#f59e0b';
+        else color = data.isBuy ? '#00f5a0' : '#ef4444';
+
+        const text = `${data.orderType || 'ORDER'}: ${typeof price === 'number' ? price.toFixed(2) : ''}`;
+
+        return [
+          {
+            type: 'text',
+            attrs: { x: bounding.width, y, text, align: 'right', baseline: 'middle' },
+            styles: {
+              color: '#ffffff',
+              size: 10,
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+              weight: 'bold',
+              backgroundColor: color,
+              borderRadius: 2,
+              paddingLeft: 5,
+              paddingRight: 5,
+              paddingTop: 2,
+              paddingBottom: 2
+            }
+          }
+        ];
+      },
+      performEventPressedMove: ({ points, performPoint }) => {
+        if (points[0] && performPoint && typeof performPoint.value === 'number') {
+          points[0].value = Math.round(performPoint.value * 100) / 100;
         }
       }
     });
@@ -342,13 +444,13 @@ export function initTradingViewChart(containerId = 'klineChart') {
       type: 'candle_solid',
       bar: {
         upColor: '#d1d4dc',         // Bull silver
-        downColor: '#ec407a',       // Bear rose/pink matching image 2
+        downColor: '#e0457b',       // Bear rose/pink matching image 1 & 2
         noChangeColor: '#787b86',
-        upBorderColor: '#d1d4dc',
-        downBorderColor: '#ec407a',
+        upBorderColor: '#e0e3eb',   // Crisp HD edge
+        downBorderColor: '#e0457b', // Crisp HD edge
         noChangeBorderColor: '#787b86',
         upWickColor: '#d1d4dc',
-        downWickColor: '#ec407a',
+        downWickColor: '#e0457b',
         noChangeWickColor: '#787b86'
       },
       priceMark: {
@@ -358,17 +460,15 @@ export function initTradingViewChart(containerId = 'klineChart') {
         last: {
           show: true,
           upColor: '#d1d4dc',
-          downColor: '#ec407a',
+          downColor: '#e0457b',
           noChangeColor: '#787b86',
-          line: { show: true, style: 'dashed', dashedValue: [4, 4], size: 1 },
+          line: { show: true, style: 'dashed', dashedValue: [3, 3], size: 1 },
           text: { show: true, color: '#ffffff', size: 11, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2 }
         }
       },
       tooltip: {
-        showRule: 'always',
-        showType: 'standard',
-        rect: { color: 'rgba(28, 28, 28, 0.85)', borderColor: '#333333' },
-        text: { size: 11, color: '#d1d4dc', family: 'monospace' }
+        showRule: 'none',           // Hide Time, Open, High, Low, Close, Volume box completely
+        showType: 'standard'
       }
     },
     xAxis: {
@@ -429,7 +529,7 @@ export function initTradingViewChart(containerId = 'klineChart') {
   });
 
   // TradingView Standard Candle Spacing & Right Margin (HD crisp rendering)
-  chart.setBarSpace(7.5);
+  chart.setBarSpace(6.0);
   chart.setOffsetRightDistance(80);
 
   return chart;

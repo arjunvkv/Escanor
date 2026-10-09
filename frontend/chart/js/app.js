@@ -7,6 +7,8 @@
 import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js';
 import { initToolbar, showTvConfirm } from './toolbar.js';
 import { fetchServerDrawings, restoreDrawings, showChartToast } from './drawings_storage.js';
+import { ActiveOrdersEngine } from './active_orders_engine.js';
+import { LineTradingManager } from './line_trading.js';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -14,6 +16,8 @@ let currentTimeframeMinutes = 5;
 let wsConn = null;
 let liveBarCallback = null;
 let lastKnownSpot = null;
+let activeOrders = null;
+let lineTrading = null;
 
 const TF_MAP = {
   '1': { mult: 1, span: 'minute', label: '1m' },
@@ -37,7 +41,21 @@ async function init() {
   chart.setSymbol({ ticker: currentSymbol, name: 'Gold Spot' });
   chart.setPeriod({ multiplier: currentTimeframeMinutes, span: 'minute' });
 
-  // 3. Setup Data Loader
+  // 3. Initialize Line Trading & Active Orders Engines
+  lineTrading = new LineTradingManager({
+    chartEngine: { chart },
+    symbol: currentSymbol,
+    hudContainerId: 'tvLineTradingHud',
+    modalId: 'tvLineTradingModal'
+  });
+  window.__lineTradingManager = lineTrading;
+
+  activeOrders = new ActiveOrdersEngine({
+    chartEngine: { chart },
+    symbol: currentSymbol
+  });
+
+  // 4. Setup Data Loader
   chart.setDataLoader({
     getBars: async ({ symbol, period, callback }) => {
       try {
@@ -48,7 +66,7 @@ async function init() {
         callback(json.candles || [], false);
         setTimeout(() => {
           if (chart) {
-            chart.setBarSpace(7.5);
+            chart.setBarSpace(6.0);
             chart.setOffsetRightDistance(80);
           }
         }, 50);
@@ -65,33 +83,42 @@ async function init() {
     }
   });
 
-  // 4. Start Countdown Timer
+  // 5. Start Countdown Timer
   startCandleCountdown(currentTimeframeMinutes);
 
-  // 5. Initialize Left Toolbar
+  // 6. Initialize Left Toolbar
   initToolbar(chart, currentSymbol);
 
-  // 6. Restore Server-Side Drawings
+  // 7. Restore Server-Side Drawings
   try {
     const savedDrawings = await fetchServerDrawings(currentSymbol);
     if (savedDrawings && savedDrawings.length > 0) {
       restoreDrawings(chart, savedDrawings);
       console.log(`[Escanor TV] Restored ${savedDrawings.length} drawing(s) from server`);
+
+      // Register restored line overlays
+      const allOverlays = chart.getOverlays() || [];
+      const lineTypes = ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'];
+      for (const ov of allOverlays) {
+        if (lineTypes.includes(ov.name)) {
+          lineTrading.registerLineOverlay(ov, ov.name);
+        }
+      }
     }
   } catch (err) {
     console.warn('[Escanor TV] Error restoring server drawings:', err);
   }
 
-  // 7. Setup Timeframe Buttons
+  // 8. Setup Timeframe Buttons
   setupTimeframeButtons();
 
-  // 8. Setup Quick Buy / Sell Pad
+  // 9. Setup Quick Buy / Sell Pad
   setupQuickOrderPad();
 
-  // 9. Connect Real-time MT5 WebSocket
+  // 10. Connect Real-time MT5 WebSocket
   connectWebSocket();
 
-  // 10. Window Resize Handler
+  // 11. Window Resize Handler
   window.addEventListener('resize', () => {
     if (chart) chart.resize();
   });
@@ -108,7 +135,7 @@ async function init() {
   // Reset zoom button
   document.getElementById('tvResetZoomBtn')?.addEventListener('click', () => {
     if (chart) {
-      chart.setBarSpace(7.5);
+      chart.setBarSpace(6.0);
       chart.setOffsetRightDistance(80);
       chart.scrollToRealTime();
     }
@@ -254,6 +281,19 @@ function handleLiveTelemetry(tel) {
       low: cb.low,
       close: cb.close,
       volume: 1
+    });
+  }
+
+  // 3. Feed Live Spot to Line Trading Collision Engine
+  if (lineTrading && bid) {
+    lineTrading.onPriceTick(bid, ask);
+  }
+
+  // 4. Update Active Trades & Pending Orders on Chart
+  if (activeOrders) {
+    activeOrders.updateData({
+      positions: tel.active_positions || tel.positions || [],
+      orders: tel.pending_orders || tel.orders || []
     });
   }
 }
