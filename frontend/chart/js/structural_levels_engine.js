@@ -50,7 +50,8 @@ export class StructuralLevelsEngine {
         yLabel: `PDH $${pdh.toFixed(2)}`,
         color: isSwept ? '#ef4444' : '#f59e0b',
         lineStyle: 'dashed',
-        lineSize: isSwept ? 1.5 : 2
+        lineSize: 1.0,
+        opacity: 0.30
       });
     }
 
@@ -66,7 +67,8 @@ export class StructuralLevelsEngine {
         yLabel: `PDL $${pdl.toFixed(2)}`,
         color: isSwept ? '#ef4444' : '#10b981',
         lineStyle: 'dashed',
-        lineSize: isSwept ? 1.5 : 2
+        lineSize: 1.0,
+        opacity: 0.30
       });
     }
 
@@ -81,7 +83,8 @@ export class StructuralLevelsEngine {
         yLabel: `VWAP $${vwapVal.toFixed(2)}`,
         color: '#38bdf8',
         lineStyle: 'solid',
-        lineSize: 1.5
+        lineSize: 1.0,
+        opacity: 0.30
       });
     }
 
@@ -96,7 +99,8 @@ export class StructuralLevelsEngine {
         yLabel: `ASH $${asianHigh.toFixed(2)}`,
         color: '#c084fc',
         lineStyle: 'dashed',
-        lineSize: 1.5
+        lineSize: 1.0,
+        opacity: 0.30
       });
     }
 
@@ -111,7 +115,8 @@ export class StructuralLevelsEngine {
         yLabel: `ASL $${asianLow.toFixed(2)}`,
         color: '#2dd4bf',
         lineStyle: 'dashed',
-        lineSize: 1.5
+        lineSize: 1.0,
+        opacity: 0.30
       });
     }
 
@@ -125,7 +130,8 @@ export class StructuralLevelsEngine {
         yLabel: `EQ $${rangeEq.toFixed(2)}`,
         color: '#818cf8',
         lineStyle: 'dashed',
-        lineSize: 1.2
+        lineSize: 1.0,
+        opacity: 0.25
       });
     }
 
@@ -140,7 +146,8 @@ export class StructuralLevelsEngine {
           yLabel: `SUPPLY $${supP.toFixed(2)}`,
           color: '#f43f5e',
           lineStyle: 'solid',
-          lineSize: 1.5
+          lineSize: 1.0,
+          opacity: 0.30
         });
       }
     }
@@ -156,7 +163,8 @@ export class StructuralLevelsEngine {
           yLabel: `DEMAND $${demP.toFixed(2)}`,
           color: '#10b981',
           lineStyle: 'solid',
-          lineSize: 1.5
+          lineSize: 1.0,
+          opacity: 0.30
         });
       }
     }
@@ -190,7 +198,8 @@ export class StructuralLevelsEngine {
         yLabel: lvl.yLabel,
         color: lvl.color,
         lineStyle: lvl.lineStyle,
-        lineSize: lvl.lineSize
+        lineSize: lvl.lineSize,
+        opacity: lvl.opacity !== undefined ? lvl.opacity : 0.30
       }
     };
 

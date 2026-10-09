@@ -77,39 +77,53 @@ function registerCustomOverlays() {
         const width = bounding.width;
         const color = data.color || '#f59e0b';
         const lineStyle = data.lineStyle || 'dashed';
-        const lineSize = data.lineSize || 1.5;
+        const lineSize = data.lineSize || 1.0; // Very thin
+        const opacity = data.opacity !== undefined ? data.opacity : 0.30; // 30% opacity
         const title = data.title || '';
+
+        // Helper to convert hex to rgba
+        function hexToRgba(hex, a) {
+          if (!hex) return `rgba(245, 158, 11, ${a})`;
+          if (hex.startsWith('rgba')) return hex;
+          let c = hex.replace('#', '');
+          if (c.length === 3) c = c.split('').map(x => x + x).join('');
+          const num = parseInt(c, 16);
+          return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${a})`;
+        }
+
+        const lineRgba = hexToRgba(color, opacity);
+        const badgeBg = hexToRgba(color, Math.min(0.55, opacity + 0.15));
 
         const figures = [];
 
-        // Full-width horizontal reference line
+        // Full-width horizontal reference line (ultra-thin, 30% opacity)
         figures.push({
           type: 'line',
           attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
           styles: {
             style: lineStyle,
-            dashedValue: [6, 4],
-            color: color,
+            dashedValue: [4, 4],
+            color: lineRgba,
             size: lineSize
           }
         });
 
-        // Pill text badge on the left side of the chart
+        // Pill text badge on the left side of the chart (soft muted 30-45% opacity background)
         if (title) {
           figures.push({
             type: 'text',
-            attrs: { x: 12, y: y - 13, text: title, baseline: 'top' },
+            attrs: { x: 12, y: y - 11, text: title, baseline: 'top' },
             styles: {
-              color: '#ffffff',
-              size: 10,
+              color: 'rgba(255, 255, 255, 0.70)',
+              size: 9.5,
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
               weight: 'bold',
-              backgroundColor: color,
+              backgroundColor: badgeBg,
               borderRadius: 3,
-              paddingLeft: 6,
-              paddingRight: 6,
-              paddingTop: 2,
-              paddingBottom: 2
+              paddingLeft: 5,
+              paddingRight: 5,
+              paddingTop: 1.5,
+              paddingBottom: 1.5
             }
           });
         }
@@ -125,22 +139,34 @@ function registerCustomOverlays() {
 
         const color = data.color || '#f59e0b';
         const label = data.yLabel || (typeof price === 'number' ? price.toFixed(2) : '');
+        const opacity = data.opacity !== undefined ? data.opacity : 0.30;
+
+        function hexToRgba(hex, a) {
+          if (!hex) return `rgba(245, 158, 11, ${a})`;
+          if (hex.startsWith('rgba')) return hex;
+          let c = hex.replace('#', '');
+          if (c.length === 3) c = c.split('').map(x => x + x).join('');
+          const num = parseInt(c, 16);
+          return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${a})`;
+        }
+
+        const yAxisBg = hexToRgba(color, Math.min(0.60, opacity + 0.20));
 
         return [
           {
             type: 'text',
             attrs: { x: bounding.width, y, text: label, align: 'right', baseline: 'middle' },
             styles: {
-              color: '#ffffff',
-              size: 10,
+              color: 'rgba(255, 255, 255, 0.85)',
+              size: 9.5,
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
               weight: 'bold',
-              backgroundColor: color,
+              backgroundColor: yAxisBg,
               borderRadius: 2,
               paddingLeft: 4,
               paddingRight: 4,
-              paddingTop: 2,
-              paddingBottom: 2
+              paddingTop: 1.5,
+              paddingBottom: 1.5
             }
           }
         ];
