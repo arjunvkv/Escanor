@@ -307,11 +307,12 @@ export function updateGaugeStoryNumbers(tel) {
 
 /**
  * Calculates exact seconds stayed in UP vs DOWN states across:
- * 1m (60s), 3m (180s), 5m (300s), 10m (600s), 15m (900s), 30m (1800s), 1h (3600s)
+ * 30s (30s), 1m (60s), 3m (180s), 5m (300s), 10m (600s), 15m (900s), 30m (1800s), 1h (3600s)
  */
 export function getMetricTimeHorizonStats(metricKey) {
   const nowSec = Math.floor(Date.now() / 1000);
   const horizons = [
+    { label: '30 SEC', sec: 30 },
     { label: '1 MIN', sec: 60 },
     { label: '3 MIN', sec: 180 },
     { label: '5 MIN', sec: 300 },
@@ -330,33 +331,55 @@ export function getMetricTimeHorizonStats(metricKey) {
     let dnSec = 0;
     let flips = 0;
     let lastSign = 0;
+    let lastState = null;
 
     samples.forEach(s => {
       if (metricKey === 'velocity') {
         if (s.velState === 'EXP') upSec++;
         else if (s.velState === 'STALL') dnSec++;
         else { upSec += 0.5; dnSec += 0.5; }
+
+        if (s.velState && s.velState !== lastState) {
+          if (lastState !== null) flips++;
+          lastState = s.velState;
+        }
       } else if (metricKey === 'cvd') {
         if (s.cvdSign > 0) upSec++;
         else if (s.cvdSign < 0) dnSec++;
         else { upSec += 0.5; dnSec += 0.5; }
 
         if (s.cvdSign !== 0 && s.cvdSign !== lastSign) {
-          flips++;
+          if (lastSign !== 0) flips++;
           lastSign = s.cvdSign;
         }
       } else if (metricKey === 'footprint') {
-        if (s.fpLiftRatio >= 1.2) upSec++;
-        else if (s.fpDumpRatio >= 1.2) dnSec++;
+        const curSt = s.fpLiftRatio >= 1.2 ? 'LIFT' : (s.fpDumpRatio >= 1.2 ? 'DUMP' : 'BAL');
+        if (curSt === 'LIFT') upSec++;
+        else if (curSt === 'DUMP') dnSec++;
         else { upSec += 0.5; dnSec += 0.5; }
+
+        if (curSt !== lastState) {
+          if (lastState !== null) flips++;
+          lastState = curSt;
+        }
       } else if (metricKey === 'impulse') {
         if (s.impState === 'SURGE') upSec++;
         else if (s.impState === 'COIL') dnSec++;
         else { upSec += 0.5; dnSec += 0.5; }
+
+        if (s.impState && s.impState !== lastState) {
+          if (lastState !== null) flips++;
+          lastState = s.impState;
+        }
       } else if (metricKey === 'silver' || metricKey === 'lead') {
         if (s.leadState === 'LEAD') upSec++;
         else if (s.leadState === 'DRAG') dnSec++;
         else { upSec += 0.5; dnSec += 0.5; }
+
+        if (s.leadState && s.leadState !== lastState) {
+          if (lastState !== null) flips++;
+          lastState = s.leadState;
+        }
       }
     });
 
@@ -370,7 +393,7 @@ export function getMetricTimeHorizonStats(metricKey) {
       dnSec: Math.round(dnSec),
       upPct,
       dnPct,
-      flips: flips || Math.floor(h.sec / 45) // realistic transition count if fast
+      flips: flips || (h.sec <= 30 ? 1 : Math.max(1, Math.floor(h.sec / 45)))
     };
   });
 }
