@@ -140,8 +140,8 @@ async def trade_execute(request: Request):
     """Direct market order execution."""
     data = await request.json()
     sym = data.get("symbol", config.get("symbol", "XAUUSD"))
-    side = data.get("side", "BUY")
-    volume = float(data.get("volume", 1.0))
+    side = data.get("side") or data.get("direction") or "BUY"
+    volume = float(data.get("volume", 0.50))
     sl = float(data.get("sl_price") or data.get("sl") or 0.0)
     tp = float(data.get("tp_price") or data.get("tp") or 0.0)
     comment = data.get("comment", "Escanor Market Order")
@@ -154,11 +154,11 @@ async def trade_place_pending(request: Request):
     """Place pending stop/limit order."""
     data = await request.json()
     sym = data.get("symbol", config.get("symbol", "XAUUSD"))
-    order_type = data.get("order_type", "BUY_LIMIT")
-    price = float(data.get("price", 0.0))
-    volume = float(data.get("volume", 1.0))
-    sl = float(data.get("sl") or 0.0)
-    tp = float(data.get("tp") or 0.0)
+    order_type = data.get("order_type") or data.get("type") or "BUY_LIMIT"
+    price = float(data.get("price") or data.get("trigger_price") or 0.0)
+    volume = float(data.get("volume", 0.50))
+    sl = float(data.get("sl_price") or data.get("sl") or 0.0)
+    tp = float(data.get("tp_price") or data.get("tp") or 0.0)
     comment = data.get("comment", "Escanor Pending Order")
     res = place_pending_order(symbol=sym, order_type=order_type, price=price, volume=volume, sl=sl, tp=tp, comment=comment)
     return JSONResponse(content=res)
@@ -177,16 +177,17 @@ async def trade_modify(request: Request):
 
 @app.post("/api/trade/close")
 async def trade_close(request: Request):
-    """Close an open position at market."""
+    """Close an open position at market or cancel pending order."""
     data = await request.json()
     ticket = int(data.get("ticket"))
-    res = close_position(ticket=ticket)
+    is_pending = bool(data.get("is_pending", False))
+    res = close_position(ticket=ticket, is_pending=is_pending)
     return JSONResponse(content=res)
 
 
 @app.post("/api/trade/close_all")
 async def trade_close_all(request: Request):
-    """Close all open positions."""
+    """Close all open positions and cancel all pending orders."""
     data = await request.json()
     sym = data.get("symbol")
     res = close_all_positions(symbol=sym)

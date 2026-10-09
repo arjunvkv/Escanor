@@ -373,10 +373,7 @@ export async function closePositionTicket(ticket, isPending = false) {
 window.closePositionTicket = closePositionTicket;
 
 export async function flattenDesk() {
-  if (!confirm('🚨 PANIC CLOSE: Close ALL active positions and cancel ALL pending orders immediately?')) {
-    return;
-  }
-  showTerminalToast('🚨 FLATTENING DESK...', 'warning');
+  showTerminalToast('🚨 FLATTENING DESK: Closing positions & canceling orders...', 'warning');
   try {
     const resp = await fetch('/api/trade/close_all', {
       method: 'POST',
@@ -385,7 +382,7 @@ export async function flattenDesk() {
     });
     const res = await resp.json();
     if (res.status === 'OK') {
-      showTerminalToast('✅ DESK FLATTENED: 100% Flat', 'success');
+      showTerminalToast(`✅ DESK FLATTENED: ${res.closed_count || 0} item(s) cleared`, 'success');
       if (lastTelemetryData) {
         lastTelemetryData.active_positions = [];
         lastTelemetryData.pending_orders = [];
@@ -435,6 +432,11 @@ export function renderActiveTradesUI(tel) {
   const acc = tel.account || {};
   const balance = acc.balance !== undefined ? Number(acc.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '100,000.00';
   const equity = acc.equity !== undefined ? Number(acc.equity).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : balance;
+
+  const elAccStatus = document.getElementById('accountEquityStatus');
+  if (elAccStatus) {
+    elAccStatus.innerHTML = `BAL: <span class="text-amber-300 font-bold">$${balance}</span> · EQ: <span class="text-emerald-300 font-bold">$${equity}</span>`;
+  }
 
   if (topPill) {
     if (activePositions.length > 0) {

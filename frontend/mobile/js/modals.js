@@ -746,6 +746,61 @@ export function renderMetricModalContent(key) {
           </div>
         </div>
       `
+    },
+    'pdh': {
+      title: 'PREVIOUS DAY HIGH (CEILING)',
+      html: `
+        <div class="space-y-2">
+          <div class="p-2 bg-slate-900 rounded border border-white/10">
+            <div class="text-amber-300 font-bold">Major Structural Invalidation Ceiling</div>
+            <div class="text-[11px] text-slate-400 mt-1">Represents yesterday's absolute apex price. Retail stops cluster densely 1-3 ticks above PDH. An institutional sweep and reclaim triggers Pattern A short execution.</div>
+          </div>
+        </div>
+      `
+    },
+    'vwap': {
+      title: 'SESSION VWAP & GEX EQUILIBRIUM',
+      html: `
+        <div class="space-y-2">
+          <div class="p-2 bg-slate-900 rounded border border-white/10">
+            <div class="text-amber-300 font-bold">Volume-Weighted Average Price</div>
+            <div class="text-[11px] text-slate-400 mt-1">Institutional fair value anchor for the current session. Price trading above VWAP signals buyer control; price below VWAP signals seller dominance. Mean-reversion targets VWAP.</div>
+          </div>
+        </div>
+      `
+    },
+    'pdl': {
+      title: 'SOVEREIGN PDL (FLOOR)',
+      html: `
+        <div class="space-y-2">
+          <div class="p-2 bg-slate-900 rounded border border-white/10">
+            <div class="text-emerald-300 font-bold">Previous Day Low Structural Floor</div>
+            <div class="text-[11px] text-slate-400 mt-1">Yesterday's lowest price. Acts as a magnetic liquidity pool for institutional sell-side stop harvesting. Completed sweeps below PDL offer high R:R long entries on reclaim.</div>
+          </div>
+        </div>
+      `
+    },
+    'asian_low': {
+      title: 'ASIAN SESSION LOW FLOOR',
+      html: `
+        <div class="space-y-2">
+          <div class="p-2 bg-slate-900 rounded border border-white/10">
+            <div class="text-teal-300 font-bold">Asian Range Liquidity Floor (00:00 - 06:00 UTC)</div>
+            <div class="text-[11px] text-slate-400 mt-1">London and NY opens frequently hunt Asian extremes during the Judas Swing. A sweep ≥ 2.0 pt below Asian Low followed by positive CVD flip is a textbook long setup.</div>
+          </div>
+        </div>
+      `
+    },
+    'effort': {
+      title: 'EFFORT VS RESULT (ICEBERG ABSORPTION)',
+      html: `
+        <div class="space-y-2">
+          <div class="p-2 bg-slate-900 rounded border border-white/10">
+            <div class="text-amber-300 font-bold">Thermodynamic Volume Divergence</div>
+            <div class="text-[11px] text-slate-400 mt-1">When massive tick volume or delta produces near-zero price displacement, an opposing institutional iceberg limit wall is absorbing the entire flow. Warns of imminent reversal.</div>
+          </div>
+        </div>
+      `
     }
   };
 

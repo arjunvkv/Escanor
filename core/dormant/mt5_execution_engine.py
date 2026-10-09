@@ -178,18 +178,42 @@ def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float]
     return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}: {getattr(res, 'comment', 'Failed')}"}
 
 
-def close_position(ticket: int) -> Dict[str, Any]:
-    """Close single open position at market."""
+def close_position(ticket: int, is_pending: bool = False) -> Dict[str, Any]:
+    """Close single open position at market or cancel pending order."""
     if not mt5:
         return {"status": "FAILED", "error": "MetaTrader5 module not available"}
 
+    # 1. Check if explicitly flagged as pending order
+    if is_pending:
+        req = {
+            "action": mt5.TRADE_ACTION_REMOVE,
+            "order": ticket
+        }
+        res = mt5.order_send(req)
+        if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+            return {"status": "OK", "ticket": ticket, "message": "Pending order canceled"}
+        return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}: {getattr(res, 'comment', 'Failed')}"}
+
+    # 2. Check in positions
     pos = None
     for p in mt5.positions_get() or ():
         if p.ticket == ticket:
             pos = p
             break
+
     if not pos:
-        return {"status": "FAILED", "error": f"Position ticket #{ticket} not found"}
+        # Check if it was actually a pending order in orders_get
+        for o in mt5.orders_get() or ():
+            if o.ticket == ticket:
+                req = {
+                    "action": mt5.TRADE_ACTION_REMOVE,
+                    "order": ticket
+                }
+                res = mt5.order_send(req)
+                if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+                    return {"status": "OK", "ticket": ticket, "message": "Pending order canceled"}
+                return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}"}
+        return {"status": "FAILED", "error": f"Ticket #{ticket} not found"}
 
     close_type = mt5.ORDER_TYPE_SELL if pos.type == 0 else mt5.ORDER_TYPE_BUY
     tick = mt5.symbol_info_tick(pos.symbol)
@@ -209,20 +233,34 @@ def close_position(ticket: int) -> Dict[str, Any]:
     }
     res = mt5.order_send(req)
     if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-        return {"status": "CLOSED", "ticket": ticket, "close_price": price}
+        return {"status": "OK", "ticket": ticket, "close_price": price}
     return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}: {getattr(res, 'comment', 'Failed')}"}
 
 
 def close_all_positions(symbol: Optional[str] = None) -> Dict[str, Any]:
-    """Close all open positions matching symbol or all."""
+    """Close all open positions and cancel all pending orders matching symbol or all."""
     if not mt5:
         return {"status": "FAILED", "error": "MetaTrader5 module not available"}
 
     closed = []
+    # 1. Close active positions
     positions = mt5.positions_get() or ()
     for p in positions:
-        if symbol and p.symbol != symbol:
+        if symbol and symbol != "ALL" and p.symbol != symbol:
             continue
         res = close_position(p.ticket)
-        closed.append({"ticket": p.ticket, "res": res})
+        closed.append({"ticket": p.ticket, "type": "POSITION", "res": res})
+
+    # 2. Cancel pending orders
+    orders = mt5.orders_get() or ()
+    for o in orders:
+        if symbol and symbol != "ALL" and o.symbol != symbol:
+            continue
+        req = {
+            "action": mt5.TRADE_ACTION_REMOVE,
+            "order": o.ticket
+        }
+        res = mt5.order_send(req)
+        closed.append({"ticket": o.ticket, "type": "ORDER", "res": getattr(res, "retcode", None)})
+
     return {"status": "OK", "closed_count": len(closed), "results": closed}

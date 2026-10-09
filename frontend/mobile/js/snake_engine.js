@@ -68,8 +68,8 @@ export function renderWindowHighLows(tel) {
   };
   const activeLeadTitle = leadPtTitles[activeLead] || 'LEAD BETA';
 
-  const ptWin = (tel && tel.peak_trough_windows && tel.peak_trough_windows[String(selectedWindowMinutes)])
-    ? tel.peak_trough_windows[String(selectedWindowMinutes)]
+  const ptWin = (tel && tel.peak_trough_windows && (tel.peak_trough_windows[String(selectedWindowMinutes)] || tel.peak_trough_windows['m' + selectedWindowMinutes]))
+    ? (tel.peak_trough_windows[String(selectedWindowMinutes)] || tel.peak_trough_windows['m' + selectedWindowMinutes])
     : null;
 
   let maxVel = null, minVel = null;

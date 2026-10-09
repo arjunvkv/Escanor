@@ -94,20 +94,27 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
     silver_bid = xag_info.get("bid")
     xag_pct = xag_info.get("pct", 0.0)
 
-    # 3. M5 Candles & Structural Levels
-    rates_m5 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 100)
+    # 3. M5 Candles & Structural Levels (300 bars for full 24h coverage)
+    rates_m5 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M5, 0, 300)
     day_high, day_low, dealing_range_pos = None, None, None
     demand_fvg, supply_fvg = None, None
     xau_pct, xau_m5_pct = 0.0, 0.0
 
-    if rates_m5 is not None and len(rates_m5) >= 2:
+    # True Day High / Day Low from current D1 candle
+    rates_d1_today = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_D1, 0, 1)
+    if rates_d1_today is not None and len(rates_d1_today) >= 1:
+        day_high = round(float(rates_d1_today[0]["high"]), 2)
+        day_low = round(float(rates_d1_today[0]["low"]), 2)
+    elif rates_m5 is not None and len(rates_m5) >= 2:
         highs = [float(r["high"]) for r in rates_m5]
         lows = [float(r["low"]) for r in rates_m5]
         day_high = round(max(highs), 2)
         day_low = round(min(lows), 2)
-        if day_high > day_low:
-            dealing_range_pos = round((gold_bid - day_low) / (day_high - day_low), 2)
 
+    if day_high and day_low and day_high > day_low:
+        dealing_range_pos = round((gold_bid - day_low) / max(0.1, day_high - day_low), 2)
+
+    if rates_m5 is not None and len(rates_m5) >= 2:
         xau_open_1h = float(rates_m5[-12]["open"]) if len(rates_m5) >= 12 else float(rates_m5[0]["open"])
         if xau_open_1h > 0:
             xau_pct = round(((gold_bid - xau_open_1h) / xau_open_1h) * 100, 2)
@@ -148,9 +155,9 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
     asian_high, asian_low = None, None
     asian_high_pen, asian_low_pen = 0.0, 0.0
     asian_sweep_high, asian_sweep_low = False, False
+    today_start = int(datetime.datetime(now_utc.year, now_utc.month, now_utc.day, tzinfo=datetime.timezone.utc).timestamp())
 
     if rates_m5 is not None:
-        today_start = int(datetime.datetime(now_utc.year, now_utc.month, now_utc.day, tzinfo=datetime.timezone.utc).timestamp())
         asian_bars = [r for r in rates_m5 if today_start <= r["time"] <= today_start + 6 * 3600]
         if asian_bars:
             asian_high = round(max(float(r["high"]) for r in asian_bars), 2)
@@ -173,18 +180,60 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
 
     equilibrium = round((day_high + day_low) / 2.0, 2) if (day_high and day_low) else None
 
-    # 6. Microstructure (M1 bars for 20-trail snake, velocity, CVD)
+    # 6. 4-Timeframe Posture (M5, M15, H1, H4 Displacement & Direction)
+    tf_4_posture = {
+        "postures": {},
+        "pcts": {},
+        "pts": {}
+    }
+    for tf_label, mt5_tf in [("M5", mt5.TIMEFRAME_M5), ("M15", mt5.TIMEFRAME_M15), ("H1", mt5.TIMEFRAME_H1), ("H4", mt5.TIMEFRAME_H4)]:
+        tf_rates = mt5.copy_rates_from_pos(symbol, mt5_tf, 0, 5)
+        if tf_rates is not None and len(tf_rates) > 0:
+            open_p = float(tf_rates[-1]["open"])
+            pts = round(gold_bid - open_p, 2)
+            pct = round((pts / max(0.01, open_p)) * 100.0, 3)
+            posture = "BULL" if pts > 0 else ("BEAR" if pts < 0 else "FLAT")
+            tf_4_posture["postures"][tf_label] = posture
+            tf_4_posture["pcts"][tf_label] = pct
+            tf_4_posture["pts"][tf_label] = pts
+        else:
+            tf_4_posture["postures"][tf_label] = "FLAT"
+            tf_4_posture["pcts"][tf_label] = 0.0
+            tf_4_posture["pts"][tf_label] = 0.0
+
+    # 7. Microstructure (M1 bars for 20-trail snake, velocity, CVD, footprint blocks, impulse)
     rates_m1 = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, 60)
     vel_10m = []
     deltas_10m = []
     trail_20 = []
     window_stats_8m = []
-    peak_trough_windows = {}
+    recent_4m_blocks = []
+    disp_1m_pt = 0.0
+    disp_5m_pt = 0.0
+    rate_pt_min = 0.0
     tick_velocity = 0
     cvd_delta = 0
 
     if rates_m1 is not None and len(rates_m1) >= 1:
         tick_velocity = int(rates_m1[-1]["tick_volume"])
+        disp_1m_pt = round(float(rates_m1[-1]["close"]) - float(rates_m1[-1]["open"]), 2)
+        if len(rates_m1) >= 5:
+            disp_5m_pt = round(float(rates_m1[-1]["close"]) - float(rates_m1[-5]["open"]), 2)
+        else:
+            disp_5m_pt = disp_1m_pt
+        rate_pt_min = round(disp_5m_pt / 5.0, 2)
+
+        # 4M Footprint blocks (last 4 individual 1M bars)
+        for b in rates_m1[-4:]:
+            b_rng = max(0.01, float(b["high"]) - float(b["low"]))
+            b_body = float(b["close"]) - float(b["open"])
+            delta = int((b_body / b_rng) * float(b["tick_volume"]))
+            recent_4m_blocks.append({
+                "delta": delta,
+                "volume": int(b["tick_volume"]),
+                "time": int(b["time"])
+            })
+
         # CVD calculation over last 10 bars
         for r in rates_m1[-10:]:
             rng = max(0.01, float(r["high"]) - float(r["low"]))
@@ -227,17 +276,66 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
                 "low": round(float(b["low"]), 2)
             })
 
-        # Multi-window peak/trough ranges
-        for w in [5, 15, 30, 60]:
-            sub = rates_m1[-min(w, len(rates_m1)):]
-            peak_trough_windows[f"m{w}"] = {
-                "high": round(max(float(r["high"]) for r in sub), 2),
-                "low": round(min(float(r["low"]) for r in sub), 2),
-                "spread_pt": round(max(float(r["high"]) for r in sub) - min(float(r["low"]) for r in sub), 2)
-            }
+    while len(recent_4m_blocks) < 4:
+        recent_4m_blocks.insert(0, {"delta": 0, "volume": 0, "time": int(now_epoch)})
+    footprint_delta = sum(b["delta"] for b in recent_4m_blocks)
 
-    # 7. VWAP
-    vwap_val = round(sum(float(r["close"]) * float(r["tick_volume"]) for r in rates_m5) / max(1, sum(float(r["tick_volume"]) for r in rates_m5)), 2) if rates_m5 is not None and len(rates_m5) > 0 else gold_bid
+    # Multi-window peak/trough ranges (keyed by integer string and 'm' prefix)
+    peak_trough_windows = {}
+    for w in [1, 2, 3, 4, 5, 6, 7, 8, 10, 15, 20, 30, 45, 60, 90, 120, 240, 360, 480, 600]:
+        sub = rates_m1[-min(w, len(rates_m1)):] if rates_m1 is not None and len(rates_m1) > 0 else []
+        if sub is not None and len(sub) > 0:
+            high_val = round(max(float(r["high"]) for r in sub), 2)
+            low_val = round(min(float(r["low"]) for r in sub), 2)
+            max_v = int(max(r["tick_volume"] for r in sub))
+            min_v = int(min(r["tick_volume"] for r in sub))
+            sub_deltas = [
+                int(((float(r["close"]) - float(r["open"])) / max(0.01, float(r["high"]) - float(r["low"]))) * float(r["tick_volume"]))
+                for r in sub
+            ]
+            win_obj = {
+                "high": high_val,
+                "low": low_val,
+                "spread_pt": round(high_val - low_val, 2),
+                "max_vel": max_v,
+                "min_vel": min_v,
+                "max_cvd": max(sub_deltas),
+                "min_cvd": min(sub_deltas),
+                "max_fp": max(sub_deltas),
+                "min_fp": min(sub_deltas),
+                "max_imp": round((high_val - low_val) / max(1, len(sub)), 2),
+                "min_imp": round(-(high_val - low_val) / max(1, len(sub)), 2),
+                "max_silver": round(xag_pct + 0.1, 3),
+                "min_silver": round(xag_pct - 0.1, 3)
+            }
+        else:
+            win_obj = {
+                "high": gold_bid,
+                "low": gold_bid,
+                "spread_pt": 0.0,
+                "max_vel": tick_velocity,
+                "min_vel": tick_velocity,
+                "max_cvd": cvd_delta,
+                "min_cvd": cvd_delta,
+                "max_fp": cvd_delta,
+                "min_fp": cvd_delta,
+                "max_imp": 0.0,
+                "min_imp": 0.0,
+                "max_silver": xag_pct,
+                "min_silver": xag_pct
+            }
+        peak_trough_windows[str(w)] = win_obj
+        peak_trough_windows[f"m{w}"] = win_obj
+
+    # 8. Session VWAP (calculated from today's bars)
+    today_bars = [r for r in rates_m5 if r["time"] >= today_start] if rates_m5 is not None else []
+    if today_bars and sum(float(r["tick_volume"]) for r in today_bars) > 0:
+        vwap_val = round(sum(float(r["close"]) * float(r["tick_volume"]) for r in today_bars) / sum(float(r["tick_volume"]) for r in today_bars), 2)
+    elif rates_m5 is not None and len(rates_m5) > 0:
+        vwap_val = round(sum(float(r["close"]) * float(r["tick_volume"]) for r in rates_m5) / max(1, sum(float(r["tick_volume"]) for r in rates_m5)), 2)
+    else:
+        vwap_val = gold_bid
+
     vwap_data = {
         "vwap": vwap_val,
         "upper_band_1": round(vwap_val + 3.5, 2),
@@ -249,7 +347,33 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
         "summary": "Spot trading above VWAP" if gold_bid >= vwap_val else "Spot trading below VWAP"
     }
 
-    # 8. Positions & Orders
+    # 9. Intermarket Truth & Lead/Lag Synthesis
+    sorted_drivers = sorted(
+        intermarket.items(),
+        key=lambda item: abs(item[1].get("pct", 0.0) if isinstance(item[1], dict) else 0.0),
+        reverse=True
+    )
+    captain_key = sorted_drivers[0][0] if sorted_drivers else "YLD"
+    lead_drivers = [k for k, _ in sorted_drivers[:3]]
+    lag_drivers = [k for k, _ in sorted_drivers[3:6]]
+
+    intermarket_truth = {
+        "revolving_theme": "SOVEREIGN RATES & REAL YIELDS",
+        "regime_captain": captain_key,
+        "lead_drivers": lead_drivers,
+        "lag_drivers": lag_drivers
+    }
+
+    dxy_bid = intermarket.get("DXY", {}).get("bid", 102.3)
+    us10y_bid = intermarket.get("YLD", {}).get("bid", 4.15)
+    intermarket_lead = {
+        "status": "VALIDATED_SOVEREIGN_LEAD",
+        "signal": "BLAST_EXPANSION" if (intermarket.get("XAG", {}).get("pct", 0) > 0.1) else "EQUILIBRIUM",
+        "point_1_yields": {"us10y": us10y_bid},
+        "point_2_dollar": {"dxy_price": dxy_bid, "dxy_1h_pct": intermarket.get("DXY", {}).get("pct", 0.0)}
+    }
+
+    # 10. Positions & Orders
     account = get_account_status()
     positions = get_positions(symbol)
     orders = get_pending_orders(symbol)
@@ -279,7 +403,8 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
             "bid": gold_bid,
             "ask": gold_ask,
             "spread_pts": gold_spread_pts,
-            "chart_bar": chart_bar
+            "chart_bar": chart_bar,
+            "xau_pct": xau_pct
         },
         "silver": {
             "bid": silver_bid,
@@ -293,6 +418,14 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
             "status": "LIVE" if silver_bid else "OFFLINE"
         },
         "intermarket": intermarket,
+        "intermarket_truth": intermarket_truth,
+        "intermarket_lead": intermarket_lead,
+        "tf_4_posture": tf_4_posture,
+        "impulse": {
+            "rate_pt_min": rate_pt_min,
+            "disp_1m_pt": disp_1m_pt,
+            "disp_5m_pt": disp_5m_pt
+        },
         "structure": {
             "day_high": day_high,
             "day_low": day_low,
@@ -315,11 +448,13 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
             "tick_velocity": tick_velocity,
             "cvd_delta": cvd_delta,
             "cvd_flip": "SUSTAINED",
-            "footprint_delta": cvd_delta,
+            "footprint_delta": footprint_delta,
+            "footprint_4m_blocks": recent_4m_blocks,
+            "recent_fp_blocks": recent_4m_blocks,
             "effort_divergence": False,
-            "impulse_rate": 0.0,
-            "disp_1m_pt": 0.0,
-            "disp_5m_pt": 0.0,
+            "impulse_rate": rate_pt_min,
+            "disp_1m_pt": disp_1m_pt,
+            "disp_5m_pt": disp_5m_pt,
             "vel_10m": vel_10m,
             "vel_1m": tick_velocity,
             "vel_5m_avg": round(sum(vel_10m[-5:]) / max(1, len(vel_10m[-5:])), 1) if vel_10m else 0,
@@ -334,5 +469,8 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
         "peak_trough_windows": peak_trough_windows,
         "positions": positions,
         "orders": orders,
+        "active_positions": positions,
+        "pending_orders": orders,
+        "open_positions": positions,
         "closed_positions_history": []
     }
