@@ -211,6 +211,10 @@ app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="stat
 # Mount mobile assets
 app.mount("/mobile/css", StaticFiles(directory=str(BASE_DIR / "frontend" / "mobile" / "css")), name="mobile_css")
 app.mount("/mobile/js", StaticFiles(directory=str(BASE_DIR / "frontend" / "mobile" / "js")), name="mobile_js")
+app.mount("/frontend/mobile_app/js", StaticFiles(directory=str(BASE_DIR / "frontend" / "mobile" / "js")), name="compat_mobile_app_js")
+app.mount("/frontend/mobile_app/css", StaticFiles(directory=str(BASE_DIR / "frontend" / "mobile" / "css")), name="compat_mobile_app_css")
+app.mount("/frontend/mobile_app", StaticFiles(directory=str(BASE_DIR / "frontend" / "mobile")), name="compat_mobile_app")
+app.mount("/mobile_app", StaticFiles(directory=str(BASE_DIR / "frontend" / "mobile")), name="compat_mobile_app2")
 
 # Mount chart assets
 app.mount("/chart/css", StaticFiles(directory=str(BASE_DIR / "frontend" / "chart" / "css")), name="chart_css")
@@ -218,6 +222,7 @@ app.mount("/chart/js", StaticFiles(directory=str(BASE_DIR / "frontend" / "chart"
 
 
 @app.get("/mobile")
+@app.get("/mobile_app")
 async def get_mobile_ui():
     """Serve Escanor Mobile HUD."""
     mobile_index = BASE_DIR / "frontend" / "mobile" / "index.html"
