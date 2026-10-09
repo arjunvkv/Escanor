@@ -495,6 +495,21 @@ export function initTradingViewChart(containerId = 'klineChart') {
     return null;
   }
 
+  // Patch removeOverlay to safely normalize string ID or object with id
+  // KLineCharts chart.removeOverlay expects an OverlayFilter object ({ id }).
+  // If a string ID is passed directly, KLineCharts evaluates filter.id as undefined,
+  // which matches and deletes EVERY overlay on the entire chart!
+  const rawRemoveOverlay = chart.removeOverlay.bind(chart);
+  chart.removeOverlay = function (target) {
+    if (typeof target === 'string' || typeof target === 'number') {
+      return rawRemoveOverlay({ id: String(target) });
+    }
+    if (target && typeof target === 'object' && target.id !== undefined) {
+      return rawRemoveOverlay({ ...target, id: String(target.id) });
+    }
+    return rawRemoveOverlay(target || {});
+  };
+
   chartInstance = chart;
 
   // Exact TradingView Dark Slate Theme Matching Image 2 (#1c1c1c)

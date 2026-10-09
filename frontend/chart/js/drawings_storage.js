@@ -19,10 +19,11 @@ export async function fetchServerDrawings(symbol = 'XAUUSD') {
   return [];
 }
 
-export function syncDrawingsToServer(symbol, chart, showToast = true) {
+export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast = true, immediate = false) {
   if (!chart) return;
   clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(async () => {
+
+  const doSync = async () => {
     try {
       const allOverlays = chart.getOverlays() || [];
       // Filter out temporary measure boxes or system markers
@@ -47,7 +48,13 @@ export function syncDrawingsToServer(symbol, chart, showToast = true) {
     } catch (err) {
       console.error('[Escanor Drawings] Save to server failed:', err);
     }
-  }, 400);
+  };
+
+  if (immediate) {
+    doSync();
+  } else {
+    saveTimeout = setTimeout(doSync, 250);
+  }
 }
 
 export function restoreDrawings(chart, drawingsList) {

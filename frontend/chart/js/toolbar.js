@@ -152,8 +152,11 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       const all = chart.getOverlays() || [];
       if (all.length > 0) {
         showTvConfirm('Clear Chart Drawings', `Remove all ${all.length} drawings on chart?`, () => {
-          all.forEach(ov => chart.removeOverlay(ov.id));
-          syncDrawingsToServer(currentSymbolRef, chart);
+          all.forEach(ov => chart.removeOverlay({ id: ov.id }));
+          if (window.__lineTradingManager) {
+            window.__lineTradingManager.clearAllLines();
+          }
+          syncDrawingsToServer(currentSymbolRef, chart, false, true);
           hideFloatingBar();
           showChartToast('Cleared all drawings');
         });
@@ -292,13 +295,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     if (!selectedOverlay) return;
     try {
       const id = selectedOverlay.id;
-      chart.removeOverlay(id);
+      chart.removeOverlay({ id });
       if (window.__lineTradingManager) {
         window.__lineTradingManager.removeLineOverlay(id);
       }
       selectedOverlay = null;
       hideFloatingBar();
-      syncDrawingsToServer(currentSymbolRef, chart);
+      syncDrawingsToServer(currentSymbolRef, chart, false, true);
       showChartToast('Deleted drawing');
     } catch (e) {
       console.warn('Error removing overlay:', e);
@@ -432,7 +435,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       const all = chart.getOverlays() || [];
       const measures = all.filter(o => o.name === 'measureBox');
       if (measures.length > 0) {
-        measures.forEach(m => chart.removeOverlay(m.id));
+        measures.forEach(m => chart.removeOverlay({ id: m.id }));
       }
     }
   });

@@ -61,11 +61,11 @@ export class ActiveOrdersEngine {
       const ticket = parseInt(parts[1], 10);
 
       if (prefix === 'pos' && !activeTickets.has(ticket)) {
-        try { this.chart.removeOverlay(ovId); } catch (_) {}
+        try { this.chart.removeOverlay({ id: ovId }); } catch (_) {}
         this.positionOverlays.delete(key);
         this.pendingModifications.delete(key);
       } else if (prefix === 'ord' && !pendingTickets.has(ticket)) {
-        try { this.chart.removeOverlay(ovId); } catch (_) {}
+        try { this.chart.removeOverlay({ id: ovId }); } catch (_) {}
         this.positionOverlays.delete(key);
         this.pendingModifications.delete(key);
       }
@@ -268,7 +268,7 @@ export class ActiveOrdersEngine {
         this.chart.overrideOverlay(Object.assign({ id: ovId, name: 'activeTradeOrder' }, options));
         return;
       } catch (_) {
-        try { this.chart.removeOverlay(ovId); } catch (e) {}
+        try { this.chart.removeOverlay({ id: ovId }); } catch (e) {}
         this.positionOverlays.delete(key);
       }
     }
@@ -286,7 +286,7 @@ export class ActiveOrdersEngine {
   _removeOrderLine(key) {
     const ovId = this.positionOverlays.get(key);
     if (ovId && this.chart) {
-      try { this.chart.removeOverlay(ovId); } catch (_) {}
+      try { this.chart.removeOverlay({ id: ovId }); } catch (_) {}
       this.positionOverlays.delete(key);
     }
   }

@@ -162,6 +162,11 @@ export class LineTradingManager {
 
   removeLineOverlay(overlayId) {
     const idStr = String(overlayId);
+    if (this.chart) {
+      try {
+        this.chart.removeOverlay({ id: idStr });
+      } catch (_) {}
+    }
     if (this.lines.has(idStr)) {
       this.lines.delete(idStr);
       this.saveToStorage();
@@ -169,6 +174,29 @@ export class LineTradingManager {
     if (this.selectedLineId === idStr) {
       this.selectedLineId = null;
       if (this.modalEl) this.modalEl.style.display = 'none';
+    }
+    syncDrawingsToServer(this.symbol, this.chart, false, true);
+  }
+
+  clearAllLines() {
+    this.lines.clear();
+    this.selectedLineId = null;
+    this.saveToStorage();
+    if (this.modalEl) this.modalEl.style.display = 'none';
+    syncDrawingsToServer(this.symbol, this.chart, false, true);
+  }
+
+  reconcileWithChart(chartOverlays = []) {
+    const activeOverlayIds = new Set((chartOverlays || []).map(ov => String(ov.id)));
+    let changed = false;
+    for (const id of Array.from(this.lines.keys())) {
+      if (!activeOverlayIds.has(id)) {
+        this.lines.delete(id);
+        changed = true;
+      }
+    }
+    if (changed) {
+      this.saveToStorage();
     }
   }
 
@@ -642,7 +670,6 @@ export class LineTradingManager {
     document.getElementById('tvLineDeleteBtn')?.addEventListener('click', () => {
       if (this.selectedLineId) {
         const idToDelete = this.selectedLineId;
-        try { this.chart.removeOverlay(idToDelete); } catch (_) {}
         this.removeLineOverlay(idToDelete);
         this.modalEl.style.display = 'none';
         showChartToast('Line deleted');
@@ -935,7 +962,6 @@ export class LineTradingManager {
           this.saveToStorage();
           showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Disarmed ${line.name}`);
         } else if (act === 'delete' && line) {
-          try { this.chart.removeOverlay(id); } catch (_) {}
           this.removeLineOverlay(id);
           showChartToast(`Deleted ${line.name}`);
         }

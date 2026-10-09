@@ -104,6 +104,9 @@ async function init() {
           lineTrading.registerLineOverlay(ov, ov.name);
         }
       }
+      lineTrading.reconcileWithChart(allOverlays);
+    } else {
+      lineTrading.reconcileWithChart([]);
     }
   } catch (err) {
     console.warn('[Escanor TV] Error restoring server drawings:', err);
