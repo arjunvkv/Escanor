@@ -242,6 +242,78 @@ async def trade_ticket_result(ticket: int):
 
 
 # =========================================================================
+# 🔔 GAUGE ALARMS & TELEGRAM ALERT DISPATCH
+# =========================================================================
+
+GAUGE_ALARMS_PATH = BASE_DIR / "data" / "gauge_alarms.json"
+DEFAULT_TELEGRAM_BOT_TOKEN = "8748826581:AAEoP9rXDeINirO7rov-TcE7ikkY3rkWC1M"
+DEFAULT_TELEGRAM_CHAT_ID = -1004324335052
+
+
+@app.get("/api/gauge_alarms")
+async def get_gauge_alarms():
+    """Load persistent gauge alarms from disk."""
+    if GAUGE_ALARMS_PATH.exists():
+        try:
+            with open(GAUGE_ALARMS_PATH, "r", encoding="utf-8") as f:
+                return JSONResponse(content=json.load(f))
+        except Exception as e:
+            logger.warning(f"Error reading gauge_alarms.json: {e}")
+    return JSONResponse(content={"alarms": []})
+
+
+@app.post("/api/gauge_alarms")
+async def save_gauge_alarms(req: Request):
+    """Save persistent gauge alarms to disk."""
+    try:
+        body = await req.json()
+        GAUGE_ALARMS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(GAUGE_ALARMS_PATH, "w", encoding="utf-8") as f:
+            json.dump(body, f, indent=2)
+        return JSONResponse(content={"status": "OK", "count": len(body.get("alarms", []))})
+    except Exception as e:
+        logger.error(f"Error saving gauge alarms: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/telegram/send_alert")
+async def send_telegram_alert(req: Request):
+    """Dispatch formatted alert message to Telegram channel/bot."""
+    try:
+        body = await req.json()
+        msg = body.get("message", "")
+        if not msg:
+            return JSONResponse(content={"status": "ERROR", "message": "Empty message"}, status_code=400)
+
+        bot_token = body.get("bot_token") or DEFAULT_TELEGRAM_BOT_TOKEN
+        chat_id = body.get("chat_id") or DEFAULT_TELEGRAM_CHAT_ID
+        parse_mode = body.get("parse_mode", "HTML")
+
+        def _send():
+            import urllib.request
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": msg,
+                "parse_mode": parse_mode,
+                "disable_web_page_preview": True
+            }
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req_tg = urllib.request.Request(
+                url, data=data_bytes, headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req_tg, timeout=8) as resp:
+                return resp.read().decode()
+
+        loop = asyncio.get_event_loop()
+        res_text = await loop.run_in_executor(None, _send)
+        return JSONResponse(content={"status": "OK", "telegram_response": json.loads(res_text)})
+    except Exception as e:
+        logger.error(f"Error sending Telegram alert: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+# =========================================================================
 # 🌐 UI STATIC ROUTES
 # =========================================================================
 

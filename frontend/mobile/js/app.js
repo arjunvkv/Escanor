@@ -18,6 +18,7 @@ import {
 import { renderMobileThermometers } from './thermometers.js';
 import { renderWindowHighLows } from './snake_engine.js';
 import { updateQuickLotBadge, renderLeadLagModalContent } from './modals.js';
+import { initGaugeAlarms, evaluateGaugeAlarms } from './gauge_alarms.js';
 
 let lastTelemetryData = null;
 let activeClosingTickets = new Set();
@@ -732,6 +733,7 @@ export function updateMobileUI(tel) {
 
   // 7. Mercury Gauges
   try { renderMobileThermometers(tel); } catch (e) { console.error('[Escanor] Thermo render error:', e); }
+  try { evaluateGaugeAlarms(tel); } catch (e) { console.error('[Escanor] Gauge alarms error:', e); }
 
   // 8. Peak/Trough Monitor
   try { renderWindowHighLows(tel); } catch (e) { console.error('[Escanor] Peak/Trough render error:', e); }
@@ -995,6 +997,7 @@ function boot() {
   console.log('[Escanor Mobile] Booting terminal...');
   updateQuickLotBadge();
   updateGlobalSessionsUI();
+  initGaugeAlarms();
   // Instant initial fetch so UI never starts blank
   fetchTelemetrySnapshot();
   setInterval(updateGlobalSessionsUI, 1000);
