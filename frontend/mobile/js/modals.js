@@ -613,7 +613,11 @@ export async function executeScalpTradeNow() {
 window.executeScalpTradeNow = executeScalpTradeNow;
 
 // Metric Reasoning Modal Logic
+let currentActiveMetricKey = null;
+
 export function openMetricModal(metricKey) {
+  currentActiveMetricKey = metricKey;
+  window.__activeMetricKey = metricKey;
   const modal = document.getElementById('metricDetailModal');
   if (!modal) return;
   modal.classList.remove('hidden');
@@ -622,10 +626,19 @@ export function openMetricModal(metricKey) {
 window.openMetricModal = openMetricModal;
 
 export function closeMetricModal() {
+  currentActiveMetricKey = null;
+  window.__activeMetricKey = null;
   const modal = document.getElementById('metricDetailModal');
   if (modal) modal.classList.add('hidden');
 }
 window.closeMetricModal = closeMetricModal;
+
+export function refreshActiveMetricModal() {
+  const modal = document.getElementById('metricDetailModal');
+  if (!modal || modal.classList.contains('hidden') || !currentActiveMetricKey) return;
+  updateMetricModalLiveTable(currentActiveMetricKey);
+}
+window.refreshActiveMetricModal = refreshActiveMetricModal;
 
 export function renderMetricModalContent(key) {
   const titleEl = document.getElementById('metricModalTitle');
@@ -921,19 +934,19 @@ export function renderMetricModalContent(key) {
 
   if (isGaugeMetric) {
     const horizons = getMetricTimeHorizonStats(key);
-    const rowsHtml = horizons.map(h => {
+    const rowsHtml = horizons.map((h, idx) => {
       const upWidth = Math.max(3, Math.min(97, h.upPct));
       const dnWidth = 100 - upWidth;
       return `
-        <tr class="border-b border-white/5 hover:bg-slate-900/40">
+        <tr class="border-b border-white/5 hover:bg-slate-900/40" id="mRow_${idx}">
           <td class="py-1 px-2 font-bold text-slate-300 text-[10px] whitespace-nowrap">${h.label}</td>
-          <td class="py-1 px-2 text-right text-emerald-300 font-bold text-[10px] whitespace-nowrap">${h.upSec}s <span class="text-[8.5px] text-emerald-400/80">(${h.upPct}%)</span></td>
-          <td class="py-1 px-2 text-right text-rose-300 font-bold text-[10px] whitespace-nowrap">${h.dnSec}s <span class="text-[8.5px] text-rose-400/80">(${h.dnPct}%)</span></td>
-          <td class="py-1 px-2 text-right text-amber-300 font-mono text-[9.5px] whitespace-nowrap">${h.flips}x</td>
+          <td class="py-1 px-2 text-right text-emerald-300 font-bold text-[10px] whitespace-nowrap" id="mUp_${idx}">${h.upSec}s <span class="text-[8.5px] text-emerald-400/80">(${h.upPct}%)</span></td>
+          <td class="py-1 px-2 text-right text-rose-300 font-bold text-[10px] whitespace-nowrap" id="mDn_${idx}">${h.dnSec}s <span class="text-[8.5px] text-rose-400/80">(${h.dnPct}%)</span></td>
+          <td class="py-1 px-2 text-right text-amber-300 font-mono text-[9.5px] whitespace-nowrap" id="mFlips_${idx}">${h.flips}x</td>
           <td class="py-1 px-2 text-center">
             <div class="w-16 h-2 rounded bg-slate-950 flex overflow-hidden border border-white/10 mx-auto">
-              <div style="width:${upWidth}%;" class="bg-emerald-500 h-full"></div>
-              <div style="width:${dnWidth}%;" class="bg-rose-500 h-full"></div>
+              <div id="mBarUp_${idx}" style="width:${upWidth}%;" class="bg-emerald-500 h-full transition-all duration-300"></div>
+              <div id="mBarDn_${idx}" style="width:${dnWidth}%;" class="bg-rose-500 h-full transition-all duration-300"></div>
             </div>
           </td>
         </tr>
@@ -944,10 +957,10 @@ export function renderMetricModalContent(key) {
       <div class="rounded-xl border border-amber-500/30 bg-[#060a16] p-2 space-y-1.5 shadow-md">
         <div class="flex items-center justify-between text-[10px] font-bold text-amber-300 px-1">
           <span class="flex items-center gap-1">
-            <span>⏱️</span>
-            <span>TIME STAYED IN UP vs DOWN STATES</span>
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span>LIVE STATE TIME & BAR DYNAMICS</span>
           </span>
-          <span class="text-[8.5px] text-slate-400 font-mono">1m • 3m • 5m • 10m • 15m • 30m • 1h</span>
+          <span class="text-[8.5px] text-emerald-400 font-mono">1s LIVE TICK</span>
         </div>
         <div class="overflow-x-auto rounded-lg border border-white/5">
           <table class="w-full text-left font-mono">
@@ -957,10 +970,10 @@ export function renderMetricModalContent(key) {
                 <th class="py-1 px-2 text-right text-emerald-400">UP / EXP</th>
                 <th class="py-1 px-2 text-right text-rose-400">DN / STALL</th>
                 <th class="py-1 px-2 text-right text-amber-400">FLIPS</th>
-                <th class="py-1 px-2 text-center text-slate-400">SPLIT</th>
+                <th class="py-1 px-2 text-center text-slate-400">SPLIT BAR</th>
               </tr>
             </thead>
-            <tbody class="divide-y divide-white/5">
+            <tbody id="metricHorizonTableBody" class="divide-y divide-white/5">
               ${rowsHtml}
             </tbody>
           </table>
@@ -971,6 +984,33 @@ export function renderMetricModalContent(key) {
 
   bodyEl.innerHTML = (timeTableHtml ? timeTableHtml : '') + info.html;
 }
+
+export function updateMetricModalLiveTable(key) {
+  const isGaugeMetric = ['velocity', 'cvd', 'footprint', 'impulse', 'silver', 'lead'].includes(key);
+  if (!isGaugeMetric) return;
+
+  const tbody = document.getElementById('metricHorizonTableBody');
+  if (!tbody) return;
+
+  const horizons = getMetricTimeHorizonStats(key);
+  horizons.forEach((h, idx) => {
+    const elUp = document.getElementById(`mUp_${idx}`);
+    const elDn = document.getElementById(`mDn_${idx}`);
+    const elFlips = document.getElementById(`mFlips_${idx}`);
+    const barUp = document.getElementById(`mBarUp_${idx}`);
+    const barDn = document.getElementById(`mBarDn_${idx}`);
+
+    if (elUp) elUp.innerHTML = `${h.upSec}s <span class="text-[8.5px] text-emerald-400/80">(${h.upPct}%)</span>`;
+    if (elDn) elDn.innerHTML = `${h.dnSec}s <span class="text-[8.5px] text-rose-400/80">(${h.dnPct}%)</span>`;
+    if (elFlips) elFlips.textContent = `${h.flips}x`;
+
+    const upWidth = Math.max(3, Math.min(97, h.upPct));
+    const dnWidth = 100 - upWidth;
+    if (barUp) barUp.style.width = `${upWidth}%`;
+    if (barDn) barDn.style.width = `${dnWidth}%`;
+  });
+}
+window.updateMetricModalLiveTable = updateMetricModalLiveTable;
 
 // Intermarket Lead/Lag Modal Logic (Cleaned up: Silver only in 2-line row table format)
 export function openLeadLagModal() {

@@ -18,7 +18,7 @@ import {
 import { renderMobileThermometers } from './thermometers.js';
 import { updateGaugeStoryNumbers } from './thermo_story_engine.js';
 import { renderWindowHighLows } from './snake_engine.js';
-import { updateQuickLotBadge, renderLeadLagModalContent } from './modals.js';
+import { updateQuickLotBadge, renderLeadLagModalContent, refreshActiveMetricModal } from './modals.js';
 import { initGaugeAlarms, evaluateGaugeAlarms } from './gauge_alarms.js';
 
 let lastTelemetryData = null;
@@ -777,6 +777,9 @@ export function updateMobileUI(tel) {
   if (leadModal && !leadModal.classList.contains('hidden')) {
     renderLeadLagModalContent(tel);
   }
+  try {
+    refreshActiveMetricModal();
+  } catch (e) {}
 }
 window.updateMobileUI = updateMobileUI;
 
