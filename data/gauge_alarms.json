@@ -1,0 +1,31 @@
+{
+  "alarms": [
+    {
+      "id": "alarm_1791548343312_punk",
+      "name": "Kinetic Momentum Surge",
+      "enabled": true,
+      "channel": "BOTH",
+      "logic": "ALL",
+      "cooldownSec": 30,
+      "lastTriggered": null,
+      "triggerCount": 0,
+      "conditions": [
+        {
+          "metric": "vel_1m",
+          "op": ">=",
+          "value": 100
+        },
+        {
+          "metric": "cvd",
+          "op": ">=",
+          "value": 30
+        },
+        {
+          "metric": "fp",
+          "op": ">=",
+          "value": 140
+        }
+      ]
+    }
+  ]
+}

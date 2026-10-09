@@ -54,9 +54,8 @@ export const GAUGE_METRICS = {
 export const QUICK_PRESETS = [
   {
     name: '🚀 Kinetic Momentum Surge',
-    channel: 'BOTH',
     logic: 'ALL',
-    cooldownSec: 60,
+    cooldownSec: 10,
     conditions: [
       { metric: 'vel_1m', op: '>=', value: 100 },
       { metric: 'cvd', op: '>=', value: 200 }
@@ -64,9 +63,8 @@ export const QUICK_PRESETS = [
   },
   {
     name: '🛑 Liquidity Dump Cascade',
-    channel: 'BOTH',
     logic: 'ALL',
-    cooldownSec: 60,
+    cooldownSec: 10,
     conditions: [
       { metric: 'vel_1m', op: '>=', value: 100 },
       { metric: 'cvd', op: '<=', value: -200 }
@@ -74,9 +72,8 @@ export const QUICK_PRESETS = [
   },
   {
     name: '🥈 Silver Bull Beta Lead',
-    channel: 'BOTH',
     logic: 'ALL',
-    cooldownSec: 60,
+    cooldownSec: 10,
     conditions: [
       { metric: 'silver', op: '>=', value: 15 },
       { metric: 'impulse', op: '>=', value: 0.8 }
@@ -84,9 +81,8 @@ export const QUICK_PRESETS = [
   },
   {
     name: '🌊 CVD Absorption Divergence',
-    channel: 'BOTH',
     logic: 'ALL',
-    cooldownSec: 60,
+    cooldownSec: 10,
     conditions: [
       { metric: 'impulse', op: '<=', value: -0.5 },
       { metric: 'cvd', op: '>=', value: 300 }
@@ -94,9 +90,8 @@ export const QUICK_PRESETS = [
   },
   {
     name: '🤫 Quiet Retest Floor (Prong A)',
-    channel: 'BOTH',
     logic: 'ALL',
-    cooldownSec: 120,
+    cooldownSec: 10,
     conditions: [
       { metric: 'vel_1m', op: '<=', value: 40 },
       { metric: 'vel_5m', op: '<=', value: 45 }
@@ -179,87 +174,7 @@ window.playPcAlarmSound = playPcAlarmSound;
 // 📱 TELEGRAM DISPATCHER
 // =============================================================================
 
-export function getTelegramConfig() {
-  try {
-    const raw = localStorage.getItem(TELEGRAM_CONFIG_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch (e) {}
-  return {
-    bot_token: '8748826581:AAEoP9rXDeINirO7rov-TcE7ikkY3rkWC1M',
-    chat_id: -1004324335052
-  };
-}
-
-export function saveTelegramConfig(cfg) {
-  try {
-    localStorage.setItem(TELEGRAM_CONFIG_KEY, JSON.stringify(cfg));
-  } catch (e) {}
-}
-
-export async function sendTelegramAlert(alarm, liveValues) {
-  const cfg = getTelegramConfig();
-  const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
-
-  let condDetails = alarm.conditions.map(c => {
-    const mCfg = GAUGE_METRICS[c.metric] || {};
-    const liveVal = liveValues[c.metric] !== undefined ? liveValues[c.metric] : '--';
-    return `• <b>${mCfg.label || c.metric}</b>: Current <code>${liveVal}</code> (Target ${c.op} ${c.value})`;
-  }).join('\n');
-
-  const message = `🚨 <b>ESCANOR GAUGE ALARM TRIGGERED</b> 🚨\n\n` +
-    `🏷️ <b>Rule:</b> ${alarm.name}\n` +
-    `⚡ <b>Trigger Logic:</b> ${alarm.logic || 'ALL'}\n` +
-    `🕒 <b>Time:</b> ${timeStr}\n\n` +
-    `📊 <b>Gauge Conditions:</b>\n${condDetails}\n\n` +
-    `📈 <b>Live Tape Physics:</b>\n` +
-    `• Vel 1M: <code>${liveValues.vel_1m} t/m</code> · 5M: <code>${liveValues.vel_5m} t/m</code>\n` +
-    `• CVD Delta: <code>${liveValues.cvd >= 0 ? '+' : ''}${liveValues.cvd}L</code>\n` +
-    `• 4M Footprint: <code>${liveValues.fp >= 0 ? '+' : ''}${liveValues.fp}L</code>\n` +
-    `• Impulse: <code>${liveValues.impulse >= 0 ? '+' : ''}${liveValues.impulse} pt/m</code>\n` +
-    `• Silver Shift: <code>${liveValues.silver >= 0 ? '+' : ''}${liveValues.silver}</code>`;
-
-  try {
-    const res = await fetch('/api/telegram/send_alert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        bot_token: cfg.bot_token,
-        chat_id: cfg.chat_id
-      })
-    });
-    const data = await res.json();
-    return data && data.status === 'OK';
-  } catch (err) {
-    console.error('[GaugeAlarms] Telegram dispatch failed:', err);
-    return false;
-  }
-}
-
-export async function testTelegramPing() {
-  const cfg = getTelegramConfig();
-  const timeStr = new Date().toLocaleTimeString();
-  const message = `🔔 <b>Escanor Gauge Alarms — Test Connection</b>\n\n` +
-    `✔ Telegram alert bot communication verified successfully!\n` +
-    `🕒 <b>Timestamp:</b> ${timeStr}\n` +
-    `📱 <b>Chat ID:</b> <code>${cfg.chat_id}</code>`;
-
-  try {
-    const res = await fetch('/api/telegram/send_alert', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        bot_token: cfg.bot_token,
-        chat_id: cfg.chat_id
-      })
-    });
-    const data = await res.json();
-    return data && data.status === 'OK';
-  } catch (err) {
-    return false;
-  }
-}
+// (Telegram dispatch removed per user instruction — dedicated PC Audio Chime only)
 
 // =============================================================================
 // 🧭 ALARMS STORAGE & SYNC
@@ -409,61 +324,8 @@ function fireAlarm(alarm, vals) {
   saveAlarms();
   renderActiveAlarmsList();
 
-  const channel = alarm.channel || 'BOTH';
-
-  // 1. PC Audio & Visual Notification
-  if (channel === 'PC' || channel === 'BOTH') {
-    playPcAlarmSound('alarm');
-    showAlarmBanner(alarm, vals);
-
-    // Desktop Notification API
-    if ('Notification' in window && Notification.permission === 'granted') {
-      try {
-        new Notification(`🚨 Escanor Alarm: ${alarm.name}`, {
-          body: `Triggered at ${new Date().toLocaleTimeString()}! Tap to inspect.`,
-          icon: '/favicon.ico'
-        });
-      } catch (e) {}
-    }
-  }
-
-  // 2. Telegram Bot Dispatch
-  if (channel === 'TELEGRAM' || channel === 'BOTH') {
-    sendTelegramAlert(alarm, vals);
-  }
-}
-
-function showAlarmBanner(alarm, vals) {
-  let el = document.getElementById('tvAlarmBanner');
-  if (!el) {
-    el = document.createElement('div');
-    el.id = 'tvAlarmBanner';
-    el.className = 'fixed top-3 left-1/2 -translate-x-1/2 z-[9999] w-[92%] max-w-sm p-3 rounded-xl bg-[#0c1223]/95 border-2 border-amber-400 shadow-[0_0_25px_rgba(251,191,36,0.5)] font-mono text-slate-100 flex flex-col gap-1 backdrop-blur-md transition-all duration-300 animate-bounce';
-    document.body.appendChild(el);
-  }
-
-  const condText = alarm.conditions.map(c => `${c.metric} ${c.op} ${c.value}`).join(' & ');
-
-  el.innerHTML = `
-    <div class="flex items-center justify-between">
-      <div class="flex items-center gap-1.5 font-black text-amber-300 text-xs tracking-wider">
-        <span>🚨</span>
-        <span>${alarm.name}</span>
-      </div>
-      <button onclick="this.parentElement.parentElement.remove()" class="text-slate-400 hover:text-white text-xs px-1">✕</button>
-    </div>
-    <div class="text-[10px] text-emerald-400 font-bold">${condText}</div>
-    <div class="text-[9px] text-slate-400 flex items-center justify-between border-t border-white/10 pt-1 mt-0.5">
-      <span>Vel: ${vals.vel_1m} | CVD: ${vals.cvd >= 0 ? '+' : ''}${vals.cvd} | Imp: ${vals.impulse}</span>
-      <span class="text-amber-400 font-bold">${alarm.channel}</span>
-    </div>
-  `;
-
-  el.style.display = 'flex';
-  clearTimeout(window.__alarmBannerTimer);
-  window.__alarmBannerTimer = setTimeout(() => {
-    if (el) el.style.display = 'none';
-  }, 7500);
+  // Pure PC Audio Chime Alert (No toast banner, No Telegram)
+  playPcAlarmSound('alarm');
 }
 
 // =============================================================================
@@ -510,7 +372,6 @@ export function openGaugeAlarmsModal() {
   try { getAudioContext(); } catch (e) {}
   try { switchAlarmsTab('active'); } catch (e) {}
   try { renderActiveAlarmsList(); } catch (e) {}
-  try { renderTelegramTab(); } catch (e) {}
 }
 window.openGaugeAlarmsModal = openGaugeAlarmsModal;
 window.__realOpenGaugeAlarmsModal = openGaugeAlarmsModal;
@@ -527,22 +388,16 @@ window.closeGaugeAlarmsModal = closeGaugeAlarmsModal;
 export function switchAlarmsTab(tab) {
   const tabActive = document.getElementById('alarmTabBtnActive');
   const tabCreate = document.getElementById('alarmTabBtnCreate');
-  const tabTg = document.getElementById('alarmTabBtnTg');
 
   const contentActive = document.getElementById('alarmContentActive');
   const contentCreate = document.getElementById('alarmContentCreate');
-  const contentTg = document.getElementById('alarmContentTg');
 
-  [tabActive, tabCreate, tabTg].forEach(t => t?.classList.remove('border-amber-400', 'text-amber-300', 'bg-amber-500/10'));
-  [contentActive, contentCreate, contentTg].forEach(c => c?.classList.add('hidden'));
+  [tabActive, tabCreate].forEach(t => t?.classList.remove('border-amber-400', 'text-amber-300', 'bg-amber-500/10'));
+  [contentActive, contentCreate].forEach(c => c?.classList.add('hidden'));
 
   if (tab === 'create') {
     tabCreate?.classList.add('border-amber-400', 'text-amber-300', 'bg-amber-500/10');
     contentCreate?.classList.remove('hidden');
-  } else if (tab === 'tg') {
-    tabTg?.classList.add('border-amber-400', 'text-amber-300', 'bg-amber-500/10');
-    contentTg?.classList.remove('hidden');
-    renderTelegramTab();
   } else {
     tabActive?.classList.add('border-amber-400', 'text-amber-300', 'bg-amber-500/10');
     contentActive?.classList.remove('hidden');
@@ -571,8 +426,6 @@ export function renderActiveAlarmsList() {
 
   listEl.innerHTML = alarms.map((alarm, idx) => {
     const isArmed = alarm.enabled;
-    const channelBadge = alarm.channel === 'BOTH' ? '⚡ PC + TELEGRAM' : (alarm.channel === 'PC' ? '🖥️ PC ONLY' : '📱 TELEGRAM');
-    const channelColor = alarm.channel === 'BOTH' ? 'text-amber-300 border-amber-400/40 bg-amber-500/10' : (alarm.channel === 'PC' ? 'text-cyan-300 border-cyan-400/40 bg-cyan-500/10' : 'text-blue-300 border-blue-400/40 bg-blue-500/10');
 
     const condList = alarm.conditions.map(c => {
       const mCfg = GAUGE_METRICS[c.metric] || {};
@@ -593,7 +446,6 @@ export function renderActiveAlarmsList() {
             <span class="font-bold text-xs ${isArmed ? 'text-slate-100' : 'text-slate-400'}">${alarm.name}</span>
           </div>
           <div class="flex items-center gap-1">
-            <span class="px-1.5 py-0.5 rounded text-[8px] font-bold border ${channelColor}">${channelBadge}</span>
             <button onclick="testAlarmTrigger('${alarm.id}')" class="p-1 text-slate-400 hover:text-amber-300 text-[10px]" title="Test Trigger Alarm">🔔</button>
             <button onclick="deleteAlarm('${alarm.id}')" class="p-1 text-red-400 hover:text-red-300 text-[10px]" title="Delete Alarm">✕</button>
           </div>
@@ -658,10 +510,9 @@ export function resetCreatorForm(preset = null) {
 
   const cooldownSel = document.getElementById('alarmCooldownSelect');
   if (cooldownSel) {
-    cooldownSel.value = preset?.cooldownSec !== undefined ? String(preset.cooldownSec) : '60';
+    cooldownSel.value = preset?.cooldownSec !== undefined ? String(preset.cooldownSec) : '10';
   }
 
-  setCreatorChannel(creatorChannel);
   setCreatorLogic(creatorLogic);
 
   if (preset && Array.isArray(preset.conditions)) {
@@ -684,18 +535,6 @@ window.applyQuickPreset = applyQuickPreset;
 
 export function setCreatorChannel(ch) {
   creatorChannel = ch;
-  ['btnChanBoth', 'btnChanPc', 'btnChanTg'].forEach(id => {
-    const b = document.getElementById(id);
-    b?.classList.remove('bg-amber-500', 'text-black', 'border-amber-400');
-    b?.classList.add('bg-slate-900', 'text-slate-300', 'border-white/10');
-  });
-
-  const activeId = ch === 'BOTH' ? 'btnChanBoth' : (ch === 'PC' ? 'btnChanPc' : 'btnChanTg');
-  const activeBtn = document.getElementById(activeId);
-  if (activeBtn) {
-    activeBtn.classList.remove('bg-slate-900', 'text-slate-300', 'border-white/10');
-    activeBtn.classList.add('bg-amber-500', 'text-black', 'border-amber-400', 'font-black');
-  }
 }
 window.setCreatorChannel = setCreatorChannel;
 
@@ -814,13 +653,13 @@ export function saveCreatedAlarm() {
   const cooldownSel = document.getElementById('alarmCooldownSelect');
 
   const name = nameInput?.value?.trim() || 'Custom Gauge Alarm';
-  const cooldownSec = Number(cooldownSel?.value || 60);
+  const cooldownSec = Number(cooldownSel?.value || 10);
 
   const newAlarm = {
     id: `alarm_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
     name,
     enabled: true,
-    channel: creatorChannel,
+    channel: 'PC',
     logic: creatorLogic,
     cooldownSec,
     lastTriggered: null,
@@ -834,47 +673,3 @@ export function saveCreatedAlarm() {
   playPcAlarmSound('ding');
 }
 window.saveCreatedAlarm = saveCreatedAlarm;
-
-// =============================================================================
-// ⚙️ TELEGRAM SETTINGS TAB
-// =============================================================================
-
-export function renderTelegramTab() {
-  const cfg = getTelegramConfig();
-  const tokenInp = document.getElementById('tgBotTokenInput');
-  const chatInp = document.getElementById('tgChatIdInput');
-
-  if (tokenInp) tokenInp.value = cfg.bot_token || '';
-  if (chatInp) chatInp.value = cfg.chat_id || '';
-}
-
-export function saveTelegramSettings() {
-  const tokenInp = document.getElementById('tgBotTokenInput');
-  const chatInp = document.getElementById('tgChatIdInput');
-
-  const bot_token = tokenInp?.value?.trim() || '';
-  const chat_id = chatInp?.value?.trim() || '';
-
-  saveTelegramConfig({ bot_token, chat_id });
-  alert('✔ Telegram Bot configuration saved!');
-}
-window.saveTelegramSettings = saveTelegramSettings;
-
-export async function handleTestTelegramClick() {
-  const btn = document.getElementById('btnTestTelegram');
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ Sending test...';
-  }
-
-  const ok = await testTelegramPing();
-
-  if (btn) {
-    btn.disabled = false;
-    btn.textContent = ok ? '✔ Message Sent!' : '❌ Failed (Check Bot)';
-    setTimeout(() => {
-      btn.textContent = '📱 Send Test Message';
-    }, 2500);
-  }
-}
-window.handleTestTelegramClick = handleTestTelegramClick;

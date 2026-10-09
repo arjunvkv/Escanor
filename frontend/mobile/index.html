@@ -795,22 +795,19 @@
           <span class="text-base text-amber-400">🔔</span>
           <div>
             <div class="font-black text-xs uppercase tracking-wider text-amber-300">GAUGE PHYSICS ALARMS</div>
-            <div class="text-[9.5px] text-slate-400">PC CHIME & TELEGRAM • MULTI-CRITERIA ALERTS</div>
+            <div class="text-[9.5px] text-slate-400">AUDIO CHIME • MULTI-CRITERIA ALERTS</div>
           </div>
         </div>
         <button onclick="closeGaugeAlarmsModal()" class="w-7 h-7 rounded-lg bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs border border-white/10 active:scale-95 transition">✕</button>
       </div>
 
       <!-- Tab Navigation -->
-      <div class="grid grid-cols-3 border-b border-white/10 bg-slate-950/40 text-[10px] font-bold">
+      <div class="grid grid-cols-2 border-b border-white/10 bg-slate-950/40 text-[10px] font-bold">
         <button id="alarmTabBtnActive" onclick="switchAlarmsTab('active')" class="py-2.5 border-b-2 border-amber-400 text-amber-300 bg-amber-500/10 transition active:scale-95">
           ACTIVE ALARMS
         </button>
         <button id="alarmTabBtnCreate" onclick="switchAlarmsTab('create')" class="py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition active:scale-95">
           + NEW ALARM
-        </button>
-        <button id="alarmTabBtnTg" onclick="switchAlarmsTab('tg')" class="py-2.5 border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition active:scale-95">
-          ⚙ TELEGRAM
         </button>
       </div>
 
@@ -849,25 +846,6 @@
             <input type="text" id="alarmNameInput" value="Kinetic Momentum Surge" class="w-full bg-slate-950 border border-amber-500/40 rounded-lg p-2 text-xs text-white font-mono focus:border-amber-400 outline-none" placeholder="e.g. Velocity 100+ and CVD Surge"/>
           </div>
 
-          <!-- Notification Channel Selector -->
-          <div class="space-y-1">
-            <label class="text-[9px] text-slate-300 font-bold block">ALERT DESTINATION</label>
-            <div class="grid grid-cols-3 gap-1.5">
-              <button type="button" id="btnChanBoth" onclick="setCreatorChannel('BOTH')" class="py-1.5 rounded-lg bg-amber-500 text-black border border-amber-400 font-black text-[10px] text-center active:scale-95 transition">
-                ⚡ BOTH
-              </button>
-              <button type="button" id="btnChanPc" onclick="setCreatorChannel('PC')" class="py-1.5 rounded-lg bg-slate-900 text-slate-300 border border-white/10 font-bold text-[10px] text-center active:scale-95 transition">
-                🖥️ PC ONLY
-              </button>
-              <button type="button" id="btnChanTg" onclick="setCreatorChannel('TELEGRAM')" class="py-1.5 rounded-lg bg-slate-900 text-slate-300 border border-white/10 font-bold text-[10px] text-center active:scale-95 transition">
-                📱 TELEGRAM
-              </button>
-            </div>
-            <div class="text-[8px] text-slate-500">
-              PC: Web Audio synthesizer chime + screen toast banner. Telegram: Live message via bot.
-            </div>
-          </div>
-
           <!-- Combination Match Logic -->
           <div class="space-y-1">
             <div class="flex items-center justify-between">
@@ -898,8 +876,9 @@
             <div>
               <label class="text-[8px] text-slate-400 block mb-0.5">Alert Cooldown</label>
               <select id="alarmCooldownSelect" class="w-full bg-slate-950 border border-white/10 rounded-lg p-1.5 text-[10px] text-slate-200 font-mono outline-none">
+                <option value="10" selected>10 Seconds (Default)</option>
                 <option value="30">30 Seconds</option>
-                <option value="60" selected>1 Minute</option>
+                <option value="60">1 Minute</option>
                 <option value="120">2 Minutes</option>
                 <option value="300">5 Minutes</option>
                 <option value="-1">Once Only (Disable)</option>
@@ -908,35 +887,6 @@
             <div class="flex items-end">
               <button type="button" onclick="saveCreatedAlarm()" class="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white font-black text-xs uppercase tracking-wider shadow-lg transition cursor-pointer flex items-center justify-center gap-1">
                 <span>💾 ARM ALARM</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- Tab 3: Telegram Settings -->
-        <div id="alarmContentTg" class="hidden space-y-3">
-          <div class="p-2.5 rounded-xl bg-slate-900 border border-amber-500/30 space-y-2">
-            <div class="font-bold text-xs text-amber-300">TELEGRAM BOT INTEGRATION</div>
-            <div class="text-[9px] text-slate-400 leading-relaxed">
-              Alerts are dispatched directly to your Telegram channel or personal chat via the Alpha Desk Bot.
-            </div>
-
-            <div class="space-y-1 pt-1">
-              <label class="text-[8px] text-slate-400 block">Bot Token</label>
-              <input type="password" id="tgBotTokenInput" class="w-full bg-slate-950 border border-white/10 rounded-lg p-1.5 text-[10px] text-slate-200 font-mono outline-none"/>
-            </div>
-
-            <div class="space-y-1">
-              <label class="text-[8px] text-slate-400 block">Target Chat ID</label>
-              <input type="text" id="tgChatIdInput" class="w-full bg-slate-950 border border-white/10 rounded-lg p-1.5 text-[10px] text-slate-200 font-mono outline-none"/>
-            </div>
-
-            <div class="grid grid-cols-2 gap-2 pt-2">
-              <button type="button" id="btnTestTelegram" onclick="handleTestTelegramClick()" class="py-2 rounded-lg bg-blue-900/80 hover:bg-blue-800 text-blue-200 font-black text-[10px] border border-blue-500/40 active:scale-95 transition">
-                📱 Send Test Message
-              </button>
-              <button type="button" onclick="saveTelegramSettings()" class="py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-[10px] active:scale-95 transition">
-                💾 Save Settings
               </button>
             </div>
           </div>

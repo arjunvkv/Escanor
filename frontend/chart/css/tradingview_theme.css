@@ -1241,18 +1241,25 @@ html, body {
   background: #2a2e39;
   border: none;
   color: #d1d4dc;
-  border-radius: 3px;
-  width: 20px;
-  height: 20px;
-  font-size: 10px;
+  border-radius: 4px;
+  width: 22px;
+  height: 22px;
+  font-size: 11px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  touch-action: manipulation;
+  user-select: none;
+  pointer-events: auto;
+  transition: background 0.15s, transform 0.1s;
 }
 .tv-hud-act-btn:hover {
   background: #363a45;
   color: #ffffff;
+}
+.tv-hud-act-btn:active {
+  transform: scale(0.92);
 }
 .tv-hud-act-btn.delete:hover {
   background: #ef4444;

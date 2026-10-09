@@ -146,6 +146,7 @@ export class LineTradingManager {
   _init() {
     this.loadFromStorage();
     this._bindModalEvents();
+    this._bindHudEvents();
     this._startCountdownWatchdog();
   }
 
@@ -850,7 +851,71 @@ export class LineTradingManager {
   // =========================================================================
   // 🧭 REDESIGNED COMPACT BOTTOM-LEFT FLOATING HUD
   // =========================================================================
-  renderHud() {
+  _bindHudEvents() {
+    if (!this.hudEl) return;
+
+    // Use permanent event delegation so buttons ALWAYS receive events on the very first click
+    this.hudEl.addEventListener('click', (e) => {
+      // 1. Position Kill Button
+      const killBtn = e.target.closest('.tv-hud-kill-btn');
+      if (killBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        const ticket = killBtn.getAttribute('data-ticket');
+        if (ticket) this.killTrade(ticket);
+        return;
+      }
+
+      // 2. Kill All Positions Button
+      const killAllBtn = e.target.closest('#tvHudKillAllBtn');
+      if (killAllBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        this.killAllTrades();
+        return;
+      }
+
+      // 3. Line Action Buttons (Settings, Toggle/Pause, Delete)
+      const actBtn = e.target.closest('.tv-hud-act-btn');
+      if (actBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        const act = actBtn.getAttribute('data-act');
+        const id = actBtn.getAttribute('data-id');
+        const line = this.lines.get(id);
+
+        if (act === 'settings') {
+          this.openSettingsModal(id);
+        } else if (act === 'toggle' && line) {
+          line.isArmed = !line.isArmed;
+          this.applyLineColor(id);
+          this.saveToStorage();
+          showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Paused ${line.name}`);
+          this.renderHud(true);
+        } else if (act === 'delete' && line) {
+          this.removeLineOverlay(id);
+          showChartToast(`Deleted ${line.name}`);
+        }
+        return;
+      }
+
+      // 4. Minimize / Expand Toggle Button
+      const minBtn = e.target.closest('#tvHudMinBtn');
+      if (minBtn) {
+        e.stopPropagation();
+        e.preventDefault();
+        const bodyList = document.getElementById('tvHudBodyList');
+        if (bodyList) {
+          const isHidden = bodyList.style.display === 'none';
+          bodyList.style.display = isHidden ? 'flex' : 'none';
+          minBtn.textContent = isHidden ? '▼' : '▲';
+        }
+        return;
+      }
+    });
+  }
+
+  renderHud(forceFull = false) {
     if (!this.hudEl) return;
 
     const allLines = Array.from(this.lines.values());
@@ -858,6 +923,7 @@ export class LineTradingManager {
 
     if (allLines.length === 0 && activePositions.length === 0) {
       this.hudEl.style.display = 'none';
+      this._lastHudStructureKey = null;
       return;
     }
 
@@ -876,6 +942,97 @@ export class LineTradingManager {
       headerCount = String(activePositions.length);
     }
 
+    // Build unique structural signature
+    const structureKey = `${activePositions.map(p => p.ticket).join(',')}|${allLines.map(l => `${l.overlayId}:${l.isArmed}:${l.actionType}:${l.direction}:${l.name}`).join(',')}`;
+
+    // If structure is identical and body exists, perform non-destructive in-place DOM update!
+    const bodyList = document.getElementById('tvHudBodyList');
+    if (!forceFull && this._lastHudStructureKey === structureKey && bodyList) {
+      // 1. Update header title & count
+      const titleEl = this.hudEl.querySelector('.tv-hud-title');
+      const countEl = this.hudEl.querySelector('.tv-hud-count');
+      if (titleEl && titleEl.textContent !== headerTitle) titleEl.textContent = headerTitle;
+      if (countEl && countEl.textContent !== headerCount) countEl.textContent = headerCount;
+
+      // 2. Update active trades in-place
+      for (const pos of activePositions) {
+        const ticket = Number(pos.ticket);
+        const itemEl = this.hudEl.querySelector(`.tv-hud-pos-item[data-ticket="${ticket}"]`);
+        if (!itemEl) continue;
+
+        const isBuy = pos.type === 'BUY' || pos.type === 0 || String(pos.type).toUpperCase().includes('BUY');
+        const openPrice = Number(pos.price_open !== undefined ? pos.price_open : pos.price);
+        const volume = Number(pos.volume || 0.50);
+
+        let profitPts = Number(pos.profit_pts !== undefined ? pos.profit_pts : 0);
+        let profitDollar = Number(pos.profit !== undefined ? pos.profit : 0);
+        if (this.currentSpot && openPrice > 0) {
+          const curP = isBuy ? this.currentSpot : (this.currentAsk || this.currentSpot);
+          profitPts = isBuy ? (curP - openPrice) : (openPrice - curP);
+          profitDollar = profitPts * volume * 100;
+        }
+
+        const profitPips = profitPts * 10;
+        const isProfit = profitDollar >= 0;
+        const sign = isProfit ? '+' : '-';
+        const dollarStr = `${sign}$${Math.abs(profitDollar).toFixed(2)}`;
+        const pipsStr = `${sign}${Math.abs(profitPips).toFixed(1)} pips (${sign}${Math.abs(profitPts).toFixed(1)} pt)`;
+
+        const pnlEl = itemEl.querySelector('.tv-hud-pos-pnl');
+        if (pnlEl) {
+          pnlEl.className = `tv-hud-pos-pnl ${isProfit ? 'profit' : 'loss'}`;
+          const dollarEl = pnlEl.querySelector('.tv-pnl-dollar');
+          const pipsEl = pnlEl.querySelector('.tv-pnl-pips');
+          if (dollarEl && dollarEl.textContent !== dollarStr) dollarEl.textContent = dollarStr;
+          if (pipsEl && pipsEl.textContent !== pipsStr) pipsEl.textContent = pipsStr;
+        }
+      }
+
+      // 3. Update line distances & countdowns in-place
+      for (const line of allLines) {
+        const itemEl = this.hudEl.querySelector(`.tv-hud-item[data-line-id="${line.overlayId}"]`);
+        if (!itemEl) continue;
+
+        let distStr = '-- pt';
+        if (line._lastPriceDist !== undefined) {
+          const priceStr = line._lastCalculatedPrice ? `$${line._lastCalculatedPrice.toFixed(2)} • ` : '';
+          distStr = `${priceStr}${line._lastPriceDist.toFixed(1)} pt away`;
+        } else if (line._lastCalculatedPrice) {
+          distStr = `@ $${line._lastCalculatedPrice.toFixed(2)}`;
+        }
+
+        const distEl = itemEl.querySelector('.tv-hud-item-dist');
+        if (distEl && distEl.textContent !== distStr) distEl.textContent = distStr;
+
+        let timerHtml = '';
+        if (line.triggeredCountdownEnd) {
+          const remSec = Math.max(0, Math.floor((line.triggeredCountdownEnd - Date.now()) / 1000));
+          if (remSec > 0) {
+            const m = Math.floor(remSec / 60).toString().padStart(2, '0');
+            const s = (remSec % 60).toString().padStart(2, '0');
+            timerHtml = `⏳ ${m}:${s}`;
+          }
+        }
+        const timerEl = itemEl.querySelector('.tv-hud-timer');
+        if (timerEl) {
+          if (timerHtml) {
+            if (timerEl.textContent !== timerHtml) timerEl.textContent = timerHtml;
+          } else {
+            timerEl.remove();
+          }
+        } else if (timerHtml) {
+          const distNode = itemEl.querySelector('.tv-hud-item-dist');
+          if (distNode) {
+            distNode.insertAdjacentHTML('afterend', `<span class="tv-hud-timer">${timerHtml}</span>`);
+          }
+        }
+      }
+      return;
+    }
+
+    // Structure changed or forced full rebuild:
+    this._lastHudStructureKey = structureKey;
+
     let html = `
       <div class="tv-hud-header">
         <div class="tv-hud-title-box">
@@ -883,7 +1040,7 @@ export class LineTradingManager {
           <span class="tv-hud-title">${headerTitle}</span>
           <span class="tv-hud-count">${headerCount}</span>
         </div>
-        <button id="tvHudMinBtn" class="tv-hud-min-btn" title="Minimize">▼</button>
+        <button id="tvHudMinBtn" class="tv-hud-min-btn" title="Minimize" style="touch-action: manipulation; cursor: pointer;">▼</button>
       </div>
       <div class="tv-hud-body" id="tvHudBodyList">
     `;
@@ -893,7 +1050,7 @@ export class LineTradingManager {
       html += `
         <div class="tv-hud-section-label-row">
           <span class="tv-hud-section-label">⚡ ACTIVE TRADES (${activePositions.length})</span>
-          ${activePositions.length > 1 ? `<button class="tv-hud-kill-all-btn" id="tvHudKillAllBtn" title="Flatten All Positions">KILL ALL</button>` : ''}
+          ${activePositions.length > 1 ? `<button class="tv-hud-kill-all-btn" id="tvHudKillAllBtn" title="Flatten All Positions" style="touch-action: manipulation; cursor: pointer;">KILL ALL</button>` : ''}
         </div>
       `;
 
@@ -928,7 +1085,7 @@ export class LineTradingManager {
                 <span class="tv-hud-pos-ticket">#${ticket}</span>
                 <span class="tv-hud-pos-open">@ $${openPrice.toFixed(2)}</span>
               </div>
-              <button class="tv-hud-kill-btn" data-ticket="${ticket}" title="Kill / Close #${ticket} immediately">
+              <button class="tv-hud-kill-btn" data-ticket="${ticket}" title="Kill / Close #${ticket} immediately" style="touch-action: manipulation; cursor: pointer;">
                 <span class="tv-kill-icon">✕</span>
                 <span>KILL</span>
               </button>
@@ -998,11 +1155,11 @@ export class LineTradingManager {
               <span class="tv-hud-item-dist">${distStr}</span>
               ${timerHtml}
               <div class="tv-hud-item-actions">
-                <button class="tv-hud-act-btn" data-act="settings" data-id="${line.overlayId}" title="Settings">⚙</button>
-                <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${isArmed ? 'Pause / Disarm' : 'Activate / Arm'}">
+                <button class="tv-hud-act-btn" data-act="settings" data-id="${line.overlayId}" title="Settings" style="touch-action: manipulation; cursor: pointer;">⚙</button>
+                <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${isArmed ? 'Pause / Disarm' : 'Activate / Arm'}" style="touch-action: manipulation; cursor: pointer;">
                   ${isArmed ? '⏸' : '▶'}
                 </button>
-                <button class="tv-hud-act-btn delete" data-act="delete" data-id="${line.overlayId}" title="Delete">✕</button>
+                <button class="tv-hud-act-btn delete" data-act="delete" data-id="${line.overlayId}" title="Delete" style="touch-action: manipulation; cursor: pointer;">✕</button>
               </div>
             </div>
           </div>
@@ -1012,52 +1169,5 @@ export class LineTradingManager {
 
     html += `</div>`;
     this.hudEl.innerHTML = html;
-
-    // Attach actions for position kill buttons
-    this.hudEl.querySelectorAll('.tv-hud-kill-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const ticket = btn.getAttribute('data-ticket');
-        if (ticket) this.killTrade(ticket);
-      });
-    });
-
-    document.getElementById('tvHudKillAllBtn')?.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.killAllTrades();
-    });
-
-    // Attach actions for line items
-    this.hudEl.querySelectorAll('.tv-hud-act-btn').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const act = btn.getAttribute('data-act');
-        const id = btn.getAttribute('data-id');
-        const line = this.lines.get(id);
-
-        if (act === 'settings') {
-          this.openSettingsModal(id);
-        } else if (act === 'toggle' && line) {
-          line.isArmed = !line.isArmed;
-          this.applyLineColor(id);
-          this.saveToStorage();
-          showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Paused ${line.name}`);
-        } else if (act === 'delete' && line) {
-          this.removeLineOverlay(id);
-          showChartToast(`Deleted ${line.name}`);
-        }
-      });
-    });
-
-    // Minimize toggle
-    document.getElementById('tvHudMinBtn')?.addEventListener('click', () => {
-      const bodyList = document.getElementById('tvHudBodyList');
-      if (bodyList) {
-        const isHidden = bodyList.style.display === 'none';
-        bodyList.style.display = isHidden ? 'flex' : 'none';
-        const minBtn = document.getElementById('tvHudMinBtn');
-        if (minBtn) minBtn.textContent = isHidden ? '▼' : '▲';
-      }
-    });
   }
 }

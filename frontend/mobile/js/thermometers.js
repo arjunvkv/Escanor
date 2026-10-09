@@ -79,14 +79,14 @@ export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax, story }) {
     <div onclick="openMetricModal('velocity')" class="flex flex-col items-center gap-0.5 flex-1 min-w-[70px] cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect Tape Tick Velocity">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">⚡ VELOCITY</div>
       <!-- Story Number (Above Tube) -->
-      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
+      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-emerald-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
         ${storyTop.text || 'EXP: --'}
       </div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▲140+</div>
       <div class="relative flex items-center justify-center w-full">${svg}</div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▼0</div>
       <!-- Story Number (Below Tube) -->
-      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
+      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-amber-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
         ${storyBottom.text || 'COIL: --'}
       </div>
       <div class="flex justify-between w-full px-0.5 mt-0.5 text-center">
@@ -176,7 +176,7 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
     <div onclick="openMetricModal('${metricKey}')" class="flex flex-col items-center gap-0.5 flex-1 ${hasSide ? 'min-w-[78px]' : 'min-w-[58px]'} cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect ${title}">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">${title}</div>
       <!-- Story Number (Above Tube) -->
-      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
+      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-emerald-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
         ${storyTop.text || '--'}
       </div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▲${highLabel}</div>
@@ -190,7 +190,7 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
       </div>
       <div class="text-[7px] text-slate-500 text-center whitespace-nowrap">▼${lowLabel}</div>
       <!-- Story Number (Below Tube) -->
-      <div class="px-1 py-0.5 rounded bg-slate-950/90 border border-white/10 text-[8px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[14px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
+      <div class="px-1.5 py-0.5 rounded bg-[#070e24] border border-amber-400/40 text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap shadow-sm min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#cbd5e1'};">
         ${storyBottom.text || '--'}
       </div>
       <div class="text-[14px] font-black font-mono text-center leading-none" style="color:${fillColor};">${current}</div>
