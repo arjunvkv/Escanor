@@ -1,18 +1,178 @@
 {
   "XAUUSD": [
     {
+      "id": "overlay_1791555110973_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4178.59
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_6",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_7",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4184.75
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555110973_8",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.7
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824479_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4178.81
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_6",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4184.75
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791555824480_7",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.7
+        }
+      ],
+      "styles": null
+    },
+    {
       "id": "overlay_1791547078049_1",
       "name": "segment",
       "points": [
         {
-          "timestamp": 1791546600000,
-          "dataIndex": 268,
-          "value": 4186.661735917195
+          "timestamp": 1791549600000,
+          "dataIndex": 243,
+          "value": 4197.726873694973
         },
         {
-          "timestamp": 1791577800000,
-          "dataIndex": 360,
-          "value": 4186.818781493951
+          "timestamp": 1791587700000,
+          "dataIndex": 370,
+          "value": 4197.883919271729
         }
       ],
       "styles": {

@@ -134,7 +134,8 @@ export async function triggerQuickMarketOrder(direction) {
       body: payload
     });
     const res = await resp.json();
-    if (res.status === 'OK') {
+    const isSuccess = res && (res.status === 'OK' || res.status === 'EXECUTED' || res.success === true || (res.ticket && !res.error && res.status !== 'FAILED'));
+    if (isSuccess) {
       const timerNotice = scalpAutoCloseMins > 0 ? ` [Auto-close ${scalpAutoCloseMins}m]` : '';
       showTerminalToast(`⚡ MARKET ${direction} FILLED: ${scalpLots}L @ $${(res.price || curPrice).toFixed(2)}${timerNotice}`, 'success');
       
@@ -178,7 +179,7 @@ export async function triggerQuickMarketOrder(direction) {
         window.fetchTelemetrySnapshot();
       }
     } else {
-      showTerminalToast(`❌ ORDER REJECTED: ${res.message || 'Broker Error'}`, 'error');
+      showTerminalToast(`❌ ORDER REJECTED: ${res.error || res.message || 'Broker Error'}`, 'error');
     }
   } catch (err) {
     showTerminalToast(`❌ EXECUTION FAILED: ${err.message}`, 'error');
@@ -494,7 +495,8 @@ export async function executeScalpTradeNow() {
         body: payload
       });
       const res = await resp.json();
-      if (res.status === 'OK') {
+      const isSuccess = res && (res.status === 'OK' || res.status === 'PLACED' || res.success === true || (res.ticket && !res.error && res.status !== 'FAILED'));
+      if (isSuccess) {
         const timerNotice = scalpAutoCloseMins > 0 ? ` [Auto-close ${scalpAutoCloseMins}m attached]` : '';
         showTerminalToast(`🎯 PENDING ${detectedPendingType.replace('_', ' ')} PLACED: ${scalpLots}L @ $${scalpTriggerPrice.toFixed(2)}${timerNotice}`, 'success');
         closeScalpModal();
@@ -524,7 +526,7 @@ export async function executeScalpTradeNow() {
           window.fetchTelemetrySnapshot();
         }
       } else {
-        showTerminalToast(`❌ PENDING FAILED: ${res.message || 'Broker Error'}`, 'error');
+        showTerminalToast(`❌ PENDING FAILED: ${res.error || res.message || 'Broker Error'}`, 'error');
       }
     } catch (err) {
       showTerminalToast(`❌ PENDING ERROR: ${err.message}`, 'error');
@@ -557,7 +559,8 @@ export async function executeScalpTradeNow() {
       body: payload
     });
     const res = await resp.json();
-    if (res.status === 'OK') {
+    const isSuccess = res && (res.status === 'OK' || res.status === 'EXECUTED' || res.success === true || (res.ticket && !res.error && res.status !== 'FAILED'));
+    if (isSuccess) {
       const timerNotice = scalpAutoCloseMins > 0 ? ` [Auto-close ${scalpAutoCloseMins}m]` : '';
       showTerminalToast(`⚡ MARKET ${scalpModalDirection} EXECUTED: ${scalpLots}L @ $${(res.price || curMktPrice).toFixed(2)}${timerNotice}`, 'success');
       closeScalpModal();
@@ -600,7 +603,7 @@ export async function executeScalpTradeNow() {
         window.fetchTelemetrySnapshot();
       }
     } else {
-      showTerminalToast(`❌ ORDER REJECTED: ${res.message || 'Broker Error'}`, 'error');
+      showTerminalToast(`❌ ORDER REJECTED: ${res.error || res.message || 'Broker Error'}`, 'error');
     }
   } catch (err) {
     showTerminalToast(`❌ EXECUTION FAILED: ${err.message}`, 'error');

@@ -353,7 +353,7 @@ export async function closePositionTicket(ticket, isPending = false) {
       body: JSON.stringify({ ticket: numTicket, is_pending: !!isPending })
     });
     const res = await resp.json();
-    if (res.status === 'OK') {
+    if (res && (res.status === 'OK' || res.status === 'CLOSED' || res.success === true)) {
       showTerminalToast(`✅ #${numTicket} closed successfully`, 'success');
       if (lastTelemetryData) {
         if (isPending && Array.isArray(lastTelemetryData.pending_orders)) {
@@ -364,7 +364,7 @@ export async function closePositionTicket(ticket, isPending = false) {
         renderActiveTradesUI(lastTelemetryData);
       }
     } else {
-      showTerminalToast(`❌ Close rejected: ${res.message || 'Error'}`, 'error');
+      showTerminalToast(`❌ Close rejected: ${res.error || res.message || 'Error'}`, 'error');
     }
   } catch (err) {
     showTerminalToast(`❌ Close error: ${err.message}`, 'error');
@@ -383,7 +383,7 @@ export async function flattenDesk() {
       body: JSON.stringify({ ticket: 'ALL' })
     });
     const res = await resp.json();
-    if (res.status === 'OK') {
+    if (res && (res.status === 'OK' || res.success === true)) {
       showTerminalToast(`✅ DESK FLATTENED: ${res.closed_count || 0} item(s) cleared`, 'success');
       if (lastTelemetryData) {
         lastTelemetryData.active_positions = [];
@@ -391,7 +391,7 @@ export async function flattenDesk() {
         renderActiveTradesUI(lastTelemetryData);
       }
     } else {
-      showTerminalToast(`Flatten result: ${res.message || 'Error'}`, 'error');
+      showTerminalToast(`Flatten result: ${res.error || res.message || 'Error'}`, 'error');
     }
   } catch (err) {
     showTerminalToast(`Flatten error: ${err.message}`, 'error');
@@ -410,10 +410,10 @@ export async function moveSlToBreakeven(ticket, type, priceOpen) {
       body: JSON.stringify({ ticket: numTicket, sl: Number(beSl.toFixed(2)) })
     });
     const res = await resp.json();
-    if (res.status === 'OK') {
+    if (res && (res.status === 'OK' || res.status === 'MODIFIED' || res.success === true)) {
       showTerminalToast(`🛡️ Breakeven set on #${numTicket} @ $${beSl.toFixed(2)}`, 'success');
     } else {
-      showTerminalToast(`Modify failed: ${res.message || 'Error'}`, 'error');
+      showTerminalToast(`Modify failed: ${res.error || res.message || 'Error'}`, 'error');
     }
   } catch (err) {
     showTerminalToast(`Modify error: ${err.message}`, 'error');

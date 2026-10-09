@@ -156,6 +156,12 @@ async def trade_execute(request: Request):
     tp = float(data.get("tp_price") or data.get("tp") or 0.0)
     comment = data.get("comment", "Escanor Market Order")
     res = execute_market_order(symbol=sym, side=side, volume=volume, sl=sl, tp=tp, comment=comment)
+    if res and res.get("status") in ("EXECUTED", "OK"):
+        res["status"] = "OK"
+        res["execution_status"] = "EXECUTED"
+        res["success"] = True
+        if "ticket" in res and "order" not in res:
+            res["order"] = res["ticket"]
     return JSONResponse(content=res)
 
 
@@ -171,6 +177,12 @@ async def trade_place_pending(request: Request):
     tp = float(data.get("tp_price") or data.get("tp") or 0.0)
     comment = data.get("comment", "Escanor Pending Order")
     res = place_pending_order(symbol=sym, order_type=order_type, price=price, volume=volume, sl=sl, tp=tp, comment=comment)
+    if res and res.get("status") in ("PLACED", "OK"):
+        res["status"] = "OK"
+        res["execution_status"] = "PLACED"
+        res["success"] = True
+        if "ticket" in res and "order" not in res:
+            res["order"] = res["ticket"]
     return JSONResponse(content=res)
 
 

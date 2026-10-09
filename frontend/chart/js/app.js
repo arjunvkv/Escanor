@@ -195,7 +195,8 @@ function setupQuickOrderPad() {
           body: JSON.stringify({ symbol: currentSymbol, side: 'SELL', volume: 1.0 })
         });
         const data = await res.json();
-        showChartToast(data.status === 'EXECUTED' ? `Sell Filled! Ticket #${data.ticket}` : `Failed: ${data.error}`);
+        const isSuccess = data && (data.status === 'EXECUTED' || data.status === 'OK' || (data.ticket && !data.error && data.status !== 'FAILED'));
+        showChartToast(isSuccess ? `Sell Filled! Ticket #${data.ticket || data.order}` : `Failed: ${data.error || data.message || 'Error'}`);
       } catch (e) {
         showChartToast(`Error executing sell: ${e.message}`);
       } finally {
@@ -214,7 +215,8 @@ function setupQuickOrderPad() {
           body: JSON.stringify({ symbol: currentSymbol, side: 'BUY', volume: 1.0 })
         });
         const data = await res.json();
-        showChartToast(data.status === 'EXECUTED' ? `Buy Filled! Ticket #${data.ticket}` : `Failed: ${data.error}`);
+        const isSuccess = data && (data.status === 'EXECUTED' || data.status === 'OK' || (data.ticket && !data.error && data.status !== 'FAILED'));
+        showChartToast(isSuccess ? `Buy Filled! Ticket #${data.ticket || data.order}` : `Failed: ${data.error || data.message || 'Error'}`);
       } catch (e) {
         showChartToast(`Error executing buy: ${e.message}`);
       } finally {

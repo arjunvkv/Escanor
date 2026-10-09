@@ -75,13 +75,13 @@ def execute_market_order(
         req["type_filling"] = mt5.ORDER_FILLING_FOK if filling_mode != mt5.ORDER_FILLING_FOK else mt5.ORDER_FILLING_IOC
         res = mt5.order_send(req)
 
-    if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+    if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
         return {
             "status": "EXECUTED",
             "symbol": symbol,
             "side": s_side,
             "volume": vol,
-            "price": price,
+            "price": getattr(res, "price", price) or price,
             "sl": sl,
             "tp": tp,
             "ticket": res.order,
@@ -138,7 +138,7 @@ def place_pending_order(
         "type_time": mt5.ORDER_TIME_GTC
     }
     res = mt5.order_send(req)
-    if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+    if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
         return {
             "status": "PLACED",
             "symbol": symbol,
