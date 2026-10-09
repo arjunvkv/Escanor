@@ -586,10 +586,31 @@ export function initTradingViewChart(containerId = 'klineChart') {
       fill: true
     },
     overlay: {
-      point: { color: '#2962ff', borderColor: 'rgba(41, 98, 255, 0.35)', borderSize: 1, radius: 4 },
-      line: { style: 'solid', color: '#2962ff', size: 1 },
-      rect: { style: 'fill', color: 'rgba(41, 98, 255, 0.15)', borderColor: '#2962ff', borderSize: 1 },
-      polygon: { style: 'fill', color: 'rgba(41, 98, 255, 0.15)', borderColor: '#2962ff', borderSize: 1 },
+      point: {
+        color: '#94a3b8',
+        borderColor: '#94a3b8',
+        borderSize: 1,
+        activeColor: '#cbd5e1',
+        activeBorderColor: '#cbd5e1',
+        radius: 4.5
+      },
+      line: {
+        style: 'solid',
+        color: '#94a3b8',
+        size: 1.5
+      },
+      rect: {
+        style: 'stroke_fill',
+        color: 'rgba(236, 64, 122, 0.12)',
+        borderColor: '#ec407a',
+        borderSize: 1.5
+      },
+      polygon: {
+        style: 'stroke_fill',
+        color: 'rgba(236, 64, 122, 0.12)',
+        borderColor: '#ec407a',
+        borderSize: 1.5
+      },
       text: {
         style: 'fill',
         color: '#ffffff',

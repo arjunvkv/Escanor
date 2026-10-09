@@ -1203,6 +1203,11 @@ html, body {
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
 }
+.tv-hud-badge.paused {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.35);
+}
 
 .tv-hud-item-bottom {
   display: flex;

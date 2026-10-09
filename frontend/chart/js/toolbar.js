@@ -171,9 +171,15 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     if (isLineOverlay(overlayName) && window.__lineTradingManager) {
       window.__lineTradingManager.setDrawing(true);
     }
+    const defaultStyles = isLineOverlay(overlayName) ? {
+      line: { color: '#94a3b8', size: 1.5, style: 'solid' },
+      point: { color: '#94a3b8', borderColor: '#94a3b8', activeColor: '#cbd5e1', activeBorderColor: '#cbd5e1', radius: 4.5 }
+    } : undefined;
+
     try {
       chart.createOverlay({
         name: overlayName,
+        styles: defaultStyles,
         onDrawEnd: ({ overlay }) => {
           if (isLineOverlay(overlayName) && window.__lineTradingManager && overlay) {
             window.__lineTradingManager.setDrawing(false);
@@ -213,8 +219,14 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   const origCreateOverlay = chart.createOverlay.bind(chart);
   chart.createOverlay = function (params) {
     const ovName = params.name;
+    const defaultStyles = (isLineOverlay(ovName) && !params.styles) ? {
+      line: { color: '#94a3b8', size: 1.5, style: 'solid' },
+      point: { color: '#94a3b8', borderColor: '#94a3b8', activeColor: '#cbd5e1', activeBorderColor: '#cbd5e1', radius: 4.5 }
+    } : params.styles;
+
     const customParams = {
       ...params,
+      styles: defaultStyles,
       onDrawEnd: (args) => {
         if (params.onDrawEnd) params.onDrawEnd(args);
         if (isLineOverlay(ovName) && window.__lineTradingManager && args?.overlay) {

@@ -203,6 +203,44 @@ async def trade_auto_close(request: Request):
     return JSONResponse(content={"status": "OK", "ticket": data.get("ticket")})
 
 
+@app.get("/api/trade/ticket_result")
+async def trade_ticket_result(ticket: int):
+    """Check closed position history to determine if trade was a win or loss."""
+    try:
+        import MetaTrader5 as mt5
+        if not mt5.initialize():
+            return JSONResponse(content={"status": "ERROR", "message": "MT5 not initialized"})
+
+        deals = mt5.history_deals_get(position=ticket)
+        if not deals:
+            return JSONResponse(content={"status": "NOT_FOUND", "ticket": ticket, "is_loss": False, "profit": 0.0})
+
+        # Find the exit deal (entry == 1 or deal with non-zero profit)
+        exit_deals = [d for d in deals if d.entry == 1 or d.profit != 0]
+        if exit_deals:
+            exit_deal = exit_deals[-1]
+            profit = float(exit_deal.profit)
+            is_loss = profit < 0
+            return JSONResponse(content={
+                "status": "CLOSED",
+                "ticket": ticket,
+                "profit": profit,
+                "is_loss": is_loss,
+                "comment": getattr(exit_deal, "comment", "")
+            })
+
+        total_profit = sum(float(d.profit) for d in deals)
+        return JSONResponse(content={
+            "status": "CLOSED",
+            "ticket": ticket,
+            "profit": total_profit,
+            "is_loss": total_profit < 0
+        })
+    except Exception as e:
+        logger.error(f"Error checking ticket result for #{ticket}: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e), "is_loss": False})
+
+
 # =========================================================================
 # 🌐 UI STATIC ROUTES
 # =========================================================================

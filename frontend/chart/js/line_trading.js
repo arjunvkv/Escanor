@@ -55,7 +55,53 @@ export class LineTradingManager {
 
   updatePositions(positions) {
     this.activePositions = Array.isArray(positions) ? positions : [];
+    const activeTicketSet = new Set(this.activePositions.map(p => Number(p.ticket)));
+
+    // Monitor trades triggered by our lines:
+    for (const line of this.lines.values()) {
+      if (line.activeTradeTicket) {
+        const ticket = Number(line.activeTradeTicket);
+        // If the trade was active and is now no longer in open activePositions:
+        if (!activeTicketSet.has(ticket)) {
+          line.activeTradeTicket = null;
+          this.saveToStorage();
+          // Check MT5 closed deal history to see if it was a loss or win
+          this._checkClosedTradeResult(line, ticket);
+        }
+      }
+    }
+
     this.renderHud();
+  }
+
+  async _checkClosedTradeResult(line, ticket) {
+    try {
+      const res = await fetch(`/api/trade/ticket_result?ticket=${ticket}`);
+      const data = await res.json();
+      if (data && (data.status === 'CLOSED' || data.profit !== undefined)) {
+        const isLoss = Boolean(data.is_loss);
+        const profit = Number(data.profit || 0);
+
+        if (isLoss) {
+          // USER RULE: "when a trade is lost the let the lines be deactivated"
+          line.isArmed = false;
+          this.applyLineColor(line.overlayId);
+          this.saveToStorage();
+          this.renderHud();
+          showChartToast(`🛑 ${line.name}: Trade #${ticket} lost (-$${Math.abs(profit).toFixed(2)}). Line Deactivated!`);
+        } else {
+          // Trade won or breakeven: Line remains active!
+          line.isArmed = true;
+          this.applyLineColor(line.overlayId);
+          this.saveToStorage();
+          this.renderHud();
+          const sign = profit >= 0 ? '+' : '';
+          showChartToast(`🟢 ${line.name}: Trade #${ticket} closed in profit (${sign}$${profit.toFixed(2)}). Line remains ACTIVE!`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[LineTrading] Error checking ticket result for #${ticket}:`, err);
+    }
   }
 
   async killTrade(ticket) {
@@ -205,17 +251,16 @@ export class LineTradingManager {
   }
 
   getLineColor(line) {
-    if (!line) return '#64748b';
-    if (line.triggered) return '#94a3b8'; // Muted for triggered
-    if (!line.isArmed) return '#64748b';  // Disarmed gray by default
+    if (!line) return '#94a3b8';
+    if (!line.isArmed) return '#94a3b8';  // Clean disarmed silver-gray
 
     if (line.actionType === 'EXECUTE') {
       return line.direction === 'BUY' ? '#00f5a0' : '#ef4444';
     }
     if (line.actionType === 'EXIT') {
-      return '#fbbf24'; // Yellow for Close All
+      return '#fbbf24'; // Yellow/Amber for Close All
     }
-    return '#64748b';
+    return '#94a3b8';
   }
 
   applyLineColor(overlayId) {
@@ -283,7 +328,7 @@ export class LineTradingManager {
     const overlayMap = new Map(chartOverlays.map(o => [String(o.id), o]));
 
     for (const line of this.lines.values()) {
-      if (!line.isArmed || line.triggered) continue;
+      if (!line.isArmed) continue;
 
       const ov = overlayMap.get(String(line.overlayId));
       if (!ov || !ov.points || ov.points.length === 0) continue;
@@ -406,69 +451,93 @@ export class LineTradingManager {
   }
 
   async _executeLineTrigger(line, triggerPrice) {
-    if (this.isExecuting || line.triggered) return;
-    this.isExecuting = true;
+    if (this.isExecuting) return;
 
-    line.triggered = true;
-    line.triggeredAt = Date.now();
-    this.applyLineColor(line.overlayId);
+    const isExit = line.actionType === 'EXIT';
+    const now = Date.now();
 
-    console.log(`[LineTrading] ⚡ TRIGGER HIT on ${line.name} @ $${triggerPrice.toFixed(2)} (${line.actionType})`);
+    // 1. Close Position Line (EXIT): USER RULE: "let the close position line dont deactivate at all"
+    if (isExit) {
+      if (line._lastExitTrigger && (now - line._lastExitTrigger < 6000)) return;
+      line._lastExitTrigger = now;
 
-    try {
-      if (line.actionType === 'EXECUTE') {
-        const side = line.direction || 'BUY';
-        const vol = line.volume || 0.50;
-        const slPts = line.slPts || 6.0;
-        const tpPts = line.tpPts || 12.0;
-
-        const slPrice = side === 'BUY' ? triggerPrice - slPts : triggerPrice + slPts;
-        const tpPrice = side === 'BUY' ? triggerPrice + tpPts : triggerPrice - tpPts;
-
-        const res = await fetch('/api/trade/execute', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            symbol: this.symbol,
-            side: side,
-            volume: vol,
-            sl: Math.round(slPrice * 100) / 100,
-            tp: Math.round(tpPrice * 100) / 100,
-            comment: `Line Touch ${line.name}`
-          })
-        });
-
-        const data = await res.json();
-        if (data && (data.status === 'EXECUTED' || data.ticket)) {
-          const ticket = data.ticket;
-          line.triggeredTicket = ticket;
-          showChartToast(`⚡ ${line.name}: Filled ${side} ${vol}L! Ticket #${ticket}`);
-
-          if (line.timerEnabled && line.autoCloseMins > 0) {
-            line.triggeredCountdownEnd = Date.now() + (line.autoCloseMins * 60 * 1000);
-            showChartToast(`⏳ Auto-close armed: ${line.autoCloseMins}m countdown`);
-          }
-        } else {
-          showChartToast(`⚠️ Line Trigger failed: ${data?.error || 'Execution rejected'}`);
-          line.triggered = false;
-        }
-      } else if (line.actionType === 'EXIT') {
+      console.log(`[LineTrading] 🚨 EXIT TRIGGER HIT on ${line.name} @ $${triggerPrice.toFixed(2)}`);
+      try {
         const res = await fetch('/api/trade/close_all', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ symbol: this.symbol })
         });
         const data = await res.json();
-        showChartToast(`🚨 ${line.name}: Closed all positions! (${data.closed_count || 0} flattened)`);
+        showChartToast(`🚨 ${line.name}: Closed all positions! (${data.closed_count || 0} flattened). Line remains ARMED.`);
+      } catch (err) {
+        console.error('[LineTrading] Close all error:', err);
+        showChartToast(`⚠️ Error closing positions`);
+      }
+      return;
+    }
+
+    // 2. Trade Entry Line (EXECUTE): USER RULE: "the lines should not deactivate on price touch they should be always active unless a trade is lost"
+    if (line.activeTradeTicket) {
+      const isStillOpen = (this.activePositions || []).some(p => Number(p.ticket) === Number(line.activeTradeTicket));
+      if (isStillOpen) {
+        return; // Current trade is still running!
+      }
+    }
+
+    // Cooldown check (6 seconds)
+    if (line._lastExecuteTrigger && (now - line._lastExecuteTrigger < 6000)) return;
+    line._lastExecuteTrigger = now;
+
+    this.isExecuting = true;
+    console.log(`[LineTrading] ⚡ ENTRY TRIGGER HIT on ${line.name} @ $${triggerPrice.toFixed(2)} (${line.direction})`);
+
+    try {
+      const side = line.direction || 'BUY';
+      const vol = line.volume || 0.50;
+      const slPts = line.slPts || 6.0;
+      const tpPts = line.tpPts || 12.0;
+
+      const slPrice = side === 'BUY' ? triggerPrice - slPts : triggerPrice + slPts;
+      const tpPrice = side === 'BUY' ? triggerPrice + tpPts : triggerPrice - tpPts;
+
+      const res = await fetch('/api/trade/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: this.symbol,
+          side: side,
+          volume: vol,
+          sl: Math.round(slPrice * 100) / 100,
+          tp: Math.round(tpPrice * 100) / 100,
+          comment: `Line Touch ${line.name}`
+        })
+      });
+
+      const data = await res.json();
+      if (data && (data.status === 'EXECUTED' || data.ticket)) {
+        const ticket = data.ticket;
+        line.activeTradeTicket = ticket;
+        line.triggeredTicket = ticket;
+        // THE LINE REMAINS ARMED AND ACTIVE!
+        line.isArmed = true;
+        showChartToast(`⚡ ${line.name}: Filled ${side} ${vol}L! Ticket #${ticket}. Line remains ARMED!`);
+
+        if (line.timerEnabled && line.autoCloseMins > 0) {
+          line.triggeredCountdownEnd = Date.now() + (line.autoCloseMins * 60 * 1000);
+          showChartToast(`⏳ Auto-close armed: ${line.autoCloseMins}m countdown`);
+        }
+      } else {
+        showChartToast(`⚠️ Line Trigger failed: ${data?.error || 'Execution rejected'}`);
       }
     } catch (err) {
       console.error('[LineTrading] Trigger execution error:', err);
       showChartToast(`⚠️ Network error executing trigger`);
-      line.triggered = false;
     } finally {
       this.isExecuting = false;
       this.applyLineColor(line.overlayId);
       this.saveToStorage();
+      this.renderHud();
     }
   }
 
@@ -784,10 +853,10 @@ export class LineTradingManager {
   renderHud() {
     if (!this.hudEl) return;
 
-    const activeLines = Array.from(this.lines.values()).filter(l => l.isArmed || l.triggered);
+    const allLines = Array.from(this.lines.values());
     const activePositions = this.activePositions || [];
 
-    if (activeLines.length === 0 && activePositions.length === 0) {
+    if (allLines.length === 0 && activePositions.length === 0) {
       this.hudEl.style.display = 'none';
       return;
     }
@@ -795,12 +864,13 @@ export class LineTradingManager {
     this.hudEl.style.display = 'flex';
 
     // Header title and count badge
-    let headerTitle = 'ARMED LINES';
-    let headerCount = String(activeLines.length);
+    const armedCount = allLines.filter(l => l.isArmed).length;
+    let headerTitle = armedCount > 0 ? 'ARMED LINES' : 'DESK HUD';
+    let headerCount = armedCount > 0 ? `${armedCount} ARMED` : `${allLines.length} LINES`;
 
-    if (activePositions.length > 0 && activeLines.length > 0) {
+    if (activePositions.length > 0 && allLines.length > 0) {
       headerTitle = 'DESK HUD';
-      headerCount = `${activePositions.length} POS • ${activeLines.length} LINES`;
+      headerCount = `${activePositions.length} POS • ${armedCount}/${allLines.length} ARMED`;
     } else if (activePositions.length > 0) {
       headerTitle = 'ACTIVE TRADES';
       headerCount = String(activePositions.length);
@@ -809,7 +879,7 @@ export class LineTradingManager {
     let html = `
       <div class="tv-hud-header">
         <div class="tv-hud-title-box">
-          <span class="tv-hud-dot" style="color: ${activePositions.length > 0 ? '#00f5a0' : '#787b86'};">●</span>
+          <span class="tv-hud-dot" style="color: ${activePositions.length > 0 ? '#00f5a0' : (armedCount > 0 ? '#00f5a0' : '#787b86')};">●</span>
           <span class="tv-hud-title">${headerTitle}</span>
           <span class="tv-hud-count">${headerCount}</span>
         </div>
@@ -874,21 +944,30 @@ export class LineTradingManager {
       }
     }
 
-    // 2. Render Armed Lines Section
-    if (activeLines.length > 0) {
+    // 2. Render Drawn / Armed Lines Section (All lines remain in HUD)
+    if (allLines.length > 0) {
       if (activePositions.length > 0) {
         html += `
           <div class="tv-hud-section-label-row" style="margin-top: 6px;">
-            <span class="tv-hud-section-label">📐 ARMED LINES (${activeLines.length})</span>
+            <span class="tv-hud-section-label">📐 DRAWN LINES (${armedCount}/${allLines.length} ARMED)</span>
           </div>
         `;
       }
 
-      for (const line of activeLines) {
+      for (const line of allLines) {
+        const isArmed = Boolean(line.isArmed);
         const color = this.getLineColor(line);
         const isExit = line.actionType === 'EXIT';
-        const actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
-        const actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
+
+        let actionBadge = '';
+        let actionClass = '';
+        if (isArmed) {
+          actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
+          actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
+        } else {
+          actionBadge = isExit ? 'CLOSE ALL (PAUSED)' : `${line.direction} ${line.volume}L (PAUSED)`;
+          actionClass = 'paused';
+        }
 
         let distStr = '-- pt';
         if (line._lastPriceDist !== undefined) {
@@ -899,15 +978,17 @@ export class LineTradingManager {
         }
 
         let timerHtml = '';
-        if (line.triggered && line.triggeredCountdownEnd) {
+        if (line.triggeredCountdownEnd) {
           const remSec = Math.max(0, Math.floor((line.triggeredCountdownEnd - Date.now()) / 1000));
-          const m = Math.floor(remSec / 60).toString().padStart(2, '0');
-          const s = (remSec % 60).toString().padStart(2, '0');
-          timerHtml = `<span class="tv-hud-timer">⏳ ${m}:${s}</span>`;
+          if (remSec > 0) {
+            const m = Math.floor(remSec / 60).toString().padStart(2, '0');
+            const s = (remSec % 60).toString().padStart(2, '0');
+            timerHtml = `<span class="tv-hud-timer">⏳ ${m}:${s}</span>`;
+          }
         }
 
         html += `
-          <div class="tv-hud-item" data-line-id="${line.overlayId}">
+          <div class="tv-hud-item ${isArmed ? '' : 'paused-item'}" data-line-id="${line.overlayId}">
             <div class="tv-hud-item-top">
               <span class="tv-hud-item-dot" style="background-color: ${color};"></span>
               <span class="tv-hud-item-name" title="${line.name}">${line.name}</span>
@@ -918,8 +999,8 @@ export class LineTradingManager {
               ${timerHtml}
               <div class="tv-hud-item-actions">
                 <button class="tv-hud-act-btn" data-act="settings" data-id="${line.overlayId}" title="Settings">⚙</button>
-                <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${line.isArmed ? 'Disarm' : 'Arm'}">
-                  ${line.isArmed ? '⏸' : '▶'}
+                <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${isArmed ? 'Pause / Disarm' : 'Activate / Arm'}">
+                  ${isArmed ? '⏸' : '▶'}
                 </button>
                 <button class="tv-hud-act-btn delete" data-act="delete" data-id="${line.overlayId}" title="Delete">✕</button>
               </div>
@@ -960,7 +1041,7 @@ export class LineTradingManager {
           line.isArmed = !line.isArmed;
           this.applyLineColor(id);
           this.saveToStorage();
-          showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Disarmed ${line.name}`);
+          showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Paused ${line.name}`);
         } else if (act === 'delete' && line) {
           this.removeLineOverlay(id);
           showChartToast(`Deleted ${line.name}`);

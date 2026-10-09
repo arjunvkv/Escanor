@@ -1,17 +1,17 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1791542594595_1",
+      "id": "overlay_1791543532900_1",
       "name": "segment",
       "points": [
         {
-          "timestamp": 1791547200000,
+          "timestamp": 1791547800000,
           "dataIndex": 279,
-          "value": 4190.2943866666665
+          "value": 4190.148902222222
         },
         {
-          "dataIndex": 313,
-          "value": 4180.91064
+          "dataIndex": 330,
+          "value": 4175.309488888889
         }
       ],
       "styles": {
