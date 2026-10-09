@@ -510,6 +510,74 @@ export function initTradingViewChart(containerId = 'klineChart') {
     return rawRemoveOverlay(target || {});
   };
 
+  // Fix KLineCharts future time extrapolation for drawings & right-margin space
+  // Ensures lines dragged past latest candle into empty space never hit a wall
+  if (chart._chartStore) {
+    const cs = chart._chartStore;
+
+    const origDataIndexToTimestamp = cs.dataIndexToTimestamp.bind(cs);
+    cs.dataIndexToTimestamp = function (dataIndex) {
+      const res = origDataIndexToTimestamp(dataIndex);
+      if (typeof res === 'number' && !isNaN(res)) return res;
+
+      const list = cs.getDataList() || [];
+      if (list.length > 0 && typeof dataIndex === 'number') {
+        const lastIdx = list.length - 1;
+        const lastBar = list[lastIdx];
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const barMs = tfMins * 60 * 1000;
+        return lastBar.timestamp + Math.round((dataIndex - lastIdx) * barMs);
+      }
+      return res;
+    };
+
+    const origTimestampToDataIndex = cs.timestampToDataIndex.bind(cs);
+    cs.timestampToDataIndex = function (timestamp) {
+      const list = cs.getDataList() || [];
+      if (list.length > 0 && typeof timestamp === 'number') {
+        const lastIdx = list.length - 1;
+        const lastBar = list[lastIdx];
+        if (timestamp > lastBar.timestamp) {
+          const tfMins = window.__currentTimeframeMinutes || 5;
+          const barMs = tfMins * 60 * 1000;
+          return lastIdx + Math.round((timestamp - lastBar.timestamp) / barMs);
+        }
+      }
+      return origTimestampToDataIndex(timestamp);
+    };
+
+    const origFloatIndexToTimestamp = cs.floatIndexToTimestamp.bind(cs);
+    cs.floatIndexToTimestamp = function (floatIndex) {
+      const res = origFloatIndexToTimestamp(floatIndex);
+      if (typeof res === 'number' && !isNaN(res)) return res;
+
+      const list = cs.getDataList() || [];
+      if (list.length > 0 && typeof floatIndex === 'number') {
+        const lastIdx = list.length - 1;
+        const lastBar = list[lastIdx];
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const barMs = tfMins * 60 * 1000;
+        return Math.round(lastBar.timestamp + (floatIndex - lastIdx) * barMs);
+      }
+      return res;
+    };
+
+    const origTimestampToFloatIndex = cs.timestampToFloatIndex.bind(cs);
+    cs.timestampToFloatIndex = function (timestamp) {
+      const list = cs.getDataList() || [];
+      if (list.length > 0 && typeof timestamp === 'number') {
+        const lastIdx = list.length - 1;
+        const lastBar = list[lastIdx];
+        if (timestamp > lastBar.timestamp) {
+          const tfMins = window.__currentTimeframeMinutes || 5;
+          const barMs = tfMins * 60 * 1000;
+          return lastIdx + (timestamp - lastBar.timestamp) / barMs;
+        }
+      }
+      return origTimestampToFloatIndex(timestamp);
+    };
+  }
+
   chartInstance = chart;
 
   // Exact TradingView Dark Slate Theme Matching Image 2 (#1c1c1c)

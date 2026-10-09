@@ -242,6 +242,40 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         if (window.__isShiftPressed && args.points?.length >= 2 && args.performPointIndex === 1) {
           args.points[1].value = args.points[0].value;
         }
+        // Keep timestamp in lockstep with dataIndex into the future empty space
+        const pt = args.points?.[args.performPointIndex];
+        if (pt && typeof pt.dataIndex === 'number') {
+          const dataList = chart.getDataList() || [];
+          if (dataList.length > 0) {
+            const lastIdx = dataList.length - 1;
+            const lastBar = dataList[lastIdx];
+            const tfMins = window.__currentTimeframeMinutes || 5;
+            const barMs = tfMins * 60 * 1000;
+            if (pt.dataIndex > lastIdx) {
+              pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+            } else if (pt.dataIndex >= 0 && dataList[pt.dataIndex]) {
+              pt.timestamp = dataList[pt.dataIndex].timestamp;
+            }
+          }
+        }
+      },
+      performEventMoveForDrawing: (args) => {
+        if (params.performEventMoveForDrawing) params.performEventMoveForDrawing(args);
+        const pt = args.points?.[args.performPointIndex];
+        if (pt && typeof pt.dataIndex === 'number') {
+          const dataList = chart.getDataList() || [];
+          if (dataList.length > 0) {
+            const lastIdx = dataList.length - 1;
+            const lastBar = dataList[lastIdx];
+            const tfMins = window.__currentTimeframeMinutes || 5;
+            const barMs = tfMins * 60 * 1000;
+            if (pt.dataIndex > lastIdx) {
+              pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+            } else if (pt.dataIndex >= 0 && dataList[pt.dataIndex]) {
+              pt.timestamp = dataList[pt.dataIndex].timestamp;
+            }
+          }
+        }
       },
       onPressedMoveEnd: (args) => {
         if (params.onPressedMoveEnd) params.onPressedMoveEnd(args);

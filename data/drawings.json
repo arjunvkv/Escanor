@@ -68,9 +68,39 @@
           "value": 4188.106852298506
         },
         {
-          "dataIndex": 324,
-          "value": 4193.178559999999,
-          "timestamp": 1791554400000
+          "dataIndex": 330,
+          "value": 4192.992858981862,
+          "timestamp": 1791554700000
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#94a3b8",
+          "size": 1.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#94a3b8",
+          "borderColor": "#94a3b8",
+          "activeColor": "#94a3b8",
+          "activeBorderColor": "#94a3b8",
+          "radius": 4
+        }
+      }
+    },
+    {
+      "id": "overlay_1791544047102_1",
+      "name": "segment",
+      "points": [
+        {
+          "timestamp": 1791534000000,
+          "dataIndex": 231,
+          "value": 4205.104457003505
+        },
+        {
+          "timestamp": 1791554100000,
+          "dataIndex": 358,
+          "value": 4198.588159795762
         }
       ],
       "styles": {

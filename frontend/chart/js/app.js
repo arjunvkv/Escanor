@@ -20,12 +20,12 @@ let activeOrders = null;
 let lineTrading = null;
 
 const TF_MAP = {
-  '1': { mult: 1, span: 'minute', label: '1m' },
-  '5': { mult: 5, span: 'minute', label: '5m' },
-  '15': { mult: 15, span: 'minute', label: '15m' },
-  '60': { mult: 60, span: 'minute', label: '1h' },
-  '240': { mult: 240, span: 'minute', label: '4h' },
-  '1440': { mult: 1440, span: 'minute', label: 'D' }
+  '1': { mult: 1, type: 'minute', span: 1, label: '1m' },
+  '5': { mult: 5, type: 'minute', span: 5, label: '5m' },
+  '15': { mult: 15, type: 'minute', span: 15, label: '15m' },
+  '60': { mult: 60, type: 'minute', span: 60, label: '1h' },
+  '240': { mult: 240, type: 'minute', span: 240, label: '4h' },
+  '1440': { mult: 1440, type: 'minute', span: 1440, label: 'D' }
 };
 
 async function init() {
@@ -39,7 +39,7 @@ async function init() {
 
   // 2. Set Symbol and Period
   chart.setSymbol({ ticker: currentSymbol, name: 'Gold Spot' });
-  chart.setPeriod({ multiplier: currentTimeframeMinutes, span: 'minute' });
+  chart.setPeriod({ type: 'minute', span: currentTimeframeMinutes });
 
   // 3. Initialize Line Trading & Active Orders Engines
   lineTrading = new LineTradingManager({
@@ -157,7 +157,7 @@ function setupTimeframeButtons() {
 
       currentTimeframeMinutes = tfCfg.mult;
       window.__currentTimeframeMinutes = currentTimeframeMinutes;
-      chart.setPeriod({ multiplier: tfCfg.mult, span: tfCfg.span });
+      chart.setPeriod({ type: tfCfg.type, span: tfCfg.span });
       startCandleCountdown(currentTimeframeMinutes);
 
       // Re-fetch candles for new timeframe
