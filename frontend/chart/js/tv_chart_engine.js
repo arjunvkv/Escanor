@@ -60,106 +60,170 @@ function registerCustomOverlays() {
   }
 
   // 2. Active MT5 Position & Pending Order Line (Draggable SL & TP)
-  if (!supported.includes('activeTradeOrder')) {
-    klinecharts.registerOverlay({
-      name: 'activeTradeOrder',
-      totalStep: 2,
-      needDefaultPointFigure: false,
-      needDefaultXAxisFigure: false,
-      needDefaultYAxisFigure: true,
-      createPointFigures: ({ overlay, coordinates, bounding, yAxis }) => {
-        const data = overlay.extendData || {};
-        const price = overlay.points[0]?.value;
-        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
-          ? yAxis.convertToPixel(price)
-          : (coordinates[0]?.y ?? 0);
+  klinecharts.registerOverlay({
+    name: 'activeTradeOrder',
+    totalStep: 2,
+    needDefaultPointFigure: false,
+    needDefaultXAxisFigure: false,
+    needDefaultYAxisFigure: true,
+    createPointFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+      const data = overlay.extendData || {};
+      const price = overlay.points[0]?.value;
+      const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+        ? yAxis.convertToPixel(price)
+        : (coordinates[0]?.y ?? 0);
 
-        const width = bounding.width;
-        const isSl = data.orderType === 'SL';
-        const isTp = data.orderType === 'TP';
-        const isPending = Boolean(data.isPending);
+      const width = bounding.width;
+      const isSl = data.orderType === 'SL';
+      const isTp = data.orderType === 'TP';
+      const isDraggable = isSl || isTp;
+      const isPending = Boolean(data.isPending);
 
-        let color = '#38bdf8';
-        if (isSl) color = '#ef4444';
-        else if (isTp) color = '#10b981';
-        else if (isPending) color = '#f59e0b';
-        else color = data.isBuy ? '#00f5a0' : '#ef4444';
+      let color = '#38bdf8';
+      if (isSl) color = '#ef4444';
+      else if (isTp) color = '#10b981';
+      else if (isPending) color = '#f59e0b';
+      else color = data.isBuy ? '#00f5a0' : '#ef4444';
 
-        const lineStyle = (isSl || isTp || isPending) ? 'dashed' : 'solid';
-        const lineSize = (isSl || isTp) ? 2 : 1.5;
+      const lineStyle = (isSl || isTp || isPending) ? 'dashed' : 'solid';
+      const lineSize = isDraggable ? 2 : 1.5;
 
-        return [
-          {
-            type: 'line',
-            attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
-            styles: {
-              style: lineStyle,
-              dashedValue: [4, 4],
-              color: color,
-              size: lineSize
-            }
+      // Real-time dynamic calculation of dollar ($) and pips during drag motion
+      let title = data.title || '';
+      if (isDraggable && typeof price === 'number' && data.openPrice) {
+        const vol = Number(data.volume || 0.50);
+        const dist = Math.abs(price - data.openPrice);
+        const dollar = dist * vol * 100;
+        const isFavorable = data.isBuy ? (price >= data.openPrice) : (price <= data.openPrice);
+        const sign = isFavorable ? '+' : '-';
+        const prefix = isSl ? 'SL' : 'TP';
+        title = `${prefix}: $${price.toFixed(2)} [${sign}$${dollar.toFixed(2)} / ${sign}${dist.toFixed(1)} pt] ⇅`;
+      }
+
+      const figures = [];
+
+      // 1. Transparent wide touch/click strike zone (32px vertical grab tolerance across full width)
+      // Enables effortless one-touch grab on mobile touchscreens and desktop mice
+      if (isDraggable) {
+        figures.push({
+          type: 'rect',
+          attrs: {
+            x: 0,
+            y: y - 16,
+            width: width,
+            height: 32
           },
-          {
-            type: 'text',
-            attrs: { x: 14, y: y - 14, text: data.title || '', baseline: 'top' },
-            styles: {
-              color: '#ffffff',
-              size: 10,
-              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-              weight: 'bold',
-              backgroundColor: color,
-              borderRadius: 3,
-              paddingLeft: 6,
-              paddingRight: 6,
-              paddingTop: 2,
-              paddingBottom: 2
-            }
+          styles: {
+            style: 'fill',
+            color: 'transparent',
+            borderColor: 'transparent',
+            borderSize: 0
           }
-        ];
-      },
-      createYAxisFigures: ({ overlay, coordinates, bounding, yAxis }) => {
-        const data = overlay.extendData || {};
-        const price = overlay.points[0]?.value;
-        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
-          ? yAxis.convertToPixel(price)
-          : (coordinates[0]?.y ?? 0);
+        });
+      }
 
-        const isSl = data.orderType === 'SL';
-        const isTp = data.orderType === 'TP';
-        let color = '#38bdf8';
-        if (isSl) color = '#ef4444';
-        else if (isTp) color = '#10b981';
-        else if (data.isPending) color = '#f59e0b';
-        else color = data.isBuy ? '#00f5a0' : '#ef4444';
+      // 2. Visible Order Line
+      figures.push({
+        type: 'line',
+        attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
+        styles: {
+          style: lineStyle,
+          dashedValue: [5, 4],
+          color: color,
+          size: lineSize
+        }
+      });
 
-        const text = `${data.orderType || 'ORDER'}: ${typeof price === 'number' ? price.toFixed(2) : ''}`;
+      // 3. Information & Drag Handle Badge with enlarged touch padding
+      figures.push({
+        type: 'text',
+        attrs: { x: 14, y: y - 14, text: title, baseline: 'top' },
+        styles: {
+          color: '#ffffff',
+          size: 11,
+          family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+          weight: 'bold',
+          backgroundColor: color,
+          borderRadius: 4,
+          paddingLeft: 8,
+          paddingRight: 8,
+          paddingTop: 3,
+          paddingBottom: 3
+        }
+      });
 
-        return [
-          {
-            type: 'text',
-            attrs: { x: bounding.width, y, text, align: 'right', baseline: 'middle' },
-            styles: {
-              color: '#ffffff',
-              size: 10,
-              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-              weight: 'bold',
-              backgroundColor: color,
-              borderRadius: 2,
-              paddingLeft: 5,
-              paddingRight: 5,
-              paddingTop: 2,
-              paddingBottom: 2
-            }
+      return figures;
+    },
+    createYAxisFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+      const data = overlay.extendData || {};
+      const price = overlay.points[0]?.value;
+      const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+        ? yAxis.convertToPixel(price)
+        : (coordinates[0]?.y ?? 0);
+
+      const isSl = data.orderType === 'SL';
+      const isTp = data.orderType === 'TP';
+      let color = '#38bdf8';
+      if (isSl) color = '#ef4444';
+      else if (isTp) color = '#10b981';
+      else if (data.isPending) color = '#f59e0b';
+      else color = data.isBuy ? '#00f5a0' : '#ef4444';
+
+      const text = `${data.orderType || 'ORDER'}: ${typeof price === 'number' ? price.toFixed(2) : ''}`;
+
+      return [
+        {
+          type: 'text',
+          attrs: { x: bounding.width, y, text, align: 'right', baseline: 'middle' },
+          styles: {
+            color: '#ffffff',
+            size: 10,
+            family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            weight: 'bold',
+            backgroundColor: color,
+            borderRadius: 2,
+            paddingLeft: 5,
+            paddingRight: 5,
+            paddingTop: 2,
+            paddingBottom: 2
           }
-        ];
-      },
-      performEventPressedMove: ({ points, performPoint }) => {
-        if (points[0] && performPoint && typeof performPoint.value === 'number') {
-          points[0].value = Math.round(performPoint.value * 100) / 100;
+        }
+      ];
+    },
+    performEventPressedMove: function({ points, performPoint }) {
+      if (points[0] && performPoint && typeof performPoint.value === 'number') {
+        points[0].value = Math.round(performPoint.value * 100) / 100;
+      }
+      if (this && this.extendData) {
+        this.extendData.isDragging = true;
+        if (this.extendData.key) {
+          window.__currentDraggingOrderKey = this.extendData.key;
         }
       }
-    });
-  }
+    },
+    onPressedMoveStart: function(e) {
+      if (this && this.extendData) {
+        this.extendData.isDragging = true;
+        if (this.extendData.key) {
+          window.__currentDraggingOrderKey = this.extendData.key;
+        }
+      }
+    },
+    onPressedMoving: function(e) {
+      if (this && this.extendData) {
+        this.extendData.isDragging = true;
+        if (this.extendData.key) {
+          window.__currentDraggingOrderKey = this.extendData.key;
+        }
+      }
+    },
+    onPressedMoveEnd: function(e) {
+      if (this && this.extendData) {
+        this.extendData.isDragging = false;
+      }
+      window.__currentDraggingOrderKey = null;
+    }
+  });
 
   // 2. Custom Measurement Ruler Box (Exact Match to TradingView Image 1 & 2)
   klinecharts.registerOverlay({
