@@ -299,7 +299,9 @@ function handleLiveTelemetry(tel) {
   if (activeOrders) {
     activeOrders.updateData({
       positions: activePositions,
-      orders: pendingOrders
+      orders: pendingOrders,
+      bid: bid,
+      ask: ask
     });
   }
 }

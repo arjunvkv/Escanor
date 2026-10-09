@@ -153,29 +153,101 @@ def place_pending_order(
 
 
 def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float] = None) -> Dict[str, Any]:
-    """Modify SL and TP for open position."""
+    """Modify SL and TP for open position or pending order."""
     if not mt5:
         return {"status": "FAILED", "error": "MetaTrader5 module not available"}
 
+    # 1. Check open positions
     pos = None
     for p in mt5.positions_get() or ():
         if p.ticket == ticket:
             pos = p
             break
-    if not pos:
-        return {"status": "FAILED", "error": f"Position ticket #{ticket} not found"}
 
-    req = {
-        "action": mt5.TRADE_ACTION_SLTP,
-        "position": ticket,
-        "symbol": pos.symbol,
-        "sl": float(sl) if sl is not None else pos.sl,
-        "tp": float(tp) if tp is not None else pos.tp
-    }
-    res = mt5.order_send(req)
-    if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-        return {"status": "MODIFIED", "ticket": ticket, "sl": req["sl"], "tp": req["tp"]}
-    return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}: {getattr(res, 'comment', 'Failed')}"}
+    if pos:
+        sym_info = mt5.symbol_info(pos.symbol)
+        digits = getattr(sym_info, "digits", 2)
+        tick = mt5.symbol_info_tick(pos.symbol)
+
+        clean_sl = round(float(sl), digits) if sl is not None and float(sl) > 0 else (0.0 if sl == 0 else pos.sl)
+        clean_tp = round(float(tp), digits) if tp is not None and float(tp) > 0 else (0.0 if tp == 0 else pos.tp)
+
+        # Validate stops against live price if available to provide crystal-clear guidance
+        if tick:
+            bid = tick.bid
+            ask = tick.ask
+            min_dist = (getattr(sym_info, "trade_stops_level", 0) or 0) * (getattr(sym_info, "point", 0.01) or 0.01)
+
+            if pos.type == 0:  # BUY
+                if clean_sl > 0 and clean_sl >= (bid - min_dist):
+                    return {
+                        "status": "FAILED",
+                        "error": f"Invalid Stop Loss: For BUY #{ticket}, SL (${clean_sl:.2f}) must be below market bid (${bid:.2f})"
+                    }
+                if clean_tp > 0 and clean_tp <= (ask + min_dist):
+                    return {
+                        "status": "FAILED",
+                        "error": f"Invalid Take Profit: For BUY #{ticket}, TP (${clean_tp:.2f}) must be above market ask (${ask:.2f})"
+                    }
+            elif pos.type == 1:  # SELL
+                if clean_sl > 0 and clean_sl <= (ask + min_dist):
+                    return {
+                        "status": "FAILED",
+                        "error": f"Invalid Stop Loss: For SELL #{ticket}, SL (${clean_sl:.2f}) must be above market ask (${ask:.2f})"
+                    }
+                if clean_tp > 0 and clean_tp >= (bid - min_dist):
+                    return {
+                        "status": "FAILED",
+                        "error": f"Invalid Take Profit: For SELL #{ticket}, TP (${clean_tp:.2f}) must be below market bid (${bid:.2f})"
+                    }
+
+        req = {
+            "action": mt5.TRADE_ACTION_SLTP,
+            "position": ticket,
+            "symbol": pos.symbol,
+            "sl": clean_sl,
+            "tp": clean_tp
+        }
+        res = mt5.order_send(req)
+        # 10009: DONE, 10008: PLACED, 10025: NO CHANGES (already set)
+        if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009, 10025):
+            return {"status": "MODIFIED", "ticket": ticket, "sl": clean_sl, "tp": clean_tp}
+
+        retcode = getattr(res, "retcode", None)
+        comment = getattr(res, "comment", "Failed")
+        if retcode == 10016:
+            comment = "Invalid stops (SL/TP placed on wrong side of market price or within broker freeze level)"
+        return {"status": "FAILED", "error": f"Retcode {retcode}: {comment}"}
+
+    # 2. Check pending orders if not in open positions
+    order = None
+    for o in mt5.orders_get() or ():
+        if o.ticket == ticket:
+            order = o
+            break
+
+    if order:
+        sym_info = mt5.symbol_info(order.symbol)
+        digits = getattr(sym_info, "digits", 2)
+        clean_sl = round(float(sl), digits) if sl is not None and float(sl) > 0 else (0.0 if sl == 0 else order.sl)
+        clean_tp = round(float(tp), digits) if tp is not None and float(tp) > 0 else (0.0 if tp == 0 else order.tp)
+
+        req = {
+            "action": mt5.TRADE_ACTION_MODIFY,
+            "order": ticket,
+            "symbol": order.symbol,
+            "price": order.price_open,
+            "sl": clean_sl,
+            "tp": clean_tp,
+            "type_time": mt5.ORDER_TIME_GTC
+        }
+        res = mt5.order_send(req)
+        if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009, 10025):
+            return {"status": "MODIFIED", "ticket": ticket, "sl": clean_sl, "tp": clean_tp}
+
+        return {"status": "FAILED", "error": f"Pending order #{ticket} modify failed: Retcode {getattr(res, 'retcode', None)}"}
+
+    return {"status": "FAILED", "error": f"Position or order ticket #{ticket} not found"}
 
 
 def close_position(ticket: int, is_pending: bool = False) -> Dict[str, Any]:

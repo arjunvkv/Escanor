@@ -22,11 +22,15 @@ export class ActiveOrdersEngine {
     this.activePositions = [];
     this.pendingOrders = [];
     this.positionOverlays = new Map(); // key -> overlayId
+    this.lastBid = null;
+    this.lastAsk = null;
   }
 
-  updateData({ positions = [], orders = [] }) {
+  updateData({ positions = [], orders = [], bid = null, ask = null }) {
     this.activePositions = Array.isArray(positions) ? positions : [];
     this.pendingOrders = Array.isArray(orders) ? orders : [];
+    if (bid && !isNaN(bid)) this.lastBid = Number(bid);
+    if (ask && !isNaN(ask)) this.lastAsk = Number(ask);
     this.render();
   }
 
@@ -203,6 +207,34 @@ export class ActiveOrdersEngine {
   async _onOrderDragged(ticket, type, newPrice, isBuy, openPrice, volume, existingOtherPrice) {
     const finalPrice = Math.round(Number(newPrice) * 100) / 100;
     const isSl = type === 'SL';
+    const bid = this.lastBid;
+    const ask = this.lastAsk;
+
+    // Pre-flight validation against live market price to prevent invalid stop placement
+    if (isBuy) {
+      if (isSl && bid && finalPrice >= bid) {
+        showChartToast(`⚠️ Invalid SL: For BUY #${ticket}, Stop Loss must be below current market price ($${bid.toFixed(2)})`);
+        this.render();
+        return;
+      }
+      if (!isSl && ask && finalPrice <= ask) {
+        showChartToast(`⚠️ Invalid TP: For BUY #${ticket}, Take Profit must be above current market price ($${ask.toFixed(2)})`);
+        this.render();
+        return;
+      }
+    } else {
+      if (isSl && ask && finalPrice <= ask) {
+        showChartToast(`⚠️ Invalid SL: For SELL #${ticket}, Stop Loss must be above current market price ($${ask.toFixed(2)})`);
+        this.render();
+        return;
+      }
+      if (!isSl && bid && finalPrice >= bid) {
+        showChartToast(`⚠️ Invalid TP: For SELL #${ticket}, Take Profit must be below current market price ($${bid.toFixed(2)})`);
+        this.render();
+        return;
+      }
+    }
+
     const newSl = isSl ? finalPrice : (existingOtherPrice ? Number(existingOtherPrice) : null);
     const newTp = !isSl ? finalPrice : (existingOtherPrice ? Number(existingOtherPrice) : null);
 
