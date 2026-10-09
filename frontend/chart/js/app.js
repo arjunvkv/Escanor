@@ -284,16 +284,22 @@ function handleLiveTelemetry(tel) {
     });
   }
 
-  // 3. Feed Live Spot to Line Trading Collision Engine
-  if (lineTrading && bid) {
-    lineTrading.onPriceTick(bid, ask);
+  const activePositions = tel.active_positions || tel.positions || [];
+  const pendingOrders = tel.pending_orders || tel.orders || [];
+
+  // 3. Feed Live Spot & Positions to Line Trading & Bottom HUD Engine
+  if (lineTrading) {
+    lineTrading.updatePositions(activePositions);
+    if (bid) {
+      lineTrading.onPriceTick(bid, ask);
+    }
   }
 
   // 4. Update Active Trades & Pending Orders on Chart
   if (activeOrders) {
     activeOrders.updateData({
-      positions: tel.active_positions || tel.positions || [],
-      orders: tel.pending_orders || tel.orders || []
+      positions: activePositions,
+      orders: pendingOrders
     });
   }
 }

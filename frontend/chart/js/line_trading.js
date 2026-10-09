@@ -48,8 +48,53 @@ export class LineTradingManager {
 
     this.countdownTimer = null;
     this.isExecuting = false;
+    this.activePositions = [];
 
     this._init();
+  }
+
+  updatePositions(positions) {
+    this.activePositions = Array.isArray(positions) ? positions : [];
+    this.renderHud();
+  }
+
+  async killTrade(ticket) {
+    if (!ticket) return;
+    try {
+      showChartToast(`Closing #${ticket}...`);
+      const res = await fetch('/api/trade/close', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket: Number(ticket) })
+      });
+      const data = await res.json();
+      if (data && (data.status === 'CLOSED' || data.status === 'OK')) {
+        showChartToast(`🚨 Closed #${ticket}!`);
+        this.activePositions = this.activePositions.filter(p => Number(p.ticket) !== Number(ticket));
+        this.renderHud();
+      } else {
+        showChartToast(`Close rejected: ${data?.error || 'Execution rejected'}`);
+      }
+    } catch (err) {
+      showChartToast(`Error closing #${ticket}: ${err.message}`);
+    }
+  }
+
+  async killAllTrades() {
+    try {
+      showChartToast('Closing all positions...');
+      const res = await fetch('/api/trade/close_all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: this.symbol })
+      });
+      const data = await res.json();
+      showChartToast(`🚨 Closed all positions! (${data.closed_count || 0} flattened)`);
+      this.activePositions = [];
+      this.renderHud();
+    } catch (err) {
+      showChartToast(`Error closing all: ${err.message}`);
+    }
   }
 
   _init() {
@@ -713,73 +758,168 @@ export class LineTradingManager {
     if (!this.hudEl) return;
 
     const activeLines = Array.from(this.lines.values()).filter(l => l.isArmed || l.triggered);
-    if (activeLines.length === 0) {
+    const activePositions = this.activePositions || [];
+
+    if (activeLines.length === 0 && activePositions.length === 0) {
       this.hudEl.style.display = 'none';
       return;
     }
 
     this.hudEl.style.display = 'flex';
 
+    // Header title and count badge
+    let headerTitle = 'ARMED LINES';
+    let headerCount = String(activeLines.length);
+
+    if (activePositions.length > 0 && activeLines.length > 0) {
+      headerTitle = 'DESK HUD';
+      headerCount = `${activePositions.length} POS • ${activeLines.length} LINES`;
+    } else if (activePositions.length > 0) {
+      headerTitle = 'ACTIVE TRADES';
+      headerCount = String(activePositions.length);
+    }
+
     let html = `
       <div class="tv-hud-header">
         <div class="tv-hud-title-box">
-          <span class="tv-hud-dot">●</span>
-          <span class="tv-hud-title">ARMED LINES</span>
-          <span class="tv-hud-count">${activeLines.length}</span>
+          <span class="tv-hud-dot" style="color: ${activePositions.length > 0 ? '#00f5a0' : '#787b86'};">●</span>
+          <span class="tv-hud-title">${headerTitle}</span>
+          <span class="tv-hud-count">${headerCount}</span>
         </div>
         <button id="tvHudMinBtn" class="tv-hud-min-btn" title="Minimize">▼</button>
       </div>
       <div class="tv-hud-body" id="tvHudBodyList">
     `;
 
-    for (const line of activeLines) {
-      const color = this.getLineColor(line);
-      const isExit = line.actionType === 'EXIT';
-      const actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
-      const actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
-
-      let distStr = '-- pt';
-      if (line._lastPriceDist !== undefined) {
-        const priceStr = line._lastCalculatedPrice ? `$${line._lastCalculatedPrice.toFixed(2)} • ` : '';
-        distStr = `${priceStr}${line._lastPriceDist.toFixed(1)} pt away`;
-      } else if (line._lastCalculatedPrice) {
-        distStr = `@ $${line._lastCalculatedPrice.toFixed(2)}`;
-      }
-
-      let timerHtml = '';
-      if (line.triggered && line.triggeredCountdownEnd) {
-        const remSec = Math.max(0, Math.floor((line.triggeredCountdownEnd - Date.now()) / 1000));
-        const m = Math.floor(remSec / 60).toString().padStart(2, '0');
-        const s = (remSec % 60).toString().padStart(2, '0');
-        timerHtml = `<span class="tv-hud-timer">⏳ ${m}:${s}</span>`;
-      }
-
+    // 1. Render Active Trades Section
+    if (activePositions.length > 0) {
       html += `
-        <div class="tv-hud-item" data-line-id="${line.overlayId}">
-          <div class="tv-hud-item-top">
-            <span class="tv-hud-item-dot" style="background-color: ${color};"></span>
-            <span class="tv-hud-item-name" title="${line.name}">${line.name}</span>
-            <span class="tv-hud-badge ${actionClass}">${actionBadge}</span>
-          </div>
-          <div class="tv-hud-item-bottom">
-            <span class="tv-hud-item-dist">${distStr}</span>
-            ${timerHtml}
-            <div class="tv-hud-item-actions">
-              <button class="tv-hud-act-btn" data-act="settings" data-id="${line.overlayId}" title="Settings">⚙</button>
-              <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${line.isArmed ? 'Disarm' : 'Arm'}">
-                ${line.isArmed ? '⏸' : '▶'}
-              </button>
-              <button class="tv-hud-act-btn delete" data-act="delete" data-id="${line.overlayId}" title="Delete">✕</button>
-            </div>
-          </div>
+        <div class="tv-hud-section-label-row">
+          <span class="tv-hud-section-label">⚡ ACTIVE TRADES (${activePositions.length})</span>
+          ${activePositions.length > 1 ? `<button class="tv-hud-kill-all-btn" id="tvHudKillAllBtn" title="Flatten All Positions">KILL ALL</button>` : ''}
         </div>
       `;
+
+      for (const pos of activePositions) {
+        const ticket = Number(pos.ticket);
+        const isBuy = pos.type === 'BUY' || pos.type === 0 || String(pos.type).toUpperCase().includes('BUY');
+        const openPrice = Number(pos.price_open !== undefined ? pos.price_open : pos.price);
+        const volume = Number(pos.volume || 0.50);
+
+        let profitPts = Number(pos.profit_pts !== undefined ? pos.profit_pts : 0);
+        let profitDollar = Number(pos.profit !== undefined ? pos.profit : 0);
+
+        if (this.currentSpot && openPrice > 0) {
+          const curP = isBuy ? this.currentSpot : (this.currentAsk || this.currentSpot);
+          profitPts = isBuy ? (curP - openPrice) : (openPrice - curP);
+          profitDollar = profitPts * volume * 100;
+        }
+
+        const profitPips = profitPts * 10;
+        const isProfit = profitDollar >= 0;
+        const sign = isProfit ? '+' : '-';
+        const dollarStr = `${sign}$${Math.abs(profitDollar).toFixed(2)}`;
+        const pipsStr = `${sign}${Math.abs(profitPips).toFixed(1)} pips (${sign}${Math.abs(profitPts).toFixed(1)} pt)`;
+        const pnlClass = isProfit ? 'profit' : 'loss';
+
+        html += `
+          <div class="tv-hud-pos-item ${isBuy ? 'buy' : 'sell'}" data-ticket="${ticket}">
+            <div class="tv-hud-pos-row-top">
+              <div class="tv-hud-pos-info">
+                <span class="tv-hud-pos-dot ${isBuy ? 'buy' : 'sell'}"></span>
+                <span class="tv-hud-pos-type ${isBuy ? 'buy' : 'sell'}">${isBuy ? 'BUY' : 'SELL'} ${volume}L</span>
+                <span class="tv-hud-pos-ticket">#${ticket}</span>
+                <span class="tv-hud-pos-open">@ $${openPrice.toFixed(2)}</span>
+              </div>
+              <button class="tv-hud-kill-btn" data-ticket="${ticket}" title="Kill / Close #${ticket} immediately">
+                <span class="tv-kill-icon">✕</span>
+                <span>KILL</span>
+              </button>
+            </div>
+            <div class="tv-hud-pos-row-bottom">
+              <div class="tv-hud-pos-pnl ${pnlClass}">
+                <span class="tv-pnl-dollar">${dollarStr}</span>
+                <span class="tv-pnl-pips">${pipsStr}</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }
+
+    // 2. Render Armed Lines Section
+    if (activeLines.length > 0) {
+      if (activePositions.length > 0) {
+        html += `
+          <div class="tv-hud-section-label-row" style="margin-top: 6px;">
+            <span class="tv-hud-section-label">📐 ARMED LINES (${activeLines.length})</span>
+          </div>
+        `;
+      }
+
+      for (const line of activeLines) {
+        const color = this.getLineColor(line);
+        const isExit = line.actionType === 'EXIT';
+        const actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
+        const actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
+
+        let distStr = '-- pt';
+        if (line._lastPriceDist !== undefined) {
+          const priceStr = line._lastCalculatedPrice ? `$${line._lastCalculatedPrice.toFixed(2)} • ` : '';
+          distStr = `${priceStr}${line._lastPriceDist.toFixed(1)} pt away`;
+        } else if (line._lastCalculatedPrice) {
+          distStr = `@ $${line._lastCalculatedPrice.toFixed(2)}`;
+        }
+
+        let timerHtml = '';
+        if (line.triggered && line.triggeredCountdownEnd) {
+          const remSec = Math.max(0, Math.floor((line.triggeredCountdownEnd - Date.now()) / 1000));
+          const m = Math.floor(remSec / 60).toString().padStart(2, '0');
+          const s = (remSec % 60).toString().padStart(2, '0');
+          timerHtml = `<span class="tv-hud-timer">⏳ ${m}:${s}</span>`;
+        }
+
+        html += `
+          <div class="tv-hud-item" data-line-id="${line.overlayId}">
+            <div class="tv-hud-item-top">
+              <span class="tv-hud-item-dot" style="background-color: ${color};"></span>
+              <span class="tv-hud-item-name" title="${line.name}">${line.name}</span>
+              <span class="tv-hud-badge ${actionClass}">${actionBadge}</span>
+            </div>
+            <div class="tv-hud-item-bottom">
+              <span class="tv-hud-item-dist">${distStr}</span>
+              ${timerHtml}
+              <div class="tv-hud-item-actions">
+                <button class="tv-hud-act-btn" data-act="settings" data-id="${line.overlayId}" title="Settings">⚙</button>
+                <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${line.isArmed ? 'Disarm' : 'Arm'}">
+                  ${line.isArmed ? '⏸' : '▶'}
+                </button>
+                <button class="tv-hud-act-btn delete" data-act="delete" data-id="${line.overlayId}" title="Delete">✕</button>
+              </div>
+            </div>
+          </div>
+        `;
+      }
     }
 
     html += `</div>`;
     this.hudEl.innerHTML = html;
 
-    // Attach actions
+    // Attach actions for position kill buttons
+    this.hudEl.querySelectorAll('.tv-hud-kill-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const ticket = btn.getAttribute('data-ticket');
+        if (ticket) this.killTrade(ticket);
+      });
+    });
+
+    document.getElementById('tvHudKillAllBtn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.killAllTrades();
+    });
+
+    // Attach actions for line items
     this.hudEl.querySelectorAll('.tv-hud-act-btn').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();

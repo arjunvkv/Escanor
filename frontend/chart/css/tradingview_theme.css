@@ -1085,12 +1085,12 @@ html, body {
   left: 56px;
   bottom: 24px;
   z-index: 20;
-  width: 290px;
-  background: rgba(20, 24, 34, 0.92);
-  backdrop-filter: blur(10px);
+  width: 316px;
+  background: rgba(20, 24, 34, 0.94);
+  backdrop-filter: blur(12px);
   border: 1px solid #2a2e39;
   border-radius: 8px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1147,7 +1147,7 @@ html, body {
   flex-direction: column;
   gap: 6px;
   padding: 8px 10px;
-  max-height: 220px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
@@ -1249,5 +1249,174 @@ html, body {
   background: #ef4444;
   color: #ffffff;
 }
+
+/* ========================================================================= */
+/* ⚡ ACTIVE TRADES IN HUD (DOLLARS, PIPS & KILL BUTTON)                     */
+/* ========================================================================= */
+.tv-hud-pos-item {
+  background: rgba(22, 27, 38, 0.85);
+  border: 1px solid #2a2e39;
+  border-left: 3px solid #00f5a0;
+  border-radius: 6px;
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+.tv-hud-pos-item.sell {
+  border-left-color: #ef4444;
+}
+
+.tv-hud-pos-row-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.tv-hud-pos-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  overflow: hidden;
+  font-size: 11px;
+}
+
+.tv-hud-pos-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.tv-hud-pos-dot.buy { background-color: #00f5a0; box-shadow: 0 0 6px rgba(0, 245, 160, 0.4); }
+.tv-hud-pos-dot.sell { background-color: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+
+.tv-hud-pos-type {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.tv-hud-pos-type.buy {
+  background: rgba(0, 245, 160, 0.15);
+  color: #00f5a0;
+}
+.tv-hud-pos-type.sell {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.tv-hud-pos-ticket {
+  font-size: 9.5px;
+  color: #787b86;
+  font-family: monospace;
+}
+
+.tv-hud-pos-open {
+  font-size: 10px;
+  color: #d1d4dc;
+  font-family: monospace;
+  font-weight: 600;
+}
+
+/* Kill Trade Button */
+.tv-hud-kill-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  padding: 3px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+.tv-hud-kill-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+}
+.tv-hud-kill-btn:active {
+  transform: scale(0.96);
+}
+
+.tv-kill-icon {
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.tv-hud-pos-row-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tv-hud-pos-pnl {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: monospace;
+}
+.tv-hud-pos-pnl.profit .tv-pnl-dollar {
+  font-size: 13px;
+  font-weight: 800;
+  color: #00f5a0;
+}
+.tv-hud-pos-pnl.profit .tv-pnl-pips {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #34d399;
+}
+.tv-hud-pos-pnl.loss .tv-pnl-dollar {
+  font-size: 13px;
+  font-weight: 800;
+  color: #ef4444;
+}
+.tv-hud-pos-pnl.loss .tv-pnl-pips {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #f87171;
+}
+
+/* Section Dividers inside HUD */
+.tv-hud-section-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 2px;
+  margin-top: 2px;
+}
+
+.tv-hud-section-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #787b86;
+  text-transform: uppercase;
+}
+
+.tv-hud-kill-all-btn {
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  color: #ef4444;
+  font-size: 8.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tv-hud-kill-all-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+}
+
 
 
