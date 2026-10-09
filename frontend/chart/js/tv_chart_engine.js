@@ -59,6 +59,95 @@ function registerCustomOverlays() {
     });
   }
 
+  // 1b. Structural Institutional Levels (PDH, PDL, Asian Levels, VWAP/GEX, FVG Shelves)
+  if (!supported.includes('structuralLevel')) {
+    klinecharts.registerOverlay({
+      name: 'structuralLevel',
+      totalStep: 2,
+      needDefaultPointFigure: false,
+      needDefaultXAxisFigure: false,
+      needDefaultYAxisFigure: true,
+      createPointFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+        const data = overlay.extendData || {};
+        const price = overlay.points[0]?.value;
+        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+          ? yAxis.convertToPixel(price)
+          : (coordinates[0]?.y ?? 0);
+
+        const width = bounding.width;
+        const color = data.color || '#f59e0b';
+        const lineStyle = data.lineStyle || 'dashed';
+        const lineSize = data.lineSize || 1.5;
+        const title = data.title || '';
+
+        const figures = [];
+
+        // Full-width horizontal reference line
+        figures.push({
+          type: 'line',
+          attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
+          styles: {
+            style: lineStyle,
+            dashedValue: [6, 4],
+            color: color,
+            size: lineSize
+          }
+        });
+
+        // Pill text badge on the left side of the chart
+        if (title) {
+          figures.push({
+            type: 'text',
+            attrs: { x: 12, y: y - 13, text: title, baseline: 'top' },
+            styles: {
+              color: '#ffffff',
+              size: 10,
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+              weight: 'bold',
+              backgroundColor: color,
+              borderRadius: 3,
+              paddingLeft: 6,
+              paddingRight: 6,
+              paddingTop: 2,
+              paddingBottom: 2
+            }
+          });
+        }
+
+        return figures;
+      },
+      createYAxisFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+        const data = overlay.extendData || {};
+        const price = overlay.points[0]?.value;
+        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+          ? yAxis.convertToPixel(price)
+          : (coordinates[0]?.y ?? 0);
+
+        const color = data.color || '#f59e0b';
+        const label = data.yLabel || (typeof price === 'number' ? price.toFixed(2) : '');
+
+        return [
+          {
+            type: 'text',
+            attrs: { x: bounding.width, y, text: label, align: 'right', baseline: 'middle' },
+            styles: {
+              color: '#ffffff',
+              size: 10,
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+              weight: 'bold',
+              backgroundColor: color,
+              borderRadius: 2,
+              paddingLeft: 4,
+              paddingRight: 4,
+              paddingTop: 2,
+              paddingBottom: 2
+            }
+          }
+        ];
+      }
+    });
+  }
+
   // 2. Active MT5 Position & Pending Order Line (Draggable SL & TP)
   klinecharts.registerOverlay({
     name: 'activeTradeOrder',

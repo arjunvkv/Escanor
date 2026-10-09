@@ -9,6 +9,7 @@ import { initToolbar, showTvConfirm } from './toolbar.js';
 import { fetchServerDrawings, restoreDrawings, showChartToast } from './drawings_storage.js';
 import { ActiveOrdersEngine } from './active_orders_engine.js';
 import { LineTradingManager } from './line_trading.js';
+import { StructuralLevelsEngine } from './structural_levels_engine.js';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -18,6 +19,7 @@ let liveBarCallback = null;
 let lastKnownSpot = null;
 let activeOrders = null;
 let lineTrading = null;
+let structuralLevels = null;
 
 const TF_MAP = {
   '1': { mult: 1, type: 'minute', span: 1, label: '1m' },
@@ -53,6 +55,10 @@ async function init() {
   activeOrders = new ActiveOrdersEngine({
     chartEngine: { chart },
     symbol: currentSymbol
+  });
+
+  structuralLevels = new StructuralLevelsEngine({
+    chartEngine: { chart }
   });
 
   // 4. Setup Data Loader
@@ -306,6 +312,11 @@ function handleLiveTelemetry(tel) {
       bid: bid,
       ask: ask
     });
+  }
+
+  // 5. Update Structural Institutional Levels on Chart (PDH, PDL, Asian, VWAP, FVG)
+  if (structuralLevels) {
+    structuralLevels.updateLevels(tel);
   }
 }
 
