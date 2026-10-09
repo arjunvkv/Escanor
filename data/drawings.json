@@ -1,6 +1,35 @@
 {
   "XAUUSD": [
     {
+      "id": "overlay_1791542618861_1",
+      "name": "segment",
+      "points": [
+        {
+          "timestamp": 1791546000000,
+          "dataIndex": 275,
+          "value": 4186.584533333334
+        },
+        {
+          "dataIndex": 322,
+          "value": 4174.582066666667
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#fbbf24",
+          "size": 2.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#fbbf24",
+          "borderColor": "#fbbf24",
+          "activeColor": "#fbbf24",
+          "activeBorderColor": "#fbbf24",
+          "radius": 5
+        }
+      }
+    },
+    {
       "id": "overlay_1791543532900_1",
       "name": "segment",
       "points": [
@@ -30,23 +59,24 @@
       }
     },
     {
-      "id": "overlay_1791542618861_1",
+      "id": "overlay_1791543642222_1",
       "name": "segment",
       "points": [
         {
-          "timestamp": 1791546000000,
-          "dataIndex": 275,
-          "value": 4186.584533333334
+          "timestamp": 1791545400000,
+          "dataIndex": 270,
+          "value": 4188.106852298506
         },
         {
-          "dataIndex": 322,
-          "value": 4174.582066666667
+          "dataIndex": 324,
+          "value": 4193.178559999999,
+          "timestamp": 1791554400000
         }
       ],
       "styles": {
         "line": {
           "color": "#94a3b8",
-          "size": 2.5,
+          "size": 1.5,
           "style": "solid"
         },
         "point": {
@@ -54,7 +84,7 @@
           "borderColor": "#94a3b8",
           "activeColor": "#94a3b8",
           "activeBorderColor": "#94a3b8",
-          "radius": 5
+          "radius": 4
         }
       }
     }

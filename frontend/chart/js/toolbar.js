@@ -264,7 +264,60 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
 
   // =========================================================================
   // 🎛️ FLOATING ACTION TOOLBAR (MATCHES TRADINGVIEW)
+  // Single persistent coordinate across all items and browser reloads
   // =========================================================================
+
+  const TOOLBAR_POS_KEY = 'tv_floating_toolbar_pos';
+
+  function getSavedToolbarPosition() {
+    try {
+      const saved = localStorage.getItem(TOOLBAR_POS_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (typeof parsed.left === 'number' && typeof parsed.top === 'number') {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.warn('[Toolbar] Failed reading saved position:', e);
+    }
+    return null;
+  }
+
+  function saveToolbarPosition(left, top) {
+    try {
+      localStorage.setItem(TOOLBAR_POS_KEY, JSON.stringify({ left: Math.round(left), top: Math.round(top) }));
+    } catch (e) {
+      console.warn('[Toolbar] Failed saving position:', e);
+    }
+  }
+
+  function applyFloatingBarPosition() {
+    if (!floatingBar) return;
+    const barWidth = floatingBar.offsetWidth || 116;
+    const barHeight = floatingBar.offsetHeight || 36;
+
+    let pos = getSavedToolbarPosition();
+    if (!pos) {
+      // Default initial location: centered horizontally, 75px from top
+      const defaultLeft = Math.round((window.innerWidth / 2) - (barWidth / 2));
+      const defaultTop = 75;
+      pos = { left: defaultLeft, top: defaultTop };
+      saveToolbarPosition(pos.left, pos.top);
+    }
+
+    // Strictly clamp within viewport so the box never gets lost off-screen
+    const maxLeft = Math.max(10, window.innerWidth - barWidth - 10);
+    const maxTop = Math.max(10, window.innerHeight - barHeight - 10);
+    const clampedLeft = Math.max(10, Math.min(maxLeft, pos.left));
+    const clampedTop = Math.max(10, Math.min(maxTop, pos.top));
+
+    floatingBar.style.left = `${clampedLeft}px`;
+    floatingBar.style.top = `${clampedTop}px`;
+  }
+
+  // Pre-position on init so it's ready at the saved coordinate
+  applyFloatingBarPosition();
 
   function handleOverlaySelected(event) {
     selectedOverlay = event.overlay;
@@ -277,21 +330,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       return;
     }
 
-    // Show floating bar
+    // Position at the single saved persistent coordinate for ALL items
+    applyFloatingBarPosition();
     floatingBar.style.display = 'flex';
-
-    // Position floating bar near the top-center of the viewport or above cursor
-    const chartEl = document.getElementById('klineChart');
-    const rect = chartEl.getBoundingClientRect();
-
-    let posX = (event.x || event.pageX || (rect.left + rect.width / 2)) - 50;
-    let posY = (event.y || event.pageY || (rect.top + 80)) - 45;
-
-    posX = Math.max(rect.left + 60, Math.min(rect.right - 140, posX));
-    posY = Math.max(rect.top + 10, Math.min(rect.bottom - 60, posY));
-
-    floatingBar.style.left = `${posX}px`;
-    floatingBar.style.top = `${posY}px`;
   }
 
   function handleOverlayDeselected() {
@@ -364,27 +405,86 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     if (rectModal) rectModal.style.display = 'none';
   });
 
-  // Draggable Floating Toolbar Handle
+  // Draggable Floating Toolbar Handle & Body
   let isDraggingBar = false;
   let dragOffset = { x: 0, y: 0 };
 
-  floatDragHandle?.addEventListener('mousedown', (e) => {
+  function startDraggingBar(clientX, clientY) {
     isDraggingBar = true;
+    floatingBar.classList.add('dragging');
     const barRect = floatingBar.getBoundingClientRect();
-    dragOffset.x = e.clientX - barRect.left;
-    dragOffset.y = e.clientY - barRect.top;
+    dragOffset.x = clientX - barRect.left;
+    dragOffset.y = clientY - barRect.top;
+  }
+
+  function moveDraggingBar(clientX, clientY) {
+    if (!isDraggingBar || !floatingBar) return;
+    const barWidth = floatingBar.offsetWidth || 116;
+    const barHeight = floatingBar.offsetHeight || 36;
+
+    let newLeft = clientX - dragOffset.x;
+    let newTop = clientY - dragOffset.y;
+
+    // Clamp strictly within viewport
+    newLeft = Math.max(10, Math.min(window.innerWidth - barWidth - 10, newLeft));
+    newTop = Math.max(10, Math.min(window.innerHeight - barHeight - 10, newTop));
+
+    floatingBar.style.left = `${newLeft}px`;
+    floatingBar.style.top = `${newTop}px`;
+  }
+
+  function stopDraggingBar() {
+    if (!isDraggingBar) return;
+    isDraggingBar = false;
+    if (floatingBar) {
+      floatingBar.classList.remove('dragging');
+      const left = parseFloat(floatingBar.style.left) || floatingBar.offsetLeft;
+      const top = parseFloat(floatingBar.style.top) || floatingBar.offsetTop;
+      saveToolbarPosition(left, top);
+    }
+  }
+
+  // Allow dragging by the drag handle OR any non-button area of the floating toolbar
+  floatingBar?.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.tv-float-btn') || e.target.closest('button')) {
+      return;
+    }
+    startDraggingBar(e.clientX, e.clientY);
     e.preventDefault();
   });
 
   window.addEventListener('mousemove', (e) => {
-    if (isDraggingBar && floatingBar) {
-      floatingBar.style.left = `${e.clientX - dragOffset.x}px`;
-      floatingBar.style.top = `${e.clientY - dragOffset.y}px`;
+    if (isDraggingBar) {
+      moveDraggingBar(e.clientX, e.clientY);
     }
   });
 
   window.addEventListener('mouseup', () => {
-    isDraggingBar = false;
+    stopDraggingBar();
+  });
+
+  // Touch drag support
+  floatingBar?.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.tv-float-btn') || e.target.closest('button')) return;
+    if (e.touches && e.touches[0]) {
+      startDraggingBar(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (isDraggingBar && e.touches && e.touches[0]) {
+      moveDraggingBar(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    stopDraggingBar();
+  });
+
+  window.addEventListener('resize', () => {
+    if (floatingBar && floatingBar.style.display !== 'none') {
+      applyFloatingBarPosition();
+    }
   });
 
   // =========================================================================
