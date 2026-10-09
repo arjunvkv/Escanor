@@ -1,17 +1,33 @@
 {
   "XAUUSD": [
     {
+      "id": "overlay_1791535858257_1",
+      "name": "segment",
+      "points": [
+        {
+          "timestamp": 1791524700000,
+          "dataIndex": 226,
+          "value": 4213.096699616884
+        },
+        {
+          "dataIndex": 329,
+          "value": 4196.134911425038
+        }
+      ],
+      "styles": null
+    },
+    {
       "id": "overlay_1791534939756_1",
       "name": "segment",
       "points": [
         {
-          "timestamp": 1791530700000,
-          "dataIndex": 250,
-          "value": 4176.308755555556
+          "timestamp": 1791516600000,
+          "dataIndex": 198,
+          "value": 4180.333779259259
         },
         {
-          "dataIndex": 330,
-          "value": 4196.703081481482
+          "dataIndex": 372,
+          "value": 4180.486562962963
         }
       ],
       "styles": null

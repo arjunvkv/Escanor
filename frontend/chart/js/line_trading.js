@@ -24,13 +24,14 @@
  *    - Muted (#94a3b8) = Triggered
  */
 
-import { showChartToast } from './drawings_storage.js';
+import { showChartToast, syncDrawingsToServer } from './drawings_storage.js';
 
 export const STORAGE_KEY_LINE_TRADING = 'escanor_line_trading_v1';
 
 export class LineTradingManager {
   constructor({ chartEngine, symbol = 'XAUUSD', hudContainerId = 'tvLineTradingHud', modalId = 'tvLineTradingModal' }) {
     this.engine = chartEngine;
+    this.chart = (chartEngine && chartEngine.chart) ? chartEngine.chart : chartEngine;
     this.symbol = symbol;
     this.hudEl = document.getElementById(hudContainerId);
     this.modalEl = document.getElementById(modalId);
@@ -38,7 +39,9 @@ export class LineTradingManager {
     this.lines = new Map(); // overlayId -> lineConfig
     this.selectedLineId = null;
     this.currentSpot = null;
-    this.lastSpotPrice = null;
+    this.currentAsk = null;
+    this.lastBidPrice = null;
+    this.lastAskPrice = null;
 
     this.isDraggingLine = false;
     this.isDrawingLine = false;
@@ -143,23 +146,34 @@ export class LineTradingManager {
   }
 
   applyLineColor(overlayId) {
-    if (!this.engine || !this.engine.chart) return;
+    if (!this.chart) return;
     const line = this.lines.get(String(overlayId));
     if (!line) return;
 
     const col = this.getLineColor(line);
+    const size = line.isArmed ? 2.5 : 1.5;
     try {
-      this.engine.overrideOverlay({
+      this.chart.overrideOverlay({
         id: line.overlayId,
         styles: {
           line: {
             color: col,
-            size: line.isArmed ? 2.5 : 1.5,
+            size: size,
             style: 'solid'
+          },
+          point: {
+            color: col,
+            borderColor: col,
+            activeColor: col,
+            activeBorderColor: col,
+            radius: line.isArmed ? 5 : 4
           }
         }
       });
-    } catch (_) {}
+      syncDrawingsToServer(this.symbol, this.chart, false);
+    } catch (e) {
+      console.warn('[LineTrading] Error applying line color:', e);
+    }
   }
 
   // Set drag / draw flags to prevent accidental trigger
@@ -177,9 +191,12 @@ export class LineTradingManager {
   onPriceTick(bid, ask) {
     if (!bid || isNaN(bid)) return;
     this.currentSpot = bid;
+    const currentAsk = (ask && !isNaN(ask)) ? ask : bid;
 
-    const prevPrice = this.lastSpotPrice !== null ? this.lastSpotPrice : bid;
-    this.lastSpotPrice = bid;
+    const prevBid = this.lastBidPrice !== null ? this.lastBidPrice : bid;
+    const prevAsk = this.lastAskPrice !== null ? this.lastAskPrice : currentAsk;
+    this.lastBidPrice = bid;
+    this.lastAskPrice = currentAsk;
 
     // Do NOT trigger while user is actively drawing or dragging a line!
     if (this.isDraggingLine || this.isDrawingLine) {
@@ -187,9 +204,9 @@ export class LineTradingManager {
       return;
     }
 
-    if (!this.engine || !this.engine.chart) return;
+    if (!this.chart) return;
 
-    const chartOverlays = this.engine.getOverlays() || [];
+    const chartOverlays = this.chart.getOverlays() || [];
     const overlayMap = new Map(chartOverlays.map(o => [String(o.id), o]));
 
     for (const line of this.lines.values()) {
@@ -199,15 +216,37 @@ export class LineTradingManager {
       if (!ov || !ov.points || ov.points.length === 0) continue;
 
       const linePrice = this._calculateLinePriceAtCurrentTime(ov);
-      if (linePrice === null) continue;
+      if (linePrice === null || isNaN(linePrice) || linePrice <= 0) continue;
 
-      line._lastPriceDist = Math.abs(bid - linePrice);
+      line._lastCalculatedPrice = linePrice;
 
-      // Check collision or crossing
-      const crossed = (prevPrice <= linePrice && bid >= linePrice) || (prevPrice >= linePrice && bid <= linePrice);
-      const touched = Math.abs(bid - linePrice) <= 0.25; // 0.25 pt tolerance
+      // Select relevant price based on direction:
+      // BUY market orders fill at ASK; SELL market orders fill at BID
+      const isBuyAction = (line.actionType === 'EXECUTE' && line.direction === 'BUY');
+      const testPrice = isBuyAction ? currentAsk : bid;
+      const prevTestPrice = isBuyAction ? prevAsk : prevBid;
 
-      if (crossed || touched) {
+      line._lastPriceDist = Math.abs(testPrice - linePrice);
+
+      // Collision checks:
+      // 1. Direct price cross (prevPrice to testPrice jumped over linePrice)
+      const crossed = (prevTestPrice <= linePrice && testPrice >= linePrice) ||
+                      (prevTestPrice >= linePrice && testPrice <= linePrice);
+
+      // 2. Touch tolerance: 0.35 pt buffer (covers Gold spread and sub-pip wicks)
+      const touched = Math.abs(testPrice - linePrice) <= 0.35;
+
+      // 3. Bid/Ask span check: If line is between bid and ask
+      const inSpread = (bid <= linePrice && currentAsk >= linePrice);
+
+      // 4. Other price (bid or ask) touched or crossed
+      const otherPrice = isBuyAction ? bid : currentAsk;
+      const otherPrev = isBuyAction ? prevBid : prevAsk;
+      const otherCrossed = (otherPrev <= linePrice && otherPrice >= linePrice) ||
+                           (otherPrev >= linePrice && otherPrice <= linePrice);
+      const otherTouched = Math.abs(otherPrice - linePrice) <= 0.35;
+
+      if (crossed || touched || inSpread || otherCrossed || otherTouched) {
         this._executeLineTrigger(line, linePrice);
       }
     }
@@ -216,27 +255,78 @@ export class LineTradingManager {
   }
 
   _calculateLinePriceAtCurrentTime(overlay) {
+    if (!overlay || !overlay.points || overlay.points.length === 0) return null;
     const pts = overlay.points;
-    if (!pts || pts.length === 0) return null;
 
+    // 1. Single-point or horizontal straight line
     if (pts.length === 1 || overlay.name === 'horizontalStraightLine') {
-      return Number(pts[0].value);
+      const v = Number(pts[0]?.value);
+      return (!isNaN(v) && v > 0) ? v : null;
     }
 
     if (pts.length >= 2) {
       const p1 = pts[0];
       const p2 = pts[1];
-      const t1 = p1.timestamp || 0;
-      const t2 = p2.timestamp || 0;
-      const v1 = Number(p1.value) || 0;
-      const v2 = Number(p2.value) || 0;
+      const v1 = Number(p1?.value);
+      const v2 = Number(p2?.value);
 
-      if (t1 === t2) return (v1 + v2) / 2;
+      if (isNaN(v1) || isNaN(v2)) return null;
 
-      const nowMs = Date.now();
-      const slope = (v2 - v1) / (t2 - t1);
-      const curVal = v1 + slope * (nowMs - t1);
-      return curVal;
+      // Pure horizontal line or identical values (e.g. drawn with Shift key)
+      if (Math.abs(v1 - v2) < 0.0001) {
+        return v1;
+      }
+
+      // Vertical line: price is not defined
+      if (overlay.name === 'verticalStraightLine') {
+        return null;
+      }
+
+      // 2. Sloped Lines (Segment, Ray, Trend Line, etc.)
+      const dataList = this.chart ? (this.chart.getDataList() || []) : [];
+      const latestBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+      const latestIndex = dataList.length > 0 ? dataList.length - 1 : 0;
+      const latestTime = latestBar ? latestBar.timestamp : Date.now();
+
+      const idx1 = (p1.dataIndex !== undefined) ? Number(p1.dataIndex) : null;
+      const idx2 = (p2.dataIndex !== undefined) ? Number(p2.dataIndex) : null;
+      const t1 = (p1.timestamp !== undefined && p1.timestamp > 0) ? Number(p1.timestamp) : null;
+      const t2 = (p2.timestamp !== undefined && p2.timestamp > 0) ? Number(p2.timestamp) : null;
+
+      // Method A: Interpolate by dataIndex (most accurate for chart candles)
+      if (idx1 !== null && idx2 !== null && idx1 !== idx2) {
+        const slope = (v2 - v1) / (idx2 - idx1);
+        const curVal = v1 + slope * (latestIndex - idx1);
+        if (!isNaN(curVal) && curVal > 0) return curVal;
+      }
+
+      // Method B: Interpolate by timestamp
+      if (t1 !== null && t2 !== null && t1 !== t2) {
+        const slope = (v2 - v1) / (t2 - t1);
+        const curVal = v1 + slope * (latestTime - t1);
+        if (!isNaN(curVal) && curVal > 0) return curVal;
+      }
+
+      // Method C: Mixed (one has timestamp, other only has dataIndex)
+      if (dataList.length >= 2) {
+        const barDuration = Math.max(1000, dataList[dataList.length - 1].timestamp - dataList[dataList.length - 2].timestamp);
+        let time1 = t1;
+        let time2 = t2;
+        if (time1 === null && idx1 !== null) {
+          time1 = latestTime - (latestIndex - idx1) * barDuration;
+        }
+        if (time2 === null && idx2 !== null) {
+          time2 = latestTime - (latestIndex - idx2) * barDuration;
+        }
+        if (time1 !== null && time2 !== null && time1 !== time2) {
+          const slope = (v2 - v1) / (time2 - time1);
+          const curVal = v1 + slope * (latestTime - time1);
+          if (!isNaN(curVal) && curVal > 0) return curVal;
+        }
+      }
+
+      // Fallback: Average of the two values
+      return (v1 + v2) / 2;
     }
 
     return null;
@@ -507,7 +597,7 @@ export class LineTradingManager {
     document.getElementById('tvLineDeleteBtn')?.addEventListener('click', () => {
       if (this.selectedLineId) {
         const idToDelete = this.selectedLineId;
-        try { this.engine.chart.removeOverlay(idToDelete); } catch (_) {}
+        try { this.chart.removeOverlay(idToDelete); } catch (_) {}
         this.removeLineOverlay(idToDelete);
         this.modalEl.style.display = 'none';
         showChartToast('Line deleted');
@@ -596,8 +686,24 @@ export class LineTradingManager {
     line.isArmed = isArmed;
     line.triggered = false; // Reset trigger state on re-arming
 
+    // Calculate initial price and point distance immediately
+    if (this.chart) {
+      const overlays = this.chart.getOverlays() || [];
+      const ov = overlays.find(o => String(o.id) === String(line.overlayId));
+      if (ov) {
+        const lp = this._calculateLinePriceAtCurrentTime(ov);
+        if (lp && !isNaN(lp)) {
+          line._lastCalculatedPrice = lp;
+          if (this.currentSpot) {
+            line._lastPriceDist = Math.abs(this.currentSpot - lp);
+          }
+        }
+      }
+    }
+
     this.applyLineColor(line.overlayId);
     this.saveToStorage();
+    this.renderHud();
   }
 
   // =========================================================================
@@ -632,7 +738,13 @@ export class LineTradingManager {
       const actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
       const actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
 
-      const distStr = line._lastPriceDist !== undefined ? `${line._lastPriceDist.toFixed(1)} pt away` : '-- pt';
+      let distStr = '-- pt';
+      if (line._lastPriceDist !== undefined) {
+        const priceStr = line._lastCalculatedPrice ? `$${line._lastCalculatedPrice.toFixed(2)} • ` : '';
+        distStr = `${priceStr}${line._lastPriceDist.toFixed(1)} pt away`;
+      } else if (line._lastCalculatedPrice) {
+        distStr = `@ $${line._lastCalculatedPrice.toFixed(2)}`;
+      }
 
       let timerHtml = '';
       if (line.triggered && line.triggeredCountdownEnd) {
@@ -683,7 +795,7 @@ export class LineTradingManager {
           this.saveToStorage();
           showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Disarmed ${line.name}`);
         } else if (act === 'delete' && line) {
-          try { this.engine.chart.removeOverlay(id); } catch (_) {}
+          try { this.chart.removeOverlay(id); } catch (_) {}
           this.removeLineOverlay(id);
           showChartToast(`Deleted ${line.name}`);
         }

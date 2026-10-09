@@ -17,6 +17,7 @@ import { showChartToast } from './drawings_storage.js';
 export class ActiveOrdersEngine {
   constructor({ chartEngine, symbol = 'XAUUSD' }) {
     this.engine = chartEngine;
+    this.chart = (chartEngine && chartEngine.chart) ? chartEngine.chart : chartEngine;
     this.symbol = symbol;
     this.activePositions = [];
     this.pendingOrders = [];
@@ -30,7 +31,7 @@ export class ActiveOrdersEngine {
   }
 
   render() {
-    if (!this.engine || !this.engine.chart) return;
+    if (!this.chart) return;
 
     const activeTickets = new Set(this.activePositions.map(p => Number(p.ticket)));
     const pendingTickets = new Set(this.pendingOrders.map(o => Number(o.ticket)));
@@ -42,10 +43,10 @@ export class ActiveOrdersEngine {
       const ticket = parseInt(parts[1], 10);
 
       if (prefix === 'pos' && !activeTickets.has(ticket)) {
-        try { this.engine.removeOverlay(ovId); } catch (_) {}
+        try { this.chart.removeOverlay(ovId); } catch (_) {}
         this.positionOverlays.delete(key);
       } else if (prefix === 'ord' && !pendingTickets.has(ticket)) {
-        try { this.engine.removeOverlay(ovId); } catch (_) {}
+        try { this.chart.removeOverlay(ovId); } catch (_) {}
         this.positionOverlays.delete(key);
       }
     }
@@ -168,21 +169,21 @@ export class ActiveOrdersEngine {
   }
 
   _syncOrderLine(key, options) {
-    if (!this.engine || !this.engine.chart) return;
+    if (!this.chart) return;
 
     let ovId = this.positionOverlays.get(key);
     if (ovId) {
       try {
-        this.engine.overrideOverlay(Object.assign({ id: ovId, name: 'activeTradeOrder' }, options));
+        this.chart.overrideOverlay(Object.assign({ id: ovId, name: 'activeTradeOrder' }, options));
         return;
       } catch (_) {
-        try { this.engine.removeOverlay(ovId); } catch (e) {}
+        try { this.chart.removeOverlay(ovId); } catch (e) {}
         this.positionOverlays.delete(key);
       }
     }
 
     try {
-      const createdId = this.engine.createOverlay(Object.assign({ name: 'activeTradeOrder' }, options));
+      const createdId = this.chart.createOverlay(Object.assign({ name: 'activeTradeOrder' }, options));
       if (createdId) {
         this.positionOverlays.set(key, createdId);
       }
@@ -193,8 +194,8 @@ export class ActiveOrdersEngine {
 
   _removeOrderLine(key) {
     const ovId = this.positionOverlays.get(key);
-    if (ovId && this.engine && this.engine.chart) {
-      try { this.engine.removeOverlay(ovId); } catch (_) {}
+    if (ovId && this.chart) {
+      try { this.chart.removeOverlay(ovId); } catch (_) {}
       this.positionOverlays.delete(key);
     }
   }
