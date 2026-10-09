@@ -1,16 +1,23 @@
 /**
  * Escanor — TradingView Chart Engine (KLineCharts v10 wrapper)
  * Themes the chart to exact TradingView Obsidian (#131722), silver bull (#d1d4dc), rose bear (#e0457b)
- * and registers custom box & measurement ruler tools.
+ * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-// Register custom Rectangle (Box) overlay if not natively present
+// Global reference for chart instance
+let chartInstance = null;
+
+export function getChartInstance() {
+  return chartInstance;
+}
+
+// Register custom Rectangle (Box) and Measurement Ruler overlays
 function registerCustomOverlays() {
   if (typeof klinecharts === 'undefined') return;
 
   const supported = klinecharts.getSupportedOverlays();
 
-  // Custom Box / Rectangle overlay
+  // 1. Custom Box / Rectangle overlay with Shift-horizontal lock & styles
   if (!supported.includes('rect')) {
     klinecharts.registerOverlay({
       name: 'rect',
@@ -21,6 +28,7 @@ function registerCustomOverlays() {
       createPointFigures: ({ coordinates }) => {
         if (coordinates.length === 2) {
           const [p1, p2] = coordinates;
+          const y2 = window.__isShiftPressed ? p1.y : p2.y;
           return [
             {
               type: 'polygon',
@@ -28,8 +36,8 @@ function registerCustomOverlays() {
                 coordinates: [
                   { x: p1.x, y: p1.y },
                   { x: p2.x, y: p1.y },
-                  { x: p2.x, y: p2.y },
-                  { x: p1.x, y: p2.y }
+                  { x: p2.x, y: y2 },
+                  { x: p1.x, y: y2 }
                 ]
               },
               styles: {
@@ -42,11 +50,16 @@ function registerCustomOverlays() {
           ];
         }
         return [];
+      },
+      performEventPressedMove: ({ points, performPointIndex }) => {
+        if (window.__isShiftPressed && points.length >= 2 && performPointIndex === 1) {
+          points[1].value = points[0].value;
+        }
       }
     });
   }
 
-  // Custom Measurement Ruler Box
+  // 2. Custom Measurement Ruler Box (Exact Match to TradingView Image 1)
   klinecharts.registerOverlay({
     name: 'measureBox',
     totalStep: 3,
@@ -55,14 +68,87 @@ function registerCustomOverlays() {
       if (coordinates.length === 2 && overlay.points?.length === 2) {
         const [p1, p2] = coordinates;
         const [pt1, pt2] = overlay.points;
+
         const valDiff = pt2.value - pt1.value;
         const pctDiff = ((valDiff / (pt1.value || 1)) * 100);
         const isUp = valDiff >= 0;
-        const color = isUp ? 'rgba(38, 166, 154, 0.22)' : 'rgba(224, 69, 123, 0.22)';
-        const border = isUp ? '#26a69a' : '#e0457b';
-        const label = `${isUp ? '+' : ''}${valDiff.toFixed(2)} (${isUp ? '+' : ''}${pctDiff.toFixed(2)}%)`;
+
+        // Colors
+        const boxColor = isUp ? 'rgba(8, 153, 129, 0.20)' : 'rgba(224, 69, 123, 0.20)';
+        const borderColor = isUp ? '#089981' : '#e0457b';
+        const badgeColor = isUp ? '#089981' : '#f23645';
+
+        // Calculate bars count and total volume in range from candle data
+        const allBars = chartInstance?.getDataList() || [];
+        const minT = Math.min(pt1.timestamp || 0, pt2.timestamp || 0);
+        const maxT = Math.max(pt1.timestamp || 0, pt2.timestamp || 0);
+        const inRange = allBars.filter(b => b.timestamp >= minT && b.timestamp <= maxT);
+
+        const barsCount = inRange.length > 0 ? inRange.length : 1;
+        const totalVol = inRange.reduce((acc, b) => acc + (Number(b.volume) || 0), 0);
+
+        let volStr = '';
+        if (totalVol >= 1000000) {
+          volStr = `${(totalVol / 1000000).toFixed(2)} M`;
+        } else if (totalVol >= 1000) {
+          volStr = `${(totalVol / 1000).toFixed(2)} K`;
+        } else {
+          volStr = `${totalVol}`;
+        }
+
+        // Time duration (e.g. 4h 5m, 25m, 1d 2h)
+        const diffMs = Math.abs(maxT - minT);
+        const diffMin = Math.round(diffMs / 60000);
+        let timeStr = '';
+        if (diffMin >= 1440) {
+          const d = Math.floor(diffMin / 1440);
+          const h = Math.floor((diffMin % 1440) / 60);
+          timeStr = `${d}d ${h}h`;
+        } else if (diffMin >= 60) {
+          const h = Math.floor(diffMin / 60);
+          const m = diffMin % 60;
+          timeStr = `${h}h ${m}m`;
+        } else {
+          timeStr = `${diffMin}m`;
+        }
+
+        // Ticks for gold (1 point = 100 ticks)
+        const ticks = valDiff * 100;
+        const tickSign = ticks >= 0 ? '+' : '';
+        const tickFormatted = `${tickSign}${ticks.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
+
+        // Badge lines
+        const line1 = `${valDiff >= 0 ? '+' : ''}${valDiff.toFixed(3)} (${pctDiff >= 0 ? '+' : ''}${pctDiff.toFixed(2)}%) ${tickFormatted}`;
+        const line2 = `${barsCount} bars, ${timeStr}`;
+        const line3 = `Vol ${volStr}`;
+
+        // Crosshairs & arrow
+        const midY = (p1.y + p2.y) / 2;
+        const midX = (p1.x + p2.x) / 2;
+        const arrowDir = p2.x >= p1.x ? -1 : 1;
+        const arrowHead = [
+          { x: p2.x + arrowDir * 7, y: midY - 4 },
+          { x: p2.x, y: midY },
+          { x: p2.x + arrowDir * 7, y: midY + 4 }
+        ];
+
+        // Badge placement (Centered horizontally, pinned below or inside)
+        const boxMinX = Math.min(p1.x, p2.x);
+        const boxMaxX = Math.max(p1.x, p2.x);
+        const boxMaxY = Math.max(p1.y, p2.y);
+        const boxMinY = Math.min(p1.y, p2.y);
+
+        const badgeW = 208;
+        const badgeH = 68;
+        let badgeX = boxMinX + (boxMaxX - boxMinX) / 2 - (badgeW / 2);
+        let badgeY = boxMaxY + 12;
+
+        if (badgeY + badgeH > window.innerHeight - 60) {
+          badgeY = Math.max(50, boxMinY - badgeH - 12);
+        }
 
         return [
+          // 1. Shaded Measurement Area
           {
             type: 'polygon',
             attrs: {
@@ -75,23 +161,115 @@ function registerCustomOverlays() {
             },
             styles: {
               style: 'stroke_fill',
-              color: color,
-              borderColor: border,
+              color: boxColor,
+              borderColor: borderColor,
               borderSize: 1,
-              borderStyle: 'dashed'
+              borderStyle: 'solid'
             }
           },
+          // 2. Horizontal Center Crosshair
+          {
+            type: 'line',
+            attrs: {
+              coordinates: [
+                { x: p1.x, y: midY },
+                { x: p2.x, y: midY }
+              ]
+            },
+            styles: {
+              color: borderColor,
+              size: 1,
+              style: 'solid'
+            }
+          },
+          // 3. Directional Arrow Head
+          {
+            type: 'line',
+            attrs: {
+              coordinates: arrowHead
+            },
+            styles: {
+              color: borderColor,
+              size: 1.5,
+              style: 'solid'
+            }
+          },
+          // 4. Vertical Crosshair
+          {
+            type: 'line',
+            attrs: {
+              coordinates: [
+                { x: p2.x, y: p1.y },
+                { x: p2.x, y: p2.y }
+              ]
+            },
+            styles: {
+              color: borderColor,
+              size: 1,
+              style: 'solid'
+            }
+          },
+          // 5. Solid Rounded Badge Background (Matching Image 1)
+          {
+            type: 'rect',
+            attrs: {
+              x: badgeX,
+              y: badgeY,
+              width: badgeW,
+              height: badgeH
+            },
+            styles: {
+              style: 'fill',
+              color: badgeColor,
+              borderRadius: 8
+            }
+          },
+          // 6. Badge Text Line 1: Price (Pct) Ticks
           {
             type: 'text',
             attrs: {
-              x: Math.min(p1.x, p2.x) + 8,
-              y: Math.min(p1.y, p2.y) + 16,
-              text: label
+              x: badgeX + badgeW / 2,
+              y: badgeY + 13,
+              text: line1,
+              align: 'center'
+            },
+            styles: {
+              color: '#ffffff',
+              size: 12,
+              weight: 'bold',
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            }
+          },
+          // 7. Badge Text Line 2: Bars, Duration
+          {
+            type: 'text',
+            attrs: {
+              x: badgeX + badgeW / 2,
+              y: badgeY + 31,
+              text: line2,
+              align: 'center'
             },
             styles: {
               color: '#ffffff',
               size: 11,
-              family: 'monospace'
+              weight: 'normal',
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+            }
+          },
+          // 8. Badge Text Line 3: Volume
+          {
+            type: 'text',
+            attrs: {
+              x: badgeX + badgeW / 2,
+              y: badgeY + 48,
+              text: line3,
+              align: 'center'
+            },
+            styles: {
+              color: '#ffffff',
+              size: 11,
+              weight: 'normal',
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             }
           }
         ];
@@ -109,6 +287,8 @@ export function initTradingViewChart(containerId = 'klineChart') {
     console.error('[TV Engine] Failed to initialize chart on', containerId);
     return null;
   }
+
+  chartInstance = chart;
 
   // Exact TradingView Obsidian Theme Styles
   chart.setStyles({

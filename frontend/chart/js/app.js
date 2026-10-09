@@ -5,7 +5,7 @@
  */
 
 import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js';
-import { initToolbar } from './toolbar.js';
+import { initToolbar, showTvConfirm } from './toolbar.js';
 import { fetchServerDrawings, restoreDrawings, showChartToast } from './drawings_storage.js';
 
 let chart = null;
@@ -137,40 +137,42 @@ function setupQuickOrderPad() {
   const sellBtn = document.getElementById('tvQuickSellBtn');
   const buyBtn = document.getElementById('tvQuickBuyBtn');
 
-  sellBtn?.addEventListener('click', async () => {
-    if (!confirm(`Execute MARKET SELL 1.0 lot on ${currentSymbol}?`)) return;
-    try {
-      sellBtn.disabled = true;
-      const res = await fetch('/api/trade/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol: currentSymbol, side: 'SELL', volume: 1.0 })
-      });
-      const data = await res.json();
-      showChartToast(data.status === 'EXECUTED' ? `Sell Filled! Ticket #${data.ticket}` : `Failed: ${data.error}`);
-    } catch (e) {
-      showChartToast(`Error executing sell: ${e.message}`);
-    } finally {
-      sellBtn.disabled = false;
-    }
+  sellBtn?.addEventListener('click', () => {
+    showTvConfirm('Market Execution', `Execute MARKET SELL 1.0 lot on ${currentSymbol}?`, async () => {
+      try {
+        sellBtn.disabled = true;
+        const res = await fetch('/api/trade/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: currentSymbol, side: 'SELL', volume: 1.0 })
+        });
+        const data = await res.json();
+        showChartToast(data.status === 'EXECUTED' ? `Sell Filled! Ticket #${data.ticket}` : `Failed: ${data.error}`);
+      } catch (e) {
+        showChartToast(`Error executing sell: ${e.message}`);
+      } finally {
+        sellBtn.disabled = false;
+      }
+    });
   });
 
-  buyBtn?.addEventListener('click', async () => {
-    if (!confirm(`Execute MARKET BUY 1.0 lot on ${currentSymbol}?`)) return;
-    try {
-      buyBtn.disabled = true;
-      const res = await fetch('/api/trade/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol: currentSymbol, side: 'BUY', volume: 1.0 })
-      });
-      const data = await res.json();
-      showChartToast(data.status === 'EXECUTED' ? `Buy Filled! Ticket #${data.ticket}` : `Failed: ${data.error}`);
-    } catch (e) {
-      showChartToast(`Error executing buy: ${e.message}`);
-    } finally {
-      buyBtn.disabled = false;
-    }
+  buyBtn?.addEventListener('click', () => {
+    showTvConfirm('Market Execution', `Execute MARKET BUY 1.0 lot on ${currentSymbol}?`, async () => {
+      try {
+        buyBtn.disabled = true;
+        const res = await fetch('/api/trade/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ symbol: currentSymbol, side: 'BUY', volume: 1.0 })
+        });
+        const data = await res.json();
+        showChartToast(data.status === 'EXECUTED' ? `Buy Filled! Ticket #${data.ticket}` : `Failed: ${data.error}`);
+      } catch (e) {
+        showChartToast(`Error executing buy: ${e.message}`);
+      } finally {
+        buyBtn.disabled = false;
+      }
+    });
   });
 }
 

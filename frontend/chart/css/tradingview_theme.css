@@ -373,3 +373,200 @@ html, body {
   opacity: 1;
   transform: translateY(0);
 }
+
+/* ========================================================================= */
+/* 🎛️ FLOATING ACTION TOOLBAR FOR SELECTED DRAWINGS (MATCHES IMAGE 2)        */
+/* ========================================================================= */
+.tv-floating-action-bar {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background-color: #1e222d;
+  border: 1px solid #2a2e39;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.65);
+  padding: 3px 6px;
+  z-index: 60;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  user-select: none;
+}
+
+.tv-float-drag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #787b86;
+  cursor: grab;
+  padding: 3px 2px;
+}
+.tv-float-drag:active {
+  cursor: grabbing;
+}
+
+.tv-float-divider {
+  width: 1px;
+  height: 16px;
+  background-color: #2a2e39;
+  margin: 0 4px;
+}
+
+.tv-float-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #d1d4dc;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tv-float-btn:hover {
+  background-color: #2a2e39;
+  color: #ffffff;
+}
+.tv-float-btn.tv-float-delete:hover {
+  background-color: rgba(242, 54, 69, 0.2);
+  color: #f23645;
+}
+
+/* ========================================================================= */
+/* ⚙️ IN-APP MODALS & CONFIRM DIALOGS (ZERO BROWSER DEFAULT ALERTS)          */
+/* ========================================================================= */
+.tv-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.tv-modal-card {
+  background-color: #1e222d;
+  border: 1px solid #2a2e39;
+  border-radius: 8px;
+  width: 90%;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.8);
+  overflow: hidden;
+  animation: tvModalFadeIn 0.18s ease-out;
+}
+
+@keyframes tvModalFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.tv-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #2a2e39;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+}
+
+.tv-modal-close {
+  background: transparent;
+  border: none;
+  color: #787b86;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.tv-modal-close:hover {
+  color: #ffffff;
+  background-color: #2a2e39;
+}
+
+.tv-modal-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tv-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: #d1d4dc;
+}
+
+.tv-setting-row label {
+  font-weight: 500;
+}
+
+.tv-setting-row input[type="color"] {
+  width: 36px;
+  height: 28px;
+  border: 1px solid #2a2e39;
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tv-setting-row select {
+  background-color: #131722;
+  border: 1px solid #2a2e39;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+}
+
+.tv-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 10px 16px;
+  border-top: 1px solid #2a2e39;
+  background-color: #171b26;
+  gap: 8px;
+}
+
+.tv-btn-primary {
+  background-color: #2962ff;
+  color: #ffffff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.tv-btn-primary:hover {
+  background-color: #1e53e5;
+}
+
+.tv-btn-secondary {
+  background-color: #2a2e39;
+  color: #d1d4dc;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tv-btn-secondary:hover {
+  background-color: #363a45;
+  color: #ffffff;
+}
+
