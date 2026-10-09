@@ -366,23 +366,23 @@ export function renderMobileThermometers(tel) {
   const topRowEl = document.getElementById('gaugeStoryTopRow');
   if (topRowEl) {
     topRowEl.innerHTML = `
-      <div onclick="openMetricModal('velocity')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Velocity Acceleration Story">
+      <div onclick="openMetricModal('velocity')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Velocity Runs">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">⚡ VEL</span>
-        <span id="storyTop_vel" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.velocity?.top?.text || '▲ 0s EXP'}</span>
+        <span id="storyTop_vel" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.velocity?.top?.text || '▲ 0s (0x)'}</span>
       </div>
-      <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Buyer Aggressor Story">
+      <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Transitions">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">🌊 CVD</span>
-        <span id="storyTop_cvd" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.cvd?.top?.text || '▲ +0Δ ACC'}</span>
+        <span id="storyTop_cvd" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.cvd?.top?.text || '▲ 0x UP'}</span>
       </div>
-      <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Buyer Block Story">
+      <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Acceleration">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">📊 FP</span>
-        <span id="storyTop_fp" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.footprint?.top?.text || '▲ 0/4 LIFT'}</span>
+        <span id="storyTop_fp" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.footprint?.top?.text || '▲ 1.0x LIFT'}</span>
       </div>
-      <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Surge Story">
+      <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Story">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">⚡ IMP</span>
         <span id="storyTop_imp" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.impulse?.top?.text || '▲ 0s SURGE'}</span>
       </div>
-      <div onclick="openMetricModal('silver')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Intermarket Lead Story">
+      <div onclick="openMetricModal('silver')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Lead Story">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">🥈 ${activeSym}</span>
         <span id="storyTop_lead" class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.silver?.top?.text || '▲ 0s LEAD'}</span>
       </div>
@@ -397,13 +397,13 @@ export function renderMobileThermometers(tel) {
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">STALL</span>
         <span id="storyBottom_vel" class="text-[9.5px] font-black text-amber-300 leading-tight">${story.velocity?.bottom?.text || '▼ 0s STALL'}</span>
       </div>
-      <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Seller Distribution Story">
+      <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Transitions">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DIST</span>
-        <span id="storyBottom_cvd" class="text-[9.5px] font-black text-amber-300 leading-tight">${story.cvd?.bottom?.text || '▼ -0Δ DIST'}</span>
+        <span id="storyBottom_cvd" class="text-[9.5px] font-black text-amber-300 leading-tight">${story.cvd?.bottom?.text || '▼ 0x DN'}</span>
       </div>
       <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Dump Story">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DUMP</span>
-        <span id="storyBottom_fp" class="text-[9.5px] font-black text-amber-300 leading-tight">${story.footprint?.bottom?.text || '▼ 0/4 DUMP'}</span>
+        <span id="storyBottom_fp" class="text-[9.5px] font-black text-amber-300 leading-tight">${story.footprint?.bottom?.text || '▼ 1.0x DUMP'}</span>
       </div>
       <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Coil Story">
         <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">COIL</span>

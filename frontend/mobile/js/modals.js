@@ -5,6 +5,7 @@
 
 import { formatPrice, showTerminalToast, INTERMARKET_DRIVERS, SATELLITE_NORMALIZER, calcShiftScore, formatShiftScore } from './constants.js';
 import { selectLeadGauge } from './thermometers.js';
+import { getMetricTimeHorizonStats } from './thermo_story_engine.js';
 
 // Scalp Order State
 let scalpModalDirection = 'BUY';
@@ -913,7 +914,62 @@ export function renderMetricModalContent(key) {
   };
 
   titleEl.textContent = info.title;
-  bodyEl.innerHTML = info.html;
+
+  // Multi-horizon time breakdown table (1m, 3m, 5m, 10m, 15m, 30m, 1h)
+  const isGaugeMetric = ['velocity', 'cvd', 'footprint', 'impulse', 'silver', 'lead'].includes(key);
+  let timeTableHtml = '';
+
+  if (isGaugeMetric) {
+    const horizons = getMetricTimeHorizonStats(key);
+    const rowsHtml = horizons.map(h => {
+      const upWidth = Math.max(3, Math.min(97, h.upPct));
+      const dnWidth = 100 - upWidth;
+      return `
+        <tr class="border-b border-white/5 hover:bg-slate-900/40">
+          <td class="py-1 px-2 font-bold text-slate-300 text-[10px] whitespace-nowrap">${h.label}</td>
+          <td class="py-1 px-2 text-right text-emerald-300 font-bold text-[10px] whitespace-nowrap">${h.upSec}s <span class="text-[8.5px] text-emerald-400/80">(${h.upPct}%)</span></td>
+          <td class="py-1 px-2 text-right text-rose-300 font-bold text-[10px] whitespace-nowrap">${h.dnSec}s <span class="text-[8.5px] text-rose-400/80">(${h.dnPct}%)</span></td>
+          <td class="py-1 px-2 text-right text-amber-300 font-mono text-[9.5px] whitespace-nowrap">${h.flips}x</td>
+          <td class="py-1 px-2 text-center">
+            <div class="w-16 h-2 rounded bg-slate-950 flex overflow-hidden border border-white/10 mx-auto">
+              <div style="width:${upWidth}%;" class="bg-emerald-500 h-full"></div>
+              <div style="width:${dnWidth}%;" class="bg-rose-500 h-full"></div>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    timeTableHtml = `
+      <div class="rounded-xl border border-amber-500/30 bg-[#060a16] p-2 space-y-1.5 shadow-md">
+        <div class="flex items-center justify-between text-[10px] font-bold text-amber-300 px-1">
+          <span class="flex items-center gap-1">
+            <span>⏱️</span>
+            <span>TIME STAYED IN UP vs DOWN STATES</span>
+          </span>
+          <span class="text-[8.5px] text-slate-400 font-mono">1m • 3m • 5m • 10m • 15m • 30m • 1h</span>
+        </div>
+        <div class="overflow-x-auto rounded-lg border border-white/5">
+          <table class="w-full text-left font-mono">
+            <thead class="bg-slate-950/80 text-slate-400 text-[9px] uppercase border-b border-white/10">
+              <tr>
+                <th class="py-1 px-2">HORIZON</th>
+                <th class="py-1 px-2 text-right text-emerald-400">UP / EXP</th>
+                <th class="py-1 px-2 text-right text-rose-400">DN / STALL</th>
+                <th class="py-1 px-2 text-right text-amber-400">FLIPS</th>
+                <th class="py-1 px-2 text-center text-slate-400">SPLIT</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-white/5">
+              ${rowsHtml}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  bodyEl.innerHTML = (timeTableHtml ? timeTableHtml : '') + info.html;
 }
 
 // Intermarket Lead/Lag Modal Logic (Cleaned up: Silver only in 2-line row table format)
