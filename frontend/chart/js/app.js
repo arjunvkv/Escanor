@@ -31,6 +31,8 @@ async function init() {
   chart = initTradingViewChart('klineChart');
   if (!chart) return;
 
+  window.__currentTimeframeMinutes = currentTimeframeMinutes;
+
   // 2. Set Symbol and Period
   chart.setSymbol({ ticker: currentSymbol, name: 'Gold Spot' });
   chart.setPeriod({ multiplier: currentTimeframeMinutes, span: 'minute' });
@@ -40,9 +42,16 @@ async function init() {
     getBars: async ({ symbol, period, callback }) => {
       try {
         const tf = period?.multiplier || currentTimeframeMinutes;
+        window.__currentTimeframeMinutes = tf;
         const res = await fetch(`/api/candles?symbol=${symbol.ticker}&timeframe=${tf}&count=300`);
         const json = await res.json();
         callback(json.candles || [], false);
+        setTimeout(() => {
+          if (chart) {
+            chart.setBarSpace(7.5);
+            chart.setOffsetRightDistance(80);
+          }
+        }, 50);
       } catch (err) {
         console.error('[Escanor TV] Failed to load candles:', err);
         callback([], false);
@@ -99,6 +108,8 @@ async function init() {
   // Reset zoom button
   document.getElementById('tvResetZoomBtn')?.addEventListener('click', () => {
     if (chart) {
+      chart.setBarSpace(7.5);
+      chart.setOffsetRightDistance(80);
       chart.scrollToRealTime();
     }
   });
@@ -115,6 +126,7 @@ function setupTimeframeButtons() {
       btn.classList.add('active');
 
       currentTimeframeMinutes = tfCfg.mult;
+      window.__currentTimeframeMinutes = currentTimeframeMinutes;
       chart.setPeriod({ multiplier: tfCfg.mult, span: tfCfg.span });
       startCandleCountdown(currentTimeframeMinutes);
 

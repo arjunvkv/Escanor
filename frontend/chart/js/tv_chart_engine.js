@@ -59,72 +59,90 @@ function registerCustomOverlays() {
     });
   }
 
-  // 2. Custom Measurement Ruler Box (Exact Match to TradingView Image 1)
+  // 2. Custom Measurement Ruler Box (Exact Match to TradingView Image 1 & 2)
   klinecharts.registerOverlay({
     name: 'measureBox',
     totalStep: 3,
     needDefaultPointFigure: false,
-    createPointFigures: ({ coordinates, overlay }) => {
+    createPointFigures: ({ coordinates, overlay, xAxis }) => {
       if (coordinates.length === 2 && overlay.points?.length === 2) {
         const [p1, p2] = coordinates;
         const [pt1, pt2] = overlay.points;
 
-        const valDiff = pt2.value - pt1.value;
-        const pctDiff = ((valDiff / (pt1.value || 1)) * 100);
+        const val1 = Number(pt1.value) || 0;
+        const val2 = Number(pt2.value) || 0;
+        const valDiff = val2 - val1;
+        const pctDiff = val1 !== 0 ? (valDiff / val1) * 100 : 0;
         const isUp = valDiff >= 0;
 
-        // Colors
-        const boxColor = isUp ? 'rgba(8, 153, 129, 0.20)' : 'rgba(224, 69, 123, 0.20)';
-        const borderColor = isUp ? '#089981' : '#e0457b';
-        const badgeColor = isUp ? '#089981' : '#f23645';
+        // Subtle shaded box & border (TradingView style)
+        const boxColor = isUp ? 'rgba(8, 153, 129, 0.16)' : 'rgba(236, 64, 122, 0.16)';
+        const borderColor = isUp ? '#089981' : '#ec407a';
 
-        // Calculate bars count and total volume in range from candle data
+        // Precise Bar Count from dataIndex or xAxis pixel conversion
+        let idx1 = pt1.dataIndex;
+        let idx2 = pt2.dataIndex;
+        if (!Number.isFinite(idx1) && xAxis && coordinates[0]) {
+          idx1 = xAxis.convertFromPixel(coordinates[0].x);
+        }
+        if (!Number.isFinite(idx2) && xAxis && coordinates[1]) {
+          idx2 = xAxis.convertFromPixel(coordinates[1].x);
+        }
+        if (!Number.isFinite(idx1)) idx1 = 0;
+        if (!Number.isFinite(idx2)) idx2 = 0;
+        idx1 = Math.round(idx1);
+        idx2 = Math.round(idx2);
+
+        const barsCount = Math.max(1, Math.abs(idx2 - idx1) + 1);
+
+        // Time duration = barsCount * timeframeMinutes (accurate even into future empty space)
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const totalMinutes = barsCount * tfMins;
+        const days = Math.floor(totalMinutes / 1440);
+        const hours = Math.floor((totalMinutes % 1440) / 60);
+        const mins = totalMinutes % 60;
+        let timeStr = '';
+        if (days > 0) {
+          timeStr = `${days}d ${hours}h`;
+        } else if (hours > 0) {
+          timeStr = mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+        } else {
+          timeStr = `${mins}m`;
+        }
+
+        // Ticks for Gold (1 pt = 100 ticks)
+        const ticks = valDiff * 100;
+        const sign = valDiff >= 0 ? '+' : '-';
+        const absVal = Math.abs(valDiff).toFixed(3);
+        const absPct = Math.abs(pctDiff).toFixed(2);
+        const absTicks = Math.abs(ticks).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+
+        // Volume calculation within actual bar boundaries
         const allBars = chartInstance?.getDataList() || [];
-        const minT = Math.min(pt1.timestamp || 0, pt2.timestamp || 0);
-        const maxT = Math.max(pt1.timestamp || 0, pt2.timestamp || 0);
-        const inRange = allBars.filter(b => b.timestamp >= minT && b.timestamp <= maxT);
-
-        const barsCount = inRange.length > 0 ? inRange.length : 1;
-        const totalVol = inRange.reduce((acc, b) => acc + (Number(b.volume) || 0), 0);
-
+        const startIdx = Math.max(0, Math.min(idx1, idx2));
+        const endIdx = Math.min(allBars.length - 1, Math.max(idx1, idx2));
+        let totalVol = 0;
+        if (allBars.length > 0 && startIdx <= endIdx) {
+          for (let i = startIdx; i <= endIdx; i++) {
+            totalVol += Number(allBars[i]?.volume || 0);
+          }
+        }
         let volStr = '';
         if (totalVol >= 1000000) {
-          volStr = `${(totalVol / 1000000).toFixed(2)} M`;
+          volStr = `${(totalVol / 1000000).toFixed(3)}M`;
         } else if (totalVol >= 1000) {
-          volStr = `${(totalVol / 1000).toFixed(2)} K`;
+          volStr = `${(totalVol / 1000).toFixed(3)}K`;
         } else {
-          volStr = `${totalVol}`;
+          volStr = `${totalVol.toFixed(0)}`;
         }
 
-        // Time duration (e.g. 4h 5m, 25m, 1d 2h)
-        const diffMs = Math.abs(maxT - minT);
-        const diffMin = Math.round(diffMs / 60000);
-        let timeStr = '';
-        if (diffMin >= 1440) {
-          const d = Math.floor(diffMin / 1440);
-          const h = Math.floor((diffMin % 1440) / 60);
-          timeStr = `${d}d ${h}h`;
-        } else if (diffMin >= 60) {
-          const h = Math.floor(diffMin / 60);
-          const m = diffMin % 60;
-          timeStr = `${h}h ${m}m`;
-        } else {
-          timeStr = `${diffMin}m`;
-        }
-
-        // Ticks for gold (1 point = 100 ticks)
-        const ticks = valDiff * 100;
-        const tickSign = ticks >= 0 ? '+' : '';
-        const tickFormatted = `${tickSign}${ticks.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`;
-
-        // Badge lines
-        const line1 = `${valDiff >= 0 ? '+' : ''}${valDiff.toFixed(3)} (${pctDiff >= 0 ? '+' : ''}${pctDiff.toFixed(2)}%) ${tickFormatted}`;
+        // Badge lines (TradingView format: -19.383 (-0.46%) -1938.3)
+        const line1 = `${sign}${absVal} (${sign}${absPct}%) ${sign}${absTicks}`;
         const line2 = `${barsCount} bars, ${timeStr}`;
         const line3 = `Vol ${volStr}`;
 
         // Crosshairs & arrow
         const midY = (p1.y + p2.y) / 2;
-        const midX = (p1.x + p2.x) / 2;
         const arrowDir = p2.x >= p1.x ? -1 : 1;
         const arrowHead = [
           { x: p2.x + arrowDir * 7, y: midY - 4 },
@@ -132,19 +150,19 @@ function registerCustomOverlays() {
           { x: p2.x + arrowDir * 7, y: midY + 4 }
         ];
 
-        // Badge placement (Centered horizontally, pinned below or inside)
+        // Badge placement (Centered horizontally, pinned below or above box)
         const boxMinX = Math.min(p1.x, p2.x);
         const boxMaxX = Math.max(p1.x, p2.x);
         const boxMaxY = Math.max(p1.y, p2.y);
         const boxMinY = Math.min(p1.y, p2.y);
 
-        const badgeW = 208;
-        const badgeH = 68;
+        const badgeW = 210;
+        const badgeH = 64;
         let badgeX = boxMinX + (boxMaxX - boxMinX) / 2 - (badgeW / 2);
-        let badgeY = boxMaxY + 12;
+        let badgeY = boxMaxY + 10;
 
         if (badgeY + badgeH > window.innerHeight - 60) {
-          badgeY = Math.max(50, boxMinY - badgeH - 12);
+          badgeY = Math.max(50, boxMinY - badgeH - 10);
         }
 
         return [
@@ -209,7 +227,7 @@ function registerCustomOverlays() {
               style: 'solid'
             }
           },
-          // 5. Solid Rounded Badge Background (Matching Image 1)
+          // 5. Solid Dark Rounded Badge Background (TradingView Charcoal Badge)
           {
             type: 'rect',
             attrs: {
@@ -219,54 +237,77 @@ function registerCustomOverlays() {
               height: badgeH
             },
             styles: {
-              style: 'fill',
-              color: badgeColor,
-              borderRadius: 8
+              style: 'stroke_fill',
+              color: '#1f1f1f',
+              borderColor: '#363a45',
+              borderSize: 1,
+              borderRadius: 6
             }
           },
-          // 6. Badge Text Line 1: Price (Pct) Ticks
+          // 6. Badge Text Line 1: Price (Pct) Ticks (Crisp white, NO blue background)
           {
             type: 'text',
             attrs: {
               x: badgeX + badgeW / 2,
-              y: badgeY + 13,
+              y: badgeY + 12,
               text: line1,
               align: 'center'
             },
             styles: {
               color: '#ffffff',
+              backgroundColor: 'transparent',
+              borderColor: 'transparent',
+              borderSize: 0,
+              paddingLeft: 0,
+              paddingRight: 0,
+              paddingTop: 0,
+              paddingBottom: 0,
               size: 12,
               weight: 'bold',
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             }
           },
-          // 7. Badge Text Line 2: Bars, Duration
+          // 7. Badge Text Line 2: Bars, Duration (Crisp silver, NO blue background)
           {
             type: 'text',
             attrs: {
               x: badgeX + badgeW / 2,
-              y: badgeY + 31,
+              y: badgeY + 29,
               text: line2,
               align: 'center'
             },
             styles: {
-              color: '#ffffff',
+              color: '#d1d4dc',
+              backgroundColor: 'transparent',
+              borderColor: 'transparent',
+              borderSize: 0,
+              paddingLeft: 0,
+              paddingRight: 0,
+              paddingTop: 0,
+              paddingBottom: 0,
               size: 11,
-              weight: 'normal',
+              weight: '500',
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
             }
           },
-          // 8. Badge Text Line 3: Volume
+          // 8. Badge Text Line 3: Volume (Subtle silver, NO blue background)
           {
             type: 'text',
             attrs: {
               x: badgeX + badgeW / 2,
-              y: badgeY + 48,
+              y: badgeY + 45,
               text: line3,
               align: 'center'
             },
             styles: {
-              color: '#ffffff',
+              color: '#9598a1',
+              backgroundColor: 'transparent',
+              borderColor: 'transparent',
+              borderSize: 0,
+              paddingLeft: 0,
+              paddingRight: 0,
+              paddingTop: 0,
+              paddingBottom: 0,
               size: 11,
               weight: 'normal',
               family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
@@ -290,25 +331,25 @@ export function initTradingViewChart(containerId = 'klineChart') {
 
   chartInstance = chart;
 
-  // Exact TradingView Obsidian Theme Styles
+  // Exact TradingView Dark Slate Theme Matching Image 2 (#1c1c1c)
   chart.setStyles({
     grid: {
       show: true,
-      horizontal: { show: true, size: 1, color: '#1f2433', style: 'dashed', dashedValue: [2, 2] },
-      vertical: { show: true, size: 1, color: '#1f2433', style: 'dashed', dashedValue: [2, 2] }
+      horizontal: { show: true, size: 1, color: '#262626', style: 'dashed', dashedValue: [2, 2] },
+      vertical: { show: true, size: 1, color: '#262626', style: 'dashed', dashedValue: [2, 2] }
     },
     candle: {
       type: 'candle_solid',
       bar: {
         upColor: '#d1d4dc',         // Bull silver
-        downColor: '#e0457b',       // Bear pink/rose
-        noChangeColor: '#888888',
+        downColor: '#ec407a',       // Bear rose/pink matching image 2
+        noChangeColor: '#787b86',
         upBorderColor: '#d1d4dc',
-        downBorderColor: '#e0457b',
-        noChangeBorderColor: '#888888',
+        downBorderColor: '#ec407a',
+        noChangeBorderColor: '#787b86',
         upWickColor: '#d1d4dc',
-        downWickColor: '#e0457b',
-        noChangeWickColor: '#888888'
+        downWickColor: '#ec407a',
+        noChangeWickColor: '#787b86'
       },
       priceMark: {
         show: true,
@@ -317,8 +358,8 @@ export function initTradingViewChart(containerId = 'klineChart') {
         last: {
           show: true,
           upColor: '#d1d4dc',
-          downColor: '#e0457b',
-          noChangeColor: '#888888',
+          downColor: '#ec407a',
+          noChangeColor: '#787b86',
           line: { show: true, style: 'dashed', dashedValue: [4, 4], size: 1 },
           text: { show: true, color: '#ffffff', size: 11, paddingLeft: 4, paddingRight: 4, paddingTop: 2, paddingBottom: 2 }
         }
@@ -326,15 +367,15 @@ export function initTradingViewChart(containerId = 'klineChart') {
       tooltip: {
         showRule: 'always',
         showType: 'standard',
-        rect: { color: 'rgba(19, 23, 34, 0.75)', borderColor: '#2a2e39' },
+        rect: { color: 'rgba(28, 28, 28, 0.85)', borderColor: '#333333' },
         text: { size: 11, color: '#d1d4dc', family: 'monospace' }
       }
     },
     xAxis: {
       show: true,
       size: 'auto',
-      axisLine: { show: true, color: '#2a2e39', size: 1 },
-      tickLine: { show: true, size: 1, length: 3, color: '#2a2e39' },
+      axisLine: { show: true, color: '#262626', size: 1 },
+      tickLine: { show: true, size: 1, length: 3, color: '#262626' },
       tickText: { show: true, color: '#787b86', size: 11, family: 'sans-serif' }
     },
     yAxis: {
@@ -343,29 +384,53 @@ export function initTradingViewChart(containerId = 'klineChart') {
       position: 'right',
       type: 'normal',
       inside: false,
-      axisLine: { show: true, color: '#2a2e39', size: 1 },
-      tickLine: { show: true, size: 1, length: 3, color: '#2a2e39' },
+      axisLine: { show: true, color: '#262626', size: 1 },
+      tickLine: { show: true, size: 1, length: 3, color: '#262626' },
       tickText: { show: true, color: '#787b86', size: 11, family: 'sans-serif' }
     },
     crosshair: {
       show: true,
       horizontal: {
         show: true,
-        line: { show: true, style: 'dashed', dashedValue: [4, 4], size: 1, color: '#787b86' },
-        text: { show: true, color: '#ffffff', size: 11, backgroundColor: '#2a2e39', borderColor: '#2a2e39' }
+        line: { show: true, style: 'dashed', dashedValue: [4, 4], size: 1, color: '#555555' },
+        text: { show: true, color: '#ffffff', size: 11, backgroundColor: '#2a2a2a', borderColor: '#333333' }
       },
       vertical: {
         show: true,
-        line: { show: true, style: 'dashed', dashedValue: [4, 4], size: 1, color: '#787b86' },
-        text: { show: true, color: '#ffffff', size: 11, backgroundColor: '#2a2e39', borderColor: '#2a2e39' }
+        line: { show: true, style: 'dashed', dashedValue: [4, 4], size: 1, color: '#555555' },
+        text: { show: true, color: '#ffffff', size: 11, backgroundColor: '#2a2a2a', borderColor: '#333333' }
       }
     },
     separator: {
       size: 1,
-      color: '#2a2e39',
+      color: '#262626',
       fill: true
+    },
+    overlay: {
+      point: { color: '#2962ff', borderColor: 'rgba(41, 98, 255, 0.35)', borderSize: 1, radius: 4 },
+      line: { style: 'solid', color: '#2962ff', size: 1 },
+      rect: { style: 'fill', color: 'rgba(41, 98, 255, 0.15)', borderColor: '#2962ff', borderSize: 1 },
+      polygon: { style: 'fill', color: 'rgba(41, 98, 255, 0.15)', borderColor: '#2962ff', borderSize: 1 },
+      text: {
+        style: 'fill',
+        color: '#ffffff',
+        size: 11,
+        family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        borderStyle: 'none',
+        borderSize: 0,
+        borderColor: 'transparent',
+        backgroundColor: 'transparent',
+        paddingLeft: 0,
+        paddingRight: 0,
+        paddingTop: 0,
+        paddingBottom: 0
+      }
     }
   });
+
+  // TradingView Standard Candle Spacing & Right Margin (HD crisp rendering)
+  chart.setBarSpace(7.5);
+  chart.setOffsetRightDistance(80);
 
   return chart;
 }
