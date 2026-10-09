@@ -1,0 +1,8 @@
+{
+  "symbol": "XAUUSD",
+  "http_port": 5055,
+  "ws_port": 5056,
+  "mt5_magic": 234000,
+  "default_volume": 1.0,
+  "drawings_file": "data/drawings.json"
+}

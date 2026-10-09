@@ -1,0 +1,375 @@
+/* ========================================================================= */
+/* TradingView Obsidian Theme Stylesheet — Exact TV Clone                    */
+/* Matches screenshot: Obsidian #131722, silver #d1d4dc, rose #e0457b        */
+/* ========================================================================= */
+
+:root {
+  --tv-bg-primary: #131722;
+  --tv-bg-secondary: #1e222d;
+  --tv-bg-hover: #2a2e39;
+  --tv-border: #2a2e39;
+  --tv-border-subtle: #1e222d;
+  --tv-text-primary: #d1d4dc;
+  --tv-text-secondary: #787b86;
+  --tv-text-active: #2962ff;
+  --tv-bull: #d1d4dc;
+  --tv-bear: #e0457b;
+  --tv-blue: #2962ff;
+  --tv-blue-hover: #1e53e5;
+  --tv-red: #f23645;
+  --tv-red-hover: #d32f2f;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--tv-bg-primary);
+  color: var(--tv-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Trebuchet MS', Roboto, Ubuntu, sans-serif;
+  font-size: 13px;
+}
+
+#appRoot {
+  display: flex;
+  flex-direction: column;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ========================================================================= */
+/* 🔝 TOP HEADER RIBBON                                                      */
+/* ========================================================================= */
+.tv-top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 42px;
+  background-color: var(--tv-bg-primary);
+  border-bottom: 1px solid var(--tv-border);
+  padding: 0 8px;
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.tv-top-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tv-symbol-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.tv-symbol-btn:hover {
+  background-color: var(--tv-bg-hover);
+}
+
+.tv-divider {
+  width: 1px;
+  height: 18px;
+  background-color: var(--tv-border);
+  margin: 0 4px;
+}
+
+.tv-tf-btn {
+  background: transparent;
+  border: none;
+  color: var(--tv-text-secondary);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 7px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tv-tf-btn:hover {
+  color: var(--tv-text-primary);
+  background-color: var(--tv-bg-hover);
+}
+.tv-tf-btn.active {
+  color: var(--tv-text-active);
+  font-weight: 700;
+  background-color: rgba(41, 98, 255, 0.12);
+}
+
+/* Quick Buy/Sell Order Pad in Top Bar */
+.tv-order-pad {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background-color: var(--tv-bg-secondary);
+  border: 1px solid var(--tv-border);
+  border-radius: 6px;
+  padding: 2px 4px;
+}
+
+.tv-order-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 10px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1.2;
+  transition: opacity 0.15s;
+}
+.tv-order-btn:hover {
+  opacity: 0.9;
+}
+.tv-order-btn:active {
+  transform: scale(0.98);
+}
+
+.tv-order-btn.sell {
+  background-color: var(--tv-red);
+  color: #ffffff;
+}
+.tv-order-btn.buy {
+  background-color: var(--tv-blue);
+  color: #ffffff;
+}
+
+.tv-spread-tag {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tv-text-secondary);
+}
+.tv-spread-tag span:first-child {
+  font-size: 8px;
+  letter-spacing: 0.5px;
+}
+
+.tv-top-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tv-icon-btn {
+  background: transparent;
+  border: none;
+  color: var(--tv-text-secondary);
+  padding: 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+.tv-icon-btn:hover {
+  color: #ffffff;
+  background-color: var(--tv-bg-hover);
+}
+
+/* ========================================================================= */
+/* 📐 MAIN CHART WORKSPACE WITH LEFT DOCK                                    */
+/* ========================================================================= */
+.tv-workspace {
+  display: flex;
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 42px);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Left Toolbar Dock */
+.tv-left-toolbar {
+  width: 48px;
+  background-color: var(--tv-bg-primary);
+  border-right: 1px solid var(--tv-border);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 6px 0;
+  gap: 4px;
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.tv-tool-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--tv-text-secondary);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s ease;
+}
+.tv-tool-btn:hover {
+  color: var(--tv-text-primary);
+  background-color: var(--tv-bg-hover);
+}
+.tv-tool-btn.active {
+  color: var(--tv-blue);
+  background-color: rgba(41, 98, 255, 0.15);
+}
+
+.tv-tool-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.tv-tool-arrow {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  font-size: 7px;
+  color: var(--tv-text-secondary);
+  pointer-events: none;
+}
+
+/* Tool Flyout Menu */
+.tv-flyout-menu {
+  position: absolute;
+  left: 48px;
+  background-color: var(--tv-bg-secondary);
+  border: 1px solid var(--tv-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.6);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  z-index: 50;
+  min-width: 170px;
+}
+.tv-flyout-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 4px;
+  color: var(--tv-text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+}
+.tv-flyout-item:hover {
+  background-color: var(--tv-bg-hover);
+  color: #ffffff;
+}
+.tv-flyout-item.active {
+  color: var(--tv-blue);
+  font-weight: 700;
+}
+
+/* ========================================================================= */
+/* 📈 KLINECHARTS CANVAS CONTAINER                                           */
+/* ========================================================================= */
+.tv-chart-viewport {
+  flex: 1;
+  height: 100%;
+  position: relative;
+  background-color: var(--tv-bg-primary);
+}
+
+#klineChart {
+  width: 100%;
+  height: 100%;
+}
+
+/* Overlay Countdown Badge (Pinned to Price Scale) */
+.tv-countdown-badge {
+  position: absolute;
+  right: 6px;
+  background-color: #2a2e39;
+  color: #ffffff;
+  font-family: monospace;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 5px;
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 15;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+/* Floating Status Indicator */
+.tv-status-pill {
+  position: absolute;
+  top: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: rgba(19, 23, 34, 0.85);
+  border: 1px solid var(--tv-border);
+  backdrop-filter: blur(4px);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-family: monospace;
+  font-size: 11px;
+  z-index: 15;
+  pointer-events: none;
+}
+.tv-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #10b981;
+}
+
+/* Toast Banner */
+.tv-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #1e222d;
+  border: 1px solid #2962ff;
+  color: #ffffff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.25s ease;
+  pointer-events: none;
+}
+.tv-toast.visible {
+  opacity: 1;
+  transform: translateY(0);
+}

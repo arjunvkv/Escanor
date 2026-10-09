@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Escanor Mobile Scalp Terminal — XAUUSD</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              dark: '#050811',
+              card: '#0a0f1d',
+              border: '#1e293b',
+              bull: '#10b981',
+              bear: '#ef4444',
+              ceiling: '#f59e0b',
+              floor: '#10b981',
+              speed: '#f59e0b',
+              eq: '#eab308'
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      touch-action: manipulation;
+    }
+    button, a, input, select {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+    }
+    input {
+      user-select: text;
+    }
+    body {
+      background-color: #040711;
+      color: #e2e8f0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
+      padding-top: 56px;
+      padding-bottom: 16px;
+      overflow-x: hidden;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      height: 4px;
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px;
+    }
+    .pulsing-dot {
+      animation: pulseDot 1.5s infinite;
+    }
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+    @keyframes sessionActiveBlink {
+      0%, 100% { opacity: 1; border-color: rgba(52, 211, 153, 0.95); box-shadow: 0 0 8px rgba(52, 211, 153, 0.45); }
+      50% { opacity: 0.65; border-color: rgba(52, 211, 153, 0.35); box-shadow: 0 0 2px rgba(52, 211, 153, 0.15); }
+    }
+    .session-active-blink {
+      animation: sessionActiveBlink 1.4s ease-in-out infinite;
+    }
+    @keyframes overlapActiveBlink {
+      0%, 100% { opacity: 1; border-color: rgba(251, 191, 36, 1); box-shadow: 0 0 10px rgba(245, 158, 11, 0.55); }
+      50% { opacity: 0.65; border-color: rgba(245, 158, 11, 0.35); box-shadow: 0 0 2px rgba(245, 158, 11, 0.15); }
+    }
+    .overlap-active-blink {
+      animation: overlapActiveBlink 1.2s ease-in-out infinite;
+    }
+    @supports (padding-top: env(safe-area-inset-top)) {
+      body {
+        padding-top: calc(56px + env(safe-area-inset-top));
+        padding-bottom: calc(60px + env(safe-area-inset-bottom));
+      }
+      .top-fixed-bar {
+        padding-top: max(6px, env(safe-area-inset-top));
+      }
+      .bottom-fixed-bar {
+        padding-bottom: max(6px, env(safe-area-inset-bottom));
+      }
+    }
+  </style>
+</head>
+<body class="bg-[#040711] text-slate-100 min-h-screen font-mono">
+
+  <!-- ========================================================================= -->
+  <!-- 📢 NON-BLOCKING TOAST BANNER -->
+  <!-- ========================================================================= -->
+  <div id="terminalToastBanner" class="fixed top-12 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 opacity-0 pointer-events-none transform -translate-y-4 max-w-sm w-11/12">
+    <div id="terminalToastContent" class="py-2 px-3 rounded-xl border font-bold text-xs shadow-2xl flex items-center justify-between gap-2 backdrop-blur-md"></div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 📌 FLOATING TOP EXECUTION BAR (MATCHES SCREENSHOT 4) -->
+  <!-- ========================================================================= -->
+  <header class="top-fixed-bar fixed top-0 left-0 right-0 z-40 bg-[#070b16]/95 backdrop-blur-md border-b border-slate-800 px-2 py-1.5 flex items-center justify-between gap-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.6)]">
+    <!-- 🔴 ULTRA-FAST SELL BUTTON -->
+    <button id="btnTopSell" onclick="onTopActionClick('SELL')" 
+            style="touch-action: manipulation;"
+            class="flex-1 max-w-[135px] py-1.5 px-2 rounded-lg bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 active:scale-95 transition-all shadow-md shadow-red-950/60 border border-red-500/60 flex flex-col items-center justify-center cursor-pointer select-none">
+      <div class="flex items-center gap-1 leading-none pointer-events-none">
+        <span id="topSellLabel" class="text-[11px] font-black tracking-wider text-red-100 uppercase pointer-events-none">🔴 SELL</span>
+      </div>
+      <div id="topSellPrice" class="text-xs font-black text-white font-mono mt-0.5 pointer-events-none">$----.--</div>
+    </button>
+
+    <!-- 📊 CENTER SPREAD, SPOT & QUICK LOT CHIP -->
+    <div class="flex flex-col items-center justify-center px-1">
+      <div class="flex items-center gap-1 text-[10px] font-bold text-slate-300">
+        <span id="mt5StatusDot" class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulsing-dot"></span>
+        <span class="text-slate-400">SPREAD</span>
+        <span id="topSpreadPts" class="text-amber-400 font-black">-- pt</span>
+      </div>
+      <div id="topSpotPrice" class="text-sm font-black text-slate-100 tracking-tight font-mono leading-tight">$----.--</div>
+      <div class="flex items-center gap-1 text-[9px] text-slate-400 font-mono">
+        <button id="btnQuickLotBadge" onclick="openScalpModal('BUY')" 
+                style="touch-action: manipulation;"
+                class="px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-400/40 font-bold active:scale-95 transition cursor-pointer select-none" 
+                title="Tap to change Lots / SL / TP Presets">⚡ 0.50L ⚙</button>
+        <button onclick="toggleFullscreen()" class="text-slate-400 hover:text-amber-300 p-0.5" title="Fullscreen">⛶</button>
+      </div>
+      <div id="topPinnedActiveTradePill" class="hidden items-center gap-1 mt-0.5 max-w-[130px]"></div>
+    </div>
+
+    <!-- 🟢 ULTRA-FAST BUY BUTTON -->
+    <button id="btnTopBuy" onclick="onTopActionClick('BUY')" 
+            style="touch-action: manipulation;"
+            class="flex-1 max-w-[135px] py-1.5 px-2 rounded-lg bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 active:scale-95 transition-all shadow-md shadow-emerald-950/60 border border-emerald-500/60 flex flex-col items-center justify-center cursor-pointer select-none">
+      <div class="flex items-center gap-1 leading-none pointer-events-none">
+        <span id="topBuyLabel" class="text-[11px] font-black tracking-wider text-emerald-100 uppercase pointer-events-none">🟢 BUY</span>
+      </div>
+      <div id="topBuyPrice" class="text-xs font-black text-white font-mono mt-0.5 pointer-events-none">$----.--</div>
+    </button>
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- 📱 MAIN SCROLLABLE CONTENT (MATCHES SCREENSHOTS 1, 2, 3) -->
+  <!-- ========================================================================= -->
+  <main class="p-2 space-y-2 max-w-lg mx-auto">
+
+    <!-- 🌐 1. GLOBAL SESSIONS & OVERLAPS STRIP (MOVED TO TOP ABOVE STREAM AS REQUESTED!) -->
+    <section class="bg-[#080d1e]/90 border border-slate-800 rounded-xl p-2 shadow-sm space-y-1">
+      <div class="text-[10px] font-bold text-slate-400 flex items-center justify-between pb-0.5">
+        <span class="flex items-center gap-1 text-amber-400">
+          <span>🌐</span>
+          <span class="text-slate-300 font-black">GLOBAL SESSIONS (IST)</span>
+        </span>
+        <span class="text-[9px] text-slate-500 font-mono">Blinks when active</span>
+      </div>
+      <div id="sessionsStripRow" class="flex items-center justify-between gap-1 overflow-x-auto custom-scrollbar">
+        <div class="text-[9.5px] text-slate-500 py-0.5 text-center w-full">Loading Sessions...</div>
+      </div>
+    </section>
+
+    <!-- ⚡ 2. ACTIVE LIVE TRADES & ORDERS MONITOR (COMPACT HIGH DENSITY) -->
+    <section id="activePositionsSection" class="bg-[#080d1e]/95 border border-slate-800 rounded-xl p-2 shadow-sm space-y-1.5 transition-all">
+      <div class="flex items-center justify-between text-[12px] py-0.5 px-1 font-mono">
+        <div class="flex items-center gap-1.5 font-bold text-slate-300">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 pulsing-dot"></span>
+          <span class="text-emerald-400 font-black">ACTIVE MONITOR:</span>
+          <span class="text-slate-300">FLAT (0 TRADES)</span>
+        </div>
+        <div id="accountEquityStatus" class="text-[10.5px] text-slate-400 font-mono">
+          BAL: <span class="text-amber-300 font-bold">$100,000</span> · EQ: <span class="text-emerald-300 font-bold">$100,000</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. REAL MT5 STREAM STATUS -->
+    <section class="bg-[#080d1e]/90 border border-slate-800 rounded-xl p-2 shadow-sm">
+      <!-- Real MT5 Stream dot & Clock AM/PM -->
+      <div class="flex items-center justify-between text-[11px] cursor-pointer hover:bg-slate-900/40 rounded px-0.5 transition" onclick="openMetricModal('4tf')">
+        <span class="flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/50 text-[11px] font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>REAL MT5 STREAM</span>
+        </span>
+        <div class="flex items-center gap-1">
+          <span class="text-[10px] text-slate-400 font-mono">IST</span>
+          <span id="liveClockIst" class="text-[11px] text-amber-300 font-black">--:--:-- --</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. INTERMARKET LEAD RADAR & THEME BOX -->
+    <section class="bg-[#080d1e]/90 border border-slate-800 rounded-xl p-2 shadow-sm space-y-1.5">
+      <!-- Satellite Pills -->
+      <div id="radarBlocksRow" class="flex items-center justify-between gap-1 overflow-x-auto custom-scrollbar">
+        <button onclick="selectLeadGauge('XAG')" id="radarPill_XAG" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">SIL: --</button>
+        <button onclick="selectLeadGauge('JPY')" id="radarPill_JPY" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">JPY: --</button>
+        <button onclick="selectLeadGauge('DXY')" id="radarPill_DXY" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">INDX: --</button>
+        <button onclick="selectLeadGauge('YLD')" id="radarPill_YLD" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">YLD: --</button>
+        <button onclick="selectLeadGauge('NDX')" id="radarPill_NDX" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">NDX: --</button>
+        <button onclick="selectLeadGauge('CPR')" id="radarPill_CPR" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">CPR: --</button>
+        <button onclick="selectLeadGauge('BTC')" id="radarPill_BTC" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">BTC: --</button>
+        <button onclick="selectLeadGauge('XPT')" id="radarPill_XPT" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">PLT: --</button>
+        <button onclick="selectLeadGauge('OIL')" id="radarPill_OIL" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">OIL: --</button>
+        <button onclick="selectLeadGauge('GOL')" id="radarPill_GOL" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-900 border border-white/10 text-slate-400 font-mono flex items-center cursor-pointer active:scale-95 transition flex-shrink-0">GOL: --</button>
+      </div>
+
+      <!-- Theme Box -->
+      <div id="leadLagSummaryPill" onclick="openLeadLagModal()" 
+           class="pt-1.5 border-t border-white/5 cursor-pointer active:scale-[0.99] transition select-none"
+           title="Tap to inspect Intermarket Lead/Lag Leaderboard">
+        <div id="leadLagPillContent" class="p-2 rounded-xl bg-gradient-to-br from-slate-950 via-[#080d20] to-slate-950 border border-amber-500/40 hover:border-amber-400/70 transition shadow-inner space-y-1.5">
+          <div class="text-[10px] text-slate-400 font-mono">Loading Lead vs Lag Dynamics...</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. 5-COLUMN MERCURY GAUGE TUBES (MATCHES SCREENSHOT 3) -->
+    <section class="bg-[#080d1e]/90 border border-amber-500/30 rounded-xl py-3.5 px-2.5 shadow-sm overflow-x-auto custom-scrollbar">
+      <div id="thermoColumnsContainer" class="flex items-start justify-between min-w-[340px] gap-1">
+        <div class="text-[11px] text-slate-400 p-2 text-center w-full">Loading Tape Physics Thermometers...</div>
+      </div>
+    </section>
+
+    <!-- 6. MINUTE HIGH/LOW PEAK MONITOR (MATCHES SCREENSHOT 2) -->
+    <section class="bg-[#080d1e]/90 border border-amber-500/30 rounded-xl p-2.5 shadow-sm space-y-2">
+      <div class="flex items-center justify-between gap-1">
+        <div class="flex items-center gap-1.5 font-bold text-slate-200 text-[11px] flex-shrink-0">
+          <span class="text-amber-400">⏱️</span>
+          <span class="font-black text-amber-300 tracking-wider">PEAK / TROUGH</span>
+        </div>
+        <div class="flex items-center gap-0.5 font-mono text-[9px] flex-shrink-0" id="windowMinButtons">
+          <button onclick="setWindowMinutes(1)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-amber-500 text-black border-amber-400 shadow cursor-pointer active:scale-95 flex-shrink-0" data-min="1">1m</button>
+          <button onclick="setWindowMinutes(2)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="2">2m</button>
+          <button onclick="setWindowMinutes(3)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="3">3m</button>
+          <button onclick="setWindowMinutes(4)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="4">4m</button>
+          <button onclick="setWindowMinutes(5)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="5">5m</button>
+          <button onclick="setWindowMinutes(6)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="6">6m</button>
+          <button onclick="setWindowMinutes(7)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="7">7m</button>
+          <button onclick="setWindowMinutes(8)" class="btn-win-min px-1.5 py-0.5 rounded font-black border transition bg-slate-900 text-slate-400 border-white/5 hover:text-white cursor-pointer active:scale-95 flex-shrink-0" data-min="8">8m</button>
+          <div class="relative inline-block flex-shrink-0">
+            <select id="windowTimeframeSelect" onchange="onWindowDropdownChange(this.value)" class="h-[19px] px-1 py-0 rounded font-black font-mono text-[8.5px] border transition bg-slate-900 text-slate-300 border-white/10 hover:text-amber-300 focus:outline-none cursor-pointer tracking-tighter" title="Select extended timeframe up to 10 hours">
+              <option value="" disabled selected>▾</option>
+              <option value="10" class="bg-slate-900 text-slate-200">10m</option>
+              <option value="15" class="bg-slate-900 text-slate-200">15m</option>
+              <option value="20" class="bg-slate-900 text-slate-200">20m</option>
+              <option value="30" class="bg-slate-900 text-slate-200">30m</option>
+              <option value="45" class="bg-slate-900 text-slate-200">45m</option>
+              <option value="60" class="bg-slate-900 text-amber-300 font-bold">1h</option>
+              <option value="90" class="bg-slate-900 text-slate-200">1.5h</option>
+              <option value="120" class="bg-slate-900 text-slate-200">2h</option>
+              <option value="240" class="bg-slate-900 text-slate-200">4h</option>
+              <option value="360" class="bg-slate-900 text-slate-200">6h</option>
+              <option value="480" class="bg-slate-900 text-slate-200">8h</option>
+              <option value="600" class="bg-slate-900 text-amber-300 font-bold">10h</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div id="windowHighLowGrid" class="grid grid-cols-5 gap-1 pt-1 border-t border-white/5 font-mono text-center">
+        <div class="text-[10px] text-slate-500 col-span-5 py-1">Loading Peak/Trough Records...</div>
+      </div>
+    </section>
+
+    <!-- 7. 4TF POSTURE & 4M FOOTPRINT DELTA BLOCKS (BROUGHT DOWN BELOW PEAK/TROUGH) -->
+    <section class="bg-[#080d1e]/90 border border-slate-800 rounded-xl p-2 shadow-sm space-y-1.5">
+      <!-- 4TF Separate Posture Boxes with Bidirectional Displacement Micro-Bars -->
+      <div id="chart4TfPillsContainer" onclick="openMetricModal('4tf')" class="grid grid-cols-4 gap-1.5 py-0.5 font-mono cursor-pointer active:scale-[0.99] transition" title="Tap to inspect 4TF Trend Structure & Real Price Action Displacement">
+        <!-- H4 Box -->
+        <div id="pill4TfH4" class="px-1.5 py-1 rounded-lg bg-slate-900/90 border border-slate-700/80 flex flex-col justify-center min-w-0 transition-all">
+          <div class="flex items-center justify-between gap-0.5 text-[10.5px] font-bold leading-tight">
+            <span class="text-slate-400">H4</span>
+            <span id="txt4TfH4" class="text-slate-200 truncate">--</span>
+          </div>
+          <div class="w-full bg-slate-800/90 rounded-full h-[3px] mt-1 relative overflow-hidden flex">
+            <div class="w-1/2 h-full flex justify-end">
+              <div id="bar4TfH4Neg" class="h-full bg-rose-500 rounded-l transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="w-[1px] h-full bg-slate-600/70 z-10"></div>
+            <div class="w-1/2 h-full flex justify-start">
+              <div id="bar4TfH4Pos" class="h-full bg-emerald-400 rounded-r transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- H1 Box -->
+        <div id="pill4TfH1" class="px-1.5 py-1 rounded-lg bg-slate-900/90 border border-slate-700/80 flex flex-col justify-center min-w-0 transition-all">
+          <div class="flex items-center justify-between gap-0.5 text-[10.5px] font-bold leading-tight">
+            <span class="text-slate-400">H1</span>
+            <span id="txt4TfH1" class="text-slate-200 truncate">--</span>
+          </div>
+          <div class="w-full bg-slate-800/90 rounded-full h-[3px] mt-1 relative overflow-hidden flex">
+            <div class="w-1/2 h-full flex justify-end">
+              <div id="bar4TfH1Neg" class="h-full bg-rose-500 rounded-l transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="w-[1px] h-full bg-slate-600/70 z-10"></div>
+            <div class="w-1/2 h-full flex justify-start">
+              <div id="bar4TfH1Pos" class="h-full bg-emerald-400 rounded-r transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- M15 Box -->
+        <div id="pill4TfM15" class="px-1.5 py-1 rounded-lg bg-slate-900/90 border border-slate-700/80 flex flex-col justify-center min-w-0 transition-all">
+          <div class="flex items-center justify-between gap-0.5 text-[10.5px] font-bold leading-tight">
+            <span class="text-slate-400">M15</span>
+            <span id="txt4TfM15" class="text-slate-200 truncate">--</span>
+          </div>
+          <div class="w-full bg-slate-800/90 rounded-full h-[3px] mt-1 relative overflow-hidden flex">
+            <div class="w-1/2 h-full flex justify-end">
+              <div id="bar4TfM15Neg" class="h-full bg-rose-500 rounded-l transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="w-[1px] h-full bg-slate-600/70 z-10"></div>
+            <div class="w-1/2 h-full flex justify-start">
+              <div id="bar4TfM15Pos" class="h-full bg-emerald-400 rounded-r transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- M5 Box -->
+        <div id="pill4TfM5" class="px-1.5 py-1 rounded-lg bg-slate-900/90 border border-slate-700/80 flex flex-col justify-center min-w-0 transition-all">
+          <div class="flex items-center justify-between gap-0.5 text-[10.5px] font-bold leading-tight">
+            <span class="text-slate-400">M5</span>
+            <span id="txt4TfM5" class="text-slate-200 truncate">--</span>
+          </div>
+          <div class="w-full bg-slate-800/90 rounded-full h-[3px] mt-1 relative overflow-hidden flex">
+            <div class="w-1/2 h-full flex justify-end">
+              <div id="bar4TfM5Neg" class="h-full bg-rose-500 rounded-l transition-all duration-300" style="width: 0%;"></div>
+            </div>
+            <div class="w-[1px] h-full bg-slate-600/70 z-10"></div>
+            <div class="w-1/2 h-full flex justify-start">
+              <div id="bar4TfM5Pos" class="h-full bg-emerald-400 rounded-r transition-all duration-300" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4M Footprint Delta Block Pills -->
+      <div class="flex items-center justify-between gap-1 pt-1 border-t border-white/5 cursor-pointer active:scale-[0.99] transition" onclick="openMetricModal('footprint')" title="Tap to inspect 4M Footprint Delta Blocks">
+        <span class="text-[10px] font-bold text-slate-400 flex items-center gap-1 flex-shrink-0">
+          <span class="text-amber-400">⏱️</span>
+          <span id="fpBlocksHeaderLabel">4M BLOCKS:</span>
+        </span>
+        <div id="footprintBlocksRow" class="flex items-center justify-between gap-1 flex-1 overflow-x-auto custom-scrollbar">
+          <span id="pillFpBlock0" class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 border border-slate-700 text-slate-300 font-mono flex items-center">FP-3: --</span>
+          <span id="pillFpBlock1" class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 border border-slate-700 text-slate-300 font-mono flex items-center">FP-2: --</span>
+          <span id="pillFpBlock2" class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 border border-slate-700 text-slate-300 font-mono flex items-center">FP-1: --</span>
+          <span id="pillFpBlock3" class="px-1.5 py-0.5 rounded text-[10.5px] font-bold bg-slate-900 border border-slate-700 text-slate-300 font-mono flex items-center">FP0: --</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. AUCTION TERRAIN COMPACT HORIZONTAL BARS (MATCHES SCREENSHOT 2) -->
+    <section class="bg-[#080d1e]/90 border border-slate-800 rounded-xl p-2.5 shadow-sm space-y-2">
+      <!-- Dealing Range Location % -->
+      <div onclick="openMetricModal('equilibrium')" class="space-y-1 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect Dealing Range">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-bold text-slate-300 flex items-center gap-1">
+            <span class="text-xs">🏷️</span>
+            <span id="rangeLocStatusText" class="text-amber-300 font-black">DISCOUNT (32%)</span>
+          </span>
+          <span class="font-mono text-slate-400 text-[10px]">
+            <span class="text-emerald-400">DISC</span> · <span class="text-amber-400">EQ</span> · <span class="text-red-400">PREM</span>
+          </span>
+        </div>
+        <div class="relative h-2.5 w-full bg-slate-950 rounded-full overflow-hidden p-0.5 border border-white/10 flex">
+          <div class="h-full w-1/3 bg-gradient-to-r from-emerald-600/90 to-emerald-500/90 rounded-l-full"></div>
+          <div class="h-full w-1/3 bg-gradient-to-r from-amber-500/90 to-amber-400/90"></div>
+          <div class="h-full w-1/3 bg-gradient-to-r from-red-600/90 to-red-500/90 rounded-r-full"></div>
+          <div id="rangeSpotPin" class="absolute top-0 bottom-0 w-1.5 bg-white shadow-[0_0_8px_#ffffff] rounded-full transition-all duration-300" style="left: 32%;"></div>
+        </div>
+        <div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+          <span>0.00 Floor</span>
+          <span>0.50 Equilibrium</span>
+          <span>1.00 Ceiling</span>
+        </div>
+      </div>
+
+      <!-- Runway Air Pocket Clearance -->
+      <div onclick="openMetricModal('runway')" class="space-y-1 pt-1.5 border-t border-white/5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect Runway Clearance">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-bold text-slate-300 flex items-center gap-1">
+            <span class="text-xs">✈️</span>
+            <span id="runwayDistanceLabel" class="text-amber-300 font-black">RUNWAY: +8.4 pt AIR POCKET</span>
+          </span>
+          <span id="runwayFrictionBadge" class="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/40 text-[10px] font-black">
+            CLEAR HIGHWAY
+          </span>
+        </div>
+        <div class="relative h-2 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10 p-0.5">
+          <div id="runwayClearanceBar" class="h-full bg-gradient-to-r from-amber-600 to-emerald-500 rounded-full transition-all duration-300" style="width: 42%;"></div>
+        </div>
+        <div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+          <span>0 pt (Shelf Collision)</span>
+          <span>10 pt</span>
+          <span>20+ pt (Open Vacuum)</span>
+        </div>
+      </div>
+
+      <!-- Sweep Harvest Depth -->
+      <div onclick="openMetricModal('sweep')" class="space-y-1 pt-1.5 border-t border-white/5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect Sweep Depth">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-bold text-slate-300 flex items-center gap-1">
+            <span class="text-xs">🎯</span>
+            <span id="sweepDepthLabel" class="text-amber-300 font-black">SWEEP: +2.8 pt HARVEST</span>
+          </span>
+          <span id="sweepStatusBadge" class="px-1.5 py-0.2 rounded bg-amber-950 text-amber-300 border border-amber-400/40 text-[10px] font-black">
+            VALID (>=2.0pt)
+          </span>
+        </div>
+        <div class="relative h-2 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10 p-0.5">
+          <div id="sweepDepthBar" class="h-full bg-gradient-to-r from-amber-600 to-red-500 rounded-full transition-all duration-300" style="width: 56%;"></div>
+        </div>
+        <div class="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+          <span>0 pt (Touch)</span>
+          <span class="text-emerald-400 font-bold">2.0 pt Invalidation Threshold</span>
+          <span>5.0+ pt</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. SPATIAL DISTANCE RADAR BARS (MATCHES SCREENSHOT 1 & 2) -->
+    <section class="bg-[#080d1e]/90 border border-slate-800 rounded-xl p-2.5 shadow-sm space-y-2">
+      <!-- PDH Ceiling Bar -->
+      <div onclick="openMetricModal('pdh')" class="space-y-0.5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect PDH">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-black text-amber-300 flex items-center gap-1">
+            <span>👑 PDH (Ceiling)</span>
+            <span id="radarPdhPrice" class="font-mono text-slate-300">$----.--</span>
+          </span>
+          <span id="radarPdhDist" class="font-mono font-black text-amber-300">+--.-- pt above</span>
+        </div>
+        <div class="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10">
+          <div id="radarPdhBar" class="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full transition-all duration-300" style="width: 65%;"></div>
+        </div>
+      </div>
+
+      <!-- GEX EQ / VWAP Bar -->
+      <div onclick="openMetricModal('vwap')" class="space-y-0.5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect VWAP">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-black text-amber-300 flex items-center gap-1">
+            <span>⚖️ GEX EQ / VWAP</span>
+            <span id="radarGexPrice" class="font-mono text-slate-300">$----.--</span>
+          </span>
+          <span id="radarGexDist" class="font-mono font-black text-amber-300">--.-- pt</span>
+        </div>
+        <div class="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10">
+          <div id="radarGexBar" class="h-full bg-gradient-to-r from-amber-600 to-orange-400 rounded-full transition-all duration-300" style="width: 50%;"></div>
+        </div>
+      </div>
+
+      <!-- Sovereign PDL Floor Bar -->
+      <div onclick="openMetricModal('pdl')" class="space-y-0.5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect PDL">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-black text-emerald-400 flex items-center gap-1">
+            <span>🛡️ SOVEREIGN PDL</span>
+            <span id="radarPdlPrice" class="font-mono text-slate-300">$----.--</span>
+          </span>
+          <span id="radarPdlDist" class="font-mono font-black text-emerald-400">---.-- pt below</span>
+        </div>
+        <div class="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10">
+          <div id="radarPdlBar" class="h-full bg-gradient-to-r from-emerald-700 to-emerald-500 rounded-full transition-all duration-300" style="width: 40%;"></div>
+        </div>
+      </div>
+
+      <!-- Asian Low Floor Bar -->
+      <div onclick="openMetricModal('asian_low')" class="space-y-0.5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect Asian Low">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-black text-emerald-300 flex items-center gap-1">
+            <span>🌏 ASIAN LOW</span>
+            <span id="radarAsianLowPrice" class="font-mono text-slate-300">$----.--</span>
+          </span>
+          <span id="radarAsianLowDist" class="font-mono font-black text-emerald-300">---.-- pt below</span>
+        </div>
+        <div class="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10">
+          <div id="radarAsianLowBar" class="h-full bg-gradient-to-r from-teal-700 to-emerald-500 rounded-full transition-all duration-300" style="width: 35%;"></div>
+        </div>
+      </div>
+
+      <!-- Effort vs Result (Absorption) Bar -->
+      <div onclick="openMetricModal('effort')" class="space-y-0.5 cursor-pointer active:scale-[0.99] transition hover:bg-slate-900/30 p-1 rounded-lg" title="Tap to inspect Effort vs Result">
+        <div class="flex items-center justify-between text-[11px]">
+          <span class="font-black text-amber-300 flex items-center gap-1">
+            <span>🧱 EFFORT VS RESULT (ABSORPTION)</span>
+            <span id="radarEffortPrice" class="font-mono text-slate-300">--% LOAD</span>
+          </span>
+          <span id="radarEffortDist" class="font-mono font-black text-emerald-400">NORMAL FLOW</span>
+        </div>
+        <div class="h-1.5 w-full bg-slate-950 rounded-full overflow-hidden border border-white/10">
+          <div id="radarEffortBar" class="h-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-600 rounded-full transition-all duration-300" style="width: 35%;"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+
+  <!-- ========================================================================= -->
+  <!-- ⚡ SCALPING IMMEDIATE EXECUTION MODAL -->
+  <!-- ========================================================================= -->
+  <div id="scalpOrderModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4">
+    <div class="bg-[#070b16] border border-slate-700 rounded-2xl w-full max-w-md max-h-[92vh] flex flex-col shadow-[0_0_40px_rgba(0,0,0,0.8)] overflow-hidden">
+      <div class="px-4 py-3 bg-[#040812] border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="scalpModalIcon" class="text-base text-emerald-400">⚡</span>
+          <span id="scalpModalTitle" class="font-black text-sm tracking-wider uppercase text-emerald-400">BUY SCALP EXECUTION</span>
+        </div>
+        <button onclick="closeScalpModal()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-sm font-bold transition cursor-pointer">✕</button>
+      </div>
+      <div class="p-3.5 overflow-y-auto space-y-3 custom-scrollbar flex-1 text-[13px]">
+        <!-- 🔄 ORDER EXECUTION MODE TAB (MARKET vs PENDING) -->
+        <div class="grid grid-cols-2 gap-1.5 p-1 rounded-xl bg-slate-950/80 border border-white/10">
+          <button id="modalTabModeMarket" onclick="setScalpOrderMode('MARKET')" class="py-2 rounded-lg font-black text-xs uppercase tracking-wider transition bg-amber-500 text-slate-950 shadow shadow-amber-950/60 flex items-center justify-center gap-1.5">
+            <span>⚡ MARKET</span>
+          </button>
+          <button id="modalTabModePending" onclick="setScalpOrderMode('PENDING')" class="py-2 rounded-lg font-black text-xs uppercase tracking-wider transition bg-transparent text-slate-400 hover:text-white flex items-center justify-center gap-1.5">
+            <span>🎯 PENDING / LIMIT</span>
+          </button>
+        </div>
+
+        <!-- 🟢/🔴 DIRECTION SELECTION -->
+        <div class="grid grid-cols-2 gap-2">
+          <button id="modalTabBuy" onclick="setScalpDirection('BUY')" class="py-2.5 rounded-lg font-black text-xs uppercase tracking-wider transition bg-emerald-600 text-white shadow shadow-emerald-950/60">🟢 BUY</button>
+          <button id="modalTabSell" onclick="setScalpDirection('SELL')" class="py-2.5 rounded-lg font-black text-xs uppercase tracking-wider transition bg-slate-800 text-slate-400 hover:text-white">🔴 SELL</button>
+        </div>
+
+        <!-- 🎯 PENDING TRIGGER PRICE BOX (Auto-populated with market price when switched) -->
+        <div id="pendingTriggerPriceSection" class="hidden p-2.5 rounded-xl bg-slate-900/80 border border-amber-500/40 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-1.5 font-bold text-slate-300">
+              <span class="text-amber-400">🎯</span>
+              <span>TRIGGER PRICE:</span>
+              <span id="pendingTypeBadge" class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[9.5px] font-mono font-bold">BUY LIMIT</span>
+            </div>
+            <span id="pendingOffsetBadge" class="text-slate-400 font-mono text-[10.5px]">0.0 pt off market</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="adjustTriggerPrice(-0.50)" class="w-12 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs border border-white/10 cursor-pointer active:scale-95">-0.50</button>
+            <div class="relative flex-1">
+              <span class="absolute left-2.5 top-2 text-amber-400 font-bold text-xs">$</span>
+              <input type="number" id="pendingTriggerPriceInput" step="0.10" value="0.00" oninput="onTriggerPriceChange(this.value)" class="w-full pl-6 pr-2 py-1.5 rounded-lg bg-slate-950 border border-amber-500/50 text-white font-black text-center text-sm focus:border-amber-400 focus:outline-none">
+            </div>
+            <button onclick="adjustTriggerPrice(+0.50)" class="w-12 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs border border-white/10 cursor-pointer active:scale-95">+0.50</button>
+          </div>
+          <div class="flex items-center justify-between gap-1 pt-0.5">
+            <button onclick="resetTriggerPriceToCurrent()" class="flex-1 py-1 rounded bg-amber-950/80 hover:bg-amber-900/90 text-amber-300 font-black text-[10.5px] border border-amber-500/50 active:scale-95">⚡ Live Mkt</button>
+            <button onclick="adjustTriggerPrice(-1.0)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">-1.0 pt</button>
+            <button onclick="adjustTriggerPrice(-2.0)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">-2.0 pt</button>
+            <button onclick="adjustTriggerPrice(+1.0)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">+1.0 pt</button>
+            <button onclick="adjustTriggerPrice(+2.0)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">+2.0 pt</button>
+          </div>
+        </div>
+        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 space-y-1.5">
+          <div class="flex items-center justify-between text-[12px]">
+            <span class="text-slate-300 font-bold">Lot Volume:</span>
+            <span id="scalpPtValLabel" class="text-amber-300 font-bold font-mono">1.0 pt = $50.00</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="adjustLots(-0.10)" class="w-9 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-sm border border-white/10 cursor-pointer active:scale-95">-0.1</button>
+            <input type="number" id="scalpLotsInput" min="0.01" max="10.0" step="0.05" value="0.50" oninput="onLotsChange(this.value)" class="flex-1 py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-700 text-white font-black text-center text-sm focus:border-amber-400 focus:outline-none">
+            <button onclick="adjustLots(+0.10)" class="w-9 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-sm border border-white/10 cursor-pointer active:scale-95">+0.1</button>
+          </div>
+          <div class="flex items-center justify-between gap-1 pt-1">
+            <button onclick="setLots(0.10)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-white/5">0.10L</button>
+            <button onclick="setLots(0.25)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-white/5">0.25L</button>
+            <button onclick="setLots(0.50)" class="flex-1 py-1 rounded bg-amber-950/80 text-amber-300 font-black text-[11px] border border-amber-500/50">0.50L</button>
+            <button onclick="setLots(1.00)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-white/5">1.00L</button>
+            <button onclick="setLots(2.00)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[11px] border border-white/5">2.00L</button>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-2.5 rounded-xl bg-red-950/30 border border-red-500/40 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-red-300 font-bold">Risk ($ Loss)</span>
+              <span id="scalpSlPtsBadge" class="text-red-400 font-bold">-5.0 pt</span>
+            </div>
+            <div class="relative">
+              <span class="absolute left-2 top-1.5 text-red-400 font-bold text-xs">$</span>
+              <input type="number" id="scalpRiskDollarInput" min="10" max="10000" step="25" value="250" oninput="onRiskDollarChange(this.value)" class="w-full pl-5 pr-2 py-1 rounded bg-slate-900/90 border border-red-500/50 text-white font-black text-xs text-right focus:border-red-400 focus:outline-none">
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+              <span>SL Price:</span>
+              <span id="scalpSlPriceLabel" class="text-white font-bold">$----.--</span>
+            </div>
+          </div>
+          <div class="p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 space-y-1">
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-emerald-300 font-bold">Profit ($ Target)</span>
+              <span id="scalpTpPtsBadge" class="text-emerald-400 font-bold">+10.0 pt</span>
+            </div>
+            <div class="relative">
+              <span class="absolute left-2 top-1.5 text-emerald-400 font-bold text-xs">$</span>
+              <input type="number" id="scalpProfitDollarInput" min="10" max="25000" step="50" value="500" oninput="onProfitDollarChange(this.value)" class="w-full pl-5 pr-2 py-1 rounded bg-slate-900/90 border border-emerald-500/50 text-white font-black text-xs text-right focus:border-emerald-400 focus:outline-none">
+            </div>
+            <div class="flex items-center justify-between text-[11px] text-slate-400 font-mono">
+              <span>TP Price:</span>
+              <span id="scalpTpPriceLabel" class="text-white font-bold">$----.--</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-900/80 border border-white/5">
+          <div class="flex items-center gap-1.5">
+            <span class="text-slate-400 text-[11px] font-bold">R:R:</span>
+            <span id="scalpRrRatioBadge" class="px-2 py-0.5 rounded bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[11px] font-black">1 : 2.0</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <button onclick="applyScalpPreset(3.0, 6.0)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold border border-white/10 active:scale-95">3pt/6pt</button>
+            <button onclick="applyScalpPreset(5.0, 10.0)" class="px-2 py-1 rounded bg-amber-950/80 text-amber-300 text-[11px] font-black border border-amber-500/40 active:scale-95">5pt/10pt</button>
+            <button onclick="applyScalpPreset(7.0, 14.0)" class="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-bold border border-white/10 active:scale-95">7pt/14pt</button>
+          </div>
+        </div>
+
+        <!-- ⏱️ AUTO-CLOSE DURATION (MINUTES) -->
+        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px]">
+            <div class="flex items-center gap-1.5 font-bold text-slate-300">
+              <span class="text-amber-400">⏱️</span>
+              <span>Auto-Close Timer:</span>
+            </div>
+            <span id="scalpAutoCloseBadge" class="text-slate-400 font-bold font-mono">Off (0 min)</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="number" id="scalpAutoCloseMinsInput" min="0" max="1440" step="1" value="0" placeholder="Type minutes (0 = Off)" oninput="onAutoCloseMinsChange(this.value)" class="flex-1 py-1.5 px-2 rounded-lg bg-slate-950 border border-slate-700 text-white font-black text-center text-xs focus:border-amber-400 focus:outline-none">
+            <span class="text-slate-400 text-xs font-mono font-bold pr-1">mins</span>
+          </div>
+          <div class="flex items-center justify-between gap-1 pt-0.5">
+            <button onclick="setAutoCloseMins(0)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-[10.5px] border border-white/5 active:scale-95">Off</button>
+            <button onclick="setAutoCloseMins(3)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">3m</button>
+            <button onclick="setAutoCloseMins(5)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">5m</button>
+            <button onclick="setAutoCloseMins(10)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">10m</button>
+            <button onclick="setAutoCloseMins(15)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">15m</button>
+            <button onclick="setAutoCloseMins(30)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">30m</button>
+          </div>
+          <div class="text-[9.5px] text-slate-500 font-sans leading-tight">
+            Auto-exits position at market after specified minutes (0 = Hold until SL/TP).
+          </div>
+        </div>
+
+        <button id="btnExecuteModalTrade" onclick="executeScalpTradeNow()" class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 active:scale-98 text-white font-black text-sm uppercase tracking-wider shadow-lg transition cursor-pointer flex items-center justify-center gap-2">
+          <span>⚡ EXECUTE MARKET BUY (0.50L)</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ========================================================================= -->
+  <!-- 🔍 LIVE METRIC REASONING MODAL -->
+  <!-- ========================================================================= -->
+  <div id="metricDetailModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4">
+    <div class="bg-[#070b16] border border-amber-500/50 rounded-2xl w-full max-w-md max-h-[90vh] flex flex-col shadow-[0_0_35px_rgba(245,158,11,0.25)] overflow-hidden">
+      <div class="px-3.5 py-2.5 bg-[#040812] border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span id="metricModalIcon" class="text-lg">📊</span>
+          <div>
+            <div id="metricModalTitle" class="font-black text-xs uppercase tracking-wider text-amber-300 font-mono">METRIC NAME</div>
+            <div id="metricModalSubtitle" class="text-[10px] text-slate-400 font-mono">SCALPING REASONING HUD • INSTITUTIONAL MANUAL</div>
+          </div>
+        </div>
+        <button onclick="closeMetricModal()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition cursor-pointer">✕</button>
+      </div>
+      <div id="metricModalBody" class="p-3.5 overflow-y-auto space-y-3 custom-scrollbar flex-1 text-[11.5px] font-mono leading-relaxed text-slate-200"></div>
+      <div class="px-3.5 py-2 bg-[#040812] border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+        <span class="text-emerald-400 font-bold">● ESCANOR LIVE REASONING</span>
+        <button onclick="closeMetricModal()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- 📡 INTERMARKET LEAD/LAG RADAR MODAL -->
+  <!-- ========================================================================= -->
+  <div id="leadLagModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4">
+    <div class="bg-[#070b16] border border-amber-500/50 rounded-2xl w-full max-w-lg max-h-[92vh] flex flex-col shadow-[0_0_35px_rgba(245,158,11,0.25)] overflow-hidden">
+      <div class="px-3.5 py-2.5 bg-[#040812] border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-lg">🌐</span>
+          <div>
+            <div id="leadLagModalTitle" class="font-black text-xs uppercase tracking-wider text-amber-300 font-mono">INTERMARKET LEAD RADAR</div>
+            <div id="leadLagModalSubtitle" class="text-[10px] text-slate-400 font-mono">ASSET • QUOTE • DELTA • DIST • R VALUE • BETA VELOCITY</div>
+          </div>
+        </div>
+        <button onclick="closeLeadLagModal()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition cursor-pointer">✕</button>
+      </div>
+      <div id="leadLagTabsRow" class="hidden"></div>
+      <div id="leadLagModalBody" class="p-3.5 overflow-y-auto custom-scrollbar flex-1 text-[11.5px] font-mono leading-relaxed text-slate-200">
+        <div class="text-center text-slate-400 py-4">Loading Intermarket Lead Radar...</div>
+      </div>
+      <div class="px-3.5 py-2 bg-[#040812] border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+        <span class="flex items-center gap-1.5 text-emerald-400 font-bold">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>REAL-TIME INTERMARKET RADAR TELEMETRY</span>
+        </span>
+        <button onclick="closeLeadLagModal()" class="px-3 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition cursor-pointer">CLOSE</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- ⏱️ EDIT / CANCEL ACTIVE TRADE AUTO-CLOSE TIMER MODAL -->
+  <!-- ========================================================================= -->
+  <div id="editTradeTimerModal" class="hidden fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/85 backdrop-blur-sm p-2 sm:p-4 font-mono">
+    <div class="bg-[#070b16] border border-amber-500/50 rounded-2xl w-full max-w-sm flex flex-col shadow-[0_0_35px_rgba(245,158,11,0.3)] overflow-hidden">
+      <div class="px-3.5 py-2.5 bg-[#040812] border-b border-white/10 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-base text-amber-400">⏱️</span>
+          <div>
+            <div id="editTimerModalTitle" class="font-black text-xs uppercase tracking-wider text-amber-300">MANAGE AUTO-CLOSE TIMER</div>
+            <div id="editTimerModalSubtitle" class="text-[10px] text-slate-400">POSITION #------</div>
+          </div>
+        </div>
+        <button onclick="closeEditTradeTimerModal()" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white flex items-center justify-center text-xs font-bold transition cursor-pointer">✕</button>
+      </div>
+      <div class="p-3.5 space-y-3 text-[12px]">
+        <!-- Current Timer Status Card -->
+        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-white/10 space-y-1">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-400 font-bold">Current State:</span>
+            <span id="editTimerStatusBadge" class="font-black text-rose-300">⏳ 19m 13s remaining</span>
+          </div>
+          <div id="editTimerDetailLabel" class="text-[10px] text-slate-400 leading-tight">
+            Position will automatically exit at market upon timer expiration.
+          </div>
+        </div>
+
+        <!-- Timer Duration Input Box -->
+        <div class="p-2.5 rounded-xl bg-slate-900/80 border border-amber-500/40 space-y-1.5">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-slate-300 font-bold">New Timeout Duration:</span>
+            <span id="editTimerNewValBadge" class="text-amber-400 font-bold font-mono">5 mins</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="adjustEditTimerMins(-1)" class="w-9 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs border border-white/10 cursor-pointer active:scale-95">-1m</button>
+            <div class="relative flex-1">
+              <input type="number" id="editTimerInputMins" min="0" max="1440" step="1" value="5" oninput="onEditTimerInputChange(this.value)" class="w-full py-1.5 px-2 rounded-lg bg-slate-950 border border-amber-500/50 text-white font-black text-center text-sm focus:border-amber-400 focus:outline-none">
+            </div>
+            <button onclick="adjustEditTimerMins(+1)" class="w-9 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-black text-xs border border-white/10 cursor-pointer active:scale-95">+1m</button>
+            <button onclick="adjustEditTimerMins(+5)" class="w-10 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 font-black text-xs border border-white/10 cursor-pointer active:scale-95">+5m</button>
+          </div>
+          <div class="flex items-center justify-between gap-1 pt-0.5">
+            <button onclick="setEditTimerPreset(3)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">3m</button>
+            <button onclick="setEditTimerPreset(5)" class="flex-1 py-1 rounded bg-amber-950/80 text-amber-300 font-black text-[10.5px] border border-amber-500/40 active:scale-95">5m</button>
+            <button onclick="setEditTimerPreset(10)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">10m</button>
+            <button onclick="setEditTimerPreset(15)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">15m</button>
+            <button onclick="setEditTimerPreset(30)" class="flex-1 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-[10.5px] border border-white/5 active:scale-95">30m</button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 gap-2 pt-1">
+          <button id="btnCancelTradeTimer" onclick="submitCancelTradeTimer()" class="py-2.5 rounded-xl bg-red-950/90 hover:bg-red-900 border border-red-500/60 text-red-200 font-black text-xs uppercase tracking-wider active:scale-95 transition flex items-center justify-center gap-1 cursor-pointer">
+            <span>❌ CANCEL TIMER</span>
+          </button>
+          <button id="btnUpdateTradeTimer" onclick="submitUpdateTradeTimer()" class="py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-wider active:scale-95 shadow-md transition flex items-center justify-center gap-1 cursor-pointer">
+            <span>💾 SET TIMER</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODULAR SCRIPTS (ZERO MONOLITH, NO HTTP POLLING) -->
+  <script type="module" src="/frontend/mobile_app/js/app.js"></script>
+</body>
+</html>
