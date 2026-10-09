@@ -357,23 +357,33 @@ export class LineTradingManager {
     this.selectedLineId = idStr;
     if (!this.modalEl) return;
 
+    this._currentActionType = line.actionType || 'EXECUTE';
+    this._timerEnabled = Boolean(line.timerEnabled);
+    this._extendRay = Boolean(line.extendRay);
+
     // Line name
     const nameInput = document.getElementById('tvLineNameInput');
     if (nameInput) nameInput.value = line.name || '';
 
-    // Action choice
-    const chkExec = document.getElementById('tvLineChkExecute');
-    const chkExit = document.getElementById('tvLineChkExit');
+    // Segmented trigger tabs (Buttons / tabs instead of checkboxes)
+    const tabExec = document.getElementById('tvTabTriggerExec');
+    const tabExit = document.getElementById('tvTabTriggerExit');
     const grpExec = document.getElementById('tvLineExecGroup');
     const grpExit = document.getElementById('tvLineExitGroup');
 
-    const isExec = line.actionType === 'EXECUTE';
-    if (chkExec) chkExec.checked = isExec;
-    if (chkExit) chkExit.checked = !isExec;
-    if (grpExec) grpExec.style.display = isExec ? 'block' : 'none';
-    if (grpExit) grpExit.style.display = isExec ? 'none' : 'block';
+    if (this._currentActionType === 'EXECUTE') {
+      tabExec?.classList.add('active');
+      tabExit?.classList.remove('active');
+      if (grpExec) grpExec.style.display = 'block';
+      if (grpExit) grpExit.style.display = 'none';
+    } else {
+      tabExit?.classList.add('active');
+      tabExec?.classList.remove('active');
+      if (grpExec) grpExec.style.display = 'none';
+      if (grpExit) grpExit.style.display = 'block';
+    }
 
-    // Direction
+    // Direction buttons
     const btnBuy = document.getElementById('tvLineDirBuy');
     const btnSell = document.getElementById('tvLineDirSell');
     if (btnBuy && btnSell) {
@@ -381,7 +391,7 @@ export class LineTradingManager {
       btnSell.classList.toggle('active', line.direction === 'SELL');
     }
 
-    // Volume, SL, TP
+    // Volume, SL, TP (3-column grid inputs)
     const volInput = document.getElementById('tvLineVolume');
     const slInput = document.getElementById('tvLineSlPts');
     const tpInput = document.getElementById('tvLineTpPts');
@@ -389,17 +399,23 @@ export class LineTradingManager {
     if (slInput) slInput.value = line.slPts || 6.0;
     if (tpInput) tpInput.value = line.tpPts || 12.0;
 
-    // Auto-Close Timer
-    const chkTimer = document.getElementById('tvLineChkTimer');
+    // Auto-Close Timer toggle button (Button instead of checkbox)
+    const btnTimer = document.getElementById('tvBtnToggleTimer');
     const grpTimer = document.getElementById('tvLineTimerControls');
     const timerMins = document.getElementById('tvLineTimerMins');
-    if (chkTimer) chkTimer.checked = Boolean(line.timerEnabled);
-    if (grpTimer) grpTimer.style.display = line.timerEnabled ? 'block' : 'none';
+    if (btnTimer) {
+      btnTimer.textContent = this._timerEnabled ? 'ON' : 'OFF';
+      btnTimer.classList.toggle('active', this._timerEnabled);
+    }
+    if (grpTimer) grpTimer.style.display = this._timerEnabled ? 'block' : 'none';
     if (timerMins) timerMins.value = line.autoCloseMins || 5.0;
 
-    // Extend Ray
-    const chkRay = document.getElementById('tvLineChkExtendRay');
-    if (chkRay) chkRay.checked = Boolean(line.extendRay);
+    // Extend Ray toggle button (Button instead of checkbox)
+    const btnRay = document.getElementById('tvBtnToggleRay');
+    if (btnRay) {
+      btnRay.textContent = this._extendRay ? 'ON' : 'OFF';
+      btnRay.classList.toggle('active', this._extendRay);
+    }
 
     this._updateDollarPnlBox();
     this._updateColorIndicator();
@@ -415,39 +431,31 @@ export class LineTradingManager {
       this.modalEl.style.display = 'none';
     });
 
-    // Mutually exclusive touch triggers
-    const chkExec = document.getElementById('tvLineChkExecute');
-    const chkExit = document.getElementById('tvLineChkExit');
+    // Touch Trigger Action: Segmented Tabs (Buttons/tabs instead of checkboxes)
+    const tabExec = document.getElementById('tvTabTriggerExec');
+    const tabExit = document.getElementById('tvTabTriggerExit');
     const grpExec = document.getElementById('tvLineExecGroup');
     const grpExit = document.getElementById('tvLineExitGroup');
 
-    chkExec?.addEventListener('change', () => {
-      if (chkExec.checked) {
-        if (chkExit) chkExit.checked = false;
-        if (grpExec) grpExec.style.display = 'block';
-        if (grpExit) grpExit.style.display = 'none';
-      } else {
-        if (chkExit) chkExit.checked = true;
-        if (grpExec) grpExec.style.display = 'none';
-        if (grpExit) grpExit.style.display = 'block';
-      }
+    tabExec?.addEventListener('click', () => {
+      this._currentActionType = 'EXECUTE';
+      tabExec.classList.add('active');
+      tabExit?.classList.remove('active');
+      if (grpExec) grpExec.style.display = 'block';
+      if (grpExit) grpExit.style.display = 'none';
       this._updateColorIndicator();
     });
 
-    chkExit?.addEventListener('change', () => {
-      if (chkExit.checked) {
-        if (chkExec) chkExec.checked = false;
-        if (grpExec) grpExec.style.display = 'none';
-        if (grpExit) grpExit.style.display = 'block';
-      } else {
-        if (chkExec) chkExec.checked = true;
-        if (grpExec) grpExec.style.display = 'block';
-        if (grpExit) grpExit.style.display = 'none';
-      }
+    tabExit?.addEventListener('click', () => {
+      this._currentActionType = 'EXIT';
+      tabExit.classList.add('active');
+      tabExec?.classList.remove('active');
+      if (grpExec) grpExec.style.display = 'none';
+      if (grpExit) grpExit.style.display = 'block';
       this._updateColorIndicator();
     });
 
-    // Direction Toggle
+    // Direction Toggle Buttons
     const btnBuy = document.getElementById('tvLineDirBuy');
     const btnSell = document.getElementById('tvLineDirSell');
     btnBuy?.addEventListener('click', () => {
@@ -466,14 +474,25 @@ export class LineTradingManager {
       document.getElementById(id)?.addEventListener('input', () => this._updateDollarPnlBox());
     });
 
-    // Auto-Close Timer toggle
-    const chkTimer = document.getElementById('tvLineChkTimer');
+    // Auto-Close Timer button toggle (Button instead of checkbox)
+    const btnTimer = document.getElementById('tvBtnToggleTimer');
     const grpTimer = document.getElementById('tvLineTimerControls');
-    chkTimer?.addEventListener('change', () => {
-      if (grpTimer) grpTimer.style.display = chkTimer.checked ? 'block' : 'none';
+    btnTimer?.addEventListener('click', () => {
+      this._timerEnabled = !this._timerEnabled;
+      btnTimer.textContent = this._timerEnabled ? 'ON' : 'OFF';
+      btnTimer.classList.toggle('active', this._timerEnabled);
+      if (grpTimer) grpTimer.style.display = this._timerEnabled ? 'block' : 'none';
     });
 
-    // Timer Pills
+    // Extend Ray button toggle (Button instead of checkbox)
+    const btnRay = document.getElementById('tvBtnToggleRay');
+    btnRay?.addEventListener('click', () => {
+      this._extendRay = !this._extendRay;
+      btnRay.textContent = this._extendRay ? 'ON' : 'OFF';
+      btnRay.classList.toggle('active', this._extendRay);
+    });
+
+    // Timer Duration Pills
     document.querySelectorAll('.tv-timer-pill').forEach(pill => {
       pill.addEventListener('click', () => {
         document.querySelectorAll('.tv-timer-pill').forEach(p => p.classList.remove('active'));
@@ -533,8 +552,7 @@ export class LineTradingManager {
   }
 
   _updateColorIndicator() {
-    const chkExec = document.getElementById('tvLineChkExecute');
-    const isExec = chkExec ? chkExec.checked : true;
+    const isExec = this._currentActionType === 'EXECUTE';
     const isBuy = document.getElementById('tvLineDirBuy')?.classList.contains('active');
 
     const ind = document.getElementById('tvLineColorIndicator');
@@ -560,24 +578,21 @@ export class LineTradingManager {
     if (!line) return;
 
     const nameInput = document.getElementById('tvLineNameInput');
-    const chkExec = document.getElementById('tvLineChkExecute');
     const isBuy = document.getElementById('tvLineDirBuy')?.classList.contains('active');
     const volInput = document.getElementById('tvLineVolume');
     const slInput = document.getElementById('tvLineSlPts');
     const tpInput = document.getElementById('tvLineTpPts');
-    const chkTimer = document.getElementById('tvLineChkTimer');
     const timerMins = document.getElementById('tvLineTimerMins');
-    const chkRay = document.getElementById('tvLineChkExtendRay');
 
     line.name = nameInput?.value?.trim() || line.name;
-    line.actionType = (chkExec && chkExec.checked) ? 'EXECUTE' : 'EXIT';
+    line.actionType = this._currentActionType || 'EXECUTE';
     line.direction = isBuy ? 'BUY' : 'SELL';
     line.volume = Number(volInput?.value || 0.50);
     line.slPts = Number(slInput?.value || 6.0);
     line.tpPts = Number(tpInput?.value || 12.0);
-    line.timerEnabled = Boolean(chkTimer && chkTimer.checked);
+    line.timerEnabled = Boolean(this._timerEnabled);
     line.autoCloseMins = Number(timerMins?.value || 5.0);
-    line.extendRay = Boolean(chkRay && chkRay.checked);
+    line.extendRay = Boolean(this._extendRay);
     line.isArmed = isArmed;
     line.triggered = false; // Reset trigger state on re-arming
 

@@ -571,50 +571,287 @@ html, body {
 }
 
 /* ========================================================================= */
-/* 📐 LINE TRADING MODAL & HUD STYLES                                        */
+/* 📐 REDESIGNED LINE TRADING MODAL & COMPACT HUD                            */
 /* ========================================================================= */
 .tv-line-modal-card {
-  max-width: 440px;
+  max-width: 460px;
   max-height: 88vh;
+  border-radius: 12px;
+  background: #181b24;
+  border: 1px solid #2d3448;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
   overflow-y: auto;
 }
 
-.tv-modal-row {
+.tv-modal-header-left {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
 }
 
-.tv-modal-row-2col {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
+.tv-modal-header-icon {
+  font-size: 15px;
 }
 
-.tv-modal-lbl {
-  font-size: 11px;
-  font-weight: 600;
-  color: #d1d4dc;
-}
-
-.tv-modal-input {
-  background-color: #161616;
-  border: 1px solid #2a2e39;
-  color: #ffffff;
-  padding: 6px 10px;
-  border-radius: 4px;
+.tv-modal-header-title {
   font-size: 12px;
-  outline: none;
-  width: 100%;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #e2e8f0;
 }
-.tv-modal-input:focus {
+
+/* 1. Name Identifier Card */
+.tv-name-card {
+  background: rgba(22, 26, 38, 0.6);
+  border: 1px solid #282e42;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tv-field-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #64748b;
+}
+
+.tv-name-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #12151e;
+  border: 1px solid #282f44;
+  border-radius: 6px;
+  padding: 6px 10px;
+  transition: border-color 0.15s ease;
+}
+.tv-name-input-wrap:focus-within {
   border-color: #2962ff;
 }
 
-.tv-modal-section {
-  background: rgba(22, 26, 37, 0.5);
-  border: 1px solid #2a2e39;
+.tv-input-lead-icon {
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+.tv-name-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  width: 100%;
+}
+
+/* 2. Section Card */
+.tv-section-card {
+  background: rgba(22, 26, 38, 0.6);
+  border: 1px solid #282e42;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tv-section-title {
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: #64748b;
+}
+
+/* Segmented Tabs (Trigger Action Buttons - NO checkboxes) */
+.tv-seg-tabs {
+  display: flex;
+  background: #12151e;
+  border: 1px solid #282f44;
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.tv-seg-tab {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: #787b86;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tv-seg-tab:hover {
+  color: #cbd5e1;
+}
+
+.tv-seg-tab.active {
+  background: #252c40;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.tv-seg-tab.active:nth-child(2) {
+  background: rgba(239, 68, 68, 0.18);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.tv-tab-icon {
+  font-size: 13px;
+}
+
+.tv-tab-text {
+  letter-spacing: 0.2px;
+}
+
+.tv-tab-content {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Direction Segmented Buttons */
+.tv-dir-seg-row {
+  display: flex;
+  gap: 8px;
+}
+
+.tv-dir-seg-btn {
+  flex: 1;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid #282f44;
+  background: #12151e;
+  color: #787b86;
+  font-size: 12px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tv-dir-seg-btn.buy.active {
+  background: #00f5a0;
+  color: #061118;
+  border-color: #00f5a0;
+  box-shadow: 0 0 14px rgba(0, 245, 160, 0.3);
+}
+
+.tv-dir-seg-btn.sell.active {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 14px rgba(239, 68, 68, 0.3);
+}
+
+.tv-dir-arrow {
+  font-size: 10px;
+}
+
+/* 3-Column Parameter Grid */
+.tv-params-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.tv-param-box {
+  background: #12151e;
+  border: 1px solid #282f44;
+  border-radius: 6px;
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: border-color 0.15s ease;
+}
+.tv-param-box:focus-within {
+  border-color: #2962ff;
+}
+
+.tv-param-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #64748b;
+}
+
+.tv-param-input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: monospace;
+  width: 100%;
+}
+
+/* Estimated Dollar ($) P&L Outcome Card */
+.tv-outcome-card {
+  background: rgba(10, 14, 22, 0.7);
+  border: 1px solid #202738;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.tv-outcome-header {
+  font-size: 9px;
+  font-weight: 800;
+  color: #64748b;
+  letter-spacing: 0.6px;
+  margin-bottom: 6px;
+}
+
+.tv-outcome-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+  text-align: center;
+}
+
+.tv-outcome-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tv-outcome-lbl {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: #787b86;
+}
+
+.tv-outcome-val {
+  font-size: 13.5px;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.tv-outcome-sub {
+  font-size: 9px;
+  color: #64748b;
+}
+
+/* Feature Toggle Card (Auto-Close & Extend Ray) */
+.tv-feature-toggle-card {
+  background: #12151e;
+  border: 1px solid #282f44;
   border-radius: 6px;
   padding: 10px;
   display: flex;
@@ -622,239 +859,222 @@ html, body {
   gap: 8px;
 }
 
-.tv-section-hdr {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: #787b86;
-}
-
-.tv-exclusive-hint {
-  font-size: 10px;
-  color: #64748b;
-  margin-bottom: 2px;
-}
-
-.tv-toggle-row {
+.tv-feature-header-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
 }
 
-.tv-choice-lbl {
+.tv-feature-left {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
+}
+
+.tv-feature-icon {
+  font-size: 14px;
+}
+
+.tv-feature-name {
+  font-size: 11.5px;
+  font-weight: 700;
   color: #d1d4dc;
 }
 
-.tv-chk {
-  accent-color: #2962ff;
-  width: 15px;
-  height: 15px;
-  cursor: pointer;
-}
-
-.tv-sub-group {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid #222632;
-  border-radius: 6px;
-  padding: 8px 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 4px;
-}
-
-.tv-sub-hdr {
+.tv-feature-desc {
   font-size: 9.5px;
+  color: #64748b;
+}
+
+.tv-btn-toggle {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 10.5px;
   font-weight: 800;
-  color: #787b86;
-  letter-spacing: 0.5px;
-}
-
-.tv-dir-btn-group {
-  display: flex;
-  gap: 4px;
-}
-
-.tv-dir-btn {
-  padding: 4px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 4px;
-  border: 1px solid #2a2e39;
-  background: #171b26;
+  border: 1px solid #363d52;
+  background: #181c26;
   color: #787b86;
   cursor: pointer;
   transition: all 0.15s ease;
-}
-
-.tv-dir-btn.buy.active {
-  background: #00f5a0;
-  color: #090d18;
-  border-color: #00f5a0;
-}
-
-.tv-dir-btn.sell.active {
-  background: #ef4444;
-  color: #ffffff;
-  border-color: #ef4444;
-}
-
-/* Dollar P&L Box */
-.tv-dollar-pnl-box {
-  background: rgba(15, 19, 28, 0.85);
-  border: 1px solid #222a3a;
-  border-radius: 6px;
-  padding: 8px 10px;
-}
-
-.tv-pnl-hdr {
-  font-size: 9px;
-  font-weight: 800;
-  color: #64748b;
-  letter-spacing: 0.5px;
-  margin-bottom: 6px;
-}
-
-.tv-pnl-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  min-width: 44px;
   text-align: center;
 }
+.tv-btn-toggle:hover {
+  color: #ffffff;
+}
 
-.tv-pnl-item {
+.tv-btn-toggle.active {
+  background: #2962ff;
+  color: #ffffff;
+  border-color: #2962ff;
+  box-shadow: 0 0 10px rgba(41, 98, 255, 0.4);
+}
+
+/* Expanded Timer Controls */
+.tv-timer-expanded {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 6px;
+  border: 1px solid #1f2536;
 }
 
-.tv-pnl-lbl {
-  font-size: 8.5px;
+.tv-timer-input-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tv-timer-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #8890a4;
+}
+
+.tv-timer-input {
+  background: #12151e;
+  border: 1px solid #282f44;
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
   font-weight: 700;
-  color: #787b86;
-}
-
-.tv-pnl-val {
-  font-size: 13px;
-  font-weight: 800;
   font-family: monospace;
+  width: 70px;
+  text-align: right;
+  outline: none;
 }
 
-.tv-pnl-sub {
-  font-size: 9px;
-  color: #64748b;
-}
-
-.text-green { color: #00f5a0 !important; }
-.text-rose { color: #ef4444 !important; }
-.text-blue { color: #38bdf8 !important; }
-
-/* Timer Controls */
-.tv-timer-pills {
+.tv-timer-pills-row {
   display: flex;
   gap: 4px;
-  margin-top: 6px;
 }
 
 .tv-timer-pill {
   flex: 1;
-  padding: 3px 0;
-  background: #1e222d;
-  border: 1px solid #2a2e39;
-  border-radius: 3px;
+  padding: 4px 0;
+  background: #181c26;
+  border: 1px solid #282f44;
+  border-radius: 4px;
   color: #787b86;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 10.5px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
-
+.tv-timer-pill:hover {
+  color: #ffffff;
+}
 .tv-timer-pill.active {
   background: #2962ff;
   color: #ffffff;
   border-color: #2962ff;
 }
 
-.tv-exit-desc {
+/* Exit Banner */
+.tv-exit-banner {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.tv-exit-banner-icon {
+  font-size: 18px;
+}
+
+.tv-exit-banner-title {
   font-size: 11px;
-  color: #94a3b8;
+  font-weight: 800;
+  color: #ef4444;
+  letter-spacing: 0.5px;
+  margin-bottom: 2px;
+}
+
+.tv-exit-banner-body {
+  font-size: 10.5px;
+  color: #cbd5e1;
   line-height: 1.4;
 }
 
-/* Color Legend & Badges */
-.tv-color-legend {
+/* Color Guide Chips */
+.tv-color-guide {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 2px;
 }
 
-.tv-legend-pill {
+.tv-guide-chip {
   font-size: 9.5px;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: #1e222d;
-  color: #d1d4dc;
-}
-
-.line-color-badge-green {
-  font-size: 10px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(0, 245, 160, 0.15);
-  color: #00f5a0;
-}
-
-.line-color-badge-red {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-}
-
-.line-color-badge-yellow {
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-}
-
-.tv-btn-danger {
-  background: #2d181e;
-  color: #ef4444;
-  border: 1px solid #ef4444;
-  padding: 6px 12px;
+  padding: 3px 8px;
   border-radius: 4px;
-  font-weight: 600;
+  background: #12151e;
+  border: 1px solid #242a3a;
+  color: #cbd5e1;
+}
+
+/* Footer Action Buttons */
+.tv-btn-modal-delete {
+  background: #2a151b;
+  color: #ef4444;
+  border: 1px solid #571e27;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-weight: 700;
   font-size: 12px;
   cursor: pointer;
+  transition: all 0.15s ease;
 }
-.tv-btn-danger:hover {
+.tv-btn-modal-delete:hover {
   background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+.tv-modal-footer-right {
+  display: flex;
+  gap: 8px;
+}
+
+.tv-btn-modal-disarm {
+  background: #252b3d;
+  color: #cbd5e1;
+  border: 1px solid #363e56;
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tv-btn-modal-disarm:hover {
+  background: #323b54;
   color: #ffffff;
 }
 
-.tv-btn-arm {
+.tv-btn-modal-arm {
   background: #00f5a0;
-  color: #090d18;
+  color: #061118;
   border: none;
-  padding: 6px 14px;
-  border-radius: 4px;
-  font-weight: 700;
+  padding: 7px 16px;
+  border-radius: 6px;
+  font-weight: 800;
   font-size: 12px;
   cursor: pointer;
+  box-shadow: 0 0 14px rgba(0, 245, 160, 0.35);
+  transition: all 0.15s ease;
 }
-.tv-btn-arm:hover {
+.tv-btn-modal-arm:hover {
   background: #00d68c;
+  box-shadow: 0 0 18px rgba(0, 245, 160, 0.5);
 }
 
 /* ========================================================================= */
