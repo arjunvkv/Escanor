@@ -239,9 +239,38 @@
         </button>
       </div>
 
+      <!-- 🟢 1. TOP STORY STRIP: PLACED OUTSIDE ABOVE THE GAUGES -->
+      <div class="p-1.5 rounded-xl bg-[#041224] border border-emerald-500/50 shadow-sm space-y-1">
+        <div class="text-[8.5px] font-black font-mono text-emerald-400 flex items-center justify-between px-1">
+          <span class="flex items-center gap-1">
+            <span>▲</span>
+            <span>POWER & EXPANSION STORIES (UP)</span>
+          </span>
+          <span class="text-[7.5px] text-emerald-300/70 font-mono tracking-tight">ACTIVE CLOCKS</span>
+        </div>
+        <div id="gaugeStoryTopRow" class="grid grid-cols-5 gap-1 text-center font-mono">
+          <div class="p-1 rounded bg-[#031c36] text-[9px] text-slate-500">Loading...</div>
+        </div>
+      </div>
+
+      <!-- 2. GAUGE TUBES CONTAINER -->
       <div class="overflow-x-auto custom-scrollbar">
         <div id="thermoColumnsContainer" class="flex items-start justify-between min-w-[340px] gap-1">
           <div class="text-[11px] text-slate-400 p-2 text-center w-full">Loading Tape Physics Thermometers...</div>
+        </div>
+      </div>
+
+      <!-- 🟡 3. BOTTOM STORY STRIP: PLACED OUTSIDE BELOW THE GAUGES -->
+      <div class="p-1.5 rounded-xl bg-[#201103] border border-amber-500/50 shadow-sm space-y-1">
+        <div class="text-[8.5px] font-black font-mono text-amber-400 flex items-center justify-between px-1">
+          <span class="flex items-center gap-1">
+            <span>▼</span>
+            <span>STALL & COIL DURATION STORIES (DOWN)</span>
+          </span>
+          <span class="text-[7.5px] text-amber-300/70 font-mono tracking-tight">ACTIVE CLOCKS</span>
+        </div>
+        <div id="gaugeStoryBottomRow" class="grid grid-cols-5 gap-1 text-center font-mono">
+          <div class="p-1 rounded bg-[#2b1704] text-[9px] text-slate-500">Loading...</div>
         </div>
       </div>
     </section>
@@ -928,6 +957,6 @@
   </script>
 
   <!-- MODULAR SCRIPTS (ZERO MONOLITH, NO HTTP POLLING) -->
-  <script type="module" src="/mobile/js/app.js?v=202610091815"></script>
+  <script type="module" src="/mobile/js/app.js?v=202610091825"></script>
 </body>
 </html>

@@ -78,17 +78,9 @@ export function buildDualVelocityThermo({ vel1m, vel5m, vel10mMax, story }) {
   return `
     <div onclick="openMetricModal('velocity')" class="flex flex-col items-center gap-0.5 flex-1 min-w-[70px] cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect Tape Tick Velocity">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">⚡ VELOCITY</div>
-      <!-- Story Number (Above Tube) -->
-      <div class="w-full px-1 py-0.5 rounded bg-[#061826] border border-emerald-400/60 shadow-[0_0_6px_rgba(16,185,129,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
-        ${storyTop.text || '▲ 0s EXP'}
-      </div>
       <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▲140+</div>
       <div class="relative flex items-center justify-center w-full">${svg}</div>
       <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▼0</div>
-      <!-- Story Number (Below Tube) -->
-      <div class="w-full px-1 py-0.5 rounded bg-[#211206] border border-amber-400/60 shadow-[0_0_6px_rgba(245,158,11,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#fbbf24'};">
-        ${storyBottom.text || '▼ 0s STALL'}
-      </div>
       <div class="flex justify-between w-full px-0.5 mt-0.5 text-center">
         <div>
           <div class="text-[13.5px] font-black font-mono leading-none" style="color:${c1};">${v1.toFixed(0)}</div>
@@ -175,10 +167,6 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
   return `
     <div onclick="openMetricModal('${metricKey}')" class="flex flex-col items-center gap-0.5 flex-1 ${hasSide ? 'min-w-[78px]' : 'min-w-[58px]'} cursor-pointer active:scale-95 transition hover:opacity-90" title="Tap to inspect ${title}">
       <div class="text-[10px] font-black text-slate-200 tracking-wider text-center whitespace-nowrap">${title}</div>
-      <!-- Story Number (Above Tube) -->
-      <div class="w-full px-1 py-0.5 rounded bg-[#061826] border border-emerald-400/60 shadow-[0_0_6px_rgba(16,185,129,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyTop.color || '#34d399'};">
-        ${storyTop.text || '▲ 0'}
-      </div>
       <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▲${highLabel}</div>
       <div class="relative flex items-center justify-center w-full">
         ${svg}
@@ -189,10 +177,6 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
         ` : ''}
       </div>
       <div class="text-[7.5px] font-mono text-slate-400 text-center whitespace-nowrap">▼${lowLabel}</div>
-      <!-- Story Number (Below Tube) -->
-      <div class="w-full px-1 py-0.5 rounded bg-[#211206] border border-amber-400/60 shadow-[0_0_6px_rgba(245,158,11,0.25)] text-[9px] font-black font-mono leading-none tracking-tight text-center whitespace-nowrap min-h-[16px] flex items-center justify-center my-0.5" style="color:${storyBottom.color || '#fbbf24'};">
-        ${storyBottom.text || '▼ 0'}
-      </div>
       <div class="text-[14px] font-black font-mono text-center leading-none" style="color:${fillColor};">${current}</div>
       <div class="text-[8.5px] font-bold text-center whitespace-nowrap" style="color:${fillColor};">${currentLabel}</div>
       <div class="text-[7.5px] text-slate-400 text-center leading-tight whitespace-nowrap font-mono min-h-[12px] flex items-center justify-center">${footer || ''}</div>
@@ -375,5 +359,60 @@ export function renderMobileThermometers(tel) {
     story: story.silver
   });
 
+  // 1. Render middle thermometer gauge tubes
   container.innerHTML = thermoVel + thermoCvd + thermoFp + thermoImpulse + thermoLead;
+
+  // 2. Render Top Story Strip (Outside Above Gauges)
+  const topRowEl = document.getElementById('gaugeStoryTopRow');
+  if (topRowEl) {
+    topRowEl.innerHTML = `
+      <div onclick="openMetricModal('velocity')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Velocity Acceleration Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">⚡ VEL</span>
+        <span class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.velocity?.top?.text || '▲ 0s EXP'}</span>
+      </div>
+      <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Buyer Aggressor Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">🌊 CVD</span>
+        <span class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.cvd?.top?.text || '▲ +0Δ ACC'}</span>
+      </div>
+      <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Buyer Block Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">📊 FP</span>
+        <span class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.footprint?.top?.text || '▲ 0/4 LIFT'}</span>
+      </div>
+      <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Surge Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">⚡ IMP</span>
+        <span class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.impulse?.top?.text || '▲ 0s SURGE'}</span>
+      </div>
+      <div onclick="openMetricModal('silver')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Intermarket Lead Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">🥈 ${activeSym}</span>
+        <span class="text-[9.5px] font-black text-emerald-300 leading-tight">${story.silver?.top?.text || '▲ 0s LEAD'}</span>
+      </div>
+    `;
+  }
+
+  // 3. Render Bottom Story Strip (Outside Below Gauges)
+  const bottomRowEl = document.getElementById('gaugeStoryBottomRow');
+  if (bottomRowEl) {
+    bottomRowEl.innerHTML = `
+      <div onclick="openMetricModal('velocity')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Velocity Stall Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">STALL</span>
+        <span class="text-[9.5px] font-black text-amber-300 leading-tight">${story.velocity?.bottom?.text || '▼ 0s STALL'}</span>
+      </div>
+      <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Seller Distribution Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DIST</span>
+        <span class="text-[9.5px] font-black text-amber-300 leading-tight">${story.cvd?.bottom?.text || '▼ -0Δ DIST'}</span>
+      </div>
+      <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Dump Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DUMP</span>
+        <span class="text-[9.5px] font-black text-amber-300 leading-tight">${story.footprint?.bottom?.text || '▼ 0/4 DUMP'}</span>
+      </div>
+      <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Coil Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">COIL</span>
+        <span class="text-[9.5px] font-black text-amber-300 leading-tight">${story.impulse?.bottom?.text || '▼ 0s COIL'}</span>
+      </div>
+      <div onclick="openMetricModal('silver')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Intermarket Drag Story">
+        <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DRAG</span>
+        <span class="text-[9.5px] font-black text-amber-300 leading-tight">${story.silver?.bottom?.text || '▼ 0s DRAG'}</span>
+      </div>
+    `;
+  }
 }
