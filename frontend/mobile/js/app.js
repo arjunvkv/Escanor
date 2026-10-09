@@ -16,6 +16,7 @@ import {
 } from './constants.js';
 
 import { renderMobileThermometers } from './thermometers.js';
+import { updateGaugeStoryNumbers } from './thermo_story_engine.js';
 import { renderWindowHighLows } from './snake_engine.js';
 import { updateQuickLotBadge, renderLeadLagModalContent } from './modals.js';
 import { initGaugeAlarms, evaluateGaugeAlarms } from './gauge_alarms.js';
@@ -731,8 +732,38 @@ export function updateMobileUI(tel) {
   renderRadarBlocks(tel);
   renderLeadLagSummary(tel);
 
-  // 7. Mercury Gauges
-  try { renderMobileThermometers(tel); } catch (e) { console.error('[Escanor] Thermo render error:', e); }
+  // 7. Mercury Gauges & Story Strips
+  try {
+    const story = updateGaugeStoryNumbers(tel) || {};
+    const setTxt = (id, val, col) => {
+      const el = document.getElementById(id);
+      if (el && val) {
+        el.textContent = val;
+        if (col) el.style.color = col;
+      }
+    };
+    if (story.velocity) {
+      setTxt('storyTop_vel', story.velocity.top?.text, story.velocity.top?.color);
+      setTxt('storyBottom_vel', story.velocity.bottom?.text, story.velocity.bottom?.color);
+    }
+    if (story.cvd) {
+      setTxt('storyTop_cvd', story.cvd.top?.text, story.cvd.top?.color);
+      setTxt('storyBottom_cvd', story.cvd.bottom?.text, story.cvd.bottom?.color);
+    }
+    if (story.footprint) {
+      setTxt('storyTop_fp', story.footprint.top?.text, story.footprint.top?.color);
+      setTxt('storyBottom_fp', story.footprint.bottom?.text, story.footprint.bottom?.color);
+    }
+    if (story.impulse) {
+      setTxt('storyTop_imp', story.impulse.top?.text, story.impulse.top?.color);
+      setTxt('storyBottom_imp', story.impulse.bottom?.text, story.impulse.bottom?.color);
+    }
+    if (story.silver) {
+      setTxt('storyTop_lead', story.silver.top?.text, story.silver.top?.color);
+      setTxt('storyBottom_lead', story.silver.bottom?.text, story.silver.bottom?.color);
+    }
+    renderMobileThermometers(tel);
+  } catch (e) { console.error('[Escanor] Thermo render error:', e); }
   try { evaluateGaugeAlarms(tel); } catch (e) { console.error('[Escanor] Gauge alarms error:', e); }
 
   // 8. Peak/Trough Monitor

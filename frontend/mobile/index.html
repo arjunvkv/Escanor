@@ -249,7 +249,26 @@
           <span class="text-[7.5px] text-emerald-300/70 font-mono tracking-tight">ACTIVE CLOCKS</span>
         </div>
         <div id="gaugeStoryTopRow" class="grid grid-cols-5 gap-1 text-center font-mono">
-          <div class="p-1 rounded bg-[#031c36] text-[9px] text-slate-500">Loading...</div>
+          <div onclick="openMetricModal('velocity')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Velocity Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">⚡ VEL</span>
+            <span id="storyTop_vel" class="text-[9.5px] font-black text-emerald-300 leading-tight">▲ 0s EXP</span>
+          </div>
+          <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">🌊 CVD</span>
+            <span id="storyTop_cvd" class="text-[9.5px] font-black text-emerald-300 leading-tight">▲ +0Δ ACC</span>
+          </div>
+          <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">📊 FP</span>
+            <span id="storyTop_fp" class="text-[9.5px] font-black text-emerald-300 leading-tight">▲ 0/4 LIFT</span>
+          </div>
+          <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">⚡ IMP</span>
+            <span id="storyTop_imp" class="text-[9.5px] font-black text-emerald-300 leading-tight">▲ 0s SURGE</span>
+          </div>
+          <div onclick="openMetricModal('silver')" class="p-1 rounded bg-[#031d36] border border-emerald-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Lead Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">🥈 LEAD</span>
+            <span id="storyTop_lead" class="text-[9.5px] font-black text-emerald-300 leading-tight">▲ 0s LEAD</span>
+          </div>
         </div>
       </div>
 
@@ -270,7 +289,26 @@
           <span class="text-[7.5px] text-amber-300/70 font-mono tracking-tight">ACTIVE CLOCKS</span>
         </div>
         <div id="gaugeStoryBottomRow" class="grid grid-cols-5 gap-1 text-center font-mono">
-          <div class="p-1 rounded bg-[#2b1704] text-[9px] text-slate-500">Loading...</div>
+          <div onclick="openMetricModal('velocity')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Velocity Stall Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">STALL</span>
+            <span id="storyBottom_vel" class="text-[9.5px] font-black text-amber-300 leading-tight">▼ 0s STALL</span>
+          </div>
+          <div onclick="openMetricModal('cvd')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect CVD Distribution Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DIST</span>
+            <span id="storyBottom_cvd" class="text-[9.5px] font-black text-amber-300 leading-tight">▼ -0Δ DIST</span>
+          </div>
+          <div onclick="openMetricModal('footprint')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Footprint Dump Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DUMP</span>
+            <span id="storyBottom_fp" class="text-[9.5px] font-black text-amber-300 leading-tight">▼ 0/4 DUMP</span>
+          </div>
+          <div onclick="openMetricModal('impulse')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Impulse Coil Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">COIL</span>
+            <span id="storyBottom_imp" class="text-[9.5px] font-black text-amber-300 leading-tight">▼ 0s COIL</span>
+          </div>
+          <div onclick="openMetricModal('silver')" class="p-1 rounded bg-[#2e1703] border border-amber-500/50 cursor-pointer active:scale-95 transition flex flex-col items-center justify-center shadow-sm" title="Tap to inspect Lead Drag Story">
+            <span class="text-[7.5px] text-slate-400 font-bold uppercase tracking-tight">DRAG</span>
+            <span id="storyBottom_lead" class="text-[9.5px] font-black text-amber-300 leading-tight">▼ 0s DRAG</span>
+          </div>
         </div>
       </div>
     </section>
@@ -957,6 +995,6 @@
   </script>
 
   <!-- MODULAR SCRIPTS (ZERO MONOLITH, NO HTTP POLLING) -->
-  <script type="module" src="/mobile/js/app.js?v=202610091832"></script>
+  <script type="module" src="/mobile/js/app.js?v=202610091855"></script>
 </body>
 </html>
