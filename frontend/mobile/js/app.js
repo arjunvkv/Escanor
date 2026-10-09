@@ -995,20 +995,19 @@ window.tickActiveTradeTimers = tickActiveTradeTimers;
 // Boot Terminal
 function boot() {
   console.log('[Escanor Mobile] Booting terminal...');
-  updateQuickLotBadge();
-  updateGlobalSessionsUI();
-  initGaugeAlarms();
-  // Instant initial fetch so UI never starts blank
-  fetchTelemetrySnapshot();
-  setInterval(updateGlobalSessionsUI, 1000);
-  setInterval(tickActiveTradeTimers, 1000);
+  try { fetchTelemetrySnapshot(); } catch (e) { console.warn('[Escanor] Initial snapshot error:', e); }
+  try { updateQuickLotBadge(); } catch (e) {}
+  try { updateGlobalSessionsUI(); } catch (e) {}
+  try { initGaugeAlarms(); } catch (e) { console.warn('[Escanor] Alarm init warning:', e); }
+  try { setInterval(updateGlobalSessionsUI, 1000); } catch (e) {}
+  try { setInterval(tickActiveTradeTimers, 1000); } catch (e) {}
   // Periodic fallback heartbeat: if WS is not open, fetch via HTTP every 2.5s
   setInterval(() => {
     if (!wsConn || wsConn.readyState !== WebSocket.OPEN) {
       fetchTelemetrySnapshot();
     }
   }, 2500);
-  connectWebSocket();
+  try { connectWebSocket(); } catch (e) { console.warn('[Escanor] WS connect error:', e); }
 }
 
 if (document.readyState === 'loading') {

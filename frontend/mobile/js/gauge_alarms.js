@@ -347,12 +347,14 @@ export function initGaugeAlarms() {
     });
   }
 
-  // Request browser Notification permission on first click
-  if ('Notification' in window && Notification.permission === 'default') {
-    document.addEventListener('click', () => {
-      Notification.requestPermission().catch(() => {});
-    }, { once: true });
-  }
+  // Request browser Notification permission on first click (safely guarded for mobile & insecure HTTP)
+  try {
+    if (typeof window !== 'undefined' && 'Notification' in window && window.Notification && window.Notification.permission === 'default') {
+      document.addEventListener('click', () => {
+        try { window.Notification.requestPermission().catch(() => {}); } catch (e) {}
+      }, { once: true });
+    }
+  } catch (e) {}
 
   // Pre-seed audio context on user gesture
   document.addEventListener('click', () => {
