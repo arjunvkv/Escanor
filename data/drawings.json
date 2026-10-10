@@ -161,32 +161,532 @@
       "styles": null
     },
     {
-      "id": "overlay_1791547078049_1",
+      "id": "overlay_1791562825216_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791562825218_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791562825219_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4180.6
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791562825219_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791562825219_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791562825219_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791562825219_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4195.45
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182454_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182454_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182454_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.64
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182454_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182454_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182455_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572182455_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4194.61
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791573526660_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4195.27
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791572232349_1",
       "name": "segment",
       "points": [
         {
-          "timestamp": 1791549600000,
-          "dataIndex": 243,
-          "value": 4197.726873694973
+          "timestamp": 1791567900000,
+          "dataIndex": 242,
+          "value": 4179.630489294371
         },
         {
-          "timestamp": 1791587700000,
-          "dataIndex": 370,
-          "value": 4197.883919271729
+          "timestamp": 1791592200000,
+          "dataIndex": 322,
+          "value": 4201.0714016294105
         }
       ],
       "styles": {
         "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
+          "color": "#00f5a0",
+          "size": 2.5,
           "style": "solid"
         },
         "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#94a3b8",
-          "activeBorderColor": "#94a3b8",
-          "radius": 4
+          "color": "#00f5a0",
+          "borderColor": "#00f5a0",
+          "activeColor": "#00f5a0",
+          "activeBorderColor": "#00f5a0",
+          "radius": 5
+        }
+      }
+    },
+    {
+      "id": "overlay_1791574405299_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405299_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405299_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.65
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405300_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405300_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405300_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405300_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4195.27
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574405300_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4194.61
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452576_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452576_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452576_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.66
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452576_6",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452577_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452577_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452577_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4195.27
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574452577_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4194.61
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.68
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_6",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_7",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_8",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475710_9",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4195.27
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574475711_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4194.61
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639659_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4145.95
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_1",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4103.28
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_2",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4181.68
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_3",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4179.82
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_4",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4131.73
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_5",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4124.615
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_6",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4195.27
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791574639660_7",
+      "name": "structuralLevel",
+      "points": [
+        {
+          "value": 4194.61
+        }
+      ],
+      "styles": null
+    },
+    {
+      "id": "overlay_1791547078049_1",
+      "name": "segment",
+      "points": [
+        {
+          "timestamp": 1791561900000,
+          "dataIndex": 229,
+          "value": 4195.068305884731
+        },
+        {
+          "timestamp": 1791604200000,
+          "dataIndex": 362,
+          "value": 4206.641947145167
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#fbbf24",
+          "size": 2.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#fbbf24",
+          "borderColor": "#fbbf24",
+          "activeColor": "#fbbf24",
+          "activeBorderColor": "#fbbf24",
+          "radius": 5
         }
       }
     }

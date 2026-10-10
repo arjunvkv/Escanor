@@ -1,0 +1,22 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "opencode/big-pickle",
+  "default_agent": "build",
+  "mcp": {
+    "proxima": {
+      "type": "local",
+      "command": [
+        "node",
+        "C:/Trading/Alpha/mcp_server/proxima_wrapper.js"
+      ],
+      "enabled": true,
+      "timeout": 300000,
+      "env": {
+        "AGENT_HUB_IDLE_TIMEOUT_MS": "300000"
+      }
+    }
+  },
+  "instructions": [
+    "INSTRUCTIONS.md"
+  ]
+}
