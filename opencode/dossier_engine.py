@@ -6,7 +6,7 @@ and enforcing the 4-phase operating cadence:
   1. alpha_get_account_status & alpha_get_pending_orders FIRST
   2. Autonomous macro & news investigation via Proxima MCP suite
   3. alpha_query_analyst_desk & alpha_get_market_regime_context AT LAST for 5-min technicals
-  4. Execution decision & trigger placement when favourable
+  4. Execution decision & live orders when favourable (Strictly zero prong planning)
 """
 
 import os
@@ -112,63 +112,32 @@ class DossierEngine:
 
 ---
 
-### MANDATORY 4-PHASE OPERATIONAL DIRECTIVE:
+### OPERATIONAL CYCLE DIRECTIVE:
 
-**PHASE 1 (PRE-FLIGHT AUDIT — CALL FIRST)**:
-You must call these tools immediately before performing research or trading:
-1. `alpha_get_account_status()`: Audit live Balance, Equity, Margin usage, and any open positions.
-2. `alpha_get_pending_orders(symbol="XAUUSD")`: Audit the current pending order book.
+Execute Cycle #{cycle_number} through your 4-phase sequence:
 
-**PHASE 2 (AUTONOMOUS MACRO & NEWS INVESTIGATION — MIDDLE)**:
-Investigate macro reality using your **Proxima Intelligence Suite** (`proxima_ask_perplexity`, `proxima_ask_chatgpt`, `proxima_web_scrape`, `proxima_ddg_search`, `proxima_deep_search`).
-Execute through the 6-stage causal hierarchy:
-- Sovereign Catalysts (Geopolitics, fiscal risk, Fed statements)
-- Transmission Chain into Real Yields (DFII10), Nominal 10Y (US10Y), and DXY
-- Gold Specificity (Opportunity cost vs monetary debasement / central bank demand)
-- Tape Asymmetry: Compare live macro wires against MT5 quote ({telem.get('bid', 'N/A')}). Is Gold demonstrating absorption or distribution?
-- Secondary prints (AHE, JOLTS, ISM Prices Paid, Treasury auctions)
-- Forward Runway (Next 15–45 minutes clearance, upcoming data releases)
+**PHASE 1: PRE-FLIGHT AUDIT (CALL FIRST)**
+- Inspect live balance, equity, margin, and open position tickets via `alpha_get_account_status()`.
+- Inspect working limit/stop orders via `alpha_get_pending_orders(symbol="XAUUSD")`.
 
-**PHASE 3 (5-MINUTE TECHNICAL & STRUCTURAL REALITY — CALL AT LAST AFTER NEWS)**:
-After finishing your macroeconomic analysis, verify the immediate 5-minute technical structure before placing any trades:
-1. `alpha_query_analyst_desk(query="Check 5m order flow, fair value gaps, liquidity sweeps, and key supply/demand levels", symbol="XAUUSD")`
-2. `alpha_get_market_regime_context(symbol="XAUUSD")`: Check volatility, tick velocity, and structural regime.
+**PHASE 2: MACRO & NEWS INVESTIGATION (PROXIMA SUITE)**
+- Investigate breaking sovereign catalysts, calendar gates (CPI, PPI, NFP, FOMC), US nominal 10Y yields (`US10Y`), 10Y real TIPS yields (`DFII10`), and Dollar Index (`DXY`).
+- Test tape asymmetry: Is Gold validating the macro print or absorbing selling pressure?
+- Check forward runway over next 15–45 minutes.
 
-**PHASE 4 (EXECUTION & DECISION — STRICTLY ZERO PRONG PLANNING)**:
-If and only if your macro thesis and 5-minute technical structure align into a high-conviction confluence during active market hours:
-- Place precision structural limit or stop orders via `alpha_place_pending_order(symbol="XAUUSD", order_type="BUY_LIMIT"|"SELL_LIMIT"|"BUY_STOP"|"SELL_STOP", price=..., volume=..., sl_price=..., tp_price=..., tag=...)`.
-- Or execute immediate market orders via `alpha_execute_market_order(symbol="XAUUSD", side="BUY"|"SELL", volume=..., sl_price=..., tp_price=..., comment=...)`.
-- Modify or cancel stale pending orders via `alpha_modify_pending_order` / `alpha_cancel_pending_order`.
-- Manage live open positions via `alpha_update_position`.
-- If market is closed (e.g. weekend) or conditions are unfavourable/choppy: declare **STAND DOWN / NO ACTION**. State your positioning rationale, evaluate existing open positions, and define exact invalidation tripwires.
-- **STRICT DIRECTIVE**: Do NOT invent hypothetical "prongs" (Prong A/B/C) or advisory future trade setups. Pre-planning hypothetical setups creates trade fixation and premature bias. Do NOT call sentiment publishing tools. Formulate your complete executive report directly in this session.
+**PHASE 3: 5-MINUTE TECHNICAL & STRUCTURAL AUDIT (CALL AT LAST AFTER NEWS)**
+- Call `alpha_query_analyst_desk(query="Check 5m order flow, fair value gaps, liquidity sweeps, and key supply/demand levels", symbol="XAUUSD")`.
+- Call `alpha_get_market_regime_context(symbol="XAUUSD")`.
+
+**PHASE 4: EXECUTION DECISION & ACTION (ZERO PRONG PLANNING)**
+- Place actual orders via `alpha_place_pending_order` or `alpha_execute_market_order` WHEN AND ONLY WHEN macro and 5m technical structure align during active market hours.
+- Manage existing positions via `alpha_update_position`.
+- If market is closed or conditions are unfavourable/choppy: declare **STAND DOWN / NO ACTION**. State your rationale and objective invalidation tripwires.
+- **STRICT**: Do NOT manufacture hypothetical prongs (Prong A/B/C) or advisory setups. Do NOT call sentiment publishing tools.
+
+Synthesize your findings in the standard executive report format.
 """
         return prompt
-
-    def seed_new_session(self, title: str = "Escanor Macro Intelligence & Execution Desk") -> str:
-        """Creates and initializes a clean OpenCode session pinned to C:\\Trading."""
-        session = self.sm.create_session(title=title, directory=r"C:\Trading")
-        session_id = session["id"]
-        logger.info(f"Created new OpenCode session: {session_id} - '{title}'")
-
-        seed_message = """# ESCANOR MACRO INTELLIGENCE & STRUCTURAL EXECUTION DESK INITIALIZED
-
-Standing Orders loaded from AGENTS.md:
-- **Full Tool Suite**:
-  - Pre-Flight & Structural Tools: `alpha_get_account_status`, `alpha_get_pending_orders`, `alpha_query_analyst_desk`, `alpha_get_market_regime_context`.
-  - Trade Execution Tools: `alpha_execute_market_order`, `alpha_place_pending_order`, `alpha_cancel_pending_order`, `alpha_modify_pending_order`, `alpha_update_position`.
-  - Proxima Suite: `proxima_ask_perplexity`, `proxima_ask_chatgpt`, `proxima_web_scrape`, `proxima_ddg_search`, `proxima_deep_search`.
-- **4-Phase Operating Sequence on Every Dossier**:
-  1. Call `alpha_get_account_status` and `alpha_get_pending_orders` FIRST.
-  2. Perform autonomous macro & news investigation via Proxima suite.
-  3. Call `alpha_query_analyst_desk` and `alpha_get_market_regime_context` AT LAST after news to audit 5m technicals.
-  4. Place orders / triggers or adjust risk WHEN FAVOURABLE.
-
-The desk is standing by for the 5-minute operational dossier cadence.
-"""
-        ok = self.sm.send_prompt(session_id, seed_message, async_mode=False)
-        logger.info(f"Session seeded: {ok}")
-        return session_id
 
     def dispatch_dossier(self, session_id: Optional[str] = None, cycle_number: int = 1) -> bool:
         """Builds and dispatches the live dossier to the target session."""
@@ -224,29 +193,19 @@ The desk is standing by for the 5-minute operational dossier cadence.
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Escanor Macro Dossier Engine")
-    parser.add_argument("--seed", action="store_true", help="Create and seed a new session in /trading/")
     parser.add_argument("--dispatch", action="store_true", help="Dispatch a live MT5 dossier")
     parser.add_argument("--session-id", type=str, default=None, help="Target session ID")
     parser.add_argument("--cycle", type=int, default=1, help="Cycle number")
     parser.add_argument("--loop", action="store_true", help="Run continuously every 5 minutes")
     parser.add_argument("--interval", type=int, default=300, help="Interval in seconds (default: 300 / 5 min)")
-    parser.add_argument("--title", type=str, default="Escanor Macro Intelligence & Execution Desk", help="Session title")
     args = parser.parse_args()
 
     engine = DossierEngine()
 
-    if args.seed:
-        sid = engine.seed_new_session(title=args.title)
-        print(f"SESSION_ID={sid}")
-        if args.dispatch:
-            time.sleep(2.0)
-            engine.dispatch_dossier(session_id=sid, cycle_number=args.cycle)
-        if args.loop:
-            engine.run_periodic_loop(session_id=sid, interval_seconds=args.interval)
-    elif args.loop:
+    if args.loop:
         sid = args.session_id or (engine.sm.find_latest_macro_session() or {}).get("id")
         if not sid:
-            print("No active session found. Seed one first with --seed.")
+            print("No active session found. Provide --session-id or seed one first with seed.py.")
             sys.exit(1)
         engine.run_periodic_loop(session_id=sid, interval_seconds=args.interval)
     elif args.dispatch:
