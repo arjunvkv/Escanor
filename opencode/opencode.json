@@ -3,6 +3,16 @@
   "model": "opencode/big-pickle",
   "default_agent": "build",
   "mcp": {
+    "alpha": {
+      "type": "local",
+      "command": [
+        "C:\\Users\\arjun\\AppData\\Local\\hermes\\hermes-agent\\venv\\Scripts\\python.exe",
+        "-u",
+        "C:\\Trading\\Alpha\\mcp_server\\alpha_mcp_server.py"
+      ],
+      "enabled": true,
+      "timeout": 300000
+    },
     "proxima": {
       "type": "local",
       "command": [
