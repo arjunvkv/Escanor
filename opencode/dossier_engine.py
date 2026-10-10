@@ -134,14 +134,14 @@ After finishing your macroeconomic analysis, verify the immediate 5-minute techn
 1. `alpha_query_analyst_desk(query="Check 5m order flow, fair value gaps, liquidity sweeps, and key supply/demand levels", symbol="XAUUSD")`
 2. `alpha_get_market_regime_context(symbol="XAUUSD")`: Check volatility, tick velocity, and structural regime.
 
-**PHASE 4 (EXECUTION & PLACEMENT OF TRIGGERS — WHEN FAVOURABLE)**:
-If and only if your macro thesis and 5-minute technical structure align into a high-conviction confluence:
+**PHASE 4 (EXECUTION & DECISION — STRICTLY ZERO PRONG PLANNING)**:
+If and only if your macro thesis and 5-minute technical structure align into a high-conviction confluence during active market hours:
 - Place precision structural limit or stop orders via `alpha_place_pending_order(symbol="XAUUSD", order_type="BUY_LIMIT"|"SELL_LIMIT"|"BUY_STOP"|"SELL_STOP", price=..., volume=..., sl_price=..., tp_price=..., tag=...)`.
 - Or execute immediate market orders via `alpha_execute_market_order(symbol="XAUUSD", side="BUY"|"SELL", volume=..., sl_price=..., tp_price=..., comment=...)`.
 - Modify or cancel stale pending orders via `alpha_modify_pending_order` / `alpha_cancel_pending_order`.
-- If market is closed or conditions are unfavourable/choppy, state your positioning rationale clearly and define your exact invalidation levels.
-
-Formulate your complete executive report in this session.
+- Manage live open positions via `alpha_update_position`.
+- If market is closed (e.g. weekend) or conditions are unfavourable/choppy: declare **STAND DOWN / NO ACTION**. State your positioning rationale, evaluate existing open positions, and define exact invalidation tripwires.
+- **STRICT DIRECTIVE**: Do NOT invent hypothetical "prongs" (Prong A/B/C) or advisory future trade setups. Pre-planning hypothetical setups creates trade fixation and premature bias. Do NOT call sentiment publishing tools. Formulate your complete executive report directly in this session.
 """
         return prompt
 
