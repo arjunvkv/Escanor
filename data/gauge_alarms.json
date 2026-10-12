@@ -7,8 +7,8 @@
       "channel": "BOTH",
       "logic": "ALL",
       "cooldownSec": 30,
-      "lastTriggered": 1791575760215,
-      "triggerCount": 132,
+      "lastTriggered": 1791829852550,
+      "triggerCount": 276,
       "conditions": [
         {
           "metric": "vel_1m",

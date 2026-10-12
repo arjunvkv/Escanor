@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610130040">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -36,7 +36,7 @@
 
         <!-- Top-Left TradingView Quick Order Pad (Red Sell / Blue Buy / Spread) -->
         <div class="tv-order-pad">
-          <button id="tvQuickSellBtn" class="tv-order-btn sell" title="Sell at market">
+          <button id="tvQuickSellBtn" class="tv-order-btn sell" title="Sell at market (Alt + PageDown)">
             <span>SELL</span>
             <span id="tvTopSellPrice">----.--</span>
           </button>
@@ -44,7 +44,7 @@
             <span>SPREAD</span>
             <span id="tvTopSpread">-- pt</span>
           </div>
-          <button id="tvQuickBuyBtn" class="tv-order-btn buy" title="Buy at market">
+          <button id="tvQuickBuyBtn" class="tv-order-btn buy" title="Buy at market (Alt + PageUp)">
             <span>BUY</span>
             <span id="tvTopBuyPrice">----.--</span>
           </button>
@@ -52,6 +52,34 @@
       </div>
 
       <div class="tv-top-right">
+        <!-- Highlighted Active Trade Timer Box with Close All Button -->
+        <div id="tvActiveTradeTimerBadge" class="tv-top-trade-timer" style="display: none;" title="Active trade duration">
+          <span class="tv-timer-pulse-dot"></span>
+          <span class="tv-timer-text">ACTIVE TRADE</span>
+          <span id="tvActiveTradeTimerClock" class="tv-timer-clock">00:00</span>
+          <button type="button" id="tvTopCloseAllTradesBtn" class="tv-top-close-all-btn" title="Close all active trades immediately (Alt + End)">✕ CLOSE ALL</button>
+        </div>
+
+        <!-- Unified Global Terminal Lot Control (One Single Lot Everywhere) -->
+        <div id="tvHeaderLotContainer" class="tv-top-lot-container" title="Global Trade & Drawing Lot Size">
+          <span class="tv-top-lot-tag">LOT</span>
+          <input type="number" id="tvHeaderLotInput" class="tv-top-lot-input" value="0.50" step="0.01" min="0.01" max="100.00" title="Click or type to edit global lot size" />
+          <div class="tv-top-lot-pills">
+            <button type="button" class="tv-top-lot-pill" data-lot="0.20">0.2</button>
+            <button type="button" class="tv-top-lot-pill" data-lot="0.30">0.3</button>
+            <button type="button" class="tv-top-lot-pill" data-lot="0.35">0.35</button>
+            <button type="button" class="tv-top-lot-pill" data-lot="0.40">0.4</button>
+            <button type="button" class="tv-top-lot-pill" data-lot="0.45">0.45</button>
+            <button type="button" class="tv-top-lot-pill" data-lot="0.50">0.5</button>
+          </div>
+        </div>
+
+        <button id="tvClearAllDrawingsTopBtn" class="tv-top-clear-btn" title="Remove all line and box drawings">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
+            <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+          </svg>
+          <span>Clear Drawings</span>
+        </button>
         <a href="/mobile" style="color: var(--tv-text-secondary); text-decoration: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: var(--tv-bg-secondary); border: 1px solid var(--tv-border); font-weight: 600;">
           📱 Mobile HUD
         </a>
@@ -97,10 +125,23 @@
           </svg>
         </button>
 
-        <!-- 4. Measure Ruler Tool -->
-        <button id="toolMeasureBtn" class="tv-tool-btn" title="Measure Ruler (or hold Shift + Drag)">
-          <svg viewBox="0 0 24 24">
-            <path d="M2 19h20v2H2v-2zm1-5h2v3H3v-3zm4 0h2v3H7v-3zm4 0h2v3h-2v-3zm4 0h2v3h-2v-3zm4 0h2v3h-2v-3zM2 3h20v2H2V3zm1 5h2v3H3V8zm4 0h2v3H7V8zm4 0h2v3h-2V8zm4 0h2v3h-2V8zm4 0h2v3h-2V8z"/>
+        <!-- 4. Long Position Tool (Alt+Q) -->
+        <button id="toolLongPosBtn" class="tv-tool-btn" title="Long Position (Alt+Q)">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <rect x="5" y="4" width="14" height="7" rx="1.5" fill="#089981" opacity="0.85"/>
+            <path d="M12 6.5l2.2 2.5h-4.4L12 6.5z" fill="#ffffff"/>
+            <line x1="4" y1="11.5" x2="20" y2="11.5" stroke="#cbd5e1" stroke-width="1.5"/>
+            <rect x="5" y="12" width="14" height="7" rx="1.5" fill="#f23645" opacity="0.75"/>
+          </svg>
+        </button>
+
+        <!-- 5. Short Position Tool (Alt+W) -->
+        <button id="toolShortPosBtn" class="tv-tool-btn" title="Short Position (Alt+W)">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <rect x="5" y="4" width="14" height="7" rx="1.5" fill="#f23645" opacity="0.75"/>
+            <line x1="4" y1="11.5" x2="20" y2="11.5" stroke="#cbd5e1" stroke-width="1.5"/>
+            <rect x="5" y="12" width="14" height="7" rx="1.5" fill="#089981" opacity="0.85"/>
+            <path d="M12 16.5l-2.2-2.5h4.4L12 16.5z" fill="#ffffff"/>
           </svg>
         </button>
 
@@ -127,8 +168,8 @@
           <button class="tv-flyout-item" data-overlay="horizontalStraightLine">
             <span>―</span> <span>Horizontal Line</span>
           </button>
-          <button class="tv-flyout-item" data-overlay="verticalStraightLine">
-            <span>│</span> <span>Vertical Line</span>
+          <button class="tv-flyout-item" data-overlay="verticalStraightLine" title="Vertical Line (Alt+V)">
+            <span>│</span> <span>Vertical Line (Alt+V)</span>
           </button>
         </div>
       </aside>
@@ -166,6 +207,21 @@
       <button id="tvFloatSettingsBtn" class="tv-float-btn" title="Settings">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
           <path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.488.488 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+        </svg>
+      </button>
+      <button id="tvFloatArmBtn" class="tv-float-btn tv-float-arm-btn" title="Arm / Disarm Trade Trigger" style="display: none;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M7 2v11h3v9l7-12h-4l3-8z"/>
+        </svg>
+      </button>
+      <button id="tvFloatRectAlarmBtn" class="tv-float-btn tv-float-alarm-btn" title="Arm Alarm (BOTH In & Out + Telegram)" style="display: none;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
+        </svg>
+      </button>
+      <button id="tvFloatVertAlarmBtn" class="tv-float-btn tv-float-alarm-btn" title="Activate Time Alarm (PC & Mobile)" style="display: none;">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
         </svg>
       </button>
       <button id="tvFloatDeleteBtn" class="tv-float-btn tv-float-delete" title="Delete (Backspace)">
@@ -228,12 +284,8 @@
                 </button>
               </div>
 
-              <!-- 3-Column Parameters Grid -->
-              <div class="tv-params-grid">
-                <div class="tv-param-box">
-                  <label class="tv-param-label">VOLUME (LOTS)</label>
-                  <input type="number" id="tvLineVolume" class="tv-param-input" value="0.50" step="0.05" min="0.01" max="10.0">
-                </div>
+              <!-- 2-Column Parameters Grid (Stop Loss & Take Profit; Lots defined globally on header) -->
+              <div class="tv-params-grid" style="grid-template-columns: 1fr 1fr;">
                 <div class="tv-param-box">
                   <label class="tv-param-label">STOP LOSS (PTS)</label>
                   <input type="number" id="tvLineSlPts" class="tv-param-input" value="6.0" step="0.5" min="0.5">
@@ -343,22 +395,81 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- 📦 RECTANGLE SETTINGS MODAL (THEMING OPTIONS REMOVED / EMPTY)              -->
+    <!-- 📦 RECTANGLE SETTINGS MODAL (WITH ALARMS & SLEEK DELETE BUTTON)            -->
     <!-- ========================================================================= -->
     <div id="tvRectSettingsModal" class="tv-modal-backdrop" style="display: none;">
-      <div class="tv-modal-card" style="max-width: 340px;">
+      <div class="tv-modal-card tv-rect-modal-card">
         <div class="tv-modal-header">
-          <span>Rectangle Box Settings</span>
-          <button id="tvCloseRectModalBtn" class="tv-modal-close">✕</button>
-        </div>
-        <div class="tv-modal-body">
-          <div style="color: var(--tv-text-secondary); font-size: 12px; line-height: 1.5; padding: 12px 4px; text-align: center;">
-            Rectangle styles follow the unified TradingView rose & fill theme. Theming options are disabled.
+          <div class="tv-modal-header-left">
+            <span class="tv-modal-header-icon">📦</span>
+            <span class="tv-modal-header-title">RECTANGLE BOX SETTINGS</span>
+          </div>
+          <div class="tv-modal-header-right" style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" id="tvRectQuickAlarmBtn" class="tv-btn-quick-alarm" title="Immediately Activate Alarm (BOTH In & Out + Telegram)">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor" style="display: inline-block; vertical-align: middle;"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+              <span>Both + TG</span>
+            </button>
+            <button id="tvCloseRectModalBtn" class="tv-modal-close">✕</button>
           </div>
         </div>
-        <div class="tv-modal-footer" style="justify-content: space-between;">
-          <button id="tvDeleteRectBtn" class="tv-btn-danger">🗑 Delete</button>
-          <button id="tvCloseRectBtn" class="tv-btn-primary">Done</button>
+        <div class="tv-modal-body">
+          <!-- Price Range Display -->
+          <div class="tv-rect-range-card">
+            <div class="tv-rect-price-col">
+              <span class="tv-rect-label">CEILING (TOP)</span>
+              <span id="tvRectTopPrice" class="tv-rect-price text-green">$----.--</span>
+            </div>
+            <div class="tv-rect-divider"></div>
+            <div class="tv-rect-price-col">
+              <span class="tv-rect-label">FLOOR (BOTTOM)</span>
+              <span id="tvRectBottomPrice" class="tv-rect-price text-rose">$----.--</span>
+            </div>
+          </div>
+
+          <!-- Alarm Configuration Buttons -->
+          <div class="tv-section-card">
+            <div class="tv-section-title">🔔 PRICE ALARM TRIGGER</div>
+            <div class="tv-alarm-btn-grid">
+              <button type="button" id="tvAlarmBtnOff" class="tv-alarm-btn active" data-mode="OFF">
+                <span class="tv-alarm-icon">⚪</span>
+                <span>OFF</span>
+              </button>
+              <button type="button" id="tvAlarmBtnInside" class="tv-alarm-btn" data-mode="INSIDE">
+                <span class="tv-alarm-icon">🎯</span>
+                <span>HITS BOX</span>
+              </button>
+              <button type="button" id="tvAlarmBtnOutside" class="tv-alarm-btn" data-mode="OUTSIDE">
+                <span class="tv-alarm-icon">🚀</span>
+                <span>OUT OF BOX</span>
+              </button>
+              <button type="button" id="tvAlarmBtnBoth" class="tv-alarm-btn" data-mode="BOTH">
+                <span class="tv-alarm-icon">⚡</span>
+                <span>BOTH</span>
+              </button>
+            </div>
+            <div id="tvAlarmStatusDesc" class="tv-alarm-desc">
+              Alarm is disabled.
+            </div>
+
+            <!-- Telegram Alert Option Checkbox (Default: PC Audio/Toast) -->
+            <div class="tv-rect-telegram-row" id="tvRectTelegramRow">
+              <label class="tv-rect-telegram-left" for="tvRectTelegramCheck">
+                <input type="checkbox" id="tvRectTelegramCheck" class="tv-rect-telegram-checkbox">
+                <span class="tv-rect-telegram-label">
+                  <span class="tv-rect-telegram-icon">✈️</span>
+                  <span>Telegram Alert</span>
+                </span>
+              </label>
+              <span class="tv-rect-telegram-subtext">PC default</span>
+            </div>
+          </div>
+        </div>
+        <div class="tv-modal-footer">
+          <button type="button" id="tvDeleteRectBtn" class="tv-btn-modal-delete">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+            <span>Delete</span>
+          </button>
+          <button type="button" id="tvCloseRectBtn" class="tv-btn-modal-arm">Done</button>
         </div>
       </div>
     </div>
@@ -388,6 +499,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610091950"></script>
+  <script type="module" src="/chart/js/app.js?v=202610130040"></script>
 </body>
 </html>

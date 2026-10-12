@@ -92,13 +92,14 @@ async def get_telemetry():
 
 
 @app.get("/api/candles")
-async def get_candles_endpoint(symbol: str = "XAUUSD", timeframe: str = "5", count: int = 300):
-    """Fetch MT5 OHLCV candles formatted for KLineCharts."""
+async def get_candles_endpoint(symbol: str = "XAUUSD", timeframe: str = "5", count: int = 300, end_time: Optional[int] = None):
+    """Fetch MT5 OHLCV candles formatted for KLineCharts.
+    Supports end_time for loading historical candles on scroll left."""
     try:
         c_int = int(count) if count else 300
     except (ValueError, TypeError):
         c_int = 300
-    candles = get_candles(symbol=symbol, timeframe=str(timeframe), count=c_int)
+    candles = get_candles(symbol=symbol, timeframe=str(timeframe), count=c_int, end_time=end_time)
     return JSONResponse(content={"status": "OK", "symbol": symbol, "timeframe": timeframe, "candles": candles})
 
 
@@ -155,6 +156,19 @@ async def trade_execute(request: Request):
     sl = float(data.get("sl_price") or data.get("sl") or 0.0)
     tp = float(data.get("tp_price") or data.get("tp") or 0.0)
     comment = data.get("comment", "Escanor Market Order")
+
+    # STRICT SINGLE ACTIVE POSITION RULE: Only 1 trade active at a time for automated triggers
+    is_auto_trigger = "Line Touch" in str(comment) or data.get("source") in ("line", "position_tool")
+    if is_auto_trigger:
+        active_pos = get_positions(sym)
+        if active_pos and len(active_pos) > 0:
+            logger.info(f"Auto trigger blocked: {len(active_pos)} trade(s) already active on {sym}. Only 1 active allowed.")
+            return JSONResponse(content={
+                "status": "BLOCKED",
+                "error": "Only one trade allowed active at a time",
+                "active_positions": len(active_pos)
+            })
+
     res = execute_market_order(symbol=sym, side=side, volume=volume, sl=sl, tp=tp, comment=comment)
     if res and res.get("status") in ("EXECUTED", "OK"):
         res["status"] = "OK"
@@ -199,13 +213,95 @@ async def trade_modify(request: Request):
     return JSONResponse(content=res)
 
 
+def deactivate_saved_drawings(symbol: str = "XAUUSD") -> int:
+    """Deactivate all armed trade drawings in drawings.json (Long Position, Short Position, Line Trading)."""
+    count = 0
+    if not DRAWINGS_PATH.exists():
+        return count
+    try:
+        with open(DRAWINGS_PATH, "r", encoding="utf-8") as f:
+            all_drawings = json.load(f)
+
+        target_symbols = [symbol] if symbol and symbol != "ALL" else list(all_drawings.keys())
+        for sym in target_symbols:
+            drws = all_drawings.get(sym, [])
+            for d in drws:
+                ext = d.get("extendData")
+                if isinstance(ext, dict):
+                    if ext.get("isArmed"):
+                        ext["isArmed"] = False
+                        count += 1
+                    if "armedSide" in ext and ext["armedSide"]:
+                        ext["armedSide"] = None
+
+        with open(DRAWINGS_PATH, "w", encoding="utf-8") as f:
+            json.dump(all_drawings, f, indent=2)
+        logger.info(f"Deactivated {count} armed trade drawing(s) on server for {symbol}")
+    except Exception as e:
+        logger.error(f"Error deactivating saved drawings: {e}")
+    return count
+
+
+async def broadcast_ws_message(msg_dict: dict):
+    """Broadcast an arbitrary JSON message to all connected WebSocket clients (5055 & 5056)."""
+    if not active_ws_clients:
+        return
+    try:
+        payload_str = json.dumps(msg_dict)
+        dead = set()
+        for client in list(active_ws_clients):
+            try:
+                if hasattr(client, "send_text"):
+                    await client.send_text(payload_str)
+                else:
+                    await client.send(payload_str)
+            except Exception:
+                dead.add(client)
+        active_ws_clients.difference_update(dead)
+    except Exception as e:
+        logger.error(f"Error broadcasting ws message: {e}")
+
+
+@app.post("/api/drawings/deactivate_trades")
+async def api_deactivate_trades(request: Request):
+    """Deactivate all activated drawings of trades (Long Position, Short Position, Line Trading)."""
+    try:
+        body = await request.json()
+    except Exception:
+        body = {}
+    symbol = body.get("symbol", config.get("symbol", "XAUUSD"))
+    source = body.get("source", "mobile")
+    count = deactivate_saved_drawings(symbol)
+    await broadcast_ws_message({
+        "type": "DEACTIVATE_TRADE_DRAWINGS",
+        "action": "DEACTIVATE_ALL",
+        "symbol": symbol,
+        "source": source,
+        "timestamp": int(time.time() * 1000)
+    })
+    return JSONResponse(content={"status": "OK", "message": "All trade drawings deactivated", "deactivated_count": count})
+
+
 @app.post("/api/trade/close")
 async def trade_close(request: Request):
     """Close an open position at market or cancel pending order."""
     data = await request.json()
     ticket = int(data.get("ticket"))
     is_pending = bool(data.get("is_pending", False))
+    source = data.get("source", "chart")
     res = close_position(ticket=ticket, is_pending=is_pending)
+
+    # USER REQUIREMENT: Closing a position from mobile UI deactivates all active drawings of trades!
+    sym = config.get("symbol", "XAUUSD")
+    count = deactivate_saved_drawings(sym)
+    await broadcast_ws_message({
+        "type": "DEACTIVATE_TRADE_DRAWINGS",
+        "action": "DEACTIVATE_ALL",
+        "symbol": sym,
+        "source": source,
+        "closed_ticket": ticket,
+        "timestamp": int(time.time() * 1000)
+    })
     return JSONResponse(content=res)
 
 
@@ -213,8 +309,19 @@ async def trade_close(request: Request):
 async def trade_close_all(request: Request):
     """Close all open positions and cancel all pending orders."""
     data = await request.json()
-    sym = data.get("symbol")
+    sym = data.get("symbol") or config.get("symbol", "XAUUSD")
+    source = data.get("source", "chart")
     res = close_all_positions(symbol=sym)
+
+    # Deactivate all active drawings of trades
+    count = deactivate_saved_drawings(sym)
+    await broadcast_ws_message({
+        "type": "DEACTIVATE_TRADE_DRAWINGS",
+        "action": "DEACTIVATE_ALL",
+        "symbol": sym,
+        "source": source,
+        "timestamp": int(time.time() * 1000)
+    })
     return JSONResponse(content=res)
 
 
@@ -410,13 +517,132 @@ async def standalone_ws_handler(websocket):
         active_ws_clients.discard(websocket)
 
 
+# Server-side box alarms state tracking: {rect_id: {"last_inside": bool, "last_fired": float}}
+server_box_alarm_state: Dict[str, Dict[str, Any]] = {}
+
+
+async def _dispatch_tg_async(msg: str):
+    try:
+        def _send():
+            import urllib.request
+            url = f"https://api.telegram.org/bot{DEFAULT_TELEGRAM_BOT_TOKEN}/sendMessage"
+            payload = {
+                "chat_id": DEFAULT_TELEGRAM_CHAT_ID,
+                "text": msg,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(url, data=data_bytes, headers={"Content-Type": "application/json"})
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                return resp.read().decode()
+        loop = asyncio.get_event_loop()
+        await loop.run_in_executor(None, _send)
+        logger.info("Box alarm dispatched to Telegram successfully.")
+    except Exception as e:
+        logger.error(f"Failed to dispatch box alarm to Telegram: {e}")
+
+
+def check_server_box_alarms(snap: Dict[str, Any]):
+    """Evaluate persistent rectangle box alarms directly on server and dispatch Telegram alert if enabled."""
+    if not DRAWINGS_PATH.exists() or not snap:
+        return
+    try:
+        bid = snap.get("bid")
+        if not bid or not isinstance(bid, (int, float)):
+            return
+
+        with open(DRAWINGS_PATH, "r", encoding="utf-8") as f:
+            all_drawings = json.load(f)
+
+        rects = [
+            d for d in all_drawings.get("XAUUSD", [])
+            if d.get("name") == "rect" and d.get("extendData", {}).get("alarmMode") in ("INSIDE", "OUTSIDE", "BOTH")
+        ]
+        if not rects:
+            return
+
+        now_t = time.time()
+        for rect in rects:
+            rect_id = rect.get("id")
+            if not rect_id:
+                continue
+
+            extend = rect.get("extendData", {})
+            # Only dispatch to Telegram if user explicitly checked the Telegram alert option!
+            if not extend.get("telegramAlert"):
+                continue
+
+            points = rect.get("points", [])
+            if len(points) < 2:
+                continue
+
+            p1 = float(points[0].get("value", 0))
+            p2 = float(points[1].get("value", 0))
+            top = max(p1, p2)
+            bottom = min(p1, p2)
+            mode = extend.get("alarmMode", "OFF")
+
+            state = server_box_alarm_state.setdefault(rect_id, {"last_inside": None, "last_fired": 0.0})
+            is_inside = (bottom <= bid <= top)
+            was_inside = state["last_inside"]
+
+            if was_inside is None:
+                state["last_inside"] = is_inside
+                continue
+
+            can_fire = (now_t - state["last_fired"]) > 10.0  # 10s debounce
+
+            # Entering box
+            if not was_inside and is_inside and mode in ("INSIDE", "BOTH"):
+                if can_fire:
+                    state["last_fired"] = now_t
+                    msg = (
+                        f"🚨 <b>ESCANOR BOX PRICE ALARM</b>\n"
+                        f"━━━━━━━━━━━━━━━━━━\n"
+                        f"<b>Alert:</b> 🎯 Price ENTERED Box\n"
+                        f"<b>Asset:</b> Gold ($XAUUSD$)\n"
+                        f"<b>Live Spot:</b> ${bid:.2f}\n"
+                        f"<b>Box Ceiling:</b> ${top:.2f}\n"
+                        f"<b>Box Floor:</b> ${bottom:.2f}\n"
+                        f"<b>Alarm Mode:</b> {mode}\n"
+                        f"<b>Time:</b> {time.strftime('%H:%M:%S UTC', time.gmtime())}\n"
+                        f"━━━━━━━━━━━━━━━━━━"
+                    )
+                    asyncio.create_task(_dispatch_tg_async(msg))
+            # Breaking out of box
+            elif was_inside and not is_inside and mode in ("OUTSIDE", "BOTH"):
+                if can_fire:
+                    state["last_fired"] = now_t
+                    direction = f"Broke ABOVE Ceiling (${top:.2f})" if bid > top else f"Broke BELOW Floor (${bottom:.2f})"
+                    msg = (
+                        f"🚨 <b>ESCANOR BOX PRICE ALARM</b>\n"
+                        f"━━━━━━━━━━━━━━━━━━\n"
+                        f"<b>Alert:</b> 🚀 Price OUT OF BOX ({direction})\n"
+                        f"<b>Asset:</b> Gold ($XAUUSD$)\n"
+                        f"<b>Live Spot:</b> ${bid:.2f}\n"
+                        f"<b>Box Ceiling:</b> ${top:.2f}\n"
+                        f"<b>Box Floor:</b> ${bottom:.2f}\n"
+                        f"<b>Alarm Mode:</b> {mode}\n"
+                        f"<b>Time:</b> {time.strftime('%H:%M:%S UTC', time.gmtime())}\n"
+                        f"━━━━━━━━━━━━━━━━━━"
+                    )
+                    asyncio.create_task(_dispatch_tg_async(msg))
+
+            state["last_inside"] = is_inside
+    except Exception as e:
+        logger.warning(f"Error checking server box alarms: {e}")
+
+
 async def broadcast_telemetry_loop():
     """Continuous high-speed loop broadcasting MT5 telemetry to all connected clients."""
     logger.info("Starting telemetry broadcast loop...")
     while True:
         try:
+            snap = compute_telemetry_snapshot(config.get("symbol", "XAUUSD"))
+            check_server_box_alarms(snap)
+
             if active_ws_clients:
-                snap = compute_telemetry_snapshot(config.get("symbol", "XAUUSD"))
                 payload_str = json.dumps(snap)
                 
                 # Broadcast concurrently

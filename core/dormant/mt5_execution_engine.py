@@ -6,6 +6,7 @@ breakeven armoring, and position management.
 
 import re
 import json
+import time
 import logging
 from typing import Dict, Any, Optional
 
@@ -76,6 +77,13 @@ def execute_market_order(
         res = mt5.order_send(req)
 
     if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
+        deal_ticket = res.order
+        if (sl and float(sl) > 0) or (tp and float(tp) > 0):
+            try:
+                time.sleep(0.08)
+                modify_position(deal_ticket, sl=sl, tp=tp)
+            except Exception as _e:
+                logger.warning(f"Auto SL/TP modify error on #{deal_ticket}: {_e}")
         return {
             "status": "EXECUTED",
             "symbol": symbol,
@@ -159,10 +167,15 @@ def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float]
 
     # 1. Check open positions
     pos = None
-    for p in mt5.positions_get() or ():
-        if p.ticket == ticket:
+    all_positions = list(mt5.positions_get() or ())
+    for p in all_positions:
+        if p.ticket == ticket or getattr(p, "identifier", None) == ticket:
             pos = p
             break
+
+    if not pos and all_positions:
+        all_positions.sort(key=lambda x: getattr(x, "time_msc", getattr(x, "time", 0)), reverse=True)
+        pos = all_positions[0]
 
     if pos:
         sym_info = mt5.symbol_info(pos.symbol)
@@ -289,7 +302,15 @@ def close_position(ticket: int, is_pending: bool = False) -> Dict[str, Any]:
 
     close_type = mt5.ORDER_TYPE_SELL if pos.type == 0 else mt5.ORDER_TYPE_BUY
     tick = mt5.symbol_info_tick(pos.symbol)
-    price = tick.bid if pos.type == 0 else tick.ask
+    if not tick:
+        return {"status": "FAILED", "error": f"Failed to get tick for {pos.symbol}"}
+    price = tick.bid if close_type == mt5.ORDER_TYPE_SELL else tick.ask
+    sym_info = mt5.symbol_info(pos.symbol)
+    filling_mode = mt5.ORDER_FILLING_IOC
+    if sym_info and (sym_info.filling_mode & 1):
+        filling_mode = mt5.ORDER_FILLING_IOC
+    elif sym_info and (sym_info.filling_mode & 2):
+        filling_mode = mt5.ORDER_FILLING_FOK
 
     req = {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -301,10 +322,14 @@ def close_position(ticket: int, is_pending: bool = False) -> Dict[str, Any]:
         "deviation": 50,
         "comment": "Escanor Close",
         "type_time": mt5.ORDER_TIME_GTC,
-        "type_filling": mt5.ORDER_FILLING_IOC
+        "type_filling": filling_mode
     }
     res = mt5.order_send(req)
-    if res and res.retcode == mt5.TRADE_RETCODE_DONE:
+    if not res or res.retcode == 10030:
+        req["type_filling"] = mt5.ORDER_FILLING_FOK if filling_mode != mt5.ORDER_FILLING_FOK else mt5.ORDER_FILLING_IOC
+        res = mt5.order_send(req)
+
+    if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
         return {"status": "OK", "ticket": ticket, "close_price": price}
     return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}: {getattr(res, 'comment', 'Failed')}"}
 

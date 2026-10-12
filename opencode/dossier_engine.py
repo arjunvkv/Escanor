@@ -2,11 +2,10 @@
 Escanor Macro Intelligence & Structural Execution Dossier Engine
 Constructs and dispatches real-time situational intelligence dossiers to OpenCode every 5 minutes,
 embedding live MT5 gold price/spread, dual UTC+IST timestamps, session dynamics,
-and enforcing the 4-phase operating cadence:
-  1. alpha_get_account_status & alpha_get_pending_orders FIRST
-  2. Autonomous macro & news investigation via Proxima MCP suite
-  3. alpha_query_analyst_desk & alpha_get_market_regime_context AT LAST for 5-min technicals
-  4. Execution decision & live orders when favourable (Strictly zero prong planning)
+and enforcing the 3-phase operating cadence:
+  1. Autonomous macro & news investigation via Proxima MCP suite (Multi-model debate ChatGPT vs Gemini)
+  2. alpha_query_analyst_desk, alpha_get_market_regime_context, alpha_get_deep_orderflow_telemetry for 5-min technicals (supporting role)
+  3. Pre-execution audit (alpha_get_account_status & pending orders) and live orders ONLY if favourable
 """
 
 import os
@@ -91,14 +90,14 @@ class DossierEngine:
         return telemetry
 
     def build_dossier_content(self, cycle_number: int = 1) -> str:
-        """Constructs the high-fidelity situational prompt dossier enforcing the 4-phase cadence."""
+        """Constructs the high-fidelity situational prompt dossier enforcing the 3-phase cadence."""
         sess_info = self.get_market_session_info()
         telem = self.get_mt5_live_telemetry("XAUUSD")
 
         price_str = f"Bid: {telem['bid']} | Ask: {telem['ask']} | Spread: {telem['spread_pts']} pts" if telem["connected"] else "MT5 Connection Offline / Weekend Freeze"
         range_str = f"2H High: {telem.get('2h_m5_high')} | 2H Low: {telem.get('2h_m5_low')} (Range: {telem.get('2h_m5_range_pts')} pts)" if telem.get("2h_m5_high") else "N/A"
 
-        prompt = f"""### ESCANOR MACRO INTELLIGENCE & EXECUTION DOSSIER — CYCLE #{cycle_number}
+        prompt = f"""### ESCANOR MACRO INTELLIGENCE & EXECUTION DOSSIER - CYCLE #{cycle_number}
 
 **1. REAL-TIME CLOCK & SESSION TELEMETRY**:
 - **UTC Time**: {sess_info['utc_time']}
@@ -114,26 +113,46 @@ class DossierEngine:
 
 ### OPERATIONAL CYCLE DIRECTIVE:
 
-Execute Cycle #{cycle_number} through your 4-phase sequence:
+Execute Cycle #{cycle_number} through your exact 3-phase sequence:
 
-**PHASE 1: PRE-FLIGHT AUDIT (CALL FIRST)**
-- Inspect live balance, equity, margin, and open position tickets via `alpha_get_account_status()`.
-- Inspect working limit/stop orders via `alpha_get_pending_orders(symbol="XAUUSD")`.
+**PHASE 1: MACRO INTELLIGENCE & FULL NEWS AUDIT (YOUR CORE MISSION)**
+- **Tools**: `proxima_ask_chatgpt`, `proxima_ask_gemini`, `proxima_deep_search` (powered via Gemini/ChatGPT), `proxima_ddg_search`, `proxima_web_scrape`. *(Perplexity is strictly excluded).*
+- **Multi-Model Macro Debate**: Actively query both ChatGPT (`proxima_ask_chatgpt`) and Gemini (`proxima_ask_gemini`). Debate the bull vs bear counter-thesis to stress-test your view.
+- **Dynamic Real-World Reality**: Dive deeply into real-world events across the globe (wars, military conflicts, supply shortages, trade shocks, sanctions, energy crises, sovereign debt strains) without limiting your inquiry to any fixed list.
+- **The Living Reaction Check (Crucial)**: Evaluate whether Gold ($XAUUSD$) is actually reacting to the news or ignoring/absorbing it. Compare headlines directly against live MT5 tape price action.
+- **Full 6-Layer Causal Audit**: Macro Gravity -> Causal Transmission (US10Y, DFII10, DXY) -> Active Regime -> Tape Asymmetry -> Sub-Wires & Catalysts -> Runway Clearance.
 
-**PHASE 2: MACRO & NEWS INVESTIGATION (PROXIMA SUITE)**
-- Investigate breaking sovereign catalysts, calendar gates (CPI, PPI, NFP, FOMC), US nominal 10Y yields (`US10Y`), 10Y real TIPS yields (`DFII10`), and Dollar Index (`DXY`).
-- Test tape asymmetry: Is Gold validating the macro print or absorbing selling pressure?
-- Check forward runway over next 15–45 minutes.
-
-**PHASE 3: 5-MINUTE TECHNICAL & STRUCTURAL AUDIT (CALL AT LAST AFTER NEWS)**
+**PHASE 2: 5-MINUTE TECHNICAL & STRUCTURAL AUDIT (SUPPORTING ROLE ONLY)**
 - Call `alpha_query_analyst_desk(query="Check 5m order flow, fair value gaps, liquidity sweeps, and key supply/demand levels", symbol="XAUUSD")`.
 - Call `alpha_get_market_regime_context(symbol="XAUUSD")`.
+- Call `alpha_get_deep_orderflow_telemetry(symbol="XAUUSD")` (glance at VWAP bands, DOM depth ladder, retail stop pools, FVG 50% CE).
+- Inspect 5m technical structure strictly to support or invalidate the macro thesis.
 
-**PHASE 4: EXECUTION DECISION & ACTION (ZERO PRONG PLANNING)**
-- Place actual orders via `alpha_place_pending_order` or `alpha_execute_market_order` WHEN AND ONLY WHEN macro and 5m technical structure align during active market hours.
-- Manage existing positions via `alpha_update_position`.
-- If market is closed or conditions are unfavourable/choppy: declare **STAND DOWN / NO ACTION**. State your rationale and objective invalidation tripwires.
-- **STRICT**: Do NOT manufacture hypothetical prongs (Prong A/B/C) or advisory setups. Do NOT call sentiment publishing tools.
+**PHASE 3: AUDIT & TELEGRAM ALERT (ONLY IF FAVOURABLE - ZERO PRONG PLANNING)**
+- **CRITICAL**: Direct broker auto-execution is disabled. The agent does NOT place live orders directly into MT5.
+- Do NOT call account status or pending order tools at the beginning of the cycle.
+- **IF AND ONLY IF** macro and 5m technical setup align into an actionable high-conviction trade during active market hours:
+  1. Call `alpha_get_account_status()` and `alpha_get_pending_orders(symbol="XAUUSD")` right before dispatching the proposal.
+  2. Call `alpha_send_telegram_trade_alert` to send the trade proposal to the trader's Telegram channel for manual evaluation:
+     - `symbol`: "XAUUSD"
+     - `order_type`: "BUY_LIMIT" | "SELL_LIMIT" | "BUY_STOP" | "SELL_STOP" | "BUY" | "SELL"
+     - `entry_price`: Exact entry coordinate
+     - `sl_price`: Stop Loss coordinate
+     - `tp_price`: Take Profit coordinate
+     - `rr`: Risk to Reward ratio
+     - `risk_dollars`: Estimated dollars in SL
+     - `reward_dollars`: Estimated dollars in profit
+     - `volume`: Suggested lot size
+     - `story`: Short story explaining why this trade is proposed and the macro edge
+     - `nearest_inflection_note`: Short note on what is expected to happen at the next nearest point
+  3. The trader will evaluate the proposal manually and execute it on MT5.
+- **IF NOT FAVOURABLE / MARKET CLOSED**:
+  - Declare **STAND DOWN / NO ACTION**. Do NOT call `alpha_get_account_status`, `alpha_get_pending_orders`, or `alpha_send_telegram_trade_alert`.
+  - State your macro rationale, synthesize the ChatGPT/Gemini debate, and define objective invalidation tripwires.
+  - **STRICT**: Zero hypothetical prongs (Prong A/B/C) or advisory setups. Zero sentiment publishing tools.
+
+**FINAL MANDATORY SECTION**:
+At last, after all your analysis, print a short note on exactly what is going to happen at the next nearest point/coordinate (Section 4 in your report: Nearest coordinate, expected event/price action, validation vs invalidation).
 
 Synthesize your findings in the standard executive report format.
 """
@@ -144,19 +163,30 @@ Synthesize your findings in the standard executive report format.
         if not session_id:
             latest = self.sm.find_latest_macro_session()
             if not latest:
-                logger.error("No active session found to dispatch dossier.")
-                return False
-            session_id = latest["id"]
+                logger.info("No active macro session found. Creating a fresh session...")
+                new_sess = self.sm.create_session("Escanor Macro Intelligence Desk (Pure Proxima)")
+                session_id = new_sess["id"]
+            else:
+                session_id = latest["id"]
 
         dossier = self.build_dossier_content(cycle_number=cycle_number)
         logger.info(f"Dispatching Dossier #{cycle_number} to session {session_id}...")
         return self.sm.send_prompt(session_id, dossier, async_mode=True)
 
-    def run_periodic_loop(self, session_id: str, interval_seconds: int = 300, max_cycles: Optional[int] = None):
+    def run_periodic_loop(self, session_id: Optional[str] = None, interval_seconds: int = 300, max_cycles: Optional[int] = None):
         """
         Runs the recurring 5-minute dossier trigger loop.
         Monitors session idle status and dispatches fresh MT5 dossiers periodically.
         """
+        if not session_id:
+            latest = self.sm.find_latest_macro_session()
+            if not latest:
+                logger.info("Creating a fresh OpenCode session for dossier loop...")
+                new_sess = self.sm.create_session("Escanor Macro Intelligence Desk (Pure Proxima)")
+                session_id = new_sess["id"]
+            else:
+                session_id = latest["id"]
+
         logger.info(f"Starting periodic dossier loop for session {session_id} (interval: {interval_seconds}s / 5 mins)...")
         cycle = 1
 
@@ -195,6 +225,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Escanor Macro Dossier Engine")
     parser.add_argument("--dispatch", action="store_true", help="Dispatch a live MT5 dossier")
     parser.add_argument("--session-id", type=str, default=None, help="Target session ID")
+    parser.add_argument("--new-session", action="store_true", help="Create a fresh session and use it")
     parser.add_argument("--cycle", type=int, default=1, help="Cycle number")
     parser.add_argument("--loop", action="store_true", help="Run continuously every 5 minutes")
     parser.add_argument("--interval", type=int, default=300, help="Interval in seconds (default: 300 / 5 min)")
@@ -202,14 +233,16 @@ if __name__ == "__main__":
 
     engine = DossierEngine()
 
+    sid = args.session_id
+    if args.new_session:
+        sess = engine.sm.create_session("Escanor Macro Intelligence Desk (Pure Proxima)")
+        sid = sess["id"]
+        print(f"Created fresh session: {sid}")
+
     if args.loop:
-        sid = args.session_id or (engine.sm.find_latest_macro_session() or {}).get("id")
-        if not sid:
-            print("No active session found. Provide --session-id or seed one first with seed.py.")
-            sys.exit(1)
         engine.run_periodic_loop(session_id=sid, interval_seconds=args.interval)
     elif args.dispatch:
-        engine.dispatch_dossier(session_id=args.session_id, cycle_number=args.cycle)
+        engine.dispatch_dossier(session_id=sid, cycle_number=args.cycle)
     else:
         print("Market Session:")
         print(json.dumps(engine.get_market_session_info(), indent=2))

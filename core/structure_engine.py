@@ -31,6 +31,7 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
     gold_bid = round(float(tick_gold.bid), 2) if tick_gold else 0.0
     gold_ask = round(float(tick_gold.ask), 2) if tick_gold else 0.0
     gold_spread_pts = int(info_gold.spread) if info_gold else round((gold_ask - gold_bid) * 100)
+    server_time = int(tick_gold.time) if tick_gold else int(now_epoch)
 
     # 2. Intermarket Leads (Silver, JPY, DXY, US10Y)
     intermarket = {}
@@ -391,6 +392,8 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
     return {
         "status": "OK",
         "is_live": True,
+        "server_time": server_time,
+        "tick_time": server_time,
         "timestamp_epoch": now_epoch,
         "timestamp_utc": now_utc.strftime("%Y-%m-%d %H:%M:%S UTC"),
         "bid": gold_bid,
@@ -403,6 +406,8 @@ def compute_telemetry_snapshot(symbol: str = "XAUUSD") -> Dict[str, Any]:
             "bid": gold_bid,
             "ask": gold_ask,
             "spread_pts": gold_spread_pts,
+            "server_time": server_time,
+            "time": server_time,
             "chart_bar": chart_bar,
             "xau_pct": xau_pct
         },

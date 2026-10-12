@@ -84,9 +84,9 @@ export class ActiveOrdersEngine {
       const sign = profitPts >= 0 ? '+' : '';
       const pnlText = `${sign}$${profitDollar.toFixed(2)} (${sign}${profitPts.toFixed(1)} pt)`;
 
-      // Entry line (Locked)
+      // Entry line (Locked) — User requirement: only show lots and dollars nothing else
       const entryKey = `pos_${ticket}_entry`;
-      const entryTitle = `#${ticket} ${isBuy ? 'BUY' : 'SELL'} ${volume}L @ $${openPrice.toFixed(2)} [${pnlText}]`;
+      const entryTitle = `${volume}L  ${sign}$${profitDollar.toFixed(2)}`;
       this._syncOrderLine(entryKey, {
         points: [{ value: openPrice }],
         lock: true,
@@ -101,12 +101,11 @@ export class ActiveOrdersEngine {
         }
       });
 
-      // Stop Loss (SL) Line — DRAGGABLE!
+      // Compute effective SL and TP prices so lines are ALWAYS shown and draggable
       let rawSlPrice = Number(pos.sl || 0);
       const slKey = `pos_${ticket}_sl`;
       const isDraggingSl = (this.draggingKey === slKey || window.__currentDraggingOrderKey === slKey);
 
-      // Protect against post-drag tick flicker while awaiting MT5 server reflection
       const pendingSlMod = this.pendingModifications.get(slKey);
       if (pendingSlMod) {
         if (Math.abs(rawSlPrice - pendingSlMod.price) < 0.01) {
@@ -116,52 +115,30 @@ export class ActiveOrdersEngine {
         }
       }
 
-      if (rawSlPrice > 0 || isDraggingSl) {
-        // While actively being dragged by cursor/finger, do NOT overwrite points from tick update!
-        if (!isDraggingSl) {
-          const slPrice = rawSlPrice;
-          const slDist = Math.abs(openPrice - slPrice);
-          const slDollar = (slDist * volume * 100);
-          const isFavorable = isBuy ? (slPrice >= openPrice) : (slPrice <= openPrice);
-          const slSign = isFavorable ? '+' : '-';
-          const slTitle = `SL: $${slPrice.toFixed(2)} [${slSign}$${slDollar.toFixed(2)} / ${slSign}${slDist.toFixed(1)} pt] ⇅`;
-
-          this._syncOrderLine(slKey, {
-            points: [{ value: slPrice }],
-            lock: false,
-            extendData: {
-              key: slKey,
-              ticket,
-              isBuy,
-              openPrice,
-              volume,
-              orderType: 'SL',
-              title: slTitle
-            },
-            onPressedMoveStart: (e) => {
-              this._startDrag(slKey);
-            },
-            onPressedMoveEnd: (e) => {
-              this._endDrag();
-              const ov = e.overlay;
-              const newPrice = ov?.points[0]?.value;
-              if (newPrice && newPrice > 0) {
-                this.pendingModifications.set(slKey, { price: newPrice, time: Date.now() });
-                this._onOrderDragged(ticket, 'SL', newPrice, isBuy, openPrice, volume, pos.tp, slKey, pos.sl);
-              }
-            }
-          });
-        }
-      } else {
-        this._removeOrderLine(slKey);
+      // Check stored trigger SL
+      if (rawSlPrice <= 0 && window.__activeTradesSlTp && window.__activeTradesSlTp[ticket]?.sl) {
+        rawSlPrice = Number(window.__activeTradesSlTp[ticket].sl);
       }
 
-      // Take Profit (TP) Line — DRAGGABLE!
+      // Check if line trading manager has stored SL
+      if (rawSlPrice <= 0 && window.__lineTradingManager) {
+        const matchingLine = Array.from(window.__lineTradingManager.lines.values()).find(l => Number(l.activeTradeTicket) === ticket || Number(l.triggeredTicket) === ticket);
+        if (matchingLine) {
+          const slPts = matchingLine.slPts || 6.0;
+          rawSlPrice = isBuy ? (openPrice - slPts) : (openPrice + slPts);
+        }
+      }
+
+      // Default prospective SL if still 0
+      if (rawSlPrice <= 0) {
+        rawSlPrice = isBuy ? (openPrice - 6.0) : (openPrice + 6.0);
+      }
+      rawSlPrice = Math.round(rawSlPrice * 100) / 100;
+
       let rawTpPrice = Number(pos.tp || 0);
       const tpKey = `pos_${ticket}_tp`;
       const isDraggingTp = (this.draggingKey === tpKey || window.__currentDraggingOrderKey === tpKey);
 
-      // Protect against post-drag tick flicker while awaiting MT5 server reflection
       const pendingTpMod = this.pendingModifications.get(tpKey);
       if (pendingTpMod) {
         if (Math.abs(rawTpPrice - pendingTpMod.price) < 0.01) {
@@ -171,44 +148,96 @@ export class ActiveOrdersEngine {
         }
       }
 
-      if (rawTpPrice > 0 || isDraggingTp) {
-        // While actively being dragged by cursor/finger, do NOT overwrite points from tick update!
-        if (!isDraggingTp) {
-          const tpPrice = rawTpPrice;
-          const tpDist = Math.abs(tpPrice - openPrice);
-          const tpDollar = (tpDist * volume * 100);
-          const isFavorable = isBuy ? (tpPrice >= openPrice) : (tpPrice <= openPrice);
-          const tpSign = isFavorable ? '+' : '-';
-          const tpTitle = `TP: $${tpPrice.toFixed(2)} [${tpSign}$${tpDollar.toFixed(2)} / ${tpSign}${tpDist.toFixed(1)} pt] ⇅`;
+      // Check stored trigger TP
+      if (rawTpPrice <= 0 && window.__activeTradesSlTp && window.__activeTradesSlTp[ticket]?.tp) {
+        rawTpPrice = Number(window.__activeTradesSlTp[ticket].tp);
+      }
 
-          this._syncOrderLine(tpKey, {
-            points: [{ value: tpPrice }],
-            lock: false,
-            extendData: {
-              key: tpKey,
-              ticket,
-              isBuy,
-              openPrice,
-              volume,
-              orderType: 'TP',
-              title: tpTitle
-            },
-            onPressedMoveStart: (e) => {
-              this._startDrag(tpKey);
-            },
-            onPressedMoveEnd: (e) => {
-              this._endDrag();
-              const ov = e.overlay;
-              const newPrice = ov?.points[0]?.value;
-              if (newPrice && newPrice > 0) {
-                this.pendingModifications.set(tpKey, { price: newPrice, time: Date.now() });
-                this._onOrderDragged(ticket, 'TP', newPrice, isBuy, openPrice, volume, pos.sl, tpKey, pos.tp);
-              }
-            }
-          });
+      // Check if line trading manager has stored TP
+      if (rawTpPrice <= 0 && window.__lineTradingManager) {
+        const matchingLine = Array.from(window.__lineTradingManager.lines.values()).find(l => Number(l.activeTradeTicket) === ticket || Number(l.triggeredTicket) === ticket);
+        if (matchingLine) {
+          const tpPts = matchingLine.tpPts || 12.0;
+          rawTpPrice = isBuy ? (openPrice + tpPts) : (openPrice - tpPts);
         }
-      } else {
-        this._removeOrderLine(tpKey);
+      }
+
+      // Default prospective TP if still 0
+      if (rawTpPrice <= 0) {
+        rawTpPrice = isBuy ? (openPrice + 12.0) : (openPrice - 12.0);
+      }
+      rawTpPrice = Math.round(rawTpPrice * 100) / 100;
+
+      // Stop Loss (SL) Line — ALWAYS RENDERED & DRAGGABLE!
+      if (!isDraggingSl) {
+        const slPrice = rawSlPrice;
+        const slDist = Math.abs(openPrice - slPrice);
+        const slDollar = (slDist * volume * 100);
+        const isFavorable = isBuy ? (slPrice >= openPrice) : (slPrice <= openPrice);
+        const slSign = isFavorable ? '+' : '-';
+        const slTitle = `${volume}L  ${slSign}$${slDollar.toFixed(2)}`;
+
+        this._syncOrderLine(slKey, {
+          points: [{ value: slPrice }],
+          lock: false,
+          extendData: {
+            key: slKey,
+            ticket,
+            isBuy,
+            openPrice,
+            volume,
+            orderType: 'SL',
+            title: slTitle
+          },
+          onPressedMoveStart: (e) => {
+            this._startDrag(slKey);
+          },
+          onPressedMoveEnd: (e) => {
+            this._endDrag();
+            const ov = e.overlay;
+            const newPrice = ov?.points[0]?.value;
+            if (newPrice && newPrice > 0) {
+              this.pendingModifications.set(slKey, { price: newPrice, time: Date.now() });
+              this._onOrderDragged(ticket, 'SL', newPrice, isBuy, openPrice, volume, rawTpPrice, slKey, pos.sl);
+            }
+          }
+        });
+      }
+
+      // Take Profit (TP) Line — ALWAYS RENDERED & DRAGGABLE!
+      if (!isDraggingTp) {
+        const tpPrice = rawTpPrice;
+        const tpDist = Math.abs(tpPrice - openPrice);
+        const tpDollar = (tpDist * volume * 100);
+        const isFavorable = isBuy ? (tpPrice >= openPrice) : (tpPrice <= openPrice);
+        const tpSign = isFavorable ? '+' : '-';
+        const tpTitle = `${volume}L  ${tpSign}$${tpDollar.toFixed(2)}`;
+
+        this._syncOrderLine(tpKey, {
+          points: [{ value: tpPrice }],
+          lock: false,
+          extendData: {
+            key: tpKey,
+            ticket,
+            isBuy,
+            openPrice,
+            volume,
+            orderType: 'TP',
+            title: tpTitle
+          },
+          onPressedMoveStart: (e) => {
+            this._startDrag(tpKey);
+          },
+          onPressedMoveEnd: (e) => {
+            this._endDrag();
+            const ov = e.overlay;
+            const newPrice = ov?.points[0]?.value;
+            if (newPrice && newPrice > 0) {
+              this.pendingModifications.set(tpKey, { price: newPrice, time: Date.now() });
+              this._onOrderDragged(ticket, 'TP', newPrice, isBuy, openPrice, volume, rawSlPrice, tpKey, pos.tp);
+            }
+          }
+        });
       }
     }
 
@@ -262,10 +291,16 @@ export class ActiveOrdersEngine {
   _syncOrderLine(key, options) {
     if (!this.chart) return;
 
+    const overlayOpts = Object.assign({
+      name: 'activeTradeOrder',
+      zLevel: Number.MAX_SAFE_INTEGER,
+      fixedZLevel: true
+    }, options);
+
     let ovId = this.positionOverlays.get(key);
     if (ovId) {
       try {
-        this.chart.overrideOverlay(Object.assign({ id: ovId, name: 'activeTradeOrder' }, options));
+        this.chart.overrideOverlay(Object.assign({ id: ovId }, overlayOpts));
         return;
       } catch (_) {
         try { this.chart.removeOverlay({ id: ovId }); } catch (e) {}
@@ -274,7 +309,7 @@ export class ActiveOrdersEngine {
     }
 
     try {
-      const createdId = this.chart.createOverlay(Object.assign({ name: 'activeTradeOrder' }, options));
+      const createdId = this.chart.createOverlay(overlayOpts);
       if (createdId) {
         this.positionOverlays.set(key, createdId);
       }

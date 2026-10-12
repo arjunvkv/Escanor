@@ -4,3 +4,5 @@ __pycache__/
 *.log
 .vscode/
 .idea/
+temp_chrome_profile_*/
+scratch/

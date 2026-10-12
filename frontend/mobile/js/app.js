@@ -350,11 +350,19 @@ export async function closePositionTicket(ticket, isPending = false) {
     const resp = await fetch('/api/trade/close', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket: numTicket, is_pending: !!isPending })
+      body: JSON.stringify({ ticket: numTicket, is_pending: !!isPending, source: 'mobile' })
     });
     const res = await resp.json();
     if (res && (res.status === 'OK' || res.status === 'CLOSED' || res.success === true)) {
-      showTerminalToast(`✅ #${numTicket} closed successfully`, 'success');
+      showTerminalToast(`✅ #${numTicket} closed — all trade drawings deactivated`, 'success');
+
+      // Guarantee deactivation of all trade drawings across server and desktop charts
+      fetch('/api/drawings/deactivate_trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: 'XAUUSD', source: 'mobile' })
+      }).catch(() => {});
+
       if (lastTelemetryData) {
         if (isPending && Array.isArray(lastTelemetryData.pending_orders)) {
           lastTelemetryData.pending_orders = lastTelemetryData.pending_orders.filter(o => Number(o.ticket) !== numTicket);
@@ -380,11 +388,19 @@ export async function flattenDesk() {
     const resp = await fetch('/api/trade/close_all', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket: 'ALL' })
+      body: JSON.stringify({ ticket: 'ALL', source: 'mobile' })
     });
     const res = await resp.json();
     if (res && (res.status === 'OK' || res.success === true)) {
-      showTerminalToast(`✅ DESK FLATTENED: ${res.closed_count || 0} item(s) cleared`, 'success');
+      showTerminalToast(`✅ DESK FLATTENED: ${res.closed_count || 0} item(s) cleared & trade drawings deactivated`, 'success');
+
+      // Guarantee deactivation of all trade drawings across server and desktop charts
+      fetch('/api/drawings/deactivate_trades', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: 'XAUUSD', source: 'mobile' })
+      }).catch(() => {});
+
       if (lastTelemetryData) {
         lastTelemetryData.active_positions = [];
         lastTelemetryData.pending_orders = [];

@@ -191,6 +191,112 @@ html, body {
   background-color: var(--tv-bg-hover);
 }
 
+.tv-top-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--tv-bg-secondary);
+  border: 1px solid var(--tv-border);
+  color: var(--tv-text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+  user-select: none;
+}
+.tv-top-clear-btn svg {
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+.tv-top-clear-btn:hover {
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+}
+.tv-top-clear-btn:hover svg {
+  transform: scale(1.1);
+}
+.tv-top-clear-btn:active {
+  transform: scale(0.97);
+}
+
+/* ========================================================================= */
+/* 📦 GLOBAL TERMINAL LOT BUTTON & SELECTOR (SINGLE SOURCE OF TRUTH)        */
+/* ========================================================================= */
+.tv-top-lot-container {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--tv-bg-secondary);
+  border: 1px solid var(--tv-border);
+  padding: 2px 7px;
+  border-radius: 4px;
+  height: 28px;
+  box-sizing: border-box;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+.tv-top-lot-container:hover {
+  border-color: rgba(56, 189, 248, 0.45);
+}
+.tv-top-lot-tag {
+  font-size: 10px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.6px;
+}
+.tv-top-lot-input {
+  width: 52px;
+  height: 20px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  padding: 0 2px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tv-top-lot-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 6px rgba(56, 189, 248, 0.35);
+}
+.tv-top-lot-pills {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.tv-top-lot-pill {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--tv-text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 1px 5px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.12s;
+  font-family: inherit;
+  line-height: 16px;
+}
+.tv-top-lot-pill:hover {
+  color: #ffffff;
+  background: rgba(56, 189, 248, 0.20);
+  border-color: #38bdf8;
+}
+.tv-top-lot-pill.active {
+  color: #ffffff;
+  background: #0284c7;
+  border-color: #38bdf8;
+  font-weight: 700;
+}
+
 /* ========================================================================= */
 /* 📐 MAIN CHART WORKSPACE WITH LEFT DOCK                                    */
 /* ========================================================================= */
@@ -1088,7 +1194,7 @@ html, body {
   position: absolute;
   left: 56px;
   bottom: 24px;
-  z-index: 20;
+  z-index: 60;
   width: 316px;
   background: rgba(20, 24, 34, 0.94);
   backdrop-filter: blur(12px);
@@ -1108,12 +1214,28 @@ html, body {
   padding: 8px 10px;
   border-bottom: 1px solid #2a2e39;
   background: rgba(15, 18, 26, 0.75);
+  cursor: pointer;
+  user-select: none;
+}
+.tv-hud-header:hover {
+  background: rgba(22, 27, 39, 0.90);
+}
+.tv-bottom-hud.minimized {
+  max-height: 38px;
+  overflow: hidden;
+}
+.tv-bottom-hud.minimized .tv-hud-header {
+  border-bottom: none;
+}
+.tv-bottom-hud.minimized .tv-hud-body {
+  display: none !important;
 }
 
 .tv-hud-title-box {
   display: flex;
   align-items: center;
   gap: 6px;
+  pointer-events: none;
 }
 
 .tv-hud-dot {
@@ -1140,10 +1262,16 @@ html, body {
 .tv-hud-min-btn {
   background: transparent;
   border: none;
-  color: #787b86;
-  font-size: 10px;
+  color: #94a3b8;
+  font-size: 11px;
   cursor: pointer;
-  padding: 2px 4px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+}
+.tv-hud-min-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .tv-hud-body {
@@ -1153,6 +1281,32 @@ html, body {
   padding: 8px 10px;
   max-height: 280px;
   overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #2a2e39 transparent;
+}
+
+.tv-hud-body::-webkit-scrollbar {
+  width: 5px;
+}
+
+.tv-hud-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+}
+
+.tv-hud-body::-webkit-scrollbar-thumb {
+  background: #2a2e39;
+  border-radius: 4px;
+}
+
+.tv-hud-body::-webkit-scrollbar-thumb:hover {
+  background: #38bdf8;
+}
+
+.tv-hud-body::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
 }
 
 .tv-hud-item {
@@ -1163,6 +1317,31 @@ html, body {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.tv-hud-item:hover {
+  background: rgba(36, 42, 58, 0.7);
+  border-color: #3b435a;
+}
+
+/* Selected Line Item Highlight (Crisp White Border & Subtle Fill) */
+.tv-hud-item.selected {
+  border-color: rgba(255, 255, 255, 0.55) !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 0 8px rgba(255, 255, 255, 0.15), inset 3px 0 0 #ffffff !important;
+}
+
+.tv-hud-item.selected .tv-hud-item-name {
+  color: #ffffff !important;
+  font-weight: 700;
+  text-shadow: 0 0 6px rgba(255, 255, 255, 0.3);
+}
+
+.tv-hud-item.selected .tv-hud-item-dist {
+  color: #e2e8f0 !important;
 }
 
 .tv-hud-item-top {
@@ -1352,6 +1531,9 @@ html, body {
   gap: 3px;
   transition: all 0.15s ease;
   flex-shrink: 0;
+  pointer-events: auto;
+  position: relative;
+  z-index: 5;
 }
 .tv-hud-kill-btn:hover {
   background: #ef4444;
@@ -1432,6 +1614,418 @@ html, body {
 .tv-hud-kill-all-btn:hover {
   background: #ef4444;
   color: #ffffff;
+}
+
+/* ========================================================================= */
+/* 🗑️ REDESIGNED HIGH-END MODAL DELETE BUTTON                                */
+/* ========================================================================= */
+.tv-btn-danger,
+.tv-btn-modal-delete {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  background: #2a151b !important;
+  color: #ef4444 !important;
+  border: 1px solid #571e27 !important;
+  padding: 8px 16px !important;
+  border-radius: 6px !important;
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25) !important;
+}
+
+.tv-btn-danger:hover,
+.tv-btn-modal-delete:hover {
+  background: #ef4444 !important;
+  color: #ffffff !important;
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.45) !important;
+}
+
+.tv-btn-danger svg,
+.tv-btn-modal-delete svg {
+  fill: currentColor;
+}
+
+/* ========================================================================= */
+/* 📏 MEASUREMENT TOOL SETTINGS & LOTS PILLS                                 */
+/* ========================================================================= */
+.tv-measure-lot-pill {
+  padding: 5px 10px;
+  background: #1a1e2b;
+  border: 1px solid #282f44;
+  border-radius: 5px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tv-measure-lot-pill:hover {
+  color: #ffffff;
+  border-color: #38bdf8;
+}
+
+.tv-measure-lot-pill.active {
+  background: rgba(56, 189, 248, 0.15);
+  color: #38bdf8;
+  border-color: #38bdf8;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.25);
+}
+
+/* ========================================================================= */
+/* 🔔 RECTANGLE BOX ALARMS & MODAL UI                                        */
+/* ========================================================================= */
+.tv-rect-modal-card {
+  width: 360px;
+  max-width: 95vw;
+}
+
+.tv-rect-range-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px 12px;
+  background: #12151e;
+  border: 1px solid #282f44;
+  border-radius: 6px;
+  margin-bottom: 12px;
+}
+
+.tv-rect-price-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.tv-rect-label {
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.tv-rect-price {
+  font-size: 13px;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.tv-rect-divider {
+  width: 1px;
+  height: 28px;
+  background: #282f44;
+}
+
+.tv-alarm-btn-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.tv-alarm-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  background: #12151e;
+  border: 1px solid #282f44;
+  border-radius: 6px;
+  color: #787b86;
+  font-size: 9.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tv-alarm-btn:hover {
+  color: #cbd5e1;
+  border-color: #3b4563;
+}
+
+.tv-alarm-btn.active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+.tv-alarm-btn.active[data-mode="INSIDE"] {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.tv-alarm-btn.active[data-mode="OUTSIDE"] {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+}
+
+.tv-alarm-btn.active[data-mode="BOTH"] {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border-color: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.25);
+}
+
+.tv-alarm-icon {
+  font-size: 13px;
+}
+
+.tv-alarm-desc {
+  font-size: 10.5px;
+  color: #94a3b8;
+  margin-top: 8px;
+  text-align: center;
+  line-height: 1.4;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+/* Telegram Alert Checkbox Toggle Row */
+.tv-rect-telegram-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: rgba(18, 21, 30, 0.85);
+  border: 1px solid #282f44;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tv-rect-telegram-row:hover {
+  border-color: #38bdf8;
+  background: rgba(22, 27, 38, 0.95);
+}
+
+.tv-rect-telegram-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tv-rect-telegram-icon {
+  font-size: 13px;
+}
+
+.tv-rect-telegram-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tv-rect-telegram-subtext {
+  font-size: 10px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.tv-rect-telegram-checkbox {
+  width: 15px;
+  height: 15px;
+  accent-color: #38bdf8;
+  cursor: pointer;
+}
+
+/* ========================================================================= */
+/* ⏱️ TOP BAR ACTIVE TRADE TIMER (HIGHLIGHTED BOX)                          */
+/* ========================================================================= */
+
+.tv-top-trade-timer {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.90), rgba(4, 47, 36, 0.95));
+  border: 1px solid #10b981;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.35), inset 0 0 6px rgba(16, 185, 129, 0.20);
+  border-radius: 6px;
+  padding: 3px 10px;
+  height: 28px;
+  cursor: default;
+  user-select: none;
+  animation: tvTimerGlow 2.5s infinite ease-in-out;
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+@keyframes tvTimerGlow {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.30), inset 0 0 6px rgba(16, 185, 129, 0.15);
+    border-color: #10b981;
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(16, 185, 129, 0.65), inset 0 0 10px rgba(16, 185, 129, 0.35);
+    border-color: #34d399;
+  }
+}
+
+.tv-timer-pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background-color: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  display: inline-block;
+  animation: tvDotPulse 1.2s infinite ease-in-out;
+}
+
+@keyframes tvDotPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(0.7);
+    opacity: 0.35;
+  }
+}
+
+.tv-timer-text {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #a7f3d0;
+  text-transform: uppercase;
+}
+
+.tv-timer-clock {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'SF Mono', Consolas, monospace;
+  font-size: 12px;
+  font-weight: 800;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.45);
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid rgba(16, 185, 129, 0.30);
+  letter-spacing: 0.5px;
+}
+
+.tv-top-close-all-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.28);
+  border: 1px solid rgba(239, 68, 68, 0.65);
+  color: #ffffff;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  padding: 1px 7px;
+  height: 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-left: 2px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tv-top-close-all-btn:hover {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.60);
+}
+
+.tv-top-close-all-btn:active {
+  transform: scale(0.96);
+}
+
+/* Floating Toolbar Arm Button */
+.tv-float-arm-btn {
+  color: var(--tv-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.tv-float-arm-btn:hover {
+  color: #10b981;
+  background-color: var(--tv-bg-hover);
+}
+
+.tv-float-arm-btn.armed {
+  color: #10b981 !important;
+  background: rgba(16, 185, 129, 0.22) !important;
+  border: 1px solid rgba(16, 185, 129, 0.50) !important;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.30);
+}
+
+.tv-float-arm-btn.armed:hover {
+  color: #34d399 !important;
+  background: rgba(16, 185, 129, 0.35) !important;
+}
+
+/* Floating Toolbar Alarm Button for Rectangle (Both + Telegram) */
+.tv-float-alarm-btn {
+  color: var(--tv-text-secondary);
+  transition: all 0.15s ease;
+}
+
+.tv-float-alarm-btn:hover {
+  color: #f59e0b;
+  background-color: var(--tv-bg-hover);
+}
+
+.tv-float-alarm-btn.armed {
+  color: #f59e0b !important;
+  background: rgba(245, 158, 11, 0.22) !important;
+  border: 1px solid rgba(245, 158, 11, 0.50) !important;
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.35);
+}
+
+.tv-float-alarm-btn.armed:hover {
+  color: #fbbf24 !important;
+  background: rgba(245, 158, 11, 0.35) !important;
+}
+
+/* Sleek Quick Alarm Button in Rectangle Settings Modal Header */
+.tv-btn-quick-alarm {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.40);
+  color: #f59e0b;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tv-btn-quick-alarm:hover {
+  background: rgba(245, 158, 11, 0.25);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.60);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.30);
+}
+
+.tv-btn-quick-alarm.active {
+  background: #f59e0b !important;
+  color: #0b0e14 !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.45);
 }
 
 

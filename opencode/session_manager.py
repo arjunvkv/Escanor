@@ -134,12 +134,17 @@ class OpenCodeSessionManager:
         if not messages:
             return True
         last_msg = messages[-1]
+        # If the last message is from user, assistant hasn't responded yet
+        if last_msg.get("info", {}).get("role") == "user":
+            return False
         parts = last_msg.get("parts", [])
-        for p in reversed(parts):
+        for p in parts:
             if p.get("type") == "tool" and p.get("state", {}).get("status") == "running":
                 return False
-            if p.get("type") == "step-start":
-                return False
+        starts = sum(1 for p in parts if p.get("type") == "step-start")
+        finishes = sum(1 for p in parts if p.get("type") == "step-finish")
+        if starts > finishes:
+            return False
         return True
 
     def send_prompt(self, session_id: str, text: str, async_mode: bool = True) -> bool:

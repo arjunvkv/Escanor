@@ -7,6 +7,7 @@ import os
 import json
 import time
 import logging
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 try:
@@ -22,9 +23,9 @@ TIMEFRAME_MAP = {
     "5": 5, "M5": 5,
     "15": 15, "M15": 15,
     "30": 30, "M30": 30,
-    "60": 60, "1H": 60, "H1": 60,
-    "240": 240, "4H": 240, "H4": 240,
-    "D1": 1440, "1D": 1440
+    "60": 16385, "1H": 16385, "H1": 16385,
+    "240": 16388, "4H": 16388, "H4": 16388,
+    "1440": 16408, "D": 16408, "D1": 16408, "1D": 16408
 }
 
 
@@ -93,17 +94,29 @@ def get_tick(symbol: str = "XAUUSD") -> Optional[Dict[str, Any]]:
         return None
 
 
-def get_candles(symbol: str = "XAUUSD", timeframe: str = "5", count: int = 200) -> List[Dict[str, Any]]:
-    """Fetch OHLCV candles formatted for KLineCharts (timestamp in ms, open, high, low, close, volume)."""
+def get_candles(symbol: str = "XAUUSD", timeframe: str = "5", count: int = 200, end_time: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Fetch OHLCV candles formatted for KLineCharts (timestamp in ms, open, high, low, close, volume).
+    If end_time is provided, fetches `count` candles preceding end_time (for scrolling left backfill)."""
     if not init_mt5():
         return []
 
     tf_int = TIMEFRAME_MAP.get(str(timeframe).upper(), 5)
     try:
         mt5.symbol_select(symbol, True)
-        rates = mt5.copy_rates_from_pos(symbol, tf_int, 0, count)
-        if rates is None or len(rates) == 0:
-            return []
+        if end_time:
+            # Normalize seconds vs milliseconds
+            sec = int(end_time) // 1000 if int(end_time) > 100000000000 else int(end_time)
+            dt_end = datetime.fromtimestamp(sec, timezone.utc)
+            raw_rates = mt5.copy_rates_from(symbol, tf_int, dt_end, count + 5)
+            if raw_rates is None or len(raw_rates) == 0:
+                return []
+            rates = [r for r in raw_rates if int(r["time"]) < sec]
+            if len(rates) > count:
+                rates = rates[-count:]
+        else:
+            rates = mt5.copy_rates_from_pos(symbol, tf_int, 0, count)
+            if rates is None or len(rates) == 0:
+                return []
 
         candles = []
         for r in rates:
@@ -153,10 +166,14 @@ def get_positions(symbol: Optional[str] = None) -> List[Dict[str, Any]]:
             return []
         res = []
         tick_gold = mt5.symbol_info_tick("XAUUSD")
+        broker_now = int(tick_gold.time) if (tick_gold and tick_gold.time) else int(time.time())
+        now_utc = time.time()
         for p in positions:
             p_type = "BUY" if p.type == 0 else "SELL"
             cur_p = (tick_gold.bid if p.type == 0 else tick_gold.ask) if tick_gold else p.price_open
             profit_pts = round((cur_p - p.price_open) if p.type == 0 else (p.price_open - cur_p), 2)
+            elapsed_sec = max(0, int(broker_now - p.time)) if (p.time and p.time > 0) else 0
+            open_epoch_utc = int(now_utc - elapsed_sec)
             res.append({
                 "ticket": int(p.ticket),
                 "symbol": str(p.symbol),
@@ -168,8 +185,8 @@ def get_positions(symbol: Optional[str] = None) -> List[Dict[str, Any]]:
                 "profit": round(float(p.profit), 2),
                 "profit_pts": profit_pts,
                 "time": int(p.time),
-                "elapsed_sec": max(0, int(time.time() - p.time)),
-                "open_epoch_utc": int(p.time)
+                "elapsed_sec": elapsed_sec,
+                "open_epoch_utc": open_epoch_utc
             })
         return res
     except Exception as err:
