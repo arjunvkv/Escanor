@@ -1,87 +1,56 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1791819128414_1",
+      "id": "overlay_1791869159376_1",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1791518100000,
-          "dataIndex": 352,
-          "value": 4175.170196536694
+          "timestamp": 1791871500000,
+          "dataIndex": 3011,
+          "value": 4199.942003647577
         },
         {
-          "timestamp": 1791860400000,
-          "dataIndex": 857,
-          "value": 4175.170196536694
+          "timestamp": 1792581000000,
+          "dataIndex": 3130,
+          "value": 4199.942003647577
         },
         {
-          "timestamp": 1791860400000,
-          "dataIndex": 857,
-          "value": 4167.507734885532
+          "timestamp": 1792581000000,
+          "dataIndex": 3130,
+          "value": 4192.179218428318
         },
         {
-          "timestamp": 1791518100000,
-          "dataIndex": 352,
-          "value": 4167.507734885532
+          "timestamp": 1791871500000,
+          "dataIndex": 3011,
+          "value": 4192.179218428318
         },
         {
-          "timestamp": 1791518100000,
-          "dataIndex": 352,
-          "value": 4171.338965711113
+          "timestamp": 1791871500000,
+          "dataIndex": 3011,
+          "value": 4196.060611037947
         },
         {
-          "timestamp": 1791860400000,
-          "dataIndex": 857,
-          "value": 4171.338965711113
+          "timestamp": 1792581000000,
+          "dataIndex": 3130,
+          "value": 4196.060611037947
         }
       ],
       "styles": null,
       "extendData": {
-        "alarmMode": "OFF",
-        "telegramAlert": false,
+        "alarmMode": "BOTH",
+        "telegramAlert": true,
         "_lastInside": true,
-        "_lastFired": 1791831542575
+        "_lastFired": 1791871006927
       }
     },
     {
-      "id": "overlay_1791819175758_1",
-      "name": "segment",
-      "points": [
-        {
-          "timestamp": 1791816000000,
-          "dataIndex": 754,
-          "value": 4151.9926709767615
-        },
-        {
-          "timestamp": 1791856800000,
-          "dataIndex": 845,
-          "value": 4177.507308703569
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1791828352168_1",
+      "id": "overlay_1791869262128_1",
       "name": "horizontalStraightLine",
       "points": [
         {
-          "timestamp": 1791328500000,
-          "dataIndex": 1904,
-          "value": 4185.386561481481
+          "timestamp": 1791790200000,
+          "dataIndex": 2755,
+          "value": 4214.090305740741
         }
       ],
       "styles": {
@@ -101,18 +70,44 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1791808109922_1",
+      "id": "overlay_1791869216817_1",
       "name": "segment",
       "points": [
         {
-          "timestamp": 1791780600000,
-          "dataIndex": 672,
-          "value": 4188.906810027581
+          "timestamp": 1791869100000,
+          "dataIndex": 3003,
+          "value": 4165.760707440197
         },
         {
-          "timestamp": 1791858600000,
-          "dataIndex": 851,
-          "value": 4150.578818662688
+          "timestamp": 1792559100000,
+          "dataIndex": 3057,
+          "value": 4210.208913131111
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#94a3b8",
+          "size": 1.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#94a3b8",
+          "borderColor": "#94a3b8",
+          "activeColor": "#ffffff",
+          "activeBorderColor": "#ffffff",
+          "radius": 4
+        }
+      },
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1791871006809_1",
+      "name": "horizontalStraightLine",
+      "points": [
+        {
+          "timestamp": 1791879600000,
+          "dataIndex": 3038,
+          "value": 4189.1742693111855
         }
       ],
       "styles": {
