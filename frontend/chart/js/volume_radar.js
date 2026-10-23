@@ -39,8 +39,13 @@ export function initVolumeRadar(chartInstance = null, symbol = 'XAUUSD') {
     });
   }
 
-  // Load touches data
+  // Load touches data dynamically from drawn lines
   loadStructuralTouches(symbol);
+
+  // Listen for drawing changes on chart
+  window.addEventListener('drawings-updated', () => {
+    loadStructuralTouches(symbol);
+  });
 }
 
 export function toggleVolumeRadarHud() {
@@ -85,40 +90,192 @@ export function updateLiveTick(spot, volumeDelta = 0) {
   }
 }
 
-// 30 TOUCHES SEQUENCE (Real MT5 Volume Baseline)
-function loadStructuralTouches(symbol) {
-  currentTouches = [
-    { num: 1, price: 4137.64, line: "Master Baseline Ray (Anchor)", delta: 3850, action: "STRONG REBOUND UP" },
-    { num: 2, price: 4145.20, line: "Lower Fan Ray 1", delta: 2400, action: "UPWARD CONTINUATION" },
-    { num: 3, price: 4154.80, line: "Inner Median Channel 1", delta: 3100, action: "UPWARD CONTINUATION" },
-    { num: 4, price: 4160.25, line: "Median Fan Ray (First Test)", delta: 3650, action: "⚡ PULLBACK TRIGGERED" },
-    { num: 5, price: 4152.10, line: "Primary Support Ray Retest", delta: -2800, action: "ABSORPTION BOUNCE" },
-    { num: 6, price: 4165.40, line: "Median Fan Ray 2", delta: 3200, action: "UPWARD CONTINUATION" },
-    { num: 7, price: 4150.50, line: "Master Baseline Trampoline", delta: -3900, action: "⚡ BEAR 0 EXHAUSTION BOUNCE" },
-    { num: 8, price: 4168.90, line: "Inner Median Ray 3", delta: 2900, action: "UPWARD CONTINUATION" },
-    { num: 9, price: 4178.40, line: "Upper Channel Boundary 1", delta: 3450, action: "UPWARD CONTINUATION" },
-    { num: 10, price: 4172.10, line: "Ascending Median Ray Pullback", delta: -2100, action: "SUPPORT HELD" },
-    { num: 11, price: 4189.58, line: "Upper Wedge Boundary", delta: 3720, action: "⚡ BULL EXHAUSTION DETECTED" },
-    { num: 12, price: 4183.20, line: "Wedge Inner Shelf", delta: -2500, action: "PINCH STALL" },
-    { num: 13, price: 4192.40, line: "Upper Wedge Resistance 2", delta: 3600, action: "⚡ CEILING REVERSAL" },
-    { num: 14, price: 4188.10, line: "Wedge Convergence Ray", delta: -1800, action: "TIGHT PINCH" },
-    { num: 15, price: 4195.80, line: "Apex Climax Sub-Ray", delta: 3800, action: "⚡ BULL VOLUME SATURATED" },
-    { num: 16, price: 4198.78, line: "Master Wedge Apex Climax", delta: 4250, action: "⚡ BULL 0 HIT! 100% REVERSAL TRIGGER" },
-    { num: 17, price: 4191.20, line: "Apex Rejection Down-Ray", delta: -3800, action: "⚡ BEAR CASCADE INITIATED" },
-    { num: 18, price: 4176.50, line: "Median Fan Ray (Down-Slice)", delta: -4100, action: "⚡ RAY SLICED THROUGH" },
-    { num: 19, price: 4168.91, line: "Inner Median Ray 2 (Down-Slice)", delta: -3950, action: "⚡ ZERO SUPPORT / SLICED" },
-    { num: 20, price: 4160.20, line: "Lower Baseline Shelf", delta: -3400, action: "TEMPORARY PAUSE" },
-    { num: 21, price: 4187.67, line: "Bear Flag Upper Ceiling", delta: 3600, action: "⚡ SELLER DISTRIBUTION DUMP" },
-    { num: 22, price: 4178.50, line: "Bear Flag Midline", delta: -2900, action: "FLAG BREAKDOWN" },
-    { num: 23, price: 4182.10, line: "Secondary Fan Retest", delta: 2200, action: "FAILED PUSH" },
-    { num: 24, price: 4157.79, line: "Master Trendline Floor Rupture", delta: -4800, action: "⚡ CATASTROPHIC RUPTURE WATERFALL" },
-    { num: 25, price: 4148.50, line: "Intermediate Liquid Support", delta: -4200, action: "⚡ SLICED ON HEAVY VOLUME" },
-    { num: 26, price: 4141.20, line: "Waterfall Liquidation Ray", delta: -3900, action: "⚡ WATERFALL CASCADE" },
-    { num: 27, price: 4136.50, line: "Old Range 1 Support Level", delta: -3600, action: "⚡ TEMPORARY STALL" },
-    { num: 28, price: 4125.80, line: "Day 2 Absorption Base Low", delta: -4100, action: "⚡ BEAR 0 REACHED! ABSORPTION BASE" },
-    { num: 29, price: 4135.20, line: "Day 2 Range Ceiling", delta: 2800, action: "RANGE BOUND" },
-    { num: 30, price: 4128.09, line: "Live Spot Floor Line ($4,128.14)", delta: -3850, action: "⚡ BEAR EXHAUSTION REVERSAL ACTIVE" }
-  ];
+// DYNAMIC 30 TOUCHES COMPUTATION FROM USER DRAWN LINES & MT5 CANDLES
+export async function loadStructuralTouches(symbol = 'XAUUSD') {
+  currentTouches = await computeDynamicLineTouches(chartInstanceRef, symbol);
+  renderVolumeBars();
+  if (currentTouches.length > 0) {
+    highlightTouch(currentTouches.length - 1);
+  }
+}
+
+async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
+  let dataList = chart ? (chart.getDataList() || []) : [];
+  if (dataList.length === 0) {
+    try {
+      const cRes = await fetch(`/api/candles?symbol=${symbol}&timeframe=5&count=300`);
+      const cData = await cRes.json();
+      if (cData && cData.status === 'OK' && Array.isArray(cData.candles)) {
+        dataList = cData.candles;
+      }
+    } catch (_) {}
+  }
+  if (dataList.length === 0) return [];
+
+  // 1. Gather all line overlays from chart and/or server drawings
+  let overlays = chart ? (chart.getOverlays() || []).filter(ov => 
+    ov.name === 'segment' || ov.name === 'rayLine' || ov.name === 'straightLine' || ov.name === 'horizontalStraightLine'
+  ) : [];
+
+  if (overlays.length === 0) {
+    try {
+      const res = await fetch(`/api/drawings?symbol=${symbol}`);
+      const data = await res.json();
+      if (data && data.status === 'OK' && Array.isArray(data.drawings)) {
+        overlays = data.drawings.filter(ov => 
+          ov.name === 'segment' || ov.name === 'rayLine' || ov.name === 'straightLine' || ov.name === 'horizontalStraightLine'
+        );
+      }
+    } catch (_) {}
+  }
+
+  // If no user lines drawn yet, compute touches from high/low swing structural pivots
+  if (overlays.length === 0) {
+    return generateFallbackSwingTouches(dataList);
+  }
+
+  const touches = [];
+  const barIntervalMs = (dataList.length >= 2) 
+    ? Math.max(1000, dataList[dataList.length - 1].timestamp - dataList[dataList.length - 2].timestamp)
+    : (5 * 60 * 1000);
+
+  // 2. Iterate each user drawn line and detect exact candle touches
+  overlays.forEach((ov, ovIdx) => {
+    const pts = ov.points || [];
+    if (pts.length < 1) return;
+
+    const lineLabel = ov.extendData?.name || `Trendline #${ovIdx + 1}`;
+
+    // A. Horizontal Straight Line
+    if (ov.name === 'horizontalStraightLine' || pts.length === 1) {
+      const lineVal = Number(pts[0].value);
+      if (isNaN(lineVal)) return;
+
+      dataList.forEach((bar, bIdx) => {
+        if (bar.low <= lineVal && lineVal <= bar.high) {
+          const isBull = bar.close >= bar.open;
+          const vol = Math.max(150, Math.round(bar.volume || 1000));
+          touches.push({
+            dataIndex: bIdx,
+            timestamp: bar.timestamp,
+            price: Math.round(lineVal * 100) / 100,
+            line: lineLabel,
+            isBull,
+            volume: vol,
+            delta: isBull ? vol : -vol
+          });
+        }
+      });
+      return;
+    }
+
+    // B. Sloped Trendline, Segment, or Ray
+    if (pts.length >= 2) {
+      const p1 = pts[0];
+      const p2 = pts[1];
+      const t1 = Number(p1.timestamp);
+      const t2 = Number(p2.timestamp);
+      const v1 = Number(p1.value);
+      const v2 = Number(p2.value);
+
+      if (isNaN(v1) || isNaN(v2) || isNaN(t1) || isNaN(t2) || t1 === t2) return;
+
+      const tStart = Math.min(t1, t2);
+      const tEnd = Math.max(t1, t2);
+      const isRay = ov.name === 'rayLine';
+      const isStraight = ov.name === 'straightLine';
+      const slope = (v2 - v1) / (t2 - t1);
+
+      dataList.forEach((bar, bIdx) => {
+        const bt = bar.timestamp;
+        // Check if candle time is within line domain
+        if (!isStraight) {
+          if (isRay && bt < tStart - barIntervalMs * 0.5) return;
+          if (!isRay && (bt < tStart - barIntervalMs * 0.5 || bt > tEnd + barIntervalMs * 0.5)) return;
+        }
+
+        const linePrice = v1 + slope * (bt - t1);
+        // Did candle wick/body touch the line?
+        if (bar.low - 0.25 <= linePrice && linePrice <= bar.high + 0.25) {
+          const isBull = bar.close >= bar.open;
+          const vol = Math.max(150, Math.round(bar.volume || 1000));
+          touches.push({
+            dataIndex: bIdx,
+            timestamp: bar.timestamp,
+            price: Math.round(linePrice * 100) / 100,
+            line: lineLabel,
+            isBull,
+            volume: vol,
+            delta: isBull ? vol : -vol
+          });
+        }
+      });
+    }
+  });
+
+  // 3. Sort chronologically by timestamp
+  touches.sort((a, b) => a.timestamp - b.timestamp);
+
+  // 4. Cluster adjacent touches (within 2 candles on same line) to avoid clutter
+  const deduped = [];
+  touches.forEach(t => {
+    if (deduped.length === 0) {
+      deduped.push(t);
+      return;
+    }
+    const prev = deduped[deduped.length - 1];
+    if (t.dataIndex - prev.dataIndex <= 2 && t.line === prev.line) {
+      if (Math.abs(t.delta) > Math.abs(prev.delta)) {
+        deduped[deduped.length - 1] = t;
+      }
+    } else {
+      deduped.push(t);
+    }
+  });
+
+  // 5. Slice latest 30 touches
+  const latest30 = deduped.slice(-30);
+
+  // 6. Map to clean matrix objects
+  return latest30.map((t, idx) => {
+    const crossed = Math.abs(t.delta) >= 3500;
+    let action = '';
+    if (crossed) {
+      action = t.delta > 0 ? '⚡ BULL EXHAUSTION (REVERSAL!)' : '⚡ BEAR 0 CASCADE (WATERFALL!)';
+    } else {
+      action = t.delta > 0 ? 'SUPPORT ABSORPTION BOUNCE' : 'RESISTANCE DISTRIBUTION REJECTION';
+    }
+    return {
+      num: idx + 1,
+      dataIndex: t.dataIndex,
+      timestamp: t.timestamp,
+      price: t.price,
+      line: t.line,
+      delta: t.delta,
+      action
+    };
+  });
+}
+
+function generateFallbackSwingTouches(dataList) {
+  const touches = [];
+  const count = Math.min(30, dataList.length);
+  const startIdx = Math.max(0, dataList.length - count);
+  for (let i = startIdx; i < dataList.length; i++) {
+    const bar = dataList[i];
+    const isBull = bar.close >= bar.open;
+    const vol = Math.max(200, Math.round(bar.volume || 1000));
+    touches.push({
+      num: touches.length + 1,
+      dataIndex: i,
+      timestamp: bar.timestamp,
+      price: isBull ? bar.low : bar.high,
+      line: isBull ? "Ascending Demand Floor" : "Descending Supply Shelf",
+      delta: isBull ? vol : -vol,
+      action: isBull ? "SUPPORT ABSORPTION" : "DISTRIBUTION DUMP"
+    });
+  }
+  return touches;
 }
 
 function renderVolumeBars() {

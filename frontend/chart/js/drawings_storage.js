@@ -64,8 +64,9 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
         body: JSON.stringify({ symbol, drawings: userDrawings })
       });
       const data = await res.json();
-      if (data && data.status === 'OK' && showToast) {
-        showChartToast(`Synced ${userDrawings.length} drawing(s) to server`);
+      if (data && data.status === 'OK') {
+        if (showToast) showChartToast(`Synced ${userDrawings.length} drawing(s) to server`);
+        window.dispatchEvent(new CustomEvent('drawings-updated'));
       }
     } catch (err) {
       console.error('[Escanor Drawings] Save to server failed:', err);
@@ -228,6 +229,7 @@ export function restoreDrawings(chart, drawingsList) {
     });
   } finally {
     window.__isRestoringDrawings = false;
+    window.dispatchEvent(new CustomEvent('drawings-updated'));
   }
 }
 
