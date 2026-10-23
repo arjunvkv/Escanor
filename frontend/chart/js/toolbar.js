@@ -10,6 +10,7 @@
  */
 
 import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove } from './drawings_storage.js?v=202610221030';
+import { computeRectangleVolumeMetrics } from './tv_chart_engine.js?v=202610232210';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -834,6 +835,32 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         const botEl = document.getElementById('tvRectBottomPrice');
         if (topEl) topEl.textContent = `$${topPrice.toFixed(2)}`;
         if (botEl) botEl.textContent = `$${bottomPrice.toFixed(2)}`;
+
+        // Populate Volume Consumption & Delta Metrics
+        const chartData = chart?.getDataList?.() || [];
+        const volMetrics = computeRectangleVolumeMetrics(selectedOverlay, chartData);
+        if (volMetrics) {
+          const totalVolEl = document.getElementById('tvRectTotalVol');
+          const netDeltaEl = document.getElementById('tvRectNetDelta');
+          const deltaRatioEl = document.getElementById('tvRectDeltaRatio');
+          const pocPriceEl = document.getElementById('tvRectPocPrice');
+          const verdictEl = document.getElementById('tvRectVerdictText');
+
+          if (totalVolEl) totalVolEl.textContent = `${volMetrics.totalVol.toLocaleString()} ticks`;
+          if (netDeltaEl) {
+            const sign = volMetrics.netDelta > 0 ? '+' : '';
+            netDeltaEl.textContent = `${sign}${volMetrics.netDelta.toLocaleString()}`;
+            netDeltaEl.style.color = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
+          }
+          if (deltaRatioEl) {
+            deltaRatioEl.innerHTML = `<span style="color:#00e676">${volMetrics.bullPct}% 🟢</span> / <span style="color:#ff334b">${volMetrics.bearPct}% 🔴</span>`;
+          }
+          if (pocPriceEl) pocPriceEl.textContent = `$${volMetrics.pocPrice.toFixed(2)}`;
+          if (verdictEl) {
+            verdictEl.textContent = volMetrics.verdict;
+            verdictEl.style.color = volMetrics.verdictColor;
+          }
+        }
 
         const curMode = selectedOverlay.extendData?.alarmMode || 'OFF';
         updateRectAlarmButtonsUI(curMode);

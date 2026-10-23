@@ -2267,6 +2267,63 @@ input[type="number"] {
   background: #282f44;
 }
 
+/* Volume Consumption Card inside Rectangle Modal */
+.tv-rect-vol-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-top: 6px;
+  margin-bottom: 8px;
+}
+
+.tv-rect-vol-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(13, 17, 26, 0.70);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  padding: 6px 8px;
+}
+
+.tv-vol-label {
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.tv-vol-val {
+  font-size: 12px;
+  font-weight: 800;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  color: #fff;
+}
+
+.tv-rect-verdict-box {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.40);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.tv-verdict-label {
+  color: #94a3b8;
+  font-size: 9px;
+  letter-spacing: 0.5px;
+}
+
+.tv-verdict-text {
+  font-weight: 800;
+  letter-spacing: 0.4px;
+}
+
 .tv-alarm-btn-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

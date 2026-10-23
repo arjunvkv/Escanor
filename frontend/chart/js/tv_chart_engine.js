@@ -14,6 +14,196 @@ export function getChartInstance() {
   return chartInstance;
 }
 
+// Format compact volume representation (e.g. 42.8K, 1.2M)
+function formatVolNumber(v) {
+  const abs = Math.abs(v);
+  if (abs >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+  if (abs >= 1000) return (v / 1000).toFixed(1) + 'K';
+  return String(Math.round(v));
+}
+
+/**
+ * Computes true volume consumption, aggressive bull vs bear delta,
+ * Point of Control (POC), and Wyckoff auction verdict inside the spatial
+ * bounds of any rectangle overlay.
+ */
+export function computeRectangleVolumeMetrics(overlay, dataList) {
+  if (!overlay || !overlay.points || overlay.points.length < 2 || !dataList || dataList.length === 0) {
+    return null;
+  }
+
+  const validPoints = overlay.points.filter(p => p && typeof p.value === 'number' && !isNaN(p.value));
+  if (validPoints.length < 2) return null;
+
+  const values = validPoints.map(p => p.value);
+  const topPrice = Math.max(...values);
+  const bottomPrice = Math.min(...values);
+  const priceRange = topPrice - bottomPrice;
+  if (priceRange <= 0.001) return null;
+
+  const timestamps = validPoints
+    .map(p => p.timestamp)
+    .filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
+
+  let leftTime = 0;
+  let rightTime = Infinity;
+
+  if (timestamps.length >= 2) {
+    leftTime = Math.min(...timestamps);
+    rightTime = Math.max(...timestamps);
+  } else if (timestamps.length === 1) {
+    leftTime = timestamps[0];
+    rightTime = leftTime + 30 * 60 * 1000;
+  } else {
+    const indices = validPoints.map(p => p.dataIndex).filter(idx => typeof idx === 'number' && idx >= 0);
+    if (indices.length >= 2) {
+      const minIdx = Math.max(0, Math.min(...indices));
+      const maxIdx = Math.min(dataList.length - 1, Math.max(...indices));
+      if (dataList[minIdx]) leftTime = dataList[minIdx].timestamp;
+      if (dataList[maxIdx]) rightTime = dataList[maxIdx].timestamp;
+    } else {
+      return null;
+    }
+  }
+
+  if (leftTime === rightTime) {
+    rightTime = leftTime + 5 * 60 * 1000;
+  }
+
+  const tfMins = window.__currentTimeframeMinutes || 5;
+  const barMs = tfMins * 60 * 1000;
+
+  let totalVol = 0;
+  let bullVol = 0;
+  let bearVol = 0;
+  let candleCount = 0;
+  let upperWickSum = 0;
+  let lowerWickSum = 0;
+  let lastClose = null;
+
+  // Discrete price tiers for POC inside the box
+  const numBins = 14;
+  const binStep = priceRange / numBins;
+  const bins = new Array(numBins).fill(0);
+
+  for (let i = 0; i < dataList.length; i++) {
+    const bar = dataList[i];
+    if (!bar || typeof bar.timestamp !== 'number') continue;
+
+    if (bar.timestamp + barMs < leftTime) continue;
+    if (bar.timestamp > rightTime + barMs) continue;
+    if (bar.high < bottomPrice || bar.low > topPrice) continue;
+
+    const barRange = Math.max(0.01, bar.high - bar.low);
+    const overlapLow = Math.max(bar.low, bottomPrice);
+    const overlapHigh = Math.min(bar.high, topPrice);
+    const overlapRange = Math.max(0, overlapHigh - overlapLow);
+    const overlapRatio = Math.min(1.0, overlapRange / barRange);
+
+    const vol = Number(bar.volume || bar.tick_volume || 1);
+    const volInBox = vol * overlapRatio;
+
+    totalVol += volInBox;
+    candleCount++;
+    lastClose = bar.close;
+
+    const body = Math.abs(bar.close - bar.open);
+    const upperWick = bar.high - Math.max(bar.open, bar.close);
+    const lowerWick = Math.min(bar.open, bar.close) - bar.low;
+
+    upperWickSum += upperWick * overlapRatio;
+    lowerWickSum += lowerWick * overlapRatio;
+
+    let barBull = 0;
+    let barBear = 0;
+
+    if (bar.close >= bar.open) {
+      const bullWeight = body + lowerWick * 1.25;
+      const bearWeight = upperWick * 1.25;
+      const totalWeight = bullWeight + bearWeight;
+      const bullRatio = totalWeight > 0 ? (bullWeight / totalWeight) : 0.65;
+      barBull = volInBox * bullRatio;
+      barBear = volInBox * (1 - bullRatio);
+    } else {
+      const bearWeight = body + upperWick * 1.25;
+      const bullWeight = lowerWick * 1.25;
+      const totalWeight = bearWeight + bullWeight;
+      const bearRatio = totalWeight > 0 ? (bearWeight / totalWeight) : 0.65;
+      barBear = volInBox * bearRatio;
+      barBull = volInBox * (1 - bearRatio);
+    }
+
+    bullVol += barBull;
+    bearVol += barBear;
+
+    const binStart = Math.max(0, Math.min(numBins - 1, Math.floor((overlapLow - bottomPrice) / binStep)));
+    const binEnd = Math.max(0, Math.min(numBins - 1, Math.floor((overlapHigh - bottomPrice) / binStep)));
+    const spannedBins = Math.max(1, binEnd - binStart + 1);
+    const volPerBin = volInBox / spannedBins;
+    for (let b = binStart; b <= binEnd; b++) {
+      bins[b] += volPerBin;
+    }
+  }
+
+  if (totalVol <= 0) return null;
+
+  let maxBinVol = -1;
+  let pocBinIdx = Math.floor(numBins / 2);
+  for (let b = 0; b < numBins; b++) {
+    if (bins[b] > maxBinVol) {
+      maxBinVol = bins[b];
+      pocBinIdx = b;
+    }
+  }
+  const pocPrice = Number((bottomPrice + (pocBinIdx + 0.5) * binStep).toFixed(2));
+
+  const netDelta = Math.round(bullVol - bearVol);
+  const bullPct = Math.min(99, Math.max(1, Math.round((bullVol / totalVol) * 100)));
+  const bearPct = 100 - bullPct;
+
+  let verdict = 'BALANCED AUCTION';
+  let verdictColor = '#38bdf8';
+
+  const isNearCeiling = (lastClose !== null && lastClose >= bottomPrice + 0.65 * priceRange);
+  const isNearFloor = (lastClose !== null && lastClose <= bottomPrice + 0.35 * priceRange);
+
+  if (upperWickSum > lowerWickSum * 1.35 && isNearCeiling && bullPct >= 52) {
+    verdict = 'BEAR ABSORPTION / CEILING';
+    verdictColor = '#ffb300';
+  } else if (lowerWickSum > upperWickSum * 1.35 && isNearFloor && bearPct >= 52) {
+    verdict = 'BULL ABSORPTION / SPRING';
+    verdictColor = '#00f0ff';
+  } else if (bullPct >= 62) {
+    verdict = 'BULL INITIATIVE';
+    verdictColor = '#00e676';
+  } else if (bearPct >= 62) {
+    verdict = 'BEAR INITIATIVE';
+    verdictColor = '#ff334b';
+  } else if (bullPct >= 54) {
+    verdict = 'BULL DOMINANT';
+    verdictColor = '#10b981';
+  } else if (bearPct >= 54) {
+    verdict = 'BEAR DOMINANT';
+    verdictColor = '#f43f5e';
+  }
+
+  return {
+    totalVol: Math.round(totalVol),
+    bullVol: Math.round(bullVol),
+    bearVol: Math.round(bearVol),
+    netDelta,
+    bullPct,
+    bearPct,
+    pocPrice,
+    candleCount,
+    verdict,
+    verdictColor,
+    topPrice,
+    bottomPrice,
+    priceRange
+  };
+}
+
 // Register custom Rectangle (Box) and Measurement Ruler overlays
 function registerCustomOverlays() {
   if (typeof klinecharts === 'undefined') return;
@@ -28,7 +218,7 @@ function registerCustomOverlays() {
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
     zLevel: 10,
-    createPointFigures: ({ overlay, coordinates }) => {
+    createPointFigures: ({ overlay, coordinates, yAxis }) => {
       if (!coordinates || coordinates.length === 0) return [];
       const isArmed = Boolean(overlay?.extendData?.alarmMode && overlay.extendData.alarmMode !== 'OFF');
       const isBoth = (overlay?.extendData?.alarmMode === 'BOTH');
@@ -49,8 +239,10 @@ function registerCustomOverlays() {
         const maxX = Math.max(...xs);
         const minY = Math.min(...ys);
         const maxY = Math.max(...ys);
+        const boxW = maxX - minX;
+        const boxH = maxY - minY;
 
-        return [
+        const figures = [
           {
             type: 'polygon',
             attrs: {
@@ -64,6 +256,223 @@ function registerCustomOverlays() {
             styles: polyStyle
           }
         ];
+
+        // Dynamic Volume Consumption & Delta Metrics inside Rectangle
+        const dataList = chartInstance?.getDataList?.() || [];
+        const volMetrics = computeRectangleVolumeMetrics(overlay, dataList);
+
+        if (volMetrics && volMetrics.totalVol > 0) {
+          // 1. Render Volume POC Line (Point of Control)
+          let pocY = null;
+          if (yAxis && typeof yAxis.convertToPixel === 'function') {
+            pocY = yAxis.convertToPixel(volMetrics.pocPrice);
+          } else if (volMetrics.priceRange > 0) {
+            const ratio = (volMetrics.topPrice - volMetrics.pocPrice) / volMetrics.priceRange;
+            pocY = minY + ratio * boxH;
+          }
+
+          if (pocY !== null && pocY >= minY + 2 && pocY <= maxY - 2) {
+            figures.push({
+              type: 'line',
+              attrs: {
+                coordinates: [
+                  { x: minX, y: pocY },
+                  { x: maxX, y: pocY }
+                ]
+              },
+              styles: {
+                style: 'dashed',
+                color: '#ffb300',
+                size: 1.2,
+                dashedValue: [4, 4]
+              }
+            });
+
+            if (boxW >= 75) {
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: maxX - 4,
+                  y: pocY,
+                  text: `POC $${volMetrics.pocPrice.toFixed(2)}`,
+                  align: 'right',
+                  baseline: 'middle'
+                },
+                styles: {
+                  color: '#ffb300',
+                  size: 9.5,
+                  weight: '700',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(15, 23, 42, 0.88)',
+                  borderColor: 'rgba(255, 179, 0, 0.35)',
+                  borderSize: 1,
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
+            }
+          }
+
+          // 2. Render HUD Badge inside the rectangle (Top-Left corner)
+          const deltaSign = volMetrics.netDelta > 0 ? '+' : '';
+          const deltaColor = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
+          const volStr = formatVolNumber(volMetrics.totalVol);
+          const deltaStr = `${deltaSign}${formatVolNumber(volMetrics.netDelta)}`;
+
+          if (boxW >= 120 && boxH >= 48) {
+            // Full multi-line HUD badge
+            const line1 = `📊 ${volStr} | Δ ${deltaStr}`;
+            const line2 = `🟢 ${volMetrics.bullPct}%  |  ${volMetrics.bearPct}% 🔴`;
+
+            figures.push({
+              type: 'text',
+              attrs: {
+                x: minX + 6,
+                y: minY + 6,
+                text: line1,
+                align: 'left',
+                baseline: 'top'
+              },
+              styles: {
+                color: '#00e5ff',
+                size: 10,
+                weight: '700',
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                backgroundColor: 'rgba(13, 17, 26, 0.90)',
+                borderColor: 'rgba(0, 229, 255, 0.25)',
+                borderSize: 1,
+                paddingLeft: 5,
+                paddingRight: 5,
+                paddingTop: 2,
+                paddingBottom: 2,
+                borderRadius: 3
+              }
+            });
+
+            figures.push({
+              type: 'text',
+              attrs: {
+                x: minX + 6,
+                y: minY + 22,
+                text: line2,
+                align: 'left',
+                baseline: 'top'
+              },
+              styles: {
+                color: '#e2e8f0',
+                size: 9.5,
+                weight: '600',
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                paddingLeft: 4,
+                paddingRight: 4,
+                paddingTop: 1,
+                paddingBottom: 1,
+                borderRadius: 2
+              }
+            });
+
+            if (boxH >= 68 && boxW >= 140) {
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 6,
+                  y: minY + 37,
+                  text: volMetrics.verdict,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                styles: {
+                  color: volMetrics.verdictColor,
+                  size: 8.5,
+                  weight: '800',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(0, 0, 0, 0.70)',
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
+            }
+          } else if (boxW >= 85 && boxH >= 28) {
+            // Compact 2-line badge
+            figures.push({
+              type: 'text',
+              attrs: {
+                x: minX + 5,
+                y: minY + 4,
+                text: `${volStr} (Δ${deltaStr})`,
+                align: 'left',
+                baseline: 'top'
+              },
+              styles: {
+                color: '#00e5ff',
+                size: 9.5,
+                weight: '700',
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                backgroundColor: 'rgba(13, 17, 26, 0.90)',
+                paddingLeft: 4,
+                paddingRight: 4,
+                paddingTop: 1,
+                paddingBottom: 1,
+                borderRadius: 2
+              }
+            });
+            figures.push({
+              type: 'text',
+              attrs: {
+                x: minX + 5,
+                y: minY + 16,
+                text: `${volMetrics.bullPct}%🟢 ${volMetrics.bearPct}%🔴`,
+                align: 'left',
+                baseline: 'top'
+              },
+              styles: {
+                color: '#cbd5e1',
+                size: 8.5,
+                weight: '600',
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                paddingLeft: 3,
+                paddingRight: 3,
+                paddingTop: 1,
+                paddingBottom: 1,
+                borderRadius: 2
+              }
+            });
+          } else if (boxW >= 55 && boxH >= 18) {
+            // Micro 1-line tag for small sub-boxes
+            figures.push({
+              type: 'text',
+              attrs: {
+                x: minX + 4,
+                y: minY + 3,
+                text: `${volStr} Δ${deltaStr}`,
+                align: 'left',
+                baseline: 'top'
+              },
+              styles: {
+                color: deltaColor,
+                size: 8.5,
+                weight: '700',
+                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                backgroundColor: 'rgba(13, 17, 26, 0.88)',
+                paddingLeft: 3,
+                paddingRight: 3,
+                paddingTop: 1,
+                paddingBottom: 1,
+                borderRadius: 2
+              }
+            });
+          }
+        }
+
+        return figures;
       }
       return [];
     },
