@@ -9,7 +9,7 @@
  * - In-app confirmation dialog (Zero browser alert/confirm popups)
  */
 
-import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove } from './drawings_storage.js?v=202610221030';
+import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232220';
 import { computeRectangleVolumeMetrics } from './tv_chart_engine.js?v=202610232210';
 
 let activeTool = 'crosshair';
@@ -341,6 +341,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
             const sixPoints = normalizeRectPoints(ov.points);
             chart.overrideOverlay({ id: ov.id, points: sixPoints });
           }
+          recalculateRectZLevels(chart);
         }
         if ((ovName === 'longPosition' || ovName === 'shortPosition') && args?.overlay) {
           const ov = args.overlay;
@@ -627,6 +628,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       if (window.__lineTradingManager) {
         window.__lineTradingManager.removeLineOverlay(id);
       }
+      recalculateRectZLevels(chart);
       selectedOverlay = null;
       hideFloatingBar();
       syncDrawingsToServer(currentSymbolRef, chart, false, true);

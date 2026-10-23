@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove } from './drawings_storage.js?v=202610221030';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232220';
 import { registerLivingFootprintIndicator } from './living_candle_engine.js?v=202610140655';
 
 // Global reference for chart instance
@@ -492,6 +492,7 @@ function registerCustomOverlays() {
           overlay.points = sixPoints;
         }
       }
+      recalculateRectZLevels(chart);
     },
     onPressedMoveEnd: ({ overlay, chart }) => {
       if (overlay?.name === 'rect' && overlay?.points) {
@@ -502,6 +503,7 @@ function registerCustomOverlays() {
           overlay.points = sixPoints;
         }
       }
+      recalculateRectZLevels(chart);
     }
   });
 

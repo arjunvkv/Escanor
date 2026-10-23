@@ -54,6 +54,7 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
             name: ov.name,
             points: cleanPoints,
             styles: ov.styles,
+            zLevel: ov.zLevel,
             extendData: ov.extendData || {}
           };
         });
@@ -193,6 +194,57 @@ export function handleRectPressedMove(points, performPointIndex, dataList, tfMin
   points[5].value = midVal;
 }
 
+/**
+ * Automatically calculates and enforces dynamic zLevel hierarchy for rectangle overlays:
+ * Smaller boxes (micro zones) receive HIGHER zLevels (up to 45), while large macro boxes
+ * receive LOWER zLevels (starting at 10).
+ * This ensures micro sub-boxes float cleanly above macro boxes for both rendering and click/drag selection.
+ */
+export function recalculateRectZLevels(chart) {
+  if (!chart || typeof chart.getOverlays !== 'function') return;
+  const allOverlays = chart.getOverlays() || [];
+  const rects = allOverlays.filter(ov => ov.name === 'rect' && ov.points && ov.points.length >= 2);
+  if (rects.length === 0) return;
+
+  if (rects.length === 1) {
+    if (typeof chart.overrideOverlay === 'function') {
+      chart.overrideOverlay({ id: rects[0].id, zLevel: 15 });
+    }
+    return;
+  }
+
+  // Calculate physical spatial area for each box: (Price Range * Time Duration in Minutes)
+  const rectsWithArea = rects.map(r => {
+    const validPts = (r.points || []).filter(p => p && typeof p.value === 'number' && !isNaN(p.value));
+    if (validPts.length < 2) return { overlay: r, area: 0 };
+    const vals = validPts.map(p => p.value);
+    const times = validPts.map(p => p.timestamp).filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
+    const pSpan = Math.max(0.01, Math.max(...vals) - Math.min(...vals));
+    const tSpan = times.length >= 2 ? Math.max(60000, Math.max(...times) - Math.min(...times)) : 60000;
+    const area = pSpan * (tSpan / 60000);
+    return { overlay: r, area };
+  });
+
+  // Sort DESCENDING: Largest macro box first (gets lowest zLevel 10)
+  // Smallest micro sub-box last (gets highest zLevel 45)
+  rectsWithArea.sort((a, b) => b.area - a.area);
+
+  const minZ = 10;
+  const maxZ = 45;
+  const count = rectsWithArea.length;
+  const step = count > 1 ? ((maxZ - minZ) / (count - 1)) : 0;
+
+  rectsWithArea.forEach((item, index) => {
+    const assignedZ = Math.round(minZ + index * step);
+    if (item.overlay.zLevel !== assignedZ) {
+      item.overlay.zLevel = assignedZ;
+      if (typeof chart.overrideOverlay === 'function') {
+        chart.overrideOverlay({ id: item.overlay.id, zLevel: assignedZ });
+      }
+    }
+  });
+}
+
 export function restoreDrawings(chart, drawingsList) {
   if (!chart || !Array.isArray(drawingsList)) return;
   window.__isRestoringDrawings = true;
@@ -226,6 +278,9 @@ export function restoreDrawings(chart, drawingsList) {
         console.warn(`[Escanor Drawings] Could not restore overlay ${d.name}:`, e);
       }
     });
+
+    // Enforce higher zLevel for smaller boxes among restored drawings
+    recalculateRectZLevels(chart);
   } finally {
     window.__isRestoringDrawings = false;
   }
