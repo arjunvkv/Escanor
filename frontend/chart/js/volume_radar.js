@@ -262,15 +262,93 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
   // 5. Slice latest 30 touches
   const latest30 = deduped.slice(-30);
 
-  // 6. Map to clean matrix objects
+  // 6. Map to predictive institutional absorption & level health objects
+  const lineHitCounters = {};
+  const lineCumulativeVols = {};
+
   return latest30.map((t, idx) => {
-    const crossed = Math.abs(t.delta) >= 3500;
-    let action = '';
-    if (crossed) {
-      action = t.delta > 0 ? '⚡ BULL EXHAUSTION (REVERSAL!)' : '⚡ BEAR 0 CASCADE (WATERFALL!)';
-    } else {
-      action = t.delta > 0 ? 'SUPPORT ABSORPTION BOUNCE' : 'RESISTANCE DISTRIBUTION REJECTION';
+    const lKey = t.line || 'Level';
+    lineHitCounters[lKey] = (lineHitCounters[lKey] || 0) + 1;
+    lineCumulativeVols[lKey] = (lineCumulativeVols[lKey] || 0) + t.volume;
+
+    const hitNumber = lineHitCounters[lKey];
+    const cumVol = lineCumulativeVols[lKey];
+
+    // Compute Wall Health (Remaining Strength of Level)
+    // Hit 1: 90%, Hit 2: 60%, Hit 3: 25%, Hit 4+: 10%
+    const wallHealthPct = Math.max(10, Math.round(100 - (hitNumber - 1) * 35));
+
+    // Effort vs Progress: Look ahead up to 3 candles in dataList to evaluate price progress
+    let maxProgress = 0;
+    if (typeof t.dataIndex === 'number' && dataList && dataList.length > 0) {
+      const nextBars = dataList.slice(t.dataIndex + 1, t.dataIndex + 4);
+      if (nextBars.length > 0) {
+        if (t.tipType === 'LOW_WICK_TIP') {
+          // Bouncing off support floor: measure maximum upward reach
+          const maxHigh = Math.max(...nextBars.map(b => b.high));
+          maxProgress = Math.max(0, Math.round((maxHigh - t.linePrice) * 100) / 100);
+        } else {
+          // Rejecting resistance ceiling: measure maximum downward reach
+          const minLow = Math.min(...nextBars.map(b => b.low));
+          maxProgress = Math.max(0, Math.round((t.linePrice - minLow) * 100) / 100);
+        }
+      }
     }
+
+    const isHighEffort = t.volume >= 3000;
+    const isWeakProgress = maxProgress < 2.50; // Less than $2.50 displacement on Gold
+    const isSupport = t.tipType === 'LOW_WICK_TIP';
+
+    let predictedMove = '';
+    let statusText = '';
+    let action = '';
+    let triggerText = '';
+    let healthColor = '#00e676';
+
+    if (isSupport) {
+      // SUPPORT FLOOR
+      if (hitNumber >= 3 || (isHighEffort && isWeakProgress)) {
+        predictedMove = 'WATERFALL_BREAKDOWN';
+        statusText = `⚠️ BIDS ${100 - wallHealthPct}% CONSUMED (FRAGILE)`;
+        action = '⚡ WATERFALL BREAKDOWN PRIMED';
+        triggerText = `Below $${(t.price - 0.50).toFixed(2)} ➜ Targets $${(t.price - 15.0).toFixed(2)}`;
+        healthColor = '#ff334b';
+      } else if (isHighEffort && !isWeakProgress) {
+        predictedMove = 'SUPPORT_REVERSAL';
+        statusText = `🟢 STRONG BUY ABSORPTION (WALL DEFENDED)`;
+        action = '🟢 ACCUMULATION BOUNCE ACTIVE';
+        triggerText = `Holds above $${t.linePrice.toFixed(2)} ➜ Targets $${(t.linePrice + 12.0).toFixed(2)}`;
+        healthColor = '#00e676';
+      } else {
+        predictedMove = 'TESTING_SUPPORT';
+        statusText = `🛡️ FRESH SUPPORT TEST (Hit #${hitNumber})`;
+        action = 'SUPPORT PROBE';
+        triggerText = `Defense at $${t.linePrice.toFixed(2)}`;
+        healthColor = '#00e5ff';
+      }
+    } else {
+      // RESISTANCE CEILING
+      if (hitNumber >= 3 || (isHighEffort && isWeakProgress)) {
+        predictedMove = 'UPSIDE_BREAKOUT';
+        statusText = `⚠️ OFFERS ${100 - wallHealthPct}% CONSUMED (FRAGILE)`;
+        action = '⚡ UPSIDE BREAKOUT PRIMED';
+        triggerText = `Above $${(t.price + 0.50).toFixed(2)} ➜ Targets $${(t.price + 15.0).toFixed(2)}`;
+        healthColor = '#00e676';
+      } else if (isHighEffort && !isWeakProgress) {
+        predictedMove = 'RESISTANCE_REVERSAL';
+        statusText = `🔴 STRONG SELL ABSORPTION (CEILING DEFENDED)`;
+        action = '🔴 DISTRIBUTION REJECTION ACTIVE';
+        triggerText = `Rejects $${t.linePrice.toFixed(2)} ➜ Targets $${(t.linePrice - 12.0).toFixed(2)}`;
+        healthColor = '#ff334b';
+      } else {
+        predictedMove = 'TESTING_RESISTANCE';
+        statusText = `🛡️ FRESH CEILING TEST (Hit #${hitNumber})`;
+        action = 'RESISTANCE PROBE';
+        triggerText = `Rejection at $${t.linePrice.toFixed(2)}`;
+        healthColor = '#00e5ff';
+      }
+    }
+
     return {
       num: idx + 1,
       dataIndex: t.dataIndex,
@@ -279,8 +357,19 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
       linePrice: t.linePrice,
       tipType: t.tipType,
       line: t.line,
-      delta: t.delta,
-      action
+      hitNumber,
+      cumVol,
+      wallHealthPct,
+      maxProgress,
+      isHighEffort,
+      isWeakProgress,
+      predictedMove,
+      statusText,
+      action,
+      triggerText,
+      healthColor,
+      volume: t.volume,
+      delta: t.delta
     };
   });
 }
@@ -381,16 +470,18 @@ function highlightTouch(idx) {
   const volEl = document.getElementById('vrInspVol');
   const verdictEl = document.getElementById('vrInspVerdict');
 
-  if (numEl) numEl.textContent = `TOUCH #${t.num} / 30`;
+  if (numEl) numEl.textContent = `TOUCH #${t.num} / 30 • HIT #${t.hitNumber || 1}`;
   if (priceEl) priceEl.textContent = `$${t.price.toFixed(2)}`;
-  if (lineEl) lineEl.textContent = t.line;
+  if (lineEl) lineEl.textContent = `${t.line} ($${t.linePrice.toFixed(2)})`;
   if (volEl) {
-    volEl.textContent = `${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()} ticks`;
-    volEl.style.color = t.delta > 0 ? '#00e676' : '#ff334b';
+    const progStr = typeof t.maxProgress === 'number' ? `$${t.maxProgress.toFixed(2)}` : '--';
+    const qual = t.isWeakProgress ? 'Poor' : 'Strong';
+    volEl.textContent = `${(t.volume || 0).toLocaleString()}t (Progress: ${progStr} • ${qual})`;
+    volEl.style.color = t.isWeakProgress && t.isHighEffort ? '#ffb300' : '#00e676';
   }
   if (verdictEl) {
     verdictEl.textContent = t.action;
-    verdictEl.style.color = Math.abs(t.delta) >= 3500 ? '#ffb300' : (t.delta > 0 ? '#00e676' : '#00e5ff');
+    verdictEl.style.color = t.healthColor || '#ff334b';
   }
 
   updateTriggerIndicator(t);
@@ -464,35 +555,30 @@ function updateTriggerIndicator(t) {
   const remText = document.getElementById('vrIndRemText');
   if (!barFill || !statusText || !remText) return;
 
-  const absDelta = Math.abs(t.delta || 0);
-  const thresh = dailyReversalThreshold || 3500;
-  const pct = Math.min(100, Math.round((absDelta / thresh) * 100));
-  const isTriggered = absDelta >= thresh;
-  const rem = Math.max(0, thresh - absDelta);
-  const isBull = (t.delta || 0) >= 0;
-
-  barFill.style.width = `${pct}%`;
-
-  if (isTriggered) {
-    const excess = absDelta - thresh;
-    barFill.style.background = isBull ? '#00e676' : '#ff334b';
-    statusText.textContent = `🚨 TRIGGER FIRED! (${Math.round((absDelta / thresh) * 100)}%)`;
-    statusText.style.color = isBull ? '#00e676' : '#ff334b';
-    remText.textContent = excess > 0 ? `+${excess.toLocaleString()}t EXCEEDED • REVERSAL ACTIVE` : 'THRESHOLD REACHED • ACTIVE';
-    remText.style.color = '#ffb300';
-  } else if (pct >= 70) {
-    barFill.style.background = '#ffb300';
-    statusText.textContent = `⚡ APPROACHING (${pct}%)`;
-    statusText.style.color = '#ffb300';
-    remText.textContent = `${rem.toLocaleString()}t TO ${isBull ? 'BULL' : 'BEAR'} TRIGGER`;
+  if (t.num === 'LIVE') {
+    const thresh = dailyReversalThreshold || 3500;
+    const absVol = Math.abs(t.delta || liveTickVolume);
+    const pct = Math.min(100, Math.round((absVol / thresh) * 100));
+    barFill.style.width = `${pct}%`;
+    barFill.style.background = pct >= 100 ? '#00e676' : (pct >= 70 ? '#ffb300' : '#00e5ff');
+    statusText.textContent = `⚡ LIVE VELOCITY (${pct}%)`;
+    statusText.style.color = barFill.style.background;
+    remText.textContent = `${absVol.toLocaleString()}t / ${thresh.toLocaleString()}t Boundary`;
     remText.style.color = '#cbd5e1';
-  } else {
-    barFill.style.background = '#00e5ff';
-    statusText.textContent = `⚡ ACCUMULATING (${pct}%)`;
-    statusText.style.color = '#00e5ff';
-    remText.textContent = `${rem.toLocaleString()}t TO TRIGGER (${thresh.toLocaleString()}t)`;
-    remText.style.color = '#8b949e';
+    return;
   }
+
+  // Display Wall Wear % (Remaining Strength of Level)
+  const healthPct = typeof t.wallHealthPct === 'number' ? t.wallHealthPct : 50;
+  const consumedPct = 100 - healthPct;
+  barFill.style.width = `${consumedPct}%`;
+  barFill.style.background = t.healthColor || (consumedPct >= 70 ? '#ff334b' : '#00e5ff');
+
+  statusText.textContent = t.statusText || `LEVEL WEAR: ${consumedPct}% CONSUMED`;
+  statusText.style.color = t.healthColor || '#ff334b';
+
+  remText.textContent = t.triggerText || `Level: $${t.linePrice.toFixed(2)}`;
+  remText.style.color = '#cbd5e1';
 }
 
 function showChartReticle(t, idx) {
@@ -559,8 +645,8 @@ function showChartReticle(t, idx) {
 }
 
 function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
-  const isBull = t.delta >= 0;
-  const color = isBull ? '#00e676' : '#ff334b';
+  const isWaterfall = t.predictedMove === 'WATERFALL_BREAKDOWN';
+  const color = t.healthColor || (isWaterfall ? '#ff334b' : '#00e676');
 
   // 1. Position Glowing Outer Beacon Halo at the exact tip of the candle
   const halo = document.getElementById('tvVrDotHalo');
@@ -619,50 +705,62 @@ function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
 
   // 5. Floating Tag Box On The Candle (Smart Clamping)
   let tagX = x + 20;
-  let tagY = y - 22;
-  if (tagX + 190 > vpWidth - 60) tagX = x - 200;
+  let tagY = y - 25;
+  if (tagX + 230 > vpWidth - 60) tagX = x - 240;
   if (tagY < 60) tagY = y + 25;
-  if (tagY + 50 > vpHeight - 40) tagY = vpHeight - 55;
+  if (tagY + 72 > vpHeight - 40) tagY = vpHeight - 80;
 
   const tagG = document.getElementById('tvVrTagGroup');
   if (tagG) tagG.setAttribute('transform', `translate(${tagX}, ${tagY})`);
 
   const tagBg = document.getElementById('tvVrTagBg');
-  if (tagBg) tagBg.setAttribute('stroke', color);
+  if (tagBg) {
+    tagBg.setAttribute('width', '230');
+    tagBg.setAttribute('height', '72');
+    tagBg.setAttribute('stroke', color);
+  }
 
   const tagTitle = document.getElementById('tvVrTagTitle');
   if (tagTitle) {
-    tagTitle.textContent = `${t.num === 'LIVE' ? 'LIVE SPOT' : 'T' + t.num}: $${t.price.toFixed(2)}`;
+    const hitLabel = t.num === 'LIVE' ? 'LIVE' : `Hit #${t.hitNumber || 1}`;
+    tagTitle.textContent = `${t.num === 'LIVE' ? 'LIVE SPOT' : 'T' + t.num}: $${t.price.toFixed(2)} (${hitLabel})`;
     tagTitle.setAttribute('fill', color);
   }
 
   const tagSub = document.getElementById('tvVrTagSub');
   if (tagSub) {
-    const tipLabel = t.tipType === 'TOP_WICK_TIP' ? ' (High Wick Tip)' : (t.tipType === 'LOW_WICK_TIP' ? ' (Low Wick Tip)' : '');
-    tagSub.textContent = `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()}t${tipLabel}`;
+    if (t.num === 'LIVE') {
+      tagSub.textContent = `Effort: ${Math.abs(liveTickVolume).toLocaleString()}t active`;
+    } else {
+      const progStr = typeof t.maxProgress === 'number' ? `$${t.maxProgress.toFixed(2)}` : '--';
+      const progQuality = t.isWeakProgress ? 'Poor' : 'Strong';
+      tagSub.textContent = `Effort: ${(t.volume || 0).toLocaleString()}t • Progress: ${progStr} (${progQuality})`;
+    }
   }
 
   const tagTrigger = document.getElementById('tvVrTagTrigger');
   if (tagTrigger) {
-    const absDelta = Math.abs(t.delta || 0);
-    const thresh = dailyReversalThreshold || 3500;
-    const pct = Math.round((absDelta / thresh) * 100);
-    if (absDelta >= thresh) {
-      tagTrigger.textContent = `🚨 TRIGGER: ${pct}% (Reversal Fired)`;
-      tagTrigger.setAttribute('fill', isBull ? '#00e676' : '#ff334b');
-    } else if (pct >= 70) {
-      tagTrigger.textContent = `⚡ APPROACHING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
-      tagTrigger.setAttribute('fill', '#ffb300');
+    if (t.num === 'LIVE') {
+      const thresh = dailyReversalThreshold || 3500;
+      const absVol = Math.abs(liveTickVolume);
+      const rem = Math.max(0, thresh - absVol);
+      tagTrigger.textContent = absVol >= thresh ? '⚡ REVERSAL THRESHOLD HIT' : `Accumulating (${rem.toLocaleString()}t to boundary)`;
+      tagTrigger.setAttribute('fill', absVol >= thresh ? '#00e676' : '#ffb300');
     } else {
-      tagTrigger.textContent = `⚡ ACCUMULATING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
-      tagTrigger.setAttribute('fill', '#00e5ff');
+      tagTrigger.textContent = t.statusText || `Wall Wear: ${100 - (t.wallHealthPct || 50)}% Consumed`;
+      tagTrigger.setAttribute('fill', color);
     }
   }
 
   const tagVerdict = document.getElementById('tvVrTagVerdict');
   if (tagVerdict) {
-    tagVerdict.textContent = t.action;
-    tagVerdict.setAttribute('fill', Math.abs(t.delta) >= 3500 ? '#ffb300' : color);
+    tagVerdict.textContent = t.action || 'STRUCTURAL LEVEL TEST';
+    tagVerdict.setAttribute('fill', isWaterfall ? '#ff334b' : '#00e676');
+  }
+
+  const tagNextMove = document.getElementById('tvVrTagNextMove');
+  if (tagNextMove) {
+    tagNextMove.textContent = `Trigger: ${t.triggerText || 'Monitoring Level'}`;
   }
 }
 

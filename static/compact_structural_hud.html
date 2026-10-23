@@ -449,11 +449,12 @@
 
         <!-- Floating Tag Box On The Candle -->
         <g id="touchTagGroup" transform="translate(0, 0)">
-          <rect id="touchTagBg" x="0" y="0" width="195" height="58" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
-          <text id="touchTagTitle" x="10" y="16" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
-          <text id="touchTagSub" x="10" y="28" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
-          <text id="touchTagTrigger" x="10" y="41" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#00e676">🚨 TRIGGER: 103% (Threshold Hit)</text>
-          <text id="touchTagVerdict" x="10" y="52" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
+          <rect id="touchTagBg" x="0" y="0" width="225" height="68" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
+          <text id="touchTagTitle" x="10" y="15" font-family="'JetBrains Mono', monospace" font-size="10.5" font-weight="800" fill="#00e676">T16: $4,198.78 (Hit #1)</text>
+          <text id="touchTagSub" x="10" y="27" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="600" fill="#c9d1d9">Effort: 4,250t • Progress: $1.50</text>
+          <text id="touchTagTrigger" x="10" y="39" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#ffb300">⚠️ BIDS 85% CONSUMED (FRAGILE)</text>
+          <text id="touchTagVerdict" x="10" y="51" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="800" fill="#ff334b">⚡ WATERFALL BREAKDOWN PRIMED</text>
+          <text id="touchTagNextMove" x="10" y="62" font-family="'JetBrains Mono', monospace" font-size="7.5" font-weight="600" fill="#00e5ff">Trigger: Below $4,044.70 ➜ $4,025</text>
         </g>
       </g>
     </svg>
@@ -833,16 +834,20 @@
 
       // 5. Floating Tag Card Positioning (Smart Clamping)
       let tagX = x + 20;
-      let tagY = y - 22;
-      if (tagX + 185 > 1010) tagX = x - 195;
+      let tagY = y - 25;
+      if (tagX + 230 > 1010) tagX = x - 240;
       if (tagY < 125) tagY = y + 20;
-      if (tagY + 50 > 560) tagY = 505;
+      if (tagY + 72 > 560) tagY = 485;
 
       const tagG = document.getElementById("touchTagGroup");
       if (tagG) tagG.setAttribute("transform", `translate(${tagX}, ${tagY})`);
 
       const tagBg = document.getElementById("touchTagBg");
-      if (tagBg) tagBg.setAttribute("stroke", color);
+      if (tagBg) {
+        tagBg.setAttribute("width", "230");
+        tagBg.setAttribute("height", "72");
+        tagBg.setAttribute("stroke", color);
+      }
 
       const tagTitle = document.getElementById("touchTagTitle");
       if (tagTitle) {
@@ -856,16 +861,11 @@
       const tagTrigger = document.getElementById("touchTagTrigger");
       if (tagTrigger) {
         const absDelta = Math.abs(delta);
-        const thresh = 3500;
-        const pct = Math.round((absDelta / thresh) * 100);
-        if (absDelta >= thresh) {
-          tagTrigger.textContent = `🚨 TRIGGER: ${pct}% (Reversal Fired)`;
-          tagTrigger.setAttribute("fill", isBull ? "#00e676" : "#ff334b");
-        } else if (pct >= 70) {
-          tagTrigger.textContent = `⚡ APPROACHING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
+        if (absDelta >= 3500) {
+          tagTrigger.textContent = isBull ? "⚠️ BIDS 85% CONSUMED (FRAGILE)" : "⚠️ OFFERS 85% CONSUMED (FRAGILE)";
           tagTrigger.setAttribute("fill", "#ffb300");
         } else {
-          tagTrigger.textContent = `⚡ ACCUMULATING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
+          tagTrigger.textContent = `Wall Wear: ${Math.round((absDelta / 3500) * 100)}% Consumed`;
           tagTrigger.setAttribute("fill", "#00e5ff");
         }
       }
@@ -873,7 +873,12 @@
       const tagVerdict = document.getElementById("touchTagVerdict");
       if (tagVerdict) {
         tagVerdict.textContent = verdict;
-        tagVerdict.setAttribute("fill", Math.abs(delta) >= 3500 ? "#ffb300" : color);
+        tagVerdict.setAttribute("fill", Math.abs(delta) >= 3500 ? "#ff334b" : color);
+      }
+
+      const tagNextMove = document.getElementById("touchTagNextMove");
+      if (tagNextMove) {
+        tagNextMove.textContent = `Trigger: ${Math.abs(delta) >= 3500 ? "Below breakdown shelf ➜ Targets lower liquidity" : "Holds above support"}`;
       }
 
       // 6. AUTO-SCROLL VOLUME BARS HUD TRACK INTO VIEW (Keeps HUD bar centered)
