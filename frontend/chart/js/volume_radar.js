@@ -63,7 +63,12 @@ export function openVolumeRadarHud() {
   hudElement.style.display = 'flex';
   if (triggerBtn) triggerBtn.classList.add('active');
   renderVolumeBars();
-  highlightTouch(activeTouchIndex);
+  if (currentTouches.length > 0) {
+    highlightTouch(Math.min(activeTouchIndex, currentTouches.length - 1));
+  } else {
+    highlightLiveBar();
+    hideChartReticle();
+  }
 }
 
 export function closeVolumeRadarHud() {
@@ -104,6 +109,9 @@ export async function loadStructuralTouches(symbol = 'XAUUSD') {
   renderVolumeBars();
   if (currentTouches.length > 0) {
     highlightTouch(currentTouches.length - 1);
+  } else {
+    highlightLiveBar();
+    hideChartReticle();
   }
 }
 
@@ -120,12 +128,14 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
   }
   if (dataList.length === 0) return [];
 
-  // 1. Gather all line overlays from chart and/or server drawings
-  let overlays = chart ? (chart.getOverlays() || []).filter(ov => 
-    ov.name === 'segment' || ov.name === 'rayLine' || ov.name === 'straightLine' || ov.name === 'horizontalStraightLine'
-  ) : [];
-
-  if (overlays.length === 0) {
+  // 1. Gather all line overlays from chart
+  let overlays = [];
+  if (chart && typeof chart.getOverlays === 'function') {
+    overlays = (chart.getOverlays() || []).filter(ov => 
+      ov.name === 'segment' || ov.name === 'rayLine' || ov.name === 'straightLine' || ov.name === 'horizontalStraightLine'
+    );
+  } else {
+    // Only query server drawings if chart instance is not yet mounted
     try {
       const res = await fetch(`/api/drawings?symbol=${symbol}`);
       const data = await res.json();
@@ -137,9 +147,9 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
     } catch (_) {}
   }
 
-  // If no user lines drawn yet, compute touches from high/low swing structural pivots
+  // If no user lines drawn, return empty touches array (never fabricate fake phantom touches)
   if (overlays.length === 0) {
-    return generateFallbackSwingTouches(dataList);
+    return [];
   }
 
   const touches = [];
@@ -275,65 +285,61 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
   });
 }
 
-function generateFallbackSwingTouches(dataList) {
-  const touches = [];
-  const count = Math.min(30, dataList.length);
-  const startIdx = Math.max(0, dataList.length - count);
-  for (let i = startIdx; i < dataList.length; i++) {
-    const bar = dataList[i];
-    const isBull = bar.close >= bar.open;
-    const vol = Math.max(200, Math.round(bar.volume || 1000));
-    touches.push({
-      num: touches.length + 1,
-      dataIndex: i,
-      timestamp: bar.timestamp,
-      price: isBull ? bar.low : bar.high,
-      line: isBull ? "Ascending Demand Floor" : "Descending Supply Shelf",
-      delta: isBull ? vol : -vol,
-      action: isBull ? "SUPPORT ABSORPTION" : "DISTRIBUTION DUMP"
-    });
-  }
-  return touches;
-}
-
 function renderVolumeBars() {
   const track = document.getElementById('vrBarsTrack');
   if (!track) return;
 
-  track.querySelectorAll('.vr-bar-unit').forEach(el => el.remove());
+  track.querySelectorAll('.vr-bar-unit, .vr-empty-state-msg').forEach(el => el.remove());
 
-  // Render 30 touches
-  currentTouches.forEach((t, idx) => {
-    const unit = document.createElement('div');
-    unit.className = 'vr-bar-unit';
-    unit.id = `vrBarUnit_${idx}`;
-    unit.title = `Touch #${t.num}: ${t.line} ($${t.price})`;
-    unit.onmouseenter = () => highlightTouch(idx);
-    unit.onclick = () => highlightTouch(idx);
+  // Update HUD Header Title to reflect true number of touches
+  const titleEl = document.querySelector('.tv-vr-title span:last-child');
+  if (titleEl) {
+    titleEl.textContent = currentTouches.length > 0 
+      ? `VOLUME CONSUMPTION (${currentTouches.length} TOUCHES + LIVE)`
+      : `VOLUME CONSUMPTION (LIVE SPOT ONLY)`;
+  }
 
-    const delta = t.delta;
-    const isBull = delta >= 0;
-    const absDelta = Math.abs(delta);
-    const barHeight = Math.min(48, Math.max(4, Math.round((absDelta / 4500) * 44)));
-    const crossed = absDelta >= 3500;
+  // If no user lines drawn, show clear clean indicator
+  if (currentTouches.length === 0) {
+    const emptyMsg = document.createElement('div');
+    emptyMsg.className = 'vr-empty-state-msg';
+    emptyMsg.style.cssText = 'color: #8b949e; font-size: 10px; font-family: var(--font-mono, monospace); padding: 0 16px; white-space: nowrap; display: flex; align-items: center; gap: 6px;';
+    emptyMsg.innerHTML = '<span style="color:#00e5ff;">📐</span> <span>NO ACTIVE LINES DRAWN — DRAW A TRENDLINE OR RAY TO TRACK TOUCHES</span>';
+    track.appendChild(emptyMsg);
+  } else {
+    // Render user line touches
+    currentTouches.forEach((t, idx) => {
+      const unit = document.createElement('div');
+      unit.className = 'vr-bar-unit';
+      unit.id = `vrBarUnit_${idx}`;
+      unit.title = `Touch #${t.num}: ${t.line} ($${t.price})`;
+      unit.onmouseenter = () => highlightTouch(idx);
+      unit.onclick = () => highlightTouch(idx);
 
-    const barRect = document.createElement('div');
-    if (isBull) {
-      barRect.className = `vr-bar-bull ${crossed ? 'vr-crossed' : ''}`;
-      barRect.style.height = `${barHeight}px`;
-    } else {
-      barRect.className = `vr-bar-bear ${crossed ? 'vr-crossed' : ''}`;
-      barRect.style.height = `${barHeight}px`;
-    }
-    unit.appendChild(barRect);
+      const delta = t.delta;
+      const isBull = delta >= 0;
+      const absDelta = Math.abs(delta);
+      const barHeight = Math.min(48, Math.max(4, Math.round((absDelta / 4500) * 44)));
+      const crossed = absDelta >= 3500;
 
-    const label = document.createElement('span');
-    label.className = 'vr-bar-label';
-    label.textContent = t.num;
-    unit.appendChild(label);
+      const barRect = document.createElement('div');
+      if (isBull) {
+        barRect.className = `vr-bar-bull ${crossed ? 'vr-crossed' : ''}`;
+        barRect.style.height = `${barHeight}px`;
+      } else {
+        barRect.className = `vr-bar-bear ${crossed ? 'vr-crossed' : ''}`;
+        barRect.style.height = `${barHeight}px`;
+      }
+      unit.appendChild(barRect);
 
-    track.appendChild(unit);
-  });
+      const label = document.createElement('span');
+      label.className = 'vr-bar-label';
+      label.textContent = t.num;
+      unit.appendChild(label);
+
+      track.appendChild(unit);
+    });
+  }
 
   // Render pulsing LIVE bar at end
   const liveUnit = document.createElement('div');
@@ -359,9 +365,9 @@ function renderVolumeBars() {
 
   track.appendChild(liveUnit);
 
-  // Scroll to show apex and live bar
+  // Scroll to show apex or live bar
   const win = document.getElementById('vrBarsWindow');
-  if (win) win.scrollLeft = 240;
+  if (win) win.scrollLeft = currentTouches.length > 0 ? 240 : 0;
 }
 
 function highlightTouch(idx) {
@@ -403,16 +409,27 @@ function highlightLiveBar() {
   const volEl = document.getElementById('vrInspVol');
   const verdictEl = document.getElementById('vrInspVerdict');
 
-  if (numEl) numEl.textContent = '● LIVE BAR';
+  const hasLines = currentTouches.length > 0;
+  if (numEl) numEl.textContent = hasLines ? '● LIVE BAR' : '● LIVE SPOT (0 LINES)';
   if (priceEl) priceEl.textContent = `$${liveSpotPrice.toFixed(2)}`;
-  if (lineEl) lineEl.textContent = 'Live Spot Active Candle ($' + liveSpotPrice.toFixed(2) + ')';
+  if (lineEl) lineEl.textContent = hasLines 
+    ? `Live Spot Active Candle ($${liveSpotPrice.toFixed(2)})` 
+    : 'Live Active Spot (Draw trendline or ray to track touches)';
   if (volEl) {
-    volEl.textContent = `${liveTickVolume.toLocaleString()} ticks`;
-    volEl.style.color = '#ff334b';
+    volEl.textContent = `${liveTickVolume > 0 ? '+' : ''}${liveTickVolume.toLocaleString()} ticks`;
+    volEl.style.color = liveTickVolume >= 0 ? '#00e676' : '#ff334b';
   }
   if (verdictEl) {
-    verdictEl.textContent = 'ACCUMULATING (-1,350t to Bear Reversal Threshold)';
-    verdictEl.style.color = '#ffb300';
+    const thresh = dailyReversalThreshold || 3500;
+    const absVol = Math.abs(liveTickVolume);
+    const rem = Math.max(0, thresh - absVol);
+    if (absVol >= thresh) {
+      verdictEl.textContent = '⚡ REVERSAL THRESHOLD ACTIVE';
+      verdictEl.style.color = '#00e676';
+    } else {
+      verdictEl.textContent = `ACCUMULATING (${rem.toLocaleString()}t to ${liveTickVolume >= 0 ? 'Bull' : 'Bear'} Reversal)`;
+      verdictEl.style.color = '#ffb300';
+    }
   }
 
   const liveObj = {
@@ -420,7 +437,7 @@ function highlightLiveBar() {
     price: liveSpotPrice,
     delta: liveTickVolume,
     line: `Live Spot Active Candle ($${liveSpotPrice.toFixed(2)})`,
-    action: 'ACCUMULATING LIVE AT FLOOR'
+    action: 'ACCUMULATING LIVE AT SPOT'
   };
   updateTriggerIndicator(liveObj);
 
@@ -434,7 +451,11 @@ function highlightLiveBar() {
   liveObj.timestamp = lastBar ? lastBar.timestamp : undefined;
   liveObj.dataIndex = dataList.length > 0 ? (dataList.length - 1) : undefined;
 
-  showChartReticle(liveObj, 30);
+  if (hasLines) {
+    showChartReticle(liveObj, 30);
+  } else {
+    hideChartReticle();
+  }
 }
 
 function updateTriggerIndicator(t) {
