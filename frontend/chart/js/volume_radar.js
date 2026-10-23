@@ -13,6 +13,7 @@ let liveTickVolume = -2150;
 let liveSpotPrice = 4128.14;
 let activeTouchIndex = 15; // Default to Apex (Touch #16)
 let chartInstanceRef = null;
+export let dailyReversalThreshold = 3500;
 
 export function initVolumeRadar(chartInstance = null, symbol = 'XAUUSD') {
   chartInstanceRef = (chartInstance && chartInstance.chart) ? chartInstance.chart : chartInstance;
@@ -93,6 +94,13 @@ export function updateLiveTick(spot, volumeDelta = 0) {
 // DYNAMIC 30 TOUCHES COMPUTATION FROM USER DRAWN LINES & MT5 CANDLES
 export async function loadStructuralTouches(symbol = 'XAUUSD') {
   currentTouches = await computeDynamicLineTouches(chartInstanceRef, symbol);
+
+  // Update Daily Favourable Thresholds Mentions in HUD
+  const bullThreshEl = document.getElementById('vrDailyBullThresh');
+  const bearThreshEl = document.getElementById('vrDailyBearThresh');
+  if (bullThreshEl) bullThreshEl.textContent = `+${dailyReversalThreshold.toLocaleString()}t`;
+  if (bearThreshEl) bearThreshEl.textContent = `-${dailyReversalThreshold.toLocaleString()}t`;
+
   renderVolumeBars();
   if (currentTouches.length > 0) {
     highlightTouch(currentTouches.length - 1);
@@ -379,6 +387,8 @@ function highlightTouch(idx) {
     verdictEl.style.color = Math.abs(t.delta) >= 3500 ? '#ffb300' : (t.delta > 0 ? '#00e676' : '#00e5ff');
   }
 
+  updateTriggerIndicator(t);
+
   document.querySelectorAll('.vr-bar-unit').forEach((b, i) => {
     b.classList.toggle('active', i === idx);
   });
@@ -405,6 +415,15 @@ function highlightLiveBar() {
     verdictEl.style.color = '#ffb300';
   }
 
+  const liveObj = {
+    num: 'LIVE',
+    price: liveSpotPrice,
+    delta: liveTickVolume,
+    line: `Live Spot Active Candle ($${liveSpotPrice.toFixed(2)})`,
+    action: 'ACCUMULATING LIVE AT FLOOR'
+  };
+  updateTriggerIndicator(liveObj);
+
   document.querySelectorAll('.vr-bar-unit').forEach(b => b.classList.remove('active'));
   const liveUnit = document.getElementById('vrBarUnit_live');
   if (liveUnit) liveUnit.classList.add('active');
@@ -412,15 +431,47 @@ function highlightLiveBar() {
   const dataList = chartInstanceRef ? (chartInstanceRef.getDataList() || []) : [];
   const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
 
-  showChartReticle({
-    num: 'LIVE',
-    price: liveSpotPrice,
-    delta: liveTickVolume,
-    line: `Live Spot Active Candle ($${liveSpotPrice.toFixed(2)})`,
-    action: 'ACCUMULATING LIVE AT FLOOR',
-    timestamp: lastBar ? lastBar.timestamp : undefined,
-    dataIndex: dataList.length > 0 ? (dataList.length - 1) : undefined
-  }, 30);
+  liveObj.timestamp = lastBar ? lastBar.timestamp : undefined;
+  liveObj.dataIndex = dataList.length > 0 ? (dataList.length - 1) : undefined;
+
+  showChartReticle(liveObj, 30);
+}
+
+function updateTriggerIndicator(t) {
+  const barFill = document.getElementById('vrIndBarFill');
+  const statusText = document.getElementById('vrIndStatusText');
+  const remText = document.getElementById('vrIndRemText');
+  if (!barFill || !statusText || !remText) return;
+
+  const absDelta = Math.abs(t.delta || 0);
+  const thresh = dailyReversalThreshold || 3500;
+  const pct = Math.min(100, Math.round((absDelta / thresh) * 100));
+  const isTriggered = absDelta >= thresh;
+  const rem = Math.max(0, thresh - absDelta);
+  const isBull = (t.delta || 0) >= 0;
+
+  barFill.style.width = `${pct}%`;
+
+  if (isTriggered) {
+    const excess = absDelta - thresh;
+    barFill.style.background = isBull ? '#00e676' : '#ff334b';
+    statusText.textContent = `🚨 TRIGGER FIRED! (${Math.round((absDelta / thresh) * 100)}%)`;
+    statusText.style.color = isBull ? '#00e676' : '#ff334b';
+    remText.textContent = excess > 0 ? `+${excess.toLocaleString()}t EXCEEDED • REVERSAL ACTIVE` : 'THRESHOLD REACHED • ACTIVE';
+    remText.style.color = '#ffb300';
+  } else if (pct >= 70) {
+    barFill.style.background = '#ffb300';
+    statusText.textContent = `⚡ APPROACHING (${pct}%)`;
+    statusText.style.color = '#ffb300';
+    remText.textContent = `${rem.toLocaleString()}t TO ${isBull ? 'BULL' : 'BEAR'} TRIGGER`;
+    remText.style.color = '#cbd5e1';
+  } else {
+    barFill.style.background = '#00e5ff';
+    statusText.textContent = `⚡ ACCUMULATING (${pct}%)`;
+    statusText.style.color = '#00e5ff';
+    remText.textContent = `${rem.toLocaleString()}t TO TRIGGER (${thresh.toLocaleString()}t)`;
+    remText.style.color = '#8b949e';
+  }
 }
 
 function showChartReticle(t, idx) {
@@ -568,6 +619,23 @@ function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
   if (tagSub) {
     const tipLabel = t.tipType === 'TOP_WICK_TIP' ? ' (High Wick Tip)' : (t.tipType === 'LOW_WICK_TIP' ? ' (Low Wick Tip)' : '');
     tagSub.textContent = `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()}t${tipLabel}`;
+  }
+
+  const tagTrigger = document.getElementById('tvVrTagTrigger');
+  if (tagTrigger) {
+    const absDelta = Math.abs(t.delta || 0);
+    const thresh = dailyReversalThreshold || 3500;
+    const pct = Math.round((absDelta / thresh) * 100);
+    if (absDelta >= thresh) {
+      tagTrigger.textContent = `🚨 TRIGGER: ${pct}% (Reversal Fired)`;
+      tagTrigger.setAttribute('fill', isBull ? '#00e676' : '#ff334b');
+    } else if (pct >= 70) {
+      tagTrigger.textContent = `⚡ APPROACHING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
+      tagTrigger.setAttribute('fill', '#ffb300');
+    } else {
+      tagTrigger.textContent = `⚡ ACCUMULATING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
+      tagTrigger.setAttribute('fill', '#00e5ff');
+    }
   }
 
   const tagVerdict = document.getElementById('tvVrTagVerdict');

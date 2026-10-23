@@ -271,6 +271,24 @@
           <button id="tvVolumeRadarCloseBtn" class="tv-vr-close-btn" title="Close">✕</button>
         </div>
 
+        <!-- Daily Favourable Reversal Thresholds Banner -->
+        <div class="tv-vr-thresholds-bar">
+          <div class="vr-thresh-chip vr-chip-bull" title="Day's Favourable Bull Reversal Threshold">
+            <span class="vr-chip-dot bull"></span>
+            <span class="vr-chip-label">BULL REVERSAL:</span>
+            <span class="vr-chip-val" id="vrDailyBullThresh">+3,500t</span>
+          </div>
+          <div class="vr-thresh-chip vr-chip-eq" title="Bilateral Zero-Delta Baseline">
+            <span class="vr-chip-label">EQUILIBRIUM:</span>
+            <span class="vr-chip-val">0t</span>
+          </div>
+          <div class="vr-thresh-chip vr-chip-bear" title="Day's Favourable Bear Reversal Threshold">
+            <span class="vr-chip-dot bear"></span>
+            <span class="vr-chip-label">BEAR REVERSAL:</span>
+            <span class="vr-chip-val" id="vrDailyBearThresh">-3,500t</span>
+          </div>
+        </div>
+
         <div class="tv-vr-inspector">
           <div style="display: flex; justify-content: space-between; align-items: baseline;">
             <span id="vrInspTouchNum" class="tv-vr-badge">TOUCH #16 / 30</span>
@@ -282,6 +300,16 @@
           <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
             <div>Vol Consumed: <strong id="vrInspVol" style="color: #00e676;">+4,250 ticks</strong></div>
             <div id="vrInspVerdict" style="color: #ffb300; font-weight: 700;">⚡ BULL EXHAUSTION (REVERSAL!)</div>
+          </div>
+          <!-- Compact Proximity / Trigger Indicator (Small) -->
+          <div class="tv-vr-trigger-indicator" id="vrTriggerIndicator">
+            <div class="tv-vr-ind-bar-track">
+              <div class="tv-vr-ind-bar-fill" id="vrIndBarFill" style="width: 100%; background: #00e676;"></div>
+            </div>
+            <div class="tv-vr-ind-text-row">
+              <span id="vrIndStatusText" class="tv-vr-ind-status">🚨 TRIGGER FIRED! (103%)</span>
+              <span id="vrIndRemText" class="tv-vr-ind-rem">+93t EXCEEDED • REVERSAL ACTIVE</span>
+            </div>
           </div>
         </div>
 
@@ -345,10 +373,11 @@
 
             <!-- Floating Tag Box On The Candle -->
             <g id="tvVrTagGroup" transform="translate(0, 0)">
-              <rect id="tvVrTagBg" x="0" y="0" width="185" height="46" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
-              <text id="tvVrTagTitle" x="10" y="17" font-family="'JetBrains Mono', monospace, sans-serif" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
-              <text id="tvVrTagSub" x="10" y="29" font-family="'JetBrains Mono', monospace, sans-serif" font-size="9.5" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
-              <text id="tvVrTagVerdict" x="10" y="41" font-family="'JetBrains Mono', monospace, sans-serif" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
+              <rect id="tvVrTagBg" x="0" y="0" width="195" height="58" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
+              <text id="tvVrTagTitle" x="10" y="16" font-family="'JetBrains Mono', monospace, sans-serif" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
+              <text id="tvVrTagSub" x="10" y="28" font-family="'JetBrains Mono', monospace, sans-serif" font-size="9" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
+              <text id="tvVrTagTrigger" x="10" y="41" font-family="'JetBrains Mono', monospace, sans-serif" font-size="8.5" font-weight="700" fill="#00e676">🚨 TRIGGER: 103% (Threshold Hit)</text>
+              <text id="tvVrTagVerdict" x="10" y="52" font-family="'JetBrains Mono', monospace, sans-serif" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
             </g>
           </g>
         </svg>

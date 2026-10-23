@@ -3199,6 +3199,85 @@ input[type="number"] {
 }
 .tv-vr-close-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
 
+/* Daily Favourable Thresholds Chips Bar */
+.tv-vr-thresholds-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-family: var(--font-mono, monospace);
+  font-size: 9.5px;
+}
+.vr-thresh-chip {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.vr-chip-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.vr-chip-dot.bull { background: #00e676; box-shadow: 0 0 6px #00e676; }
+.vr-chip-dot.bear { background: #ff334b; box-shadow: 0 0 6px #ff334b; }
+.vr-chip-label {
+  color: #8b949e;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  font-size: 8.5px;
+}
+.vr-chip-val {
+  font-weight: 800;
+  font-size: 10px;
+}
+.vr-chip-bull .vr-chip-val { color: #00e676; }
+.vr-chip-eq .vr-chip-val { color: #a855f7; }
+.vr-chip-bear .vr-chip-val { color: #ff334b; }
+
+/* Compact Trigger & Approaching Value Indicator */
+.tv-vr-trigger-indicator {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 5px;
+  padding: 4px 7px;
+  margin-top: 3px;
+}
+.tv-vr-ind-bar-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.tv-vr-ind-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.25s, background-color 0.25s, box-shadow 0.25s;
+}
+.tv-vr-ind-text-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 8.5px;
+  font-family: var(--font-mono, monospace);
+}
+.tv-vr-ind-status {
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+.tv-vr-ind-rem {
+  color: #8b949e;
+  font-weight: 600;
+}
+
 .tv-vr-inspector {
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid rgba(255, 255, 255, 0.08);

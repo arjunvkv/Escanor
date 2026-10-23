@@ -218,6 +218,69 @@
       border-top: 1px solid rgba(255, 255, 255, 0.05);
     }
 
+    /* DAILY REVERSAL THRESHOLDS BANNER */
+    .thresholds-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 4px 8px;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 6px;
+    }
+    .thresh-chip {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+    }
+    .thresh-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+    .thresh-dot.bull { background: var(--bull); box-shadow: 0 0 6px var(--bull); }
+    .thresh-dot.bear { background: var(--bear); box-shadow: 0 0 6px var(--bear); }
+    .thresh-label { color: var(--text-muted); font-weight: 700; font-size: 8.5px; }
+    .thresh-val { font-weight: 800; font-size: 10px; }
+    .chip-bull .thresh-val { color: var(--bull); }
+    .chip-eq .thresh-val { color: var(--eq); }
+    .chip-bear .thresh-val { color: var(--bear); }
+
+    /* COMPACT TRIGGER & APPROACHING INDICATOR */
+    .trigger-indicator {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 5px;
+      padding: 4px 7px;
+      margin-top: 3px;
+    }
+    .ind-bar-track {
+      width: 100%; height: 4px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+    .ind-bar-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.25s, background-color 0.25s;
+    }
+    .ind-text-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 8.5px;
+      font-family: var(--font-mono);
+    }
+    .ind-status { font-weight: 800; letter-spacing: 0.2px; }
+    .ind-rem { color: var(--text-muted); font-weight: 600; }
+
     /* THE VOLUME BARS STRIP (30 TOUCHES + PULSING LIVE BAR AT END) */
     .volume-strip-container {
       background: rgba(0, 0, 0, 0.55);
@@ -386,10 +449,11 @@
 
         <!-- Floating Tag Box On The Candle -->
         <g id="touchTagGroup" transform="translate(0, 0)">
-          <rect id="touchTagBg" x="0" y="0" width="175" height="44" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
-          <text id="touchTagTitle" x="10" y="17" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
-          <text id="touchTagSub" x="10" y="29" font-family="'JetBrains Mono', monospace" font-size="9.5" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
-          <text id="touchTagVerdict" x="10" y="39" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
+          <rect id="touchTagBg" x="0" y="0" width="195" height="58" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
+          <text id="touchTagTitle" x="10" y="16" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
+          <text id="touchTagSub" x="10" y="28" font-family="'JetBrains Mono', monospace" font-size="9" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
+          <text id="touchTagTrigger" x="10" y="41" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#00e676">🚨 TRIGGER: 103% (Threshold Hit)</text>
+          <text id="touchTagVerdict" x="10" y="52" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
         </g>
       </g>
     </svg>
@@ -410,6 +474,24 @@
         <button class="hud-close-btn" onclick="toggleHud()">✕</button>
       </div>
 
+      <!-- Daily Favourable Reversal Thresholds Banner -->
+      <div class="thresholds-bar">
+        <div class="thresh-chip chip-bull" title="Day's Favourable Bull Reversal Threshold">
+          <span class="thresh-dot bull"></span>
+          <span class="thresh-label">BULL REVERSAL:</span>
+          <span class="thresh-val" id="dailyBullThresh">+3,500t</span>
+        </div>
+        <div class="thresh-chip chip-eq" title="Bilateral Zero-Delta Baseline">
+          <span class="thresh-label">EQUILIBRIUM:</span>
+          <span class="thresh-val">0t</span>
+        </div>
+        <div class="thresh-chip chip-bear" title="Day's Favourable Bear Reversal Threshold">
+          <span class="thresh-dot bear"></span>
+          <span class="thresh-label">BEAR REVERSAL:</span>
+          <span class="thresh-val" id="dailyBearThresh">-3,500t</span>
+        </div>
+      </div>
+
       <!-- TOUCH EVENT DETAIL INSPECTOR -->
       <div class="touch-inspector-card">
         <div class="inspector-top-row">
@@ -420,6 +502,16 @@
         <div class="inspector-verdict-row">
           <div>Vol Consumed: <strong id="inspVol" style="color: var(--bull);">+4,250 ticks</strong></div>
           <div id="inspVerdict" style="color: var(--amber); font-weight: 700;">⚡ BULL EXHAUSTION (REVERSAL!)</div>
+        </div>
+        <!-- Compact Proximity / Trigger Indicator (Small) -->
+        <div class="trigger-indicator" id="triggerIndicator">
+          <div class="ind-bar-track">
+            <div class="ind-bar-fill" id="indBarFill" style="width: 100%; background: #00e676;"></div>
+          </div>
+          <div class="ind-text-row">
+            <span id="indStatusText" class="ind-status">🚨 TRIGGER FIRED! (103%)</span>
+            <span id="indRemText" class="ind-rem">+93t EXCEEDED • REVERSAL ACTIVE</span>
+          </div>
         </div>
       </div>
 
@@ -599,6 +691,8 @@
       inspVerdict.textContent = t.action;
       inspVerdict.style.color = Math.abs(t.delta) >= 3500 ? "var(--amber)" : (t.delta > 0 ? "var(--bull)" : "var(--cyan)");
 
+      updateTriggerIndicator(t.delta, t.delta >= 0);
+
       document.querySelectorAll(".vol-bar-unit").forEach((b, i) => {
         b.classList.toggle("active", i === idx);
       });
@@ -630,6 +724,8 @@
       inspVerdict.textContent = "ACCUMULATING (-1,350 ticks to Bear Reversal Threshold)";
       inspVerdict.style.color = "#ffb300";
 
+      updateTriggerIndicator(liveBarData.delta, false);
+
       document.querySelectorAll(".vol-bar-unit").forEach(b => b.classList.remove("active"));
       document.getElementById("barUnit_live").classList.add("active");
 
@@ -642,6 +738,42 @@
         `Vol: ${liveBarData.delta.toLocaleString()} ticks`, 
         "ACCUMULATING LIVE AT FLOOR"
       );
+    }
+
+    function updateTriggerIndicator(delta, isBull) {
+      const barFill = document.getElementById("indBarFill");
+      const statusText = document.getElementById("indStatusText");
+      const remText = document.getElementById("indRemText");
+      if (!barFill || !statusText || !remText) return;
+
+      const absDelta = Math.abs(delta);
+      const thresh = 3500;
+      const pct = Math.min(100, Math.round((absDelta / thresh) * 100));
+      const isTriggered = absDelta >= thresh;
+      const rem = Math.max(0, thresh - absDelta);
+
+      barFill.style.width = `${pct}%`;
+
+      if (isTriggered) {
+        const excess = absDelta - thresh;
+        barFill.style.background = isBull ? "#00e676" : "#ff334b";
+        statusText.textContent = `🚨 TRIGGER FIRED! (${Math.round((absDelta / thresh) * 100)}%)`;
+        statusText.style.color = isBull ? "#00e676" : "#ff334b";
+        remText.textContent = excess > 0 ? `+${excess.toLocaleString()}t EXCEEDED • REVERSAL ACTIVE` : "THRESHOLD REACHED • ACTIVE";
+        remText.style.color = "#ffb300";
+      } else if (pct >= 70) {
+        barFill.style.background = "#ffb300";
+        statusText.textContent = `⚡ APPROACHING (${pct}%)`;
+        statusText.style.color = "#ffb300";
+        remText.textContent = `${rem.toLocaleString()}t TO ${isBull ? 'BULL' : 'BEAR'} TRIGGER`;
+        remText.style.color = "#cbd5e1";
+      } else {
+        barFill.style.background = "#00e5ff";
+        statusText.textContent = `⚡ ACCUMULATING (${pct}%)`;
+        statusText.style.color = "#00e5ff";
+        remText.textContent = `${rem.toLocaleString()}t TO TRIGGER (${thresh.toLocaleString()}t)`;
+        remText.style.color = "#8b949e";
+      }
     }
 
     function showReticle(x, y, line_y, delta, title, sub, verdict) {
@@ -720,6 +852,23 @@
 
       const tagSub = document.getElementById("touchTagSub");
       if (tagSub) tagSub.textContent = sub;
+
+      const tagTrigger = document.getElementById("touchTagTrigger");
+      if (tagTrigger) {
+        const absDelta = Math.abs(delta);
+        const thresh = 3500;
+        const pct = Math.round((absDelta / thresh) * 100);
+        if (absDelta >= thresh) {
+          tagTrigger.textContent = `🚨 TRIGGER: ${pct}% (Reversal Fired)`;
+          tagTrigger.setAttribute("fill", isBull ? "#00e676" : "#ff334b");
+        } else if (pct >= 70) {
+          tagTrigger.textContent = `⚡ APPROACHING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
+          tagTrigger.setAttribute("fill", "#ffb300");
+        } else {
+          tagTrigger.textContent = `⚡ ACCUMULATING: ${pct}% (${(thresh - absDelta).toLocaleString()}t left)`;
+          tagTrigger.setAttribute("fill", "#00e5ff");
+        }
+      }
 
       const tagVerdict = document.getElementById("touchTagVerdict");
       if (tagVerdict) {
