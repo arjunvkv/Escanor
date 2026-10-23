@@ -187,10 +187,10 @@ export function buildThermo({ metricKey, title, unit, pct, fillColor, bipolar,
 
 export function renderMobileThermometers(tel) {
   const container = document.getElementById('thermoColumnsContainer');
-  if (!container) return;
+  if (!container || !tel || !tel.tape) return;
 
-  const tape = (tel && tel.tape) || {};
-  const silver = (tel && tel.silver) || {};
+  const tape = tel.tape || {};
+  const silver = tel.silver || {};
 
   // Accumulate & format Live Story Numbers across all 5 gauges
   const story = updateGaugeStoryNumbers(tel) || {};

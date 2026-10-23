@@ -16,6 +16,7 @@ except ImportError:
     mt5 = None
 
 logger = logging.getLogger("escanor.mt5")
+GENERIC_MT5_PATH = r"C:\Program Files\MetaTrader 5\terminal64.exe"
 FTMO_PATH = r"C:\Program Files\FTMO Global Markets MT5 Terminal\terminal64.exe"
 
 TIMEFRAME_MAP = {
@@ -36,10 +37,6 @@ def init_mt5(timeout: int = 5000) -> bool:
         return False
 
     try:
-        t_info = mt5.terminal_info()
-        if t_info is not None and getattr(t_info, "connected", False):
-            return True
-
         creds_path = os.path.join(os.path.dirname(__file__), "mt5_credentials.json")
         creds = {}
         if os.path.exists(creds_path):
@@ -49,9 +46,38 @@ def init_mt5(timeout: int = 5000) -> bool:
             except Exception:
                 pass
 
+        expected_login = creds.get("login")
+        t_info = mt5.terminal_info()
+        acc = mt5.account_info() if t_info else None
+        if t_info is not None and getattr(t_info, "connected", False):
+            if expected_login is None or (acc is not None and acc.login == expected_login):
+                return True
+
+        # First try attaching directly to the currently running terminal
+        ok = mt5.initialize(timeout=timeout)
+        if ok:
+            acc = mt5.account_info()
+            if expected_login is None or (acc is not None and acc.login == expected_login):
+                return True
+            # Switch to expected login on active terminal
+            if expected_login and creds.get("password") and creds.get("server"):
+                log_ok = mt5.login(creds["login"], password=creds["password"], server=creds["server"])
+                if log_ok:
+                    return True
+
+        # If not already attached to the target account, configure path & login
+        preferred_path = None
+        server_str = str(creds.get("server", "")).lower()
+        if "ftmo" in server_str and os.path.exists(FTMO_PATH):
+            preferred_path = FTMO_PATH
+        elif os.path.exists(GENERIC_MT5_PATH):
+            preferred_path = GENERIC_MT5_PATH
+        elif os.path.exists(FTMO_PATH):
+            preferred_path = FTMO_PATH
+
         kwargs: Dict[str, Any] = {"timeout": timeout}
-        if os.path.exists(FTMO_PATH):
-            kwargs["path"] = FTMO_PATH
+        if preferred_path:
+            kwargs["path"] = preferred_path
         if creds.get("login"):
             kwargs["login"] = creds["login"]
         if creds.get("password"):

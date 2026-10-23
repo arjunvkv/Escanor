@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escanor — Dynamic Rice Refill Range Engine (XAUUSD)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #090c10;
+      --card-bg: rgba(18, 22, 31, 0.88);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text: #e6edf3;
+      --text-muted: #8b949e;
+      --bull: #00e676;
+      --bear: #ff5252;
+      --amber: #ffb300;
+      --cyan: #00e5ff;
+      --purple: #d500f9;
+      --accent: #2979ff;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-sans: 'Inter', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: rgba(13, 17, 23, 0.96);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(12px);
+    }
+
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, #00e5ff, #2979ff);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 16px; color: #fff;
+    }
+    .brand-title { font-size: 15px; font-weight: 700; letter-spacing: 0.5px; color: #fff; }
+    .brand-subtitle { font-size: 11px; color: var(--text-muted); font-family: var(--font-mono); }
+
+    .top-stats { display: flex; gap: 16px; align-items: center; }
+    .stat-pill {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      padding: 6px 14px;
+      border-radius: 8px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .stat-label {
+      font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px;
+      color: var(--text-muted); font-family: var(--font-mono);
+    }
+    .stat-val { font-size: 12.5px; font-weight: 600; font-family: var(--font-mono); }
+
+    /* WORKSPACE */
+    .workspace {
+      display: grid;
+      grid-template-columns: 1fr 410px;
+      gap: 16px;
+      padding: 16px 24px;
+      flex: 1;
+      max-width: 1780px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* CHART STAGE */
+    .chart-panel {
+      background: #0d1117;
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .chart-toolbar {
+      padding: 10px 16px;
+      background: rgba(22, 27, 34, 0.7);
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .toolbar-left { display: flex; align-items: center; gap: 8px; }
+
+    .btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.12); }
+    .btn.active {
+      background: rgba(0, 229, 255, 0.15);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+    .btn-play {
+      background: linear-gradient(135deg, #00c853, #009624);
+      color: #fff;
+      border: none;
+      font-weight: 600;
+    }
+
+    /* VIEWPORT */
+    .chart-viewport {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1024 / 576;
+      background: #080a0e;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .chart-img {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      object-fit: fill;
+      pointer-events: none;
+      filter: contrast(1.05) brightness(0.98);
+    }
+
+    .overlay-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 10;
+    }
+
+    /* REFILL RANGE VISUALS */
+    .refill-band {
+      transition: opacity 0.3s ease;
+      cursor: pointer;
+    }
+    .refill-band:hover rect.band-fill {
+      fill-opacity: 0.25 !important;
+    }
+    .band-line {
+      stroke-dasharray: 4 4;
+      stroke-width: 1.2;
+    }
+    .band-label {
+      font-family: var(--font-mono);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    /* MARKING RETICLES & BADGES */
+    .reticle-ring {
+      fill: none;
+      stroke-width: 1.2;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .reticle-crosshair { stroke-width: 1; pointer-events: none; }
+    .leader-line {
+      stroke-width: 1.2;
+      stroke-dasharray: 3 3;
+      pointer-events: none;
+    }
+    .badge-group {
+      cursor: pointer;
+      transition: transform 0.2s ease;
+    }
+    .badge-bg {
+      rx: 6; ry: 6;
+      stroke-width: 1;
+      backdrop-filter: blur(8px);
+    }
+    .badge-title { font-family: var(--font-mono); font-size: 11px; font-weight: 700; }
+    .badge-sub { font-family: var(--font-mono); font-size: 9.5px; fill: #8b949e; }
+
+    /* SIDEBAR */
+    .sidebar { display: flex; flex-direction: column; gap: 14px; }
+    .side-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .card-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* GAUGE & DUAL METER */
+    .dual-gauge-wrap {
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .tank-meter-bar {
+      height: 14px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 5px;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      position: relative;
+    }
+    .tank-fill-bull {
+      height: 100%;
+      background: linear-gradient(90deg, #ff5252, #ffb300, #00e676);
+      transition: width 0.5s ease;
+    }
+    .tank-fill-bear {
+      height: 100%;
+      background: linear-gradient(90deg, #2979ff, #d500f9, #ff1744);
+      transition: width 0.5s ease;
+    }
+
+    .refill-range-pill {
+      background: rgba(0, 229, 255, 0.08);
+      border: 1px solid rgba(0, 229, 255, 0.3);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+    }
+    .detail-row .k { color: var(--text-muted); }
+    .detail-row .v { font-weight: 600; color: #fff; }
+
+    /* FORMULA & UPCOMING ACTION LINE TESTER */
+    .tester-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .range-selector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .range-btn {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 6px 8px;
+      border-radius: 6px;
+      font-size: 10.5px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      text-align: left;
+    }
+    .range-btn.active {
+      border-color: var(--cyan);
+      background: rgba(0, 229, 255, 0.12);
+      color: var(--cyan);
+    }
+
+    /* TABLE */
+    .table-section {
+      grid-column: 1 / -1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+    }
+    .audit-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      margin-top: 10px;
+    }
+    .audit-table th {
+      text-align: left;
+      padding: 8px 10px;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      font-size: 10px;
+      text-transform: uppercase;
+    }
+    .audit-table td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+    .audit-table tr:hover td { background: rgba(255, 255, 255, 0.03); }
+
+    .tag-respect { color: var(--bull); font-weight: 600; }
+    .tag-slice { color: var(--bear); font-weight: 600; }
+    .tag-apex { color: var(--amber); font-weight: 600; }
+    .tag-refill { color: var(--cyan); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">🌾</div>
+      <div>
+        <div class="brand-title">DYNAMIC RICE REFILL RANGE (RECHARGE POCKET) ENGINE</div>
+        <div class="brand-subtitle">Kinetic Capacity Mapping &bull; Multi-Line Reaction Calculator &bull; XAUUSD</div>
+      </div>
+    </div>
+
+    <div class="top-stats">
+      <div class="stat-pill">
+        <span class="stat-label">Active Refill Range</span>
+        <span class="stat-val" style="color: var(--cyan);" id="statActiveRange">$4,124.00 – $4,136.00</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-label">Recharge Status</span>
+        <span class="stat-val" style="color: var(--bull);" id="statRecharge">REFILLING FRESH (85%)</span>
+      </div>
+      <div class="stat-pill">
+        <span class="stat-label">Upcoming Action Line</span>
+        <span class="stat-val" style="color: var(--amber);" id="statNextLine">$4,148.50 Median</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN WORKSPACE -->
+  <div class="workspace">
+
+    <!-- CHART VIEWPORT -->
+    <div class="chart-panel">
+      <div class="chart-toolbar">
+        <div class="toolbar-left">
+          <button class="btn btn-play" id="btnPlay" onclick="togglePlay()">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+            Walkthrough (P1 &rarr; P9)
+          </button>
+          <button class="btn active" id="btnToggleRefill" onclick="toggleRefillBands()">
+            🌾 Refill Ranges (ON)
+          </button>
+          <button class="btn active" id="btnTogglePoints" onclick="togglePoints()">
+            Points &amp; Reticles (ON)
+          </button>
+          <button class="btn" onclick="selectPoint(0)">Reset View</button>
+        </div>
+        <div style="font-family: var(--font-mono); font-size: 11px; color: var(--text-muted);">
+          Bands show where rice gets <span style="color: var(--cyan); font-weight: 700;">REFILLED</span> before upcoming lines are hit
+        </div>
+      </div>
+
+      <!-- VIEWPORT WITH USER IMAGE & SVG -->
+      <div class="chart-viewport" id="viewport">
+        <img src="chart_sample.png" alt="XAUUSD User Drawing Chart" class="chart-img">
+
+        <svg viewBox="0 0 1024 576" class="overlay-svg" id="overlaySvg">
+          <defs>
+            <filter id="badgeShadow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity="0.85"/>
+            </filter>
+            <!-- Pattern for refill range shading -->
+            <pattern id="cyanStripe" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(0, 229, 255, 0.15)" stroke-width="2"/>
+            </pattern>
+            <pattern id="purpleStripe" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <line x1="0" y1="0" x2="0" y2="8" stroke="rgba(213, 0, 249, 0.15)" stroke-width="2"/>
+            </pattern>
+          </defs>
+
+          <!-- Group 1: The Mapped Refill Ranges (Recharge Bands) -->
+          <g id="refillBandsGroup"></g>
+
+          <!-- Group 2: The Action Points & Reticles -->
+          <g id="pointsGroup"></g>
+        </svg>
+      </div>
+    </div>
+
+    <!-- RIGHT AUDIT SIDEBAR -->
+    <div class="sidebar">
+
+      <!-- ACTIVE REFILL RANGE AUDIT CARD -->
+      <div class="side-card">
+        <div class="card-title">
+          <span>🌾 Active Refill Range (Recharge Pocket)</span>
+          <span id="activeRangeTag" style="color: var(--cyan); font-weight: 700;">RANGE #3 (ACTIVE)</span>
+        </div>
+
+        <div class="refill-range-pill">
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Price Pocket:</span>
+            <strong style="color: #fff;" id="bandPriceSpan">$4,124.00 – $4,136.00</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Band Width:</span>
+            <span style="color: var(--cyan);" id="bandWidthSpan">12.0 Gold Points</span>
+          </div>
+          <div style="display: flex; justify-content: space-between;">
+            <span style="color: var(--text-muted);">Rice Injected:</span>
+            <span style="color: var(--bull); font-weight: 700;" id="bandFuelInjected">+54.0 pts (Full Refill)</span>
+          </div>
+        </div>
+
+        <!-- DUAL TANK GAUGES -->
+        <div class="dual-gauge-wrap">
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono);">
+            <span style="color: var(--bull);">🐂 Bull Kinetic Energy</span>
+            <span id="bullFuelVal" style="font-weight: 700; color: #fff;">45.9 / 54.0 pt</span>
+          </div>
+          <div class="tank-meter-bar">
+            <div class="tank-fill-bull" id="bullFillBar" style="width: 85%;"></div>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; font-size: 11px; font-family: var(--font-mono); margin-top: 4px;">
+            <span style="color: var(--bear);">🐻 Bear Downward Capacity</span>
+            <span id="bearFuelVal" style="font-weight: 700; color: #fff;">8.1 / 54.0 pt</span>
+          </div>
+          <div class="tank-meter-bar">
+            <div class="tank-fill-bear" id="bearFillBar" style="width: 15%;"></div>
+          </div>
+        </div>
+
+        <div style="font-size: 11.5px; line-height: 1.45; color: #c9d1d9;">
+          <strong>Why Refill Ranges Matter:</strong> Inside a downtrend, price does not drop forever. When price enters the Refill Pocket, volume absorption refuels the rice bag <strong>before</strong> it goes negative. For Day 2, the pocket shifted from $4,180 down to <strong>$4,124–$4,136</strong>!
+        </div>
+      </div>
+
+      <!-- UPCOMING ACTION LINE KINETIC TESTER -->
+      <div class="side-card">
+        <div class="card-title">
+          <span>⚡ Upcoming Action Line Reaction Test</span>
+          <span style="color: var(--amber);">LIVE PROJECTION</span>
+        </div>
+
+        <div class="tester-card">
+          <div class="detail-row">
+            <span class="k">Upcoming Action Line:</span>
+            <span class="v" style="color: var(--amber);">$4,148.50 (Median Fan Ray)</span>
+          </div>
+          <div class="detail-row">
+            <span class="k">Distance from Refill Base:</span>
+            <span class="v">+12.50 pts (from $4,136 top)</span>
+          </div>
+          <div class="detail-row">
+            <span class="k">Rice Consumed to Reach:</span>
+            <span class="v">12.50 pts (23% of refilled bag)</span>
+          </div>
+          <div class="detail-row">
+            <span class="k">Rice Remaining at Touch:</span>
+            <span class="v" style="color: var(--bull); font-weight: 700;">41.50 pts (77% FULL)</span>
+          </div>
+          <div class="detail-row">
+            <span class="k">Line Holding / Reaction:</span>
+            <span class="v" style="color: var(--bull); font-weight: 700;">81.4% (WILL REACT / REJECT)</span>
+          </div>
+
+          <div style="background: rgba(0, 230, 118, 0.08); border-left: 3px solid var(--bull); padding: 8px 10px; font-size: 11px; line-height: 1.45; color: #e6edf3; border-radius: 0 4px 4px 0; margin-top: 4px;">
+            <strong>Test Verdict:</strong> Because price recharged in the $4,124–$4,136 Refill Pocket, it has ample fuel (41.5 pts) upon hitting the $4,148.50 line. The line <strong>WILL NOT SLICE</strong>; it will strongly react!
+          </div>
+        </div>
+
+        <!-- RANGE SELECTION BUTTONS -->
+        <div style="font-size: 10.5px; color: var(--text-muted); font-family: var(--font-mono); text-transform: uppercase;">Inspect Mapped Refill Ranges:</div>
+        <div class="range-selector-grid">
+          <button class="range-btn" id="btnR1" onclick="selectRange(0)">
+            <strong>Range #1 (Day 1 Base)</strong><br>
+            $4,136.50 – $4,148.00
+          </button>
+          <button class="range-btn" id="btnR2" onclick="selectRange(1)">
+            <strong>Range #2 (Bear Reload)</strong><br>
+            $4,180.00 – $4,189.00
+          </button>
+          <button class="range-btn active" id="btnR3" onclick="selectRange(2)">
+            <strong>Range #3 (Day 2 Live)</strong><br>
+            $4,124.00 – $4,136.00
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TABLE SECTION -->
+    <div class="table-section">
+      <div class="card-title">
+        <span>📋 Structural Timeline — Points &amp; Refill Range Mappings</span>
+        <span style="font-size: 11px; color: var(--text-muted);">Real MT5 Data &bull; Refill Injection Points &bull; Action Lines</span>
+      </div>
+
+      <table class="audit-table">
+        <thead>
+          <tr>
+            <th>Event / Point</th>
+            <th>Type</th>
+            <th>MT5 Price</th>
+            <th>Active Refill Pocket</th>
+            <th>Rice Injected / Spent</th>
+            <th>Remaining Rice</th>
+            <th>React Prob</th>
+            <th>Slice Risk</th>
+            <th>Physical Action</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <script>
+    // 1. REFILL RANGES (THE MAPPED RECHARGE POCKETS ACROSS SESSIONS)
+    // Formula: y(price) = 145.0 + (4200.0 - price) * 5.757
+    const refillRanges = [
+      {
+        id: "R1",
+        name: "Range #1: Day 1 Bull Launch Base",
+        session: "Oct 16 Session Base",
+        pLow: 4136.50,
+        pHigh: 4148.00,
+        yLow: 510.5,
+        yHigh: 444.3,
+        xStart: 160,
+        xEnd: 340,
+        color: "#00e5ff",
+        stripe: "url(#cyanStripe)",
+        fuelAdded: 54.0,
+        desc: "Initial Bull Launch Base. Market consolidated here, packing 54.0 points of rice into the Bull Bag before the massive ascent to 4198."
+      },
+      {
+        id: "R2",
+        name: "Range #2: Bear Redistribution Refill Pocket",
+        session: "Oct 19 Asian/London Pocket",
+        pLow: 4180.00,
+        pHigh: 4189.00,
+        yLow: 260.1,
+        yHigh: 208.3,
+        xStart: 490,
+        xEnd: 570,
+        color: "#d500f9",
+        stripe: "url(#purpleStripe)",
+        fuelAdded: 48.0,
+        desc: "Bearish Redistribution Pocket. When Bull bag ran out at 4198, price paused here and REFILLED the Bear Bag with 48 pts of downward kinetic punch before smashing the floor."
+      },
+      {
+        id: "R3",
+        name: "Range #3: Day 2 Live Absorption Base",
+        session: "Oct 19 NY Close / Oct 20 Live",
+        pLow: 4124.00,
+        pHigh: 4136.00,
+        yLow: 570.0,
+        yHigh: 513.4,
+        xStart: 720,
+        xEnd: 960,
+        color: "#00e676",
+        stripe: "url(#cyanStripe)",
+        fuelAdded: 54.0,
+        desc: "Day 2 Live Refill Base. Following the waterfall drop, the Bear bag went empty at 4128. Price is currently packing a fresh 54.0 pt bag for the upcoming cycle."
+      }
+    ];
+
+    // 2. THE ACTION POINTS
+    const pointsData = [
+      {
+        id: "P1",
+        coord: [196, 504],
+        badgePos: [150, 420],
+        price: 4137.64,
+        name: "Base Anchor Low",
+        type: "Support Origin",
+        refillRef: "Range #1",
+        riceSpent: "+54.0 pt (Refill)",
+        fuel_rem: 54.0,
+        fuel_pct: 100,
+        p_react: 86.4,
+        p_slice: 13.6,
+        action: "REFILL & BOUNCE",
+        actionType: "refill"
+      },
+      {
+        id: "P2",
+        coord: [296, 362],
+        badgePos: [230, 290],
+        price: 4162.31,
+        name: "Median Ray Ascent",
+        type: "Ceiling Test",
+        refillRef: "Range #1",
+        riceSpent: "-24.7 pt",
+        fuel_rem: 29.3,
+        fuel_pct: 54,
+        p_react: 71.8,
+        p_slice: 28.2,
+        action: "RESPECT (Ceiling Rejection)",
+        actionType: "respect"
+      },
+      {
+        id: "P3",
+        coord: [320, 430],
+        badgePos: [330, 470],
+        price: 4150.50,
+        name: "Primary Base Bounce",
+        type: "Floor Retest",
+        refillRef: "Range #1 Edge",
+        riceSpent: "+5.2 pt (Recharge)",
+        fuel_rem: 34.5,
+        fuel_pct: 64,
+        p_react: 78.5,
+        p_slice: 21.5,
+        action: "RESPECT (Trampoline Launch)",
+        actionType: "respect"
+      },
+      {
+        id: "P4",
+        coord: [395, 205],
+        badgePos: [320, 140],
+        price: 4189.58,
+        name: "Upper Corridor Test",
+        type: "Wedge Upper Line",
+        refillRef: "Exhausted R1",
+        riceSpent: "-24.3 pt",
+        fuel_rem: 10.2,
+        fuel_pct: 19,
+        p_react: 48.0,
+        p_slice: 52.0,
+        action: "PINCH & STALL",
+        actionType: "apex"
+      },
+      {
+        id: "P5",
+        coord: [446, 152],
+        badgePos: [430, 85],
+        price: 4198.78,
+        name: "Wedge Apex Climax",
+        type: "Terminal Climax",
+        refillRef: "Zero Refill Available",
+        riceSpent: "-9.0 pt",
+        fuel_rem: 1.2,
+        fuel_pct: 2,
+        p_react: 12.4,
+        p_slice: 87.6,
+        action: "EXHAUSTION (Bull Bag Dead)",
+        actionType: "apex"
+      },
+      {
+        id: "P6",
+        coord: [488, 324],
+        badgePos: [470, 360],
+        price: 4168.91,
+        name: "Internal Ray Slice",
+        type: "Median Ray Floor",
+        refillRef: "Pre-Refill Zone",
+        riceSpent: "Bears Active",
+        fuel_rem: 0.0,
+        fuel_pct: 0,
+        p_react: 16.2,
+        p_slice: 83.8,
+        action: "SLICE THROUGH",
+        actionType: "slice"
+      },
+      {
+        id: "P7",
+        coord: [524, 216],
+        badgePos: [540, 150],
+        price: 4187.67,
+        name: "Bear Reload Pocket",
+        type: "Distribution Retest",
+        refillRef: "Range #2 (Active)",
+        riceSpent: "+48.0 pt (Bear Refill)",
+        fuel_rem: 48.0, // Bear fuel!
+        fuel_pct: 89,
+        p_react: 80.5,
+        p_slice: 19.5,
+        action: "BEAR REFILL & DUMP",
+        actionType: "refill"
+      },
+      {
+        id: "P8",
+        coord: [632, 388],
+        badgePos: [650, 330],
+        price: 4157.79,
+        name: "Master Floor Rupture",
+        type: "Primary Baseline",
+        refillRef: "Range #2 Exhaustion",
+        riceSpent: "-29.9 pt (Bear Dump)",
+        fuel_rem: 0.0, // Bull fuel is 0
+        fuel_pct: 0,
+        p_react: 11.8,
+        p_slice: 88.2,
+        action: "CATASTROPHIC RUPTURE",
+        actionType: "slice"
+      },
+      {
+        id: "P9",
+        coord: [920, 559],
+        badgePos: [770, 480],
+        price: 4128.09,
+        name: "Target Refill Low",
+        type: "New Day Base",
+        refillRef: "Range #3 (Active)",
+        riceSpent: "+54.0 pt (Day 2 Refill)",
+        fuel_rem: 45.9,
+        fuel_pct: 85,
+        p_react: 82.5,
+        p_slice: 17.5,
+        action: "DAY 2 REFILL & ABSORPTION",
+        actionType: "refill"
+      }
+    ];
+
+    let activeRangeIdx = 2; // Default to Live Range #3
+    let showRefillBands = true;
+    let showPoints = true;
+    let isPlaying = false;
+    let playTimer = null;
+    let activePointIdx = 0;
+
+    // RENDER REFILL RANGES (SHADED CORRIDORS WITH LUMINOUS BORDERS)
+    function renderRefillBands() {
+      const g = document.getElementById("refillBandsGroup");
+      g.innerHTML = "";
+      if (!showRefillBands) return;
+
+      refillRanges.forEach((r, idx) => {
+        const isSelected = (idx === activeRangeIdx);
+        const bandG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        bandG.setAttribute("class", "refill-band");
+        bandG.onclick = () => selectRange(idx);
+
+        const height = Math.abs(r.yLow - r.yHigh);
+        const width = r.xEnd - r.xStart;
+
+        // Shaded rectangle
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", r.xStart);
+        rect.setAttribute("y", r.yHigh);
+        rect.setAttribute("width", width);
+        rect.setAttribute("height", height);
+        rect.setAttribute("class", "band-fill");
+        rect.setAttribute("fill", r.stripe);
+        rect.setAttribute("fill-opacity", isSelected ? "0.35" : "0.15");
+        bandG.appendChild(rect);
+
+        // Top ceiling border line
+        const lineTop = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        lineTop.setAttribute("x1", r.xStart); lineTop.setAttribute("y1", r.yHigh);
+        lineTop.setAttribute("x2", r.xEnd); lineTop.setAttribute("y2", r.yHigh);
+        lineTop.setAttribute("class", "band-line");
+        lineTop.setAttribute("stroke", r.color);
+        lineTop.setAttribute("stroke-width", isSelected ? "1.8" : "1.0");
+        bandG.appendChild(lineTop);
+
+        // Bottom floor border line
+        const lineBot = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        lineBot.setAttribute("x1", r.xStart); lineBot.setAttribute("y1", r.yLow);
+        lineBot.setAttribute("x2", r.xEnd); lineBot.setAttribute("y2", r.yLow);
+        lineBot.setAttribute("class", "band-line");
+        lineBot.setAttribute("stroke", r.color);
+        lineBot.setAttribute("stroke-width", isSelected ? "1.8" : "1.0");
+        bandG.appendChild(lineBot);
+
+        // Text tag inside the band
+        const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        txt.setAttribute("x", r.xStart + 10);
+        txt.setAttribute("y", r.yHigh + 16);
+        txt.setAttribute("class", "band-label");
+        txt.setAttribute("fill", r.color);
+        txt.textContent = `${r.id}: $${r.pLow.toFixed(0)}-$${r.pHigh.toFixed(0)} (${r.fuelAdded}pt REFILL)`;
+        bandG.appendChild(txt);
+
+        g.appendChild(bandG);
+      });
+    }
+
+    // RENDER POINTS & RETICLES
+    function renderPoints() {
+      const g = document.getElementById("pointsGroup");
+      g.innerHTML = "";
+      if (!showPoints) return;
+
+      pointsData.forEach((p, idx) => {
+        const [cx, cy] = p.coord;
+        const [bx, by] = p.badgePos;
+        const isActive = (idx === activePointIdx);
+
+        let colHex = "#00e676";
+        if (p.actionType === "slice") colHex = "#ff5252";
+        if (p.actionType === "apex") colHex = "#ffb300";
+        if (p.actionType === "refill") colHex = "#00e5ff";
+
+        // Leader line
+        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        line.setAttribute("x1", cx); line.setAttribute("y1", cy);
+        line.setAttribute("x2", bx + 65); line.setAttribute("y2", by + 20);
+        line.setAttribute("class", "leader-line");
+        line.setAttribute("stroke", isActive ? colHex : "rgba(255,255,255,0.3)");
+        line.setAttribute("stroke-width", isActive ? "1.8" : "1.0");
+        g.appendChild(line);
+
+        // Reticle (Hollow ring + crosshair)
+        const reticleG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        reticleG.setAttribute("class", "badge-group");
+        reticleG.onclick = () => selectPoint(idx);
+
+        const th = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        th.setAttribute("x1", cx - 7); th.setAttribute("y1", cy);
+        th.setAttribute("x2", cx + 7); th.setAttribute("y2", cy);
+        th.setAttribute("class", "reticle-crosshair");
+        th.setAttribute("stroke", colHex);
+        reticleG.appendChild(th);
+
+        const tv = document.createElementNS("http://www.w3.org/2000/svg", "line");
+        tv.setAttribute("x1", cx); tv.setAttribute("y1", cy - 7);
+        tv.setAttribute("x2", cx); tv.setAttribute("y2", cy + 7);
+        tv.setAttribute("class", "reticle-crosshair");
+        tv.setAttribute("stroke", colHex);
+        reticleG.appendChild(tv);
+
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", cx); circle.setAttribute("cy", cy);
+        circle.setAttribute("r", isActive ? "7" : "5.5");
+        circle.setAttribute("class", "reticle-ring");
+        circle.setAttribute("stroke", colHex);
+        reticleG.appendChild(circle);
+        g.appendChild(reticleG);
+
+        // Badge Box
+        const badgeG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        badgeG.setAttribute("class", "badge-group");
+        badgeG.setAttribute("transform", `translate(${bx}, ${by})`);
+        badgeG.onclick = () => selectPoint(idx);
+
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("width", "135"); rect.setAttribute("height", "42");
+        rect.setAttribute("class", "badge-bg");
+        rect.setAttribute("fill", isActive ? "rgba(18, 24, 38, 0.95)" : "rgba(10, 14, 22, 0.88)");
+        rect.setAttribute("stroke", isActive ? colHex : "rgba(255, 255, 255, 0.15)");
+        rect.setAttribute("filter", "url(#badgeShadow)");
+        badgeG.appendChild(rect);
+
+        const titleText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        titleText.setAttribute("x", "8"); titleText.setAttribute("y", "15");
+        titleText.setAttribute("class", "badge-title");
+        titleText.setAttribute("fill", colHex);
+        titleText.textContent = `${p.id}: $${p.price.toFixed(2)}`;
+        badgeG.appendChild(titleText);
+
+        const subText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        subText.setAttribute("x", "8"); subText.setAttribute("y", "27");
+        subText.setAttribute("class", "badge-sub");
+        subText.textContent = `🌾 ${p.refillRef}`;
+        badgeG.appendChild(subText);
+
+        const statText = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        statText.setAttribute("x", "8"); statText.setAttribute("y", "38");
+        statText.setAttribute("class", "badge-sub");
+        statText.setAttribute("fill", colHex);
+        statText.textContent = `⚡ Hold Prob: ${p.p_react.toFixed(0)}%`;
+        badgeG.appendChild(statText);
+
+        g.appendChild(badgeG);
+      });
+    }
+
+    // SELECT REFILL RANGE
+    function selectRange(idx) {
+      activeRangeIdx = idx;
+      const r = refillRanges[idx];
+
+      document.getElementById("activeRangeTag").textContent = `${r.id} (${idx === 2 ? 'DAY 2 LIVE' : 'HISTORICAL'})`;
+      document.getElementById("bandPriceSpan").textContent = `$${r.pLow.toFixed(2)} – $${r.pHigh.toFixed(2)}`;
+      document.getElementById("bandWidthSpan").textContent = `${(r.pHigh - r.pLow).toFixed(1)} Gold Points`;
+      document.getElementById("bandFuelInjected").textContent = `+${r.fuelAdded.toFixed(1)} pts (${idx === 1 ? 'Bear Fuel' : 'Bull Fuel'})`;
+
+      // Update Top Bar Stat
+      document.getElementById("statActiveRange").textContent = `$${r.pLow.toFixed(0)} – $${r.pHigh.toFixed(0)}`;
+
+      // Update button highlights
+      document.querySelectorAll(".range-btn").forEach((btn, i) => {
+        btn.classList.toggle("active", i === idx);
+      });
+
+      renderRefillBands();
+    }
+
+    // SELECT POINT
+    function selectPoint(idx) {
+      activePointIdx = idx;
+      const p = pointsData[idx];
+
+      // Update Dual Tanks
+      const bullBar = document.getElementById("bullFillBar");
+      const bearBar = document.getElementById("bearFillBar");
+      const bullVal = document.getElementById("bullFuelVal");
+      const bearVal = document.getElementById("bearFuelVal");
+
+      let bullPct = p.fuel_pct;
+      let bearPct = 100 - p.fuel_pct;
+      if (p.actionType === "slice" || p.id === "P7" || p.id === "P8") {
+        bearPct = 85; bullPct = 15;
+      }
+      bullBar.style.width = `${bullPct}%`;
+      bearBar.style.width = `${bearPct}%`;
+      bullVal.textContent = `${(bullPct * 0.54).toFixed(1)} / 54.0 pt`;
+      bearVal.textContent = `${(bearPct * 0.54).toFixed(1)} / 54.0 pt`;
+
+      // Highlight table row
+      document.querySelectorAll("#tableBody tr").forEach((tr, i) => {
+        tr.style.background = (i === idx) ? "rgba(0, 229, 255, 0.12)" : "";
+      });
+
+      renderPoints();
+    }
+
+    // RENDER TABLE
+    function renderTable() {
+      const tbody = document.getElementById("tableBody");
+      tbody.innerHTML = "";
+
+      pointsData.forEach((p, idx) => {
+        const tr = document.createElement("tr");
+        tr.onclick = () => selectPoint(idx);
+
+        let actionClass = "tag-respect";
+        if (p.actionType === "slice") actionClass = "tag-slice";
+        if (p.actionType === "apex") actionClass = "tag-apex";
+        if (p.actionType === "refill") actionClass = "tag-refill";
+
+        tr.innerHTML = `
+          <td style="font-weight: 700; color: #fff;">${p.id}</td>
+          <td>${p.name}</td>
+          <td style="color: var(--cyan); font-weight: 600;">$${p.price.toFixed(2)}</td>
+          <td><span style="color: var(--cyan);">${p.refillRef}</span></td>
+          <td>${p.riceSpent}</td>
+          <td><strong>${p.fuel_rem.toFixed(1)} pt</strong> (${p.fuel_pct}%)</td>
+          <td style="color: var(--bull); font-weight: 600;">${p.p_react.toFixed(1)}%</td>
+          <td style="color: var(--bear); font-weight: 600;">${p.p_slice.toFixed(1)}%</td>
+          <td class="${actionClass}">${p.action}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    // TOGGLES
+    function toggleRefillBands() {
+      showRefillBands = !showRefillBands;
+      const btn = document.getElementById("btnToggleRefill");
+      btn.classList.toggle("active", showRefillBands);
+      btn.textContent = `🌾 Refill Ranges (${showRefillBands ? 'ON' : 'OFF'})`;
+      renderRefillBands();
+    }
+
+    function togglePoints() {
+      showPoints = !showPoints;
+      const btn = document.getElementById("btnTogglePoints");
+      btn.classList.toggle("active", showPoints);
+      btn.textContent = `Points & Reticles (${showPoints ? 'ON' : 'OFF'})`;
+      renderPoints();
+    }
+
+    function togglePlay() {
+      const btn = document.getElementById("btnPlay");
+      if (isPlaying) {
+        clearInterval(playTimer);
+        isPlaying = false;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg> Walkthrough (P1 &rarr; P9)`;
+      } else {
+        isPlaying = true;
+        btn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg> Pause Walkthrough`;
+        playTimer = setInterval(() => {
+          let next = (activePointIdx + 1) % pointsData.length;
+          selectPoint(next);
+        }, 2200);
+      }
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      renderRefillBands();
+      renderPoints();
+      renderTable();
+      selectRange(2);
+      selectPoint(0);
+    });
+  </script>
+</body>
+</html>

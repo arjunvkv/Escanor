@@ -19,12 +19,18 @@ import { renderMobileThermometers } from './thermometers.js';
 import { updateGaugeStoryNumbers } from './thermo_story_engine.js';
 import { renderWindowHighLows } from './snake_engine.js';
 import { updateQuickLotBadge, renderLeadLagModalContent, refreshActiveMetricModal } from './modals.js';
-import { initGaugeAlarms, evaluateGaugeAlarms } from './gauge_alarms.js';
 
 let lastTelemetryData = null;
 let activeClosingTickets = new Set();
 let macroHeadlineTickerIndex = 0;
 let wsConn = null;
+
+// Ensure mobile gauge alarms are wiped and deactivated
+try {
+  localStorage.removeItem('escanor_gauge_alarms_v1');
+  localStorage.setItem('escanor_gauge_alarms_v1', '[]');
+  window.__allAlarmsDeactivated = true;
+} catch (_e) {}
 
 // Global session checker
 function getISTMinutesNow() {
@@ -605,6 +611,10 @@ window.renderActiveTradesUI = renderActiveTradesUI;
 
 export function updateMobileUI(tel) {
   if (!tel) return;
+  // Guard: Reject TICK packets, error frames, or incomplete payloads so values never flicker to 0
+  if (tel.type === 'TICK' || tel.status === 'ERROR' || (!tel.tape && !tel.spot && !tel.tf_4_posture && !tel.account)) {
+    return;
+  }
   lastTelemetryData = tel;
   window.__lastTelemetry = tel;
 
@@ -780,7 +790,6 @@ export function updateMobileUI(tel) {
     }
     renderMobileThermometers(tel);
   } catch (e) { console.error('[Escanor] Thermo render error:', e); }
-  try { evaluateGaugeAlarms(tel); } catch (e) { console.error('[Escanor] Gauge alarms error:', e); }
 
   // 8. Peak/Trough Monitor
   try { renderWindowHighLows(tel); } catch (e) { console.error('[Escanor] Peak/Trough render error:', e); }
@@ -831,7 +840,68 @@ function connectWebSocket() {
     wsConn.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data);
-        updateMobileUI(data);
+        if (!data) return;
+
+        // ⚡ 1. ULTRA-FAST 15ms TICK STREAM:
+        // Update live spot prices & spread in sticky header instantly without wiping gauges/stories!
+        if (data.type === 'TICK') {
+          const bid = Number(data.bid);
+          const ask = Number(data.ask);
+          if (bid && !isNaN(bid)) {
+            const spreadPts = Math.round((ask - bid) * 100);
+            const elSellPrice = document.getElementById('topSellPrice');
+            const elBuyPrice = document.getElementById('topBuyPrice');
+            const elSpotPrice = document.getElementById('topSpotPrice');
+            const elSpread = document.getElementById('topSpreadPts');
+
+            if (elSellPrice) elSellPrice.textContent = `$${bid.toFixed(2)}`;
+            if (elBuyPrice) elBuyPrice.textContent = `$${ask.toFixed(2)}`;
+            if (elSpotPrice) elSpotPrice.textContent = `$${bid.toFixed(2)}`;
+            if (elSpread) elSpread.textContent = `${spreadPts} pt`;
+
+            if (lastTelemetryData) {
+              if (!lastTelemetryData.spot) lastTelemetryData.spot = {};
+              lastTelemetryData.spot.bid = bid;
+              lastTelemetryData.spot.ask = ask;
+              lastTelemetryData.spot.spread_pts = spreadPts;
+              lastTelemetryData.bid = bid;
+              lastTelemetryData.ask = ask;
+              lastTelemetryData.spread_pts = spreadPts;
+            }
+          }
+          return; // NEVER PASS TICK PACKET TO updateMobileUI!
+        }
+
+        // 2. Global alarms deactivation
+        if (data.type === 'DEACTIVATE_ALL_ALARMS') {
+          console.log('[Escanor Mobile] Global alarms deactivated across all devices');
+          window.__allAlarmsDeactivated = true;
+          try {
+            localStorage.removeItem('escanor_gauge_alarms_v1');
+            localStorage.setItem('escanor_gauge_alarms_v1', '[]');
+          } catch (_e) {}
+          if (Array.isArray(window.__alarms)) window.__alarms = [];
+          return;
+        }
+
+        // 3. Trade deactivations or results
+        if (data.type === 'DEACTIVATE_TRADE_DRAWINGS' || data.type === 'TRADE_EXECUTION_RESULT') {
+          return;
+        }
+
+        // 4. Breakeven alerts
+        if (data.type === 'BREAKEVEN_TRIGGERED') {
+          const isTrap = Boolean(data.is_trap);
+          const pipsText = data.offset_pips !== undefined ? `${data.offset_pips}p` : (isTrap ? '0.3p' : '0.2 pip');
+          const label = isTrap ? `Trap Auto-Breakeven (+${pipsText})` : `Breakeven (+${pipsText})`;
+          showTerminalToast(`🛡️ ${label} Activated! #${data.ticket} SL moved to $${Number(data.sl).toFixed(2)}`, 'success');
+          return;
+        }
+
+        // 5. Full Telemetry Snapshot Payload
+        if (data.tape || data.spot || data.tf_4_posture || data.status === 'OK' || data.is_live !== undefined) {
+          updateMobileUI(data);
+        }
       } catch (err) {
         console.error('[Escanor WS] JSON parse error:', err);
       }
@@ -884,7 +954,6 @@ function boot() {
   try { fetchTelemetrySnapshot(); } catch (e) { console.warn('[Escanor] Initial snapshot error:', e); }
   try { updateQuickLotBadge(); } catch (e) {}
   try { updateGlobalSessionsUI(); } catch (e) {}
-  try { initGaugeAlarms(); } catch (e) { console.warn('[Escanor] Alarm init warning:', e); }
   try { setInterval(updateGlobalSessionsUI, 1000); } catch (e) {}
   try { setInterval(tickActiveTradeTimers, 1000); } catch (e) {}
   // Periodic fallback heartbeat: if WS is not open, fetch via HTTP every 2.5s

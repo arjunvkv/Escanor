@@ -29,13 +29,34 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
       // Filter out temporary measure boxes, structural levels, session timeline, or system markers
       const userDrawings = allOverlays
         .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_'))
-        .map(ov => ({
-          id: ov.id,
-          name: ov.name,
-          points: ov.points,
-          styles: ov.styles,
-          extendData: ov.extendData || {}
-        }));
+        .map(ov => {
+          // Strictly clean points: NEVER persist volatile in-memory dataIndex to server!
+          // Points must be cleanly anchored by real timestamp and price value only.
+          let cleanPoints = (ov.points || []).map(p => {
+            const pt = { value: p.value };
+            if (typeof p.timestamp === 'number' && !isNaN(p.timestamp) && p.timestamp > 0) {
+              pt.timestamp = p.timestamp;
+            } else if (typeof p.dataIndex === 'number' && chart._chartStore) {
+              const ts = chart._chartStore.dataIndexToTimestamp(p.dataIndex);
+              if (typeof ts === 'number' && !isNaN(ts) && ts > 0) {
+                pt.timestamp = ts;
+              }
+            }
+            return pt;
+          });
+
+          if (ov.name === 'rect') {
+            cleanPoints = normalizeRectPoints(cleanPoints);
+          }
+
+          return {
+            id: ov.id,
+            name: ov.name,
+            points: cleanPoints,
+            styles: ov.styles,
+            extendData: ov.extendData || {}
+          };
+        });
 
       const res = await fetch('/api/drawings', {
         method: 'POST',
@@ -58,148 +79,156 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
   }
 }
 
-export function expandRectPointsToSix(points) {
-  if (!points || points.length !== 2) return points;
-  const p0 = points[0];
-  const p1 = points[1];
-  if (!p0 || !p1) return points;
-  const pLeft = (p0.timestamp < p1.timestamp || (p0.timestamp === p1.timestamp && (p0.dataIndex || 0) <= (p1.dataIndex || 0))) ? p0 : p1;
-  const pRight = (pLeft === p0) ? p1 : p0;
-  const vTop = Math.max(p0.value, p1.value);
-  const vBottom = Math.min(p0.value, p1.value);
-  const vMid = (vTop + vBottom) / 2;
+export function normalizeRectPoints(points) {
+  if (!points || !Array.isArray(points) || points.length < 2) return points;
+  const validPoints = points.filter(p => p && typeof p.value === 'number' && !isNaN(p.value));
+  if (validPoints.length < 2) return points;
+
+  const timestamps = validPoints.map(p => p.timestamp).filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
+  const values = validPoints.map(p => p.value);
+
+  let leftTime, rightTime;
+  if (timestamps.length >= 2) {
+    leftTime = Math.min(...timestamps);
+    rightTime = Math.max(...timestamps);
+  } else {
+    leftTime = validPoints[0].timestamp || Date.now();
+    rightTime = validPoints[1].timestamp || (leftTime + 3600000);
+  }
+  if (leftTime === rightTime) {
+    rightTime = leftTime + 5 * 60 * 1000;
+  }
+
+  const topVal = Math.max(...values);
+  const bottomVal = Math.min(...values);
+  const midVal = (topVal + bottomVal) / 2;
+
+  const p0 = points[0] || {};
+  const p1 = points[1] || {};
+
   return [
-    { timestamp: pLeft.timestamp, dataIndex: pLeft.dataIndex, value: vTop },       // 0: Top-Left (TL)
-    { timestamp: pRight.timestamp, dataIndex: pRight.dataIndex, value: vTop },     // 1: Top-Right (TR)
-    { timestamp: pRight.timestamp, dataIndex: pRight.dataIndex, value: vBottom },   // 2: Bottom-Right (BR)
-    { timestamp: pLeft.timestamp, dataIndex: pLeft.dataIndex, value: vBottom },     // 3: Bottom-Left (BL)
-    { timestamp: pLeft.timestamp, dataIndex: pLeft.dataIndex, value: vMid },       // 4: Middle-Left (ML)
-    { timestamp: pRight.timestamp, dataIndex: pRight.dataIndex, value: vMid }      // 5: Middle-Right (MR)
+    { timestamp: leftTime, value: topVal, dataIndex: p0.dataIndex },       // 0: Top-Left (TL)
+    { timestamp: rightTime, value: topVal, dataIndex: p1.dataIndex },      // 1: Top-Right (TR)
+    { timestamp: rightTime, value: bottomVal, dataIndex: p1.dataIndex },    // 2: Bottom-Right (BR)
+    { timestamp: leftTime, value: bottomVal, dataIndex: p0.dataIndex },     // 3: Bottom-Left (BL)
+    { timestamp: leftTime, value: midVal, dataIndex: p0.dataIndex },        // 4: Middle-Left (ML)
+    { timestamp: rightTime, value: midVal, dataIndex: p1.dataIndex }       // 5: Middle-Right (MR)
   ];
 }
 
-export function handleRectPressedMove(points, performPointIndex) {
+export function expandRectPointsToSix(points) {
+  return normalizeRectPoints(points);
+}
+
+export function handleRectPressedMove(points, performPointIndex, dataList, tfMins) {
   if (!points || points.length !== 6) return;
+  if (performPointIndex < 0 || performPointIndex > 5) return;
 
-  // Point 0: Top-Left (TL)
-  if (performPointIndex === 0) {
-    const curTop = points[0].value;
-    const curLeftTime = points[0].timestamp;
-    const curLeftIdx = points[0].dataIndex;
-    const curBottom = points[2].value;
+  const pt = points[performPointIndex];
+  if (!pt) return;
 
-    points[1].value = curTop;
-    points[3].timestamp = curLeftTime;
-    points[3].dataIndex = curLeftIdx;
-
-    const midVal = (curTop + curBottom) / 2;
-    points[4].timestamp = curLeftTime;
-    points[4].dataIndex = curLeftIdx;
-    points[4].value = midVal;
-    points[5].value = midVal;
+  // 1. Keep timestamp and dataIndex in lockstep for the actively dragged point
+  if (Array.isArray(dataList) && dataList.length > 0) {
+    const lastIdx = dataList.length - 1;
+    const lastBar = dataList[lastIdx];
+    const barMs = (tfMins || 5) * 60 * 1000;
+    if (typeof pt.dataIndex === 'number') {
+      if (pt.dataIndex > lastIdx) {
+        pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+      } else if (pt.dataIndex >= 0 && dataList[pt.dataIndex]) {
+        pt.timestamp = dataList[pt.dataIndex].timestamp;
+      }
+    }
   }
-  // Point 1: Top-Right (TR)
-  else if (performPointIndex === 1) {
-    const curTop = points[1].value;
-    const curRightTime = points[1].timestamp;
-    const curRightIdx = points[1].dataIndex;
-    const curBottom = points[2].value;
 
-    points[0].value = curTop;
-    points[2].timestamp = curRightTime;
-    points[2].dataIndex = curRightIdx;
+  // 2. Lock edges:
+  // Points layout:
+  // 0: Top-Left (TL)     1: Top-Right (TR)
+  // 4: Mid-Left (ML)     5: Mid-Right (MR)
+  // 3: Bottom-Left (BL)  2: Bottom-Right (BR)
 
-    const midVal = (curTop + curBottom) / 2;
-    points[5].timestamp = curRightTime;
-    points[5].dataIndex = curRightIdx;
-    points[5].value = midVal;
-    points[4].value = midVal;
+  // A. Left edge moved: Handles 0, 3, 4
+  if (performPointIndex === 0 || performPointIndex === 3 || performPointIndex === 4) {
+    const leftTime = pt.timestamp;
+    const leftIdx = pt.dataIndex;
+    points[0].timestamp = leftTime;
+    points[0].dataIndex = leftIdx;
+    points[3].timestamp = leftTime;
+    points[3].dataIndex = leftIdx;
+    points[4].timestamp = leftTime;
+    points[4].dataIndex = leftIdx;
   }
-  // Point 2: Bottom-Right (BR)
-  else if (performPointIndex === 2) {
-    const curBottom = points[2].value;
-    const curRightTime = points[2].timestamp;
-    const curRightIdx = points[2].dataIndex;
-    const curTop = points[0].value;
 
-    points[1].timestamp = curRightTime;
-    points[1].dataIndex = curRightIdx;
-    points[3].value = curBottom;
-
-    const midVal = (curTop + curBottom) / 2;
-    points[5].timestamp = curRightTime;
-    points[5].dataIndex = curRightIdx;
-    points[5].value = midVal;
-    points[4].value = midVal;
+  // B. Right edge moved: Handles 1, 2, 5
+  if (performPointIndex === 1 || performPointIndex === 2 || performPointIndex === 5) {
+    const rightTime = pt.timestamp;
+    const rightIdx = pt.dataIndex;
+    points[1].timestamp = rightTime;
+    points[1].dataIndex = rightIdx;
+    points[2].timestamp = rightTime;
+    points[2].dataIndex = rightIdx;
+    points[5].timestamp = rightTime;
+    points[5].dataIndex = rightIdx;
   }
-  // Point 3: Bottom-Left (BL)
-  else if (performPointIndex === 3) {
-    const curBottom = points[3].value;
-    const curLeftTime = points[3].timestamp;
-    const curLeftIdx = points[3].dataIndex;
-    const curTop = points[0].value;
 
-    points[0].timestamp = curLeftTime;
-    points[0].dataIndex = curLeftIdx;
-    points[2].value = curBottom;
-
-    const midVal = (curTop + curBottom) / 2;
-    points[4].timestamp = curLeftTime;
-    points[4].dataIndex = curLeftIdx;
-    points[4].value = midVal;
-    points[5].value = midVal;
+  // C. Top edge moved: Handles 0, 1
+  if (performPointIndex === 0 || performPointIndex === 1) {
+    const topVal = pt.value;
+    points[0].value = topVal;
+    points[1].value = topVal;
   }
-  // Point 4: Middle-Left (ML) -> drag left or right to extend/contract width
-  else if (performPointIndex === 4) {
-    const newLeftTime = points[4].timestamp;
-    const newLeftIdx = points[4].dataIndex;
 
-    points[0].timestamp = newLeftTime;
-    points[0].dataIndex = newLeftIdx;
-    points[3].timestamp = newLeftTime;
-    points[3].dataIndex = newLeftIdx;
-
-    // Lock vertical price to middle of top and bottom
-    const midVal = (points[0].value + points[3].value) / 2;
-    points[4].value = midVal;
+  // D. Bottom edge moved: Handles 2, 3
+  if (performPointIndex === 2 || performPointIndex === 3) {
+    const bottomVal = pt.value;
+    points[2].value = bottomVal;
+    points[3].value = bottomVal;
   }
-  // Point 5: Middle-Right (MR) -> drag left or right to extend/contract width
-  else if (performPointIndex === 5) {
-    const newRightTime = points[5].timestamp;
-    const newRightIdx = points[5].dataIndex;
 
-    points[1].timestamp = newRightTime;
-    points[1].dataIndex = newRightIdx;
-    points[2].timestamp = newRightTime;
-    points[2].dataIndex = newRightIdx;
-
-    // Lock vertical price to middle of top and bottom
-    const midVal = (points[1].value + points[2].value) / 2;
-    points[5].value = midVal;
-  }
+  // E. Mid handles vertical lock:
+  const currentTop = points[0].value;
+  const currentBottom = points[2].value;
+  const midVal = (currentTop + currentBottom) / 2;
+  points[4].value = midVal;
+  points[5].value = midVal;
 }
 
 export function restoreDrawings(chart, drawingsList) {
   if (!chart || !Array.isArray(drawingsList)) return;
-  drawingsList.forEach(d => {
-    try {
-      const isLine = ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'].includes(d.name);
-      const zLvl = d.zLevel !== undefined ? d.zLevel : (isLine ? 50 : (d.name === 'rect' ? 10 : 20));
-      const points = (d.name === 'rect' && d.points && d.points.length === 2)
-        ? expandRectPointsToSix(d.points)
-        : d.points;
-      chart.createOverlay({
-        id: d.id,
-        name: d.name,
-        points: points,
-        styles: d.styles,
-        zLevel: zLvl,
-        extendData: d.extendData || {}
-      });
-    } catch (e) {
-      console.warn(`[Escanor Drawings] Could not restore overlay ${d.name}:`, e);
-    }
-  });
+  window.__isRestoringDrawings = true;
+  try {
+    drawingsList.forEach(d => {
+      try {
+        const isLine = ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'].includes(d.name);
+        const zLvl = d.zLevel !== undefined ? d.zLevel : (isLine ? 50 : (d.name === 'rect' ? 10 : 20));
+        const rawPoints = (d.name === 'rect' && d.points)
+          ? normalizeRectPoints(d.points)
+          : d.points;
+
+        // Strip any stale or volatile dataIndex so KLineChart strictly anchors by exact timestamp & price
+        const points = (rawPoints || []).map(p => {
+          const pt = { value: p.value };
+          if (typeof p.timestamp === 'number' && !isNaN(p.timestamp) && p.timestamp > 0) {
+            pt.timestamp = p.timestamp;
+          }
+          return pt;
+        });
+
+        chart.createOverlay({
+          id: d.id,
+          name: d.name,
+          points: points,
+          styles: d.styles,
+          zLevel: zLvl,
+          extendData: d.extendData || {}
+        });
+      } catch (e) {
+        console.warn(`[Escanor Drawings] Could not restore overlay ${d.name}:`, e);
+      }
+    });
+  } finally {
+    window.__isRestoringDrawings = false;
+  }
 }
 
 export function showChartToast(msg) {
