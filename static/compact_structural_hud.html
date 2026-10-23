@@ -371,19 +371,14 @@
 
     <!-- DYNAMIC SVG LAYER (HIGHLIGHTS TOUCHES ON BAR HOVER) -->
     <svg viewBox="0 0 1024 576" class="overlay-svg" id="chartOverlay">
-      <!-- Highlighted Touch Reticle -->
+      <!-- Highlighted Touch Point Radar Marker (Clean Solid Dot + Beacon Halo, NO Vertical Line) -->
       <g id="touchHighlightGroup" style="display: none;">
-        <!-- Full-span Crosshair Beams -->
-        <line id="touchBeamH" x1="0" y1="0" x2="1024" y2="0" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
-        <line id="touchBeamV" x1="0" y1="0" x2="0" y2="576" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+        <!-- Pulsing Outer Beacon Halo -->
+        <circle id="touchDotHalo" cx="0" cy="0" r="16" fill="none" stroke="#00e676" stroke-width="1.8" stroke-dasharray="3 3" opacity="0.6"/>
 
-        <!-- Concentric Reticle Rings -->
-        <circle id="touchCircleOuter" cx="0" cy="0" r="22" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="4 4"/>
-        <circle id="touchCircleInner" cx="0" cy="0" r="8" fill="rgba(0, 230, 118, 0.35)" stroke="#00e676" stroke-width="2"/>
-
-        <!-- Reticle Crosshair Ticks -->
-        <line id="touchLineH" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2"/>
-        <line id="touchLineV" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2"/>
+        <!-- High-Visibility Solid Core Radar Dot -->
+        <circle id="touchDotCore" cx="0" cy="0" r="7" fill="#00e676" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 0 8px #00e676);"/>
+        <circle id="touchDotJewel" cx="0" cy="0" r="2.5" fill="#ffffff"/>
 
         <!-- Floating Tag Box On The Candle -->
         <g id="touchTagGroup" transform="translate(0, 0)">
@@ -460,38 +455,38 @@
   <script>
     let hudOpen = true;
 
-    // 30 HISTORICAL TOUCHES DERIVED FROM REAL MT5 VOLUME DATA
+    // 30 HISTORICAL TOUCHES DERIVED FROM REAL MT5 VOLUME DATA (ACCURATELY CALIBRATED)
     const touchesData = [
-      { num: 1, x: 196, price: 4137.64, line: "Master Baseline Ray (Anchor)", delta: 3850, y: 504.0, action: "STRONG REBOUND UP" },
-      { num: 2, x: 218, price: 4145.20, line: "Lower Fan Ray 1", delta: 2400, y: 460.5, action: "UPWARD CONTINUATION" },
-      { num: 3, x: 240, price: 4154.80, line: "Inner Median Channel 1", delta: 3100, y: 405.3, action: "UPWARD CONTINUATION" },
-      { num: 4, x: 265, price: 4160.25, line: "Median Fan Ray (First Test)", delta: 3650, y: 373.9, action: "⚡ PULLBACK TRIGGERED" },
-      { num: 5, x: 285, price: 4152.10, line: "Primary Support Ray Retest", delta: -2800, y: 420.9, action: "ABSORPTION BOUNCE" },
-      { num: 6, x: 305, price: 4165.40, line: "Median Fan Ray 2", delta: 3200, y: 344.2, action: "UPWARD CONTINUATION" },
-      { num: 7, x: 325, price: 4150.50, line: "Master Baseline Trampoline", delta: -3900, y: 430.0, action: "⚡ BEAR 0 EXHAUSTION BOUNCE" },
-      { num: 8, x: 345, price: 4168.90, line: "Inner Median Ray 3", delta: 2900, y: 324.1, action: "UPWARD CONTINUATION" },
-      { num: 9, x: 365, price: 4178.40, line: "Upper Channel Boundary 1", delta: 3450, y: 269.4, action: "UPWARD CONTINUATION" },
-      { num: 10, x: 380, price: 4172.10, line: "Ascending Median Ray Pullback", delta: -2100, y: 305.7, action: "SUPPORT HELD" },
-      { num: 11, x: 398, price: 4189.58, line: "Upper Wedge Boundary", delta: 3720, y: 205.1, action: "⚡ BULL EXHAUSTION DETECTED" },
-      { num: 12, x: 412, price: 4183.20, line: "Wedge Inner Shelf", delta: -2500, y: 241.8, action: "PINCH STALL" },
-      { num: 13, x: 425, price: 4192.40, line: "Upper Wedge Resistance 2", delta: 3600, y: 188.8, action: "⚡ CEILING REVERSAL" },
-      { num: 14, x: 435, price: 4188.10, line: "Wedge Convergence Ray", delta: -1800, y: 213.5, action: "TIGHT PINCH" },
-      { num: 15, x: 442, price: 4195.80, line: "Apex Climax Sub-Ray", delta: 3800, y: 169.2, action: "⚡ BULL VOLUME SATURATED" },
-      { num: 16, x: 446, price: 4198.78, line: "Master Wedge Apex Climax", delta: 4250, y: 152.0, action: "⚡ BULL 0 HIT! 100% REVERSAL TRIGGER" },
-      { num: 17, x: 455, price: 4191.20, line: "Apex Rejection Down-Ray", delta: -3800, y: 195.7, action: "⚡ BEAR CASCADE INITIATED" },
-      { num: 18, x: 472, price: 4176.50, line: "Median Fan Ray (Down-Slice)", delta: -4100, y: 280.3, action: "⚡ RAY SLICED THROUGH" },
-      { num: 19, x: 488, price: 4168.91, line: "Inner Median Ray 2 (Down-Slice)", delta: -3950, y: 324.0, action: "⚡ ZERO SUPPORT / SLICED" },
-      { num: 20, x: 505, price: 4160.20, line: "Lower Baseline Shelf", delta: -3400, y: 374.1, action: "TEMPORARY PAUSE" },
-      { num: 21, x: 524, price: 4187.67, line: "Bear Flag Upper Ceiling", delta: 3600, y: 216.0, action: "⚡ SELLER DISTRIBUTION DUMP" },
-      { num: 22, x: 548, price: 4178.50, line: "Bear Flag Midline", delta: -2900, y: 268.8, action: "FLAG BREAKDOWN" },
-      { num: 23, x: 580, price: 4182.10, line: "Secondary Fan Retest", delta: 2200, y: 248.1, action: "FAILED PUSH" },
-      { num: 24, x: 632, price: 4157.79, line: "Master Trendline Floor Rupture", delta: -4800, y: 388.0, action: "⚡ CATASTROPHIC RUPTURE WATERFALL" },
-      { num: 25, x: 655, price: 4148.50, line: "Intermediate Liquid Support", delta: -4200, y: 441.5, action: "⚡ SLICED ON HEAVY VOLUME" },
-      { num: 26, x: 680, price: 4141.20, line: "Waterfall Liquidation Ray", delta: -3900, y: 483.5, action: "⚡ WATERFALL CASCADE" },
-      { num: 27, x: 710, price: 4136.50, line: "Old Range 1 Support Level", delta: -3600, y: 510.6, action: "⚡ TEMPORARY STALL" },
-      { num: 28, x: 750, price: 4125.80, line: "Day 2 Absorption Base Low", delta: -4100, y: 572.2, action: "⚡ BEAR 0 REACHED! ABSORPTION BASE" },
-      { num: 29, x: 830, price: 4135.20, line: "Day 2 Range Ceiling", delta: 2800, y: 518.0, action: "RANGE BOUND" },
-      { num: 30, x: 920, price: 4128.09, line: "Live Spot Floor Line ($4,128.14)", delta: -3850, y: 559.0, action: "⚡ BEAR EXHAUSTION REVERSAL ACTIVE" }
+      { num: 1, x: 196, price: 4137.64, line: "Master Baseline Ray (Anchor)", delta: 3850, y: 459.3, action: "STRONG REBOUND UP" },
+      { num: 2, x: 218, price: 4145.20, line: "Lower Fan Ray 1", delta: 2400, y: 420.5, action: "UPWARD CONTINUATION" },
+      { num: 3, x: 240, price: 4154.80, line: "Inner Median Channel 1", delta: 3100, y: 371.3, action: "UPWARD CONTINUATION" },
+      { num: 4, x: 265, price: 4160.25, line: "Median Fan Ray (First Test)", delta: 3650, y: 343.3, action: "⚡ PULLBACK TRIGGERED" },
+      { num: 5, x: 285, price: 4152.10, line: "Primary Support Ray Retest", delta: -2800, y: 385.1, action: "ABSORPTION BOUNCE" },
+      { num: 6, x: 305, price: 4165.40, line: "Median Fan Ray 2", delta: 3200, y: 316.9, action: "UPWARD CONTINUATION" },
+      { num: 7, x: 325, price: 4150.50, line: "Master Baseline Trampoline", delta: -3900, y: 393.3, action: "⚡ BEAR 0 EXHAUSTION BOUNCE" },
+      { num: 8, x: 345, price: 4168.90, line: "Inner Median Ray 3", delta: 2900, y: 299.0, action: "UPWARD CONTINUATION" },
+      { num: 9, x: 365, price: 4178.40, line: "Upper Channel Boundary 1", delta: 3450, y: 250.2, action: "UPWARD CONTINUATION" },
+      { num: 10, x: 380, price: 4172.10, line: "Ascending Median Ray Pullback", delta: -2100, y: 282.5, action: "SUPPORT HELD" },
+      { num: 11, x: 398, price: 4189.58, line: "Upper Wedge Boundary", delta: 3720, y: 192.9, action: "⚡ BULL EXHAUSTION DETECTED" },
+      { num: 12, x: 412, price: 4183.20, line: "Wedge Inner Shelf", delta: -2500, y: 225.6, action: "PINCH STALL" },
+      { num: 13, x: 425, price: 4192.40, line: "Upper Wedge Resistance 2", delta: 3600, y: 178.4, action: "⚡ CEILING REVERSAL" },
+      { num: 14, x: 435, price: 4188.10, line: "Wedge Convergence Ray", delta: -1800, y: 200.5, action: "TIGHT PINCH" },
+      { num: 15, x: 442, price: 4195.80, line: "Apex Climax Sub-Ray", delta: 3800, y: 161.0, action: "⚡ BULL VOLUME SATURATED" },
+      { num: 16, x: 446, price: 4198.78, line: "Master Wedge Apex Climax", delta: 4250, y: 145.7, action: "⚡ BULL 0 HIT! 100% REVERSAL TRIGGER" },
+      { num: 17, x: 455, price: 4191.20, line: "Apex Rejection Down-Ray", delta: -3800, y: 184.6, action: "⚡ BEAR CASCADE INITIATED" },
+      { num: 18, x: 472, price: 4176.50, line: "Median Fan Ray (Down-Slice)", delta: -4100, y: 260.0, action: "⚡ RAY SLICED THROUGH" },
+      { num: 19, x: 488, price: 4168.91, line: "Inner Median Ray 2 (Down-Slice)", delta: -3950, y: 298.9, action: "⚡ ZERO SUPPORT / SLICED" },
+      { num: 20, x: 505, price: 4160.20, line: "Lower Baseline Shelf", delta: -3400, y: 343.6, action: "TEMPORARY PAUSE" },
+      { num: 21, x: 524, price: 4187.67, line: "Bear Flag Upper Ceiling", delta: 3600, y: 202.7, action: "⚡ SELLER DISTRIBUTION DUMP" },
+      { num: 22, x: 548, price: 4178.50, line: "Bear Flag Midline", delta: -2900, y: 249.7, action: "FLAG BREAKDOWN" },
+      { num: 23, x: 580, price: 4182.10, line: "Secondary Fan Retest", delta: 2200, y: 231.3, action: "FAILED PUSH" },
+      { num: 24, x: 632, price: 4157.79, line: "Master Trendline Floor Rupture", delta: -4800, y: 355.9, action: "⚡ CATASTROPHIC RUPTURE WATERFALL" },
+      { num: 25, x: 655, price: 4148.50, line: "Intermediate Liquid Support", delta: -4200, y: 403.6, action: "⚡ SLICED ON HEAVY VOLUME" },
+      { num: 26, x: 680, price: 4141.20, line: "Waterfall Liquidation Ray", delta: -3900, y: 441.0, action: "⚡ WATERFALL CASCADE" },
+      { num: 27, x: 710, price: 4136.50, line: "Old Range 1 Support Level", delta: -3600, y: 465.1, action: "⚡ TEMPORARY STALL" },
+      { num: 28, x: 750, price: 4125.80, line: "Day 2 Absorption Base Low", delta: -4100, y: 520.0, action: "⚡ BEAR 0 REACHED! ABSORPTION BASE" },
+      { num: 29, x: 830, price: 4135.20, line: "Day 2 Range Ceiling", delta: 2800, y: 471.8, action: "RANGE BOUND" },
+      { num: 30, x: 920, price: 4128.09, line: "Live Spot Floor Line ($4,128.14)", delta: -3850, y: 508.2, action: "⚡ BEAR EXHAUSTION REVERSAL ACTIVE" }
     ];
 
     // LIVE TICK BAR (AT THE VERY END)
@@ -501,7 +496,7 @@
       price: 4128.14,
       line: "Live Spot Active Candle ($4,128.14)",
       delta: -2150,
-      y: 558.7,
+      y: 508.0,
       action: "ACCUMULATING LIVE (-2,150t / -3,500 threshold)"
     };
 
@@ -649,66 +644,87 @@
       const isBull = delta >= 0;
       const color = isBull ? "#00e676" : "#ff334b";
 
-      // Full-span Crosshair Beams
-      const beamH = document.getElementById("touchBeamH");
-      beamH.setAttribute("y1", y); beamH.setAttribute("y2", y);
-      beamH.setAttribute("stroke", color);
+      // 1. Position Glowing Outer Beacon Halo
+      const halo = document.getElementById("touchDotHalo");
+      if (halo) {
+        halo.setAttribute("cx", x);
+        halo.setAttribute("cy", y);
+        halo.setAttribute("stroke", color);
+      }
 
-      const beamV = document.getElementById("touchBeamV");
-      beamV.setAttribute("x1", x); beamV.setAttribute("x2", x);
-      beamV.setAttribute("stroke", color);
+      // 2. Position Solid Core Radar Dot with Drop Shadow
+      const core = document.getElementById("touchDotCore");
+      if (core) {
+        core.setAttribute("cx", x);
+        core.setAttribute("cy", y);
+        core.setAttribute("fill", color);
+        core.style.filter = `drop-shadow(0 0 10px ${color})`;
+      }
 
-      // Concentric Rings
-      const cOuter = document.getElementById("touchCircleOuter");
-      cOuter.setAttribute("cx", x); cOuter.setAttribute("cy", y);
-      cOuter.setAttribute("stroke", color);
+      // 3. Position Center White Jewel Micro-Dot
+      const jewel = document.getElementById("touchDotJewel");
+      if (jewel) {
+        jewel.setAttribute("cx", x);
+        jewel.setAttribute("cy", y);
+      }
 
-      const cInner = document.getElementById("touchCircleInner");
-      cInner.setAttribute("cx", x); cInner.setAttribute("cy", y);
-      cInner.setAttribute("stroke", color);
-      cInner.setAttribute("fill", isBull ? "rgba(0, 230, 118, 0.35)" : "rgba(255, 51, 75, 0.35)");
-
-      // Center Ticks
-      const lineH = document.getElementById("touchLineH");
-      lineH.setAttribute("x1", x - 26); lineH.setAttribute("y1", y);
-      lineH.setAttribute("x2", x + 26); lineH.setAttribute("y2", y);
-      lineH.setAttribute("stroke", color);
-
-      const lineV = document.getElementById("touchLineV");
-      lineV.setAttribute("x1", x); lineV.setAttribute("y1", y - 26);
-      lineV.setAttribute("x2", x); lineV.setAttribute("y2", y + 26);
-      lineV.setAttribute("stroke", color);
-
-      // Tag Card positioning (Keeps it clean and visible above the candle)
-      let tagX = x + 24;
+      // 4. Floating Tag Card Positioning (Smart Clamping)
+      let tagX = x + 20;
       let tagY = y - 22;
       if (tagX + 185 > 1010) tagX = x - 195;
-      if (tagY < 130) tagY = y + 25;
+      if (tagY < 125) tagY = y + 20;
       if (tagY + 50 > 560) tagY = 505;
 
       const tagG = document.getElementById("touchTagGroup");
-      tagG.setAttribute("transform", `translate(${tagX}, ${tagY})`);
+      if (tagG) tagG.setAttribute("transform", `translate(${tagX}, ${tagY})`);
 
       const tagBg = document.getElementById("touchTagBg");
-      tagBg.setAttribute("stroke", color);
+      if (tagBg) tagBg.setAttribute("stroke", color);
 
       const tagTitle = document.getElementById("touchTagTitle");
-      tagTitle.setAttribute("fill", color);
-      tagTitle.textContent = title;
+      if (tagTitle) {
+        tagTitle.setAttribute("fill", color);
+        tagTitle.textContent = title;
+      }
 
       const tagSub = document.getElementById("touchTagSub");
-      tagSub.textContent = sub;
+      if (tagSub) tagSub.textContent = sub;
 
       const tagVerdict = document.getElementById("touchTagVerdict");
-      tagVerdict.textContent = verdict;
-      tagVerdict.setAttribute("fill", Math.abs(delta) >= 3500 ? "#ffb300" : color);
+      if (tagVerdict) {
+        tagVerdict.textContent = verdict;
+        tagVerdict.setAttribute("fill", Math.abs(delta) >= 3500 ? "#ffb300" : color);
+      }
+
+      // 5. AUTO-SCROLL CHART INTO VIEW (IF NOT IN VIEW)
+      const chartBox = document.getElementById("chartBox");
+      if (chartBox && chartBox.scrollWidth > chartBox.clientWidth) {
+        const visibleLeft = chartBox.scrollLeft;
+        const visibleRight = visibleLeft + chartBox.clientWidth;
+        // If marker is outside visible horizontal window or within 80px of boundary
+        if (x < visibleLeft + 80 || x > visibleRight - 80) {
+          const targetScroll = Math.max(0, x - chartBox.clientWidth / 2);
+          chartBox.scrollTo({ left: targetScroll, behavior: "smooth" });
+        }
+      }
+
+      // 6. AUTO-SCROLL VOLUME BARS HUD TRACK INTO VIEW
+      const win = document.getElementById("barsWindow");
+      const activeBar = document.getElementById(activeTouchIdx === "live" ? "barUnit_live" : `barUnit_${activeTouchIdx}`);
+      if (win && activeBar) {
+        const winRect = win.getBoundingClientRect();
+        const barRect = activeBar.getBoundingClientRect();
+        if (barRect.left < winRect.left + 25 || barRect.right > winRect.right - 25) {
+          activeBar.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+        }
+      }
     }
 
     window.addEventListener("DOMContentLoaded", () => {
       buildBars();
       highlightTouch(15); // Default to apex touch #16
       const win = document.getElementById("barsWindow");
-      win.scrollLeft = 240; // Scroll towards live bar
+      if (win) win.scrollLeft = 240;
     });
   </script>
 </body>

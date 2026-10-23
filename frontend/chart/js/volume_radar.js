@@ -262,13 +262,14 @@ function showChartReticle(t, idx) {
 
   let x = null;
   let y = null;
+  let barIndex = null;
 
   if (chartInstanceRef && typeof chartInstanceRef.convertToPixel === 'function') {
     try {
       const dataList = chartInstanceRef.getDataList() || [];
       if (dataList.length > 0) {
         // Map 30 historical touches to recent candles
-        const barIndex = idx >= 30 ? (dataList.length - 1) : Math.max(0, (dataList.length - 1) - (29 - idx) * 2);
+        barIndex = idx >= 30 ? (dataList.length - 1) : Math.max(0, (dataList.length - 1) - (29 - idx) * 2);
         const pCoords = chartInstanceRef.convertToPixel({ dataIndex: barIndex, value: t.price });
         if (pCoords && typeof pCoords.x === 'number' && !isNaN(pCoords.x)) x = pCoords.x;
         if (pCoords && typeof pCoords.y === 'number' && !isNaN(pCoords.y)) y = pCoords.y;
@@ -279,6 +280,23 @@ function showChartReticle(t, idx) {
       }
     } catch (e) {
       console.warn('[VolumeRadar] convertToPixel error:', e);
+    }
+  }
+
+  // AUTO-SCROLL CHART INTO VIEW (IF NOT IN VIEW)
+  if (chartInstanceRef && barIndex !== null && typeof chartInstanceRef.scrollToDataIndex === 'function') {
+    const isOutOfView = x === null || x < 60 || x > (vpWidth - 80);
+    if (isOutOfView) {
+      chartInstanceRef.scrollToDataIndex(barIndex, 200);
+      // Recalculate coordinates right after scroll frame completes
+      setTimeout(() => {
+        try {
+          const freshCoords = chartInstanceRef.convertToPixel({ dataIndex: barIndex, value: t.price });
+          if (freshCoords && !isNaN(freshCoords.x) && !isNaN(freshCoords.y)) {
+            positionDotAndCard(freshCoords.x, freshCoords.y, t, vpWidth, vpHeight);
+          }
+        } catch (_) {}
+      }, 70);
     }
   }
 
@@ -293,65 +311,50 @@ function showChartReticle(t, idx) {
   overlay.style.display = 'block';
   reticleGroup.style.display = 'block';
 
+  positionDotAndCard(x, y, t, vpWidth, vpHeight);
+
+  // AUTO-SCROLL VOLUME BARS HUD TRACK INTO VIEW
+  const win = document.getElementById('vrBarsWindow');
+  const activeBar = document.getElementById(idx >= 30 ? 'vrBarUnit_live' : `vrBarUnit_${idx}`);
+  if (win && activeBar) {
+    const winRect = win.getBoundingClientRect();
+    const barRect = activeBar.getBoundingClientRect();
+    if (barRect.left < winRect.left + 25 || barRect.right > winRect.right - 25) {
+      activeBar.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }
+}
+
+function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
   const isBull = t.delta >= 0;
   const color = isBull ? '#00e676' : '#ff334b';
 
-  // Full-span Crosshair Beams
-  const beamH = document.getElementById('tvVrBeamH');
-  if (beamH) {
-    beamH.setAttribute('x1', '0');
-    beamH.setAttribute('y1', y);
-    beamH.setAttribute('x2', vpWidth);
-    beamH.setAttribute('y2', y);
-    beamH.setAttribute('stroke', color);
+  // 1. Position Glowing Outer Beacon Halo
+  const halo = document.getElementById('tvVrDotHalo');
+  if (halo) {
+    halo.setAttribute('cx', x);
+    halo.setAttribute('cy', y);
+    halo.setAttribute('stroke', color);
   }
 
-  const beamV = document.getElementById('tvVrBeamV');
-  if (beamV) {
-    beamV.setAttribute('x1', x);
-    beamV.setAttribute('y1', '0');
-    beamV.setAttribute('x2', x);
-    beamV.setAttribute('y2', vpHeight);
-    beamV.setAttribute('stroke', color);
+  // 2. Position Solid Core Radar Dot with Drop Shadow
+  const core = document.getElementById('tvVrDotCore');
+  if (core) {
+    core.setAttribute('cx', x);
+    core.setAttribute('cy', y);
+    core.setAttribute('fill', color);
+    core.style.filter = `drop-shadow(0 0 10px ${color})`;
   }
 
-  // Concentric Reticle Rings
-  const cOuter = document.getElementById('tvVrCircleOuter');
-  if (cOuter) {
-    cOuter.setAttribute('cx', x);
-    cOuter.setAttribute('cy', y);
-    cOuter.setAttribute('stroke', color);
+  // 3. Position Center White Jewel Micro-Dot
+  const jewel = document.getElementById('tvVrDotJewel');
+  if (jewel) {
+    jewel.setAttribute('cx', x);
+    jewel.setAttribute('cy', y);
   }
 
-  const cInner = document.getElementById('tvVrCircleInner');
-  if (cInner) {
-    cInner.setAttribute('cx', x);
-    cInner.setAttribute('cy', y);
-    cInner.setAttribute('stroke', color);
-    cInner.setAttribute('fill', isBull ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 75, 0.35)');
-  }
-
-  // Reticle Center Crosshair Ticks
-  const lineH = document.getElementById('tvVrLineH');
-  if (lineH) {
-    lineH.setAttribute('x1', x - 24);
-    lineH.setAttribute('y1', y);
-    lineH.setAttribute('x2', x + 24);
-    lineH.setAttribute('y2', y);
-    lineH.setAttribute('stroke', color);
-  }
-
-  const lineV = document.getElementById('tvVrLineV');
-  if (lineV) {
-    lineV.setAttribute('x1', x);
-    lineV.setAttribute('y1', y - 24);
-    lineV.setAttribute('x2', x);
-    lineV.setAttribute('y2', y + 24);
-    lineV.setAttribute('stroke', color);
-  }
-
-  // Floating Tag Box On The Candle
-  let tagX = x + 24;
+  // 4. Floating Tag Box On The Candle (Smart Clamping)
+  let tagX = x + 20;
   let tagY = y - 22;
   if (tagX + 190 > vpWidth - 60) tagX = x - 200;
   if (tagY < 60) tagY = y + 25;
