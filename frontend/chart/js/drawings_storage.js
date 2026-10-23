@@ -80,45 +80,109 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
   }
 }
 
-export function normalizeRectPoints(points) {
+export function normalizeRectPoints(points, customDataList) {
   if (!points || !Array.isArray(points) || points.length < 2) return points;
+
+  const dataList = (customDataList && Array.isArray(customDataList) && customDataList.length > 0)
+    ? customDataList
+    : ((typeof window !== 'undefined' && window.__chartInstance?.getDataList?.()) || []);
+  const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
+  const barMs = tfMins * 60 * 1000;
+  const lastIdx = dataList.length > 0 ? (dataList.length - 1) : -1;
+  const lastBar = lastIdx >= 0 ? dataList[lastIdx] : null;
+  const firstBar = dataList.length > 0 ? dataList[0] : null;
+
+  // 1. Resolve missing or undefined timestamps for ALL points (e.g. when drawn outside current price into future or past)
+  for (let i = 0; i < points.length; i++) {
+    const pt = points[i];
+    if (!pt) continue;
+    const hasValidTime = (typeof pt.timestamp === 'number' && !isNaN(pt.timestamp) && pt.timestamp > 0);
+    if (!hasValidTime && typeof pt.dataIndex === 'number' && !isNaN(pt.dataIndex) && lastBar) {
+      if (pt.dataIndex > lastIdx) {
+        pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+      } else if (pt.dataIndex < 0 && firstBar) {
+        pt.timestamp = firstBar.timestamp + Math.round(pt.dataIndex * barMs);
+      } else if (dataList[pt.dataIndex]) {
+        pt.timestamp = dataList[pt.dataIndex].timestamp;
+      }
+    }
+  }
+
   const validPoints = points.filter(p => p && typeof p.value === 'number' && !isNaN(p.value));
   if (validPoints.length < 2) return points;
 
-  const timestamps = validPoints.map(p => p.timestamp).filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
+  const timestamps = validPoints
+    .map(p => p.timestamp)
+    .filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
   const values = validPoints.map(p => p.value);
 
   let leftTime, rightTime;
   if (timestamps.length >= 2) {
     leftTime = Math.min(...timestamps);
     rightTime = Math.max(...timestamps);
+  } else if (timestamps.length === 1) {
+    leftTime = timestamps[0];
+    rightTime = leftTime + barMs * 6;
+  } else if (lastBar) {
+    leftTime = lastBar.timestamp;
+    rightTime = leftTime + barMs * 6;
   } else {
-    leftTime = validPoints[0].timestamp || Date.now();
-    rightTime = validPoints[1].timestamp || (leftTime + 3600000);
-  }
-  if (leftTime === rightTime) {
-    rightTime = leftTime + 5 * 60 * 1000;
+    leftTime = Date.now();
+    rightTime = leftTime + 3600000;
   }
 
-  const topVal = Math.max(...values);
-  const bottomVal = Math.min(...values);
+  // Ensure minimum 1 bar width so the box never auto-shrinks to zero
+  if (leftTime === rightTime) {
+    rightTime = leftTime + barMs;
+  } else if (leftTime > rightTime) {
+    const tmp = leftTime;
+    leftTime = rightTime;
+    rightTime = tmp;
+  }
+
+  let topVal = Math.max(...values);
+  let bottomVal = Math.min(...values);
+  if (topVal === bottomVal) {
+    topVal += 0.5;
+    bottomVal -= 0.5;
+  }
   const midVal = (topVal + bottomVal) / 2;
 
-  const p0 = points[0] || {};
-  const p1 = points[1] || {};
+  // Compute clean, non-inverted dataIndex corresponding to leftTime and rightTime
+  let leftIdx = undefined;
+  let rightIdx = undefined;
+  if (dataList.length > 0 && lastBar) {
+    if (leftTime > lastBar.timestamp) {
+      leftIdx = lastIdx + Math.round((leftTime - lastBar.timestamp) / barMs);
+    } else if (firstBar && leftTime < firstBar.timestamp) {
+      leftIdx = Math.round((leftTime - firstBar.timestamp) / barMs);
+    } else {
+      const idx = dataList.findIndex(b => b.timestamp >= leftTime);
+      leftIdx = idx !== -1 ? idx : 0;
+    }
+
+    if (rightTime > lastBar.timestamp) {
+      rightIdx = lastIdx + Math.round((rightTime - lastBar.timestamp) / barMs);
+    } else if (firstBar && rightTime < firstBar.timestamp) {
+      rightIdx = Math.round((rightTime - firstBar.timestamp) / barMs);
+    } else {
+      const idx = dataList.findIndex(b => b.timestamp >= rightTime);
+      rightIdx = idx !== -1 ? idx : lastIdx;
+    }
+  }
 
   return [
-    { timestamp: leftTime, value: topVal, dataIndex: p0.dataIndex },       // 0: Top-Left (TL)
-    { timestamp: rightTime, value: topVal, dataIndex: p1.dataIndex },      // 1: Top-Right (TR)
-    { timestamp: rightTime, value: bottomVal, dataIndex: p1.dataIndex },    // 2: Bottom-Right (BR)
-    { timestamp: leftTime, value: bottomVal, dataIndex: p0.dataIndex },     // 3: Bottom-Left (BL)
-    { timestamp: leftTime, value: midVal, dataIndex: p0.dataIndex },        // 4: Middle-Left (ML)
-    { timestamp: rightTime, value: midVal, dataIndex: p1.dataIndex }       // 5: Middle-Right (MR)
+    { timestamp: leftTime, value: topVal, dataIndex: leftIdx },       // 0: Top-Left (TL)
+    { timestamp: rightTime, value: topVal, dataIndex: rightIdx },     // 1: Top-Right (TR)
+    { timestamp: rightTime, value: bottomVal, dataIndex: rightIdx },   // 2: Bottom-Right (BR)
+    { timestamp: leftTime, value: bottomVal, dataIndex: leftIdx },    // 3: Bottom-Left (BL)
+    { timestamp: leftTime, value: midVal, dataIndex: leftIdx },       // 4: Middle-Left (ML)
+    { timestamp: rightTime, value: midVal, dataIndex: rightIdx }      // 5: Middle-Right (MR)
   ];
 }
 
-export function expandRectPointsToSix(points) {
-  return normalizeRectPoints(points);
+export function expandRectPointsToSix(points, customDataList) {
+  return normalizeRectPoints(points, customDataList);
 }
 
 export function handleRectPressedMove(points, performPointIndex, dataList, tfMins) {
@@ -132,10 +196,13 @@ export function handleRectPressedMove(points, performPointIndex, dataList, tfMin
   if (Array.isArray(dataList) && dataList.length > 0) {
     const lastIdx = dataList.length - 1;
     const lastBar = dataList[lastIdx];
+    const firstBar = dataList[0];
     const barMs = (tfMins || 5) * 60 * 1000;
     if (typeof pt.dataIndex === 'number') {
       if (pt.dataIndex > lastIdx) {
         pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+      } else if (pt.dataIndex < 0 && firstBar) {
+        pt.timestamp = firstBar.timestamp + Math.round(pt.dataIndex * barMs);
       } else if (pt.dataIndex >= 0 && dataList[pt.dataIndex]) {
         pt.timestamp = dataList[pt.dataIndex].timestamp;
       }

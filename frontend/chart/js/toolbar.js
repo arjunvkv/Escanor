@@ -243,7 +243,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           }
           if (overlayName === 'rect' && overlay) {
             if (overlay.points && overlay.points.length >= 2) {
-              const sixPoints = normalizeRectPoints(overlay.points);
+              const sixPoints = normalizeRectPoints(overlay.points, chart.getDataList());
               chart.overrideOverlay({ id: overlay.id, points: sixPoints });
             }
             recalculateRectZLevels(chart);
@@ -343,7 +343,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         if (ovName === 'rect' && args?.overlay) {
           const ov = args.overlay;
           if (ov.points && ov.points.length >= 2) {
-            const sixPoints = normalizeRectPoints(ov.points);
+            const sixPoints = normalizeRectPoints(ov.points, chart.getDataList());
             chart.overrideOverlay({ id: ov.id, points: sixPoints });
           }
           recalculateRectZLevels(chart);
@@ -387,19 +387,24 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
             else if (!isLong && args.points[2].value <= args.points[0].value) args.points[2].value = args.points[0].value + 0.1;
           }
         }
-        // Keep timestamp in lockstep with dataIndex into the future empty space
-        const pt = args.points?.[args.performPointIndex];
-        if (pt && typeof pt.dataIndex === 'number') {
-          const dataList = chart.getDataList() || [];
-          if (dataList.length > 0) {
-            const lastIdx = dataList.length - 1;
-            const lastBar = dataList[lastIdx];
-            const tfMins = window.__currentTimeframeMinutes || 5;
-            const barMs = tfMins * 60 * 1000;
-            if (pt.dataIndex > lastIdx) {
-              pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
-            } else if (pt.dataIndex >= 0 && dataList[pt.dataIndex]) {
-              pt.timestamp = dataList[pt.dataIndex].timestamp;
+        // Keep timestamp in lockstep with dataIndex into the future empty space for ALL points
+        const dataList = chart.getDataList() || [];
+        if (dataList.length > 0 && Array.isArray(args.points)) {
+          const lastIdx = dataList.length - 1;
+          const lastBar = dataList[lastIdx];
+          const firstBar = dataList[0];
+          const tfMins = window.__currentTimeframeMinutes || 5;
+          const barMs = tfMins * 60 * 1000;
+          for (let i = 0; i < args.points.length; i++) {
+            const pt = args.points[i];
+            if (pt && typeof pt.dataIndex === 'number') {
+              if (pt.dataIndex > lastIdx) {
+                pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+              } else if (pt.dataIndex < 0 && firstBar) {
+                pt.timestamp = firstBar.timestamp + Math.round(pt.dataIndex * barMs);
+              } else if (dataList[pt.dataIndex]) {
+                pt.timestamp = dataList[pt.dataIndex].timestamp;
+              }
             }
           }
         }
@@ -411,18 +416,23 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       performEventMoveForDrawing: (args) => {
         if (window.__isRestoringDrawings || args?.currentStep === -1) return;
         if (params.performEventMoveForDrawing) params.performEventMoveForDrawing(args);
-        const pt = args.points?.[args.performPointIndex];
-        if (pt && typeof pt.dataIndex === 'number') {
-          const dataList = chart.getDataList() || [];
-          if (dataList.length > 0) {
-            const lastIdx = dataList.length - 1;
-            const lastBar = dataList[lastIdx];
-            const tfMins = window.__currentTimeframeMinutes || 5;
-            const barMs = tfMins * 60 * 1000;
-            if (pt.dataIndex > lastIdx) {
-              pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
-            } else if (pt.dataIndex >= 0 && dataList[pt.dataIndex]) {
-              pt.timestamp = dataList[pt.dataIndex].timestamp;
+        const dataList = chart.getDataList() || [];
+        if (dataList.length > 0 && Array.isArray(args.points)) {
+          const lastIdx = dataList.length - 1;
+          const lastBar = dataList[lastIdx];
+          const firstBar = dataList[0];
+          const tfMins = window.__currentTimeframeMinutes || 5;
+          const barMs = tfMins * 60 * 1000;
+          for (let i = 0; i < args.points.length; i++) {
+            const pt = args.points[i];
+            if (pt && typeof pt.dataIndex === 'number') {
+              if (pt.dataIndex > lastIdx) {
+                pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+              } else if (pt.dataIndex < 0 && firstBar) {
+                pt.timestamp = firstBar.timestamp + Math.round(pt.dataIndex * barMs);
+              } else if (dataList[pt.dataIndex]) {
+                pt.timestamp = dataList[pt.dataIndex].timestamp;
+              }
             }
           }
         }
@@ -433,7 +443,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           window.__lineTradingManager.setDragging(false);
         }
         if (ovName === 'rect' && args?.overlay?.points) {
-          const sixPoints = normalizeRectPoints(args.overlay.points);
+          const sixPoints = normalizeRectPoints(args.overlay.points, chart.getDataList());
           chart.overrideOverlay({ id: args.overlay.id, points: sixPoints });
         }
         syncDrawingsToServer(currentSymbolRef, chart);

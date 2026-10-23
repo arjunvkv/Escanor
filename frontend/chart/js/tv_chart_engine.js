@@ -495,33 +495,79 @@ function registerCustomOverlays() {
       return [];
     },
     performEventPressedMove: ({ points, performPointIndex }) => {
+      const dataList = chartInstance?.getDataList?.() || [];
+      if (dataList.length > 0 && Array.isArray(points)) {
+        const lastIdx = dataList.length - 1;
+        const lastBar = dataList[lastIdx];
+        const firstBar = dataList[0];
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const barMs = tfMins * 60 * 1000;
+        for (let i = 0; i < points.length; i++) {
+          const pt = points[i];
+          if (pt && typeof pt.dataIndex === 'number') {
+            if (pt.dataIndex > lastIdx) {
+              pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+            } else if (pt.dataIndex < 0 && firstBar) {
+              pt.timestamp = firstBar.timestamp + Math.round(pt.dataIndex * barMs);
+            } else if (dataList[pt.dataIndex]) {
+              pt.timestamp = dataList[pt.dataIndex].timestamp;
+            }
+          }
+        }
+      }
       if (points?.length === 6) {
-        handleRectPressedMove(points, performPointIndex, chartInstance?.getDataList?.(), window.__currentTimeframeMinutes || 5);
+        handleRectPressedMove(points, performPointIndex, dataList, window.__currentTimeframeMinutes || 5);
       } else if (window.__isShiftPressed && points?.length >= 2 && performPointIndex === 1) {
         points[1].value = points[0].value;
       }
     },
+    performEventMoveForDrawing: ({ points, performPointIndex }) => {
+      const dataList = chartInstance?.getDataList?.() || [];
+      if (dataList.length > 0 && Array.isArray(points)) {
+        const lastIdx = dataList.length - 1;
+        const lastBar = dataList[lastIdx];
+        const firstBar = dataList[0];
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const barMs = tfMins * 60 * 1000;
+        for (let i = 0; i < points.length; i++) {
+          const pt = points[i];
+          if (pt && typeof pt.dataIndex === 'number') {
+            if (pt.dataIndex > lastIdx) {
+              pt.timestamp = lastBar.timestamp + Math.round((pt.dataIndex - lastIdx) * barMs);
+            } else if (pt.dataIndex < 0 && firstBar) {
+              pt.timestamp = firstBar.timestamp + Math.round(pt.dataIndex * barMs);
+            } else if (dataList[pt.dataIndex]) {
+              pt.timestamp = dataList[pt.dataIndex].timestamp;
+            }
+          }
+        }
+      }
+    },
     onDrawEnd: ({ overlay, chart }) => {
       if (overlay?.points && overlay.points.length >= 2) {
-        const sixPoints = normalizeRectPoints(overlay.points);
-        if (chart && typeof chart.overrideOverlay === 'function') {
-          chart.overrideOverlay({ id: overlay.id, points: sixPoints });
+        const c = chart || chartInstance;
+        const dList = c?.getDataList?.() || [];
+        const sixPoints = normalizeRectPoints(overlay.points, dList);
+        if (c && typeof c.overrideOverlay === 'function') {
+          c.overrideOverlay({ id: overlay.id, points: sixPoints });
         } else {
           overlay.points = sixPoints;
         }
       }
-      recalculateRectZLevels(chart);
+      recalculateRectZLevels(chart || chartInstance);
     },
     onPressedMoveEnd: ({ overlay, chart }) => {
       if (overlay?.name === 'rect' && overlay?.points) {
-        const sixPoints = normalizeRectPoints(overlay.points);
-        if (chart && typeof chart.overrideOverlay === 'function') {
-          chart.overrideOverlay({ id: overlay.id, points: sixPoints });
+        const c = chart || chartInstance;
+        const dList = c?.getDataList?.() || [];
+        const sixPoints = normalizeRectPoints(overlay.points, dList);
+        if (c && typeof c.overrideOverlay === 'function') {
+          c.overrideOverlay({ id: overlay.id, points: sixPoints });
         } else {
           overlay.points = sixPoints;
         }
       }
-      recalculateRectZLevels(chart);
+      recalculateRectZLevels(chart || chartInstance);
     }
   });
 
@@ -1545,9 +1591,14 @@ export function initTradingViewChart(containerId = 'klineChart') {
       if (list.length > 0 && typeof dataIndex === 'number') {
         const lastIdx = list.length - 1;
         const lastBar = list[lastIdx];
+        const firstBar = list[0];
         const tfMins = window.__currentTimeframeMinutes || 5;
         const barMs = tfMins * 60 * 1000;
-        return lastBar.timestamp + Math.round((dataIndex - lastIdx) * barMs);
+        if (dataIndex > lastIdx) {
+          return lastBar.timestamp + Math.round((dataIndex - lastIdx) * barMs);
+        } else if (dataIndex < 0 && firstBar) {
+          return firstBar.timestamp + Math.round(dataIndex * barMs);
+        }
       }
       return res;
     };
@@ -1558,10 +1609,13 @@ export function initTradingViewChart(containerId = 'klineChart') {
       if (list.length > 0 && typeof timestamp === 'number') {
         const lastIdx = list.length - 1;
         const lastBar = list[lastIdx];
+        const firstBar = list[0];
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const barMs = tfMins * 60 * 1000;
         if (timestamp > lastBar.timestamp) {
-          const tfMins = window.__currentTimeframeMinutes || 5;
-          const barMs = tfMins * 60 * 1000;
           return lastIdx + Math.round((timestamp - lastBar.timestamp) / barMs);
+        } else if (firstBar && timestamp < firstBar.timestamp) {
+          return Math.round((timestamp - firstBar.timestamp) / barMs);
         }
       }
       return origTimestampToDataIndex(timestamp);
@@ -1576,9 +1630,14 @@ export function initTradingViewChart(containerId = 'klineChart') {
       if (list.length > 0 && typeof floatIndex === 'number') {
         const lastIdx = list.length - 1;
         const lastBar = list[lastIdx];
+        const firstBar = list[0];
         const tfMins = window.__currentTimeframeMinutes || 5;
         const barMs = tfMins * 60 * 1000;
-        return Math.round(lastBar.timestamp + (floatIndex - lastIdx) * barMs);
+        if (floatIndex > lastIdx) {
+          return Math.round(lastBar.timestamp + (floatIndex - lastIdx) * barMs);
+        } else if (floatIndex < 0 && firstBar) {
+          return Math.round(firstBar.timestamp + floatIndex * barMs);
+        }
       }
       return res;
     };
@@ -1589,10 +1648,13 @@ export function initTradingViewChart(containerId = 'klineChart') {
       if (list.length > 0 && typeof timestamp === 'number') {
         const lastIdx = list.length - 1;
         const lastBar = list[lastIdx];
+        const firstBar = list[0];
+        const tfMins = window.__currentTimeframeMinutes || 5;
+        const barMs = tfMins * 60 * 1000;
         if (timestamp > lastBar.timestamp) {
-          const tfMins = window.__currentTimeframeMinutes || 5;
-          const barMs = tfMins * 60 * 1000;
           return lastIdx + (timestamp - lastBar.timestamp) / barMs;
+        } else if (firstBar && timestamp < firstBar.timestamp) {
+          return (timestamp - firstBar.timestamp) / barMs;
         }
       }
       return origTimestampToFloatIndex(timestamp);
@@ -1600,6 +1662,9 @@ export function initTradingViewChart(containerId = 'klineChart') {
   }
 
   chartInstance = chart;
+  if (typeof window !== 'undefined') {
+    window.__chartInstance = chart;
+  }
 
   // Exact TradingView Dark Slate Theme Matching Image 2 (#1c1c1c)
   chart.setStyles({
