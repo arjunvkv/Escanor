@@ -12,8 +12,10 @@ let currentTouches = [];
 let liveTickVolume = -2150;
 let liveSpotPrice = 4128.14;
 let activeTouchIndex = 15; // Default to Apex (Touch #16)
+let chartInstanceRef = null;
 
 export function initVolumeRadar(chartInstance = null, symbol = 'XAUUSD') {
+  chartInstanceRef = (chartInstance && chartInstance.chart) ? chartInstance.chart : chartInstance;
   hudElement = document.getElementById('tvVolumeRadarHud');
   triggerBtn = document.getElementById('tvVolumeRadarBtn');
 
@@ -63,6 +65,7 @@ export function closeVolumeRadarHud() {
   isHudOpen = false;
   hudElement.style.display = 'none';
   if (triggerBtn) triggerBtn.classList.remove('active');
+  hideChartReticle();
 }
 
 export function updateLiveTick(spot, volumeDelta = 0) {
@@ -212,6 +215,8 @@ function highlightTouch(idx) {
   document.querySelectorAll('.vr-bar-unit').forEach((b, i) => {
     b.classList.toggle('active', i === idx);
   });
+
+  showChartReticle(t, idx);
 }
 
 function highlightLiveBar() {
@@ -236,4 +241,149 @@ function highlightLiveBar() {
   document.querySelectorAll('.vr-bar-unit').forEach(b => b.classList.remove('active'));
   const liveUnit = document.getElementById('vrBarUnit_live');
   if (liveUnit) liveUnit.classList.add('active');
+
+  showChartReticle({
+    num: 'LIVE',
+    price: liveSpotPrice,
+    delta: liveTickVolume,
+    line: `Live Spot Active Candle ($${liveSpotPrice.toFixed(2)})`,
+    action: 'ACCUMULATING LIVE AT FLOOR'
+  }, 30);
+}
+
+function showChartReticle(t, idx) {
+  const overlay = document.getElementById('tvVolumeRadarOverlay');
+  const reticleGroup = document.getElementById('tvVrReticleGroup');
+  if (!overlay || !reticleGroup) return;
+
+  const viewport = document.querySelector('.tv-chart-viewport') || document.getElementById('klineChart');
+  const vpWidth = viewport ? viewport.clientWidth : 1000;
+  const vpHeight = viewport ? viewport.clientHeight : 600;
+
+  let x = null;
+  let y = null;
+
+  if (chartInstanceRef && typeof chartInstanceRef.convertToPixel === 'function') {
+    try {
+      const dataList = chartInstanceRef.getDataList() || [];
+      if (dataList.length > 0) {
+        // Map 30 historical touches to recent candles
+        const barIndex = idx >= 30 ? (dataList.length - 1) : Math.max(0, (dataList.length - 1) - (29 - idx) * 2);
+        const pCoords = chartInstanceRef.convertToPixel({ dataIndex: barIndex, value: t.price });
+        if (pCoords && typeof pCoords.x === 'number' && !isNaN(pCoords.x)) x = pCoords.x;
+        if (pCoords && typeof pCoords.y === 'number' && !isNaN(pCoords.y)) y = pCoords.y;
+      }
+      if (y === null || isNaN(y)) {
+        const yCoords = chartInstanceRef.convertToPixel({ value: t.price });
+        if (yCoords && typeof yCoords.y === 'number' && !isNaN(yCoords.y)) y = yCoords.y;
+      }
+    } catch (e) {
+      console.warn('[VolumeRadar] convertToPixel error:', e);
+    }
+  }
+
+  // Fallback geometric placement if chart conversion is not ready
+  if (x === null || isNaN(x)) {
+    x = Math.round(vpWidth * 0.15 + (idx / 30) * (vpWidth * 0.75));
+  }
+  if (y === null || isNaN(y)) {
+    y = Math.round(vpHeight * 0.45);
+  }
+
+  overlay.style.display = 'block';
+  reticleGroup.style.display = 'block';
+
+  const isBull = t.delta >= 0;
+  const color = isBull ? '#00e676' : '#ff334b';
+
+  // Full-span Crosshair Beams
+  const beamH = document.getElementById('tvVrBeamH');
+  if (beamH) {
+    beamH.setAttribute('x1', '0');
+    beamH.setAttribute('y1', y);
+    beamH.setAttribute('x2', vpWidth);
+    beamH.setAttribute('y2', y);
+    beamH.setAttribute('stroke', color);
+  }
+
+  const beamV = document.getElementById('tvVrBeamV');
+  if (beamV) {
+    beamV.setAttribute('x1', x);
+    beamV.setAttribute('y1', '0');
+    beamV.setAttribute('x2', x);
+    beamV.setAttribute('y2', vpHeight);
+    beamV.setAttribute('stroke', color);
+  }
+
+  // Concentric Reticle Rings
+  const cOuter = document.getElementById('tvVrCircleOuter');
+  if (cOuter) {
+    cOuter.setAttribute('cx', x);
+    cOuter.setAttribute('cy', y);
+    cOuter.setAttribute('stroke', color);
+  }
+
+  const cInner = document.getElementById('tvVrCircleInner');
+  if (cInner) {
+    cInner.setAttribute('cx', x);
+    cInner.setAttribute('cy', y);
+    cInner.setAttribute('stroke', color);
+    cInner.setAttribute('fill', isBull ? 'rgba(0, 230, 118, 0.35)' : 'rgba(255, 51, 75, 0.35)');
+  }
+
+  // Reticle Center Crosshair Ticks
+  const lineH = document.getElementById('tvVrLineH');
+  if (lineH) {
+    lineH.setAttribute('x1', x - 24);
+    lineH.setAttribute('y1', y);
+    lineH.setAttribute('x2', x + 24);
+    lineH.setAttribute('y2', y);
+    lineH.setAttribute('stroke', color);
+  }
+
+  const lineV = document.getElementById('tvVrLineV');
+  if (lineV) {
+    lineV.setAttribute('x1', x);
+    lineV.setAttribute('y1', y - 24);
+    lineV.setAttribute('x2', x);
+    lineV.setAttribute('y2', y + 24);
+    lineV.setAttribute('stroke', color);
+  }
+
+  // Floating Tag Box On The Candle
+  let tagX = x + 24;
+  let tagY = y - 22;
+  if (tagX + 190 > vpWidth - 60) tagX = x - 200;
+  if (tagY < 60) tagY = y + 25;
+  if (tagY + 50 > vpHeight - 40) tagY = vpHeight - 55;
+
+  const tagG = document.getElementById('tvVrTagGroup');
+  if (tagG) tagG.setAttribute('transform', `translate(${tagX}, ${tagY})`);
+
+  const tagBg = document.getElementById('tvVrTagBg');
+  if (tagBg) tagBg.setAttribute('stroke', color);
+
+  const tagTitle = document.getElementById('tvVrTagTitle');
+  if (tagTitle) {
+    tagTitle.textContent = `${t.num === 'LIVE' ? 'LIVE SPOT' : 'T' + t.num}: $${t.price.toFixed(2)}`;
+    tagTitle.setAttribute('fill', color);
+  }
+
+  const tagSub = document.getElementById('tvVrTagSub');
+  if (tagSub) {
+    tagSub.textContent = `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()} ticks`;
+  }
+
+  const tagVerdict = document.getElementById('tvVrTagVerdict');
+  if (tagVerdict) {
+    tagVerdict.textContent = t.action;
+    tagVerdict.setAttribute('fill', Math.abs(t.delta) >= 3500 ? '#ffb300' : color);
+  }
+}
+
+export function hideChartReticle() {
+  const overlay = document.getElementById('tvVolumeRadarOverlay');
+  if (overlay) overlay.style.display = 'none';
+  const reticleGroup = document.getElementById('tvVrReticleGroup');
+  if (reticleGroup) reticleGroup.style.display = 'none';
 }

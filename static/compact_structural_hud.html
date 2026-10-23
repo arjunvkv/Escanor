@@ -373,13 +373,25 @@
     <svg viewBox="0 0 1024 576" class="overlay-svg" id="chartOverlay">
       <!-- Highlighted Touch Reticle -->
       <g id="touchHighlightGroup" style="display: none;">
-        <circle id="touchCircleOuter" cx="0" cy="0" r="16" fill="none" stroke="var(--cyan)" stroke-width="1.5" stroke-dasharray="3 3"/>
-        <circle id="touchCircleInner" cx="0" cy="0" r="5" fill="none" stroke="var(--cyan)" stroke-width="2"/>
-        <line id="touchLineH" x1="0" y1="0" x2="0" y2="0" stroke="var(--cyan)" stroke-width="1.2"/>
-        <line id="touchLineV" x1="0" y1="0" x2="0" y2="0" stroke="var(--cyan)" stroke-width="1.2"/>
-        <!-- Floating tag on the candle -->
-        <rect id="touchTagBg" x="0" y="0" width="135" height="24" rx="4" fill="rgba(9, 13, 22, 0.95)" stroke="var(--cyan)" stroke-width="1"/>
-        <text id="touchTagText" x="0" y="0" font-family="var(--font-mono)" font-size="10" font-weight="700" fill="#fff">T16: $4,198.78</text>
+        <!-- Full-span Crosshair Beams -->
+        <line id="touchBeamH" x1="0" y1="0" x2="1024" y2="0" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+        <line id="touchBeamV" x1="0" y1="0" x2="0" y2="576" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.7"/>
+
+        <!-- Concentric Reticle Rings -->
+        <circle id="touchCircleOuter" cx="0" cy="0" r="22" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="4 4"/>
+        <circle id="touchCircleInner" cx="0" cy="0" r="8" fill="rgba(0, 230, 118, 0.35)" stroke="#00e676" stroke-width="2"/>
+
+        <!-- Reticle Crosshair Ticks -->
+        <line id="touchLineH" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2"/>
+        <line id="touchLineV" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2"/>
+
+        <!-- Floating Tag Box On The Candle -->
+        <g id="touchTagGroup" transform="translate(0, 0)">
+          <rect id="touchTagBg" x="0" y="0" width="175" height="44" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
+          <text id="touchTagTitle" x="10" y="17" font-family="'JetBrains Mono', monospace" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
+          <text id="touchTagSub" x="10" y="29" font-family="'JetBrains Mono', monospace" font-size="9.5" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
+          <text id="touchTagVerdict" x="10" y="39" font-family="'JetBrains Mono', monospace" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
+        </g>
       </g>
     </svg>
 
@@ -592,7 +604,14 @@
         b.classList.toggle("active", i === idx);
       });
 
-      showReticle(t.x, t.y, t.delta, `T${t.num}: $${t.price.toFixed(2)} (${t.delta > 0 ? '+' : ''}${t.delta}t)`);
+      showReticle(
+        t.x, 
+        t.y, 
+        t.delta, 
+        `T${t.num}: $${t.price.toFixed(2)}`, 
+        `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()} ticks`, 
+        t.action
+      );
     }
 
     function highlightLiveBar() {
@@ -603,56 +622,86 @@
 
       const inspVol = document.getElementById("inspVol");
       inspVol.textContent = `${liveBarData.delta.toLocaleString()} ticks`;
-      inspVol.style.color = "var(--bear)";
+      inspVol.style.color = "#ff334b";
 
       const inspVerdict = document.getElementById("inspVerdict");
       inspVerdict.textContent = "ACCUMULATING (-1,350 ticks to Bear Reversal Threshold)";
-      inspVerdict.style.color = "var(--amber)";
+      inspVerdict.style.color = "#ffb300";
 
       document.querySelectorAll(".vol-bar-unit").forEach(b => b.classList.remove("active"));
       document.getElementById("barUnit_live").classList.add("active");
 
-      showReticle(liveBarData.x, liveBarData.y, liveBarData.delta, `LIVE SPOT: $${liveBarData.price} (${liveBarData.delta}t)`);
+      showReticle(
+        liveBarData.x, 
+        liveBarData.y, 
+        liveBarData.delta, 
+        `LIVE SPOT: $${liveBarData.price.toFixed(2)}`, 
+        `Vol: ${liveBarData.delta.toLocaleString()} ticks`, 
+        "ACCUMULATING LIVE AT FLOOR"
+      );
     }
 
-    function showReticle(x, y, delta, text) {
+    function showReticle(x, y, delta, title, sub, verdict) {
       const group = document.getElementById("touchHighlightGroup");
+      if (!group) return;
       group.style.display = "block";
 
-      const color = delta > 0 ? "var(--bull)" : "var(--bear)";
-      document.getElementById("touchCircleOuter").setAttribute("cx", x);
-      document.getElementById("touchCircleOuter").setAttribute("cy", y);
-      document.getElementById("touchCircleOuter").setAttribute("stroke", color);
+      const isBull = delta >= 0;
+      const color = isBull ? "#00e676" : "#ff334b";
 
-      document.getElementById("touchCircleInner").setAttribute("cx", x);
-      document.getElementById("touchCircleInner").setAttribute("cy", y);
-      document.getElementById("touchCircleInner").setAttribute("stroke", color);
+      // Full-span Crosshair Beams
+      const beamH = document.getElementById("touchBeamH");
+      beamH.setAttribute("y1", y); beamH.setAttribute("y2", y);
+      beamH.setAttribute("stroke", color);
 
-      document.getElementById("touchLineH").setAttribute("x1", x - 22);
-      document.getElementById("touchLineH").setAttribute("y1", y);
-      document.getElementById("touchLineH").setAttribute("x2", x + 22);
-      document.getElementById("touchLineH").setAttribute("y2", y);
-      document.getElementById("touchLineH").setAttribute("stroke", color);
+      const beamV = document.getElementById("touchBeamV");
+      beamV.setAttribute("x1", x); beamV.setAttribute("x2", x);
+      beamV.setAttribute("stroke", color);
 
-      document.getElementById("touchLineV").setAttribute("x1", x);
-      document.getElementById("touchLineV").setAttribute("y1", y - 22);
-      document.getElementById("touchLineV").setAttribute("x2", x);
-      document.getElementById("touchLineV").setAttribute("y2", y + 22);
-      document.getElementById("touchLineV").setAttribute("stroke", color);
+      // Concentric Rings
+      const cOuter = document.getElementById("touchCircleOuter");
+      cOuter.setAttribute("cx", x); cOuter.setAttribute("cy", y);
+      cOuter.setAttribute("stroke", color);
 
-      let tagX = x + 18;
-      let tagY = y - 12;
-      if (tagX + 140 > 1010) tagX = x - 145;
-      if (tagY < 130) tagY = y + 20;
+      const cInner = document.getElementById("touchCircleInner");
+      cInner.setAttribute("cx", x); cInner.setAttribute("cy", y);
+      cInner.setAttribute("stroke", color);
+      cInner.setAttribute("fill", isBull ? "rgba(0, 230, 118, 0.35)" : "rgba(255, 51, 75, 0.35)");
 
-      document.getElementById("touchTagBg").setAttribute("x", tagX);
-      document.getElementById("touchTagBg").setAttribute("y", tagY);
-      document.getElementById("touchTagBg").setAttribute("stroke", color);
+      // Center Ticks
+      const lineH = document.getElementById("touchLineH");
+      lineH.setAttribute("x1", x - 26); lineH.setAttribute("y1", y);
+      lineH.setAttribute("x2", x + 26); lineH.setAttribute("y2", y);
+      lineH.setAttribute("stroke", color);
 
-      const tagText = document.getElementById("touchTagText");
-      tagText.setAttribute("x", tagX + 8);
-      tagText.setAttribute("y", tagY + 16);
-      tagText.textContent = text;
+      const lineV = document.getElementById("touchLineV");
+      lineV.setAttribute("x1", x); lineV.setAttribute("y1", y - 26);
+      lineV.setAttribute("x2", x); lineV.setAttribute("y2", y + 26);
+      lineV.setAttribute("stroke", color);
+
+      // Tag Card positioning (Keeps it clean and visible above the candle)
+      let tagX = x + 24;
+      let tagY = y - 22;
+      if (tagX + 185 > 1010) tagX = x - 195;
+      if (tagY < 130) tagY = y + 25;
+      if (tagY + 50 > 560) tagY = 505;
+
+      const tagG = document.getElementById("touchTagGroup");
+      tagG.setAttribute("transform", `translate(${tagX}, ${tagY})`);
+
+      const tagBg = document.getElementById("touchTagBg");
+      tagBg.setAttribute("stroke", color);
+
+      const tagTitle = document.getElementById("touchTagTitle");
+      tagTitle.setAttribute("fill", color);
+      tagTitle.textContent = title;
+
+      const tagSub = document.getElementById("touchTagSub");
+      tagSub.textContent = sub;
+
+      const tagVerdict = document.getElementById("touchTagVerdict");
+      tagVerdict.textContent = verdict;
+      tagVerdict.setAttribute("fill", Math.abs(delta) >= 3500 ? "#ffb300" : color);
     }
 
     window.addEventListener("DOMContentLoaded", () => {

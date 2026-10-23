@@ -328,6 +328,31 @@
 
         <!-- Canvas Container -->
         <div id="klineChart"></div>
+
+        <!-- Dynamic SVG Overlay for Volume Radar Touch Reticle & Crosshair Beams -->
+        <svg id="tvVolumeRadarOverlay" class="tv-vr-overlay-svg" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 25; display: none;">
+          <g id="tvVrReticleGroup" style="display: none;">
+            <!-- Full-span Crosshair Beams -->
+            <line id="tvVrBeamH" x1="0" y1="0" x2="100%" y2="0" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.8"/>
+            <line id="tvVrBeamV" x1="0" y1="0" x2="0" y2="100%" stroke="#00e5ff" stroke-width="1.5" stroke-dasharray="4 4" opacity="0.8"/>
+
+            <!-- Concentric Reticle Rings -->
+            <circle id="tvVrCircleOuter" cx="0" cy="0" r="22" fill="none" stroke="#00e676" stroke-width="2.5" stroke-dasharray="4 4"/>
+            <circle id="tvVrCircleInner" cx="0" cy="0" r="8" fill="rgba(0, 230, 118, 0.35)" stroke="#00e676" stroke-width="2"/>
+
+            <!-- Reticle Center Crosshair Ticks -->
+            <line id="tvVrLineH" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2"/>
+            <line id="tvVrLineV" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2"/>
+
+            <!-- Floating Tag Box On The Candle -->
+            <g id="tvVrTagGroup" transform="translate(0, 0)">
+              <rect id="tvVrTagBg" x="0" y="0" width="185" height="46" rx="6" fill="rgba(10, 14, 24, 0.96)" stroke="#00e676" stroke-width="2" style="filter: drop-shadow(0 6px 18px rgba(0,0,0,0.95));"/>
+              <text id="tvVrTagTitle" x="10" y="17" font-family="'JetBrains Mono', monospace, sans-serif" font-size="11.5" font-weight="800" fill="#00e676">T16: $4,198.78</text>
+              <text id="tvVrTagSub" x="10" y="29" font-family="'JetBrains Mono', monospace, sans-serif" font-size="9.5" font-weight="600" fill="#c9d1d9">Vol: +4,250 ticks</text>
+              <text id="tvVrTagVerdict" x="10" y="41" font-family="'JetBrains Mono', monospace, sans-serif" font-size="8.5" font-weight="700" fill="#ffb300">⚡ REVERSAL TRIGGERED</text>
+            </g>
+          </g>
+        </svg>
       </main>
 
     </div>
