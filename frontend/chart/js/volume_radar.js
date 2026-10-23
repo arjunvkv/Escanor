@@ -399,12 +399,17 @@ function highlightLiveBar() {
   const liveUnit = document.getElementById('vrBarUnit_live');
   if (liveUnit) liveUnit.classList.add('active');
 
+  const dataList = chartInstanceRef ? (chartInstanceRef.getDataList() || []) : [];
+  const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+
   showChartReticle({
     num: 'LIVE',
     price: liveSpotPrice,
     delta: liveTickVolume,
     line: `Live Spot Active Candle ($${liveSpotPrice.toFixed(2)})`,
-    action: 'ACCUMULATING LIVE AT FLOOR'
+    action: 'ACCUMULATING LIVE AT FLOOR',
+    timestamp: lastBar ? lastBar.timestamp : undefined,
+    dataIndex: dataList.length > 0 ? (dataList.length - 1) : undefined
   }, 30);
 }
 
@@ -419,15 +424,21 @@ function showChartReticle(t, idx) {
 
   let x = null;
   let y = null;
-  let barIndex = null;
 
   if (chartInstanceRef && typeof chartInstanceRef.convertToPixel === 'function') {
     try {
       const dataList = chartInstanceRef.getDataList() || [];
-      if (dataList.length > 0) {
-        // Map 30 historical touches to recent candles
-        barIndex = idx >= 30 ? (dataList.length - 1) : Math.max(0, (dataList.length - 1) - (29 - idx) * 2);
-        const pCoords = chartInstanceRef.convertToPixel({ dataIndex: barIndex, value: t.price });
+      let targetCoord = null;
+      if (t.timestamp && t.timestamp > 0) {
+        targetCoord = { timestamp: t.timestamp, value: t.price };
+      } else if (typeof t.dataIndex === 'number' && t.dataIndex >= 0) {
+        targetCoord = { dataIndex: t.dataIndex, value: t.price };
+      } else if (idx >= 30 && dataList.length > 0) {
+        targetCoord = { dataIndex: dataList.length - 1, value: t.price };
+      }
+
+      if (targetCoord) {
+        const pCoords = chartInstanceRef.convertToPixel(targetCoord);
         if (pCoords && typeof pCoords.x === 'number' && !isNaN(pCoords.x)) x = pCoords.x;
         if (pCoords && typeof pCoords.y === 'number' && !isNaN(pCoords.y)) y = pCoords.y;
       }
@@ -441,19 +452,29 @@ function showChartReticle(t, idx) {
   }
 
   // AUTO-SCROLL CHART INTO VIEW (IF NOT IN VIEW)
-  if (chartInstanceRef && barIndex !== null && typeof chartInstanceRef.scrollToDataIndex === 'function') {
+  if (chartInstanceRef) {
     const isOutOfView = x === null || x < 60 || x > (vpWidth - 80);
     if (isOutOfView) {
-      chartInstanceRef.scrollToDataIndex(barIndex, 200);
+      if (t.timestamp && typeof chartInstanceRef.scrollToTimestamp === 'function') {
+        chartInstanceRef.scrollToTimestamp(t.timestamp, 200);
+      } else if (typeof t.dataIndex === 'number' && typeof chartInstanceRef.scrollToDataIndex === 'function') {
+        chartInstanceRef.scrollToDataIndex(t.dataIndex, 200);
+      }
+
       // Recalculate coordinates right after scroll frame completes
       setTimeout(() => {
         try {
-          const freshCoords = chartInstanceRef.convertToPixel({ dataIndex: barIndex, value: t.price });
-          if (freshCoords && !isNaN(freshCoords.x) && !isNaN(freshCoords.y)) {
-            positionDotAndCard(freshCoords.x, freshCoords.y, t, vpWidth, vpHeight);
+          let target = null;
+          if (t.timestamp && t.timestamp > 0) target = { timestamp: t.timestamp, value: t.price };
+          else if (typeof t.dataIndex === 'number') target = { dataIndex: t.dataIndex, value: t.price };
+          if (target) {
+            const freshCoords = chartInstanceRef.convertToPixel(target);
+            if (freshCoords && !isNaN(freshCoords.x) && !isNaN(freshCoords.y)) {
+              positionDotAndCard(freshCoords.x, freshCoords.y, t, vpWidth, vpHeight);
+            }
           }
         } catch (_) {}
-      }, 70);
+      }, 100);
     }
   }
 

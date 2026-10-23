@@ -455,38 +455,38 @@
   <script>
     let hudOpen = true;
 
-    // 30 HISTORICAL TOUCHES COMPUTED FROM REAL DRAWN LINES ON CHART
+    // 30 HISTORICAL TOUCHES COMPUTED FROM REAL CANDLE WICKS TOUCHING LINES ON CHART
     const touchesData = [
-      { num: 1, x: 137, y: 491.9, price: 4131.28, line: "Master Ascending Baseline", delta: -2200, action: "RESISTANCE REJECTION" },
-      { num: 2, x: 201, y: 467.5, price: 4136.03, line: "Master Ascending Baseline", delta: 2450, action: "SUPPORT BOUNCE" },
-      { num: 3, x: 231, y: 456.1, price: 4138.26, line: "Master Ascending Baseline", delta: 2700, action: "SUPPORT BOUNCE" },
-      { num: 4, x: 231, y: 290.7, price: 4170.52, line: "Upper Ascending Wedge Ray", delta: 2950, action: "SUPPORT BOUNCE" },
-      { num: 5, x: 251, y: 418.6, price: 4145.56, line: "Ascending Inner Median Ray", delta: -3200, action: "RESISTANCE REJECTION" },
-      { num: 6, x: 262, y: 271.2, price: 4174.31, line: "Upper Ascending Wedge Ray", delta: -3450, action: "RESISTANCE REJECTION" },
-      { num: 7, x: 285, y: 392.2, price: 4150.73, line: "Ascending Inner Median Ray", delta: -3700, action: "⚡ BEAR CASCADE DUMP" },
-      { num: 8, x: 325, y: 420.3, price: 4145.23, line: "Master Ascending Baseline", delta: -2200, action: "RESISTANCE REJECTION" },
-      { num: 9, x: 325, y: 231.7, price: 4182.02, line: "Upper Ascending Wedge Ray", delta: -2450, action: "RESISTANCE REJECTION" },
-      { num: 10, x: 388, y: 311.9, price: 4166.37, line: "Ascending Inner Median Ray", delta: -2700, action: "RESISTANCE REJECTION" },
-      { num: 11, x: 463, y: 367.8, price: 4155.48, line: "Master Ascending Baseline", delta: 2950, action: "SUPPORT BOUNCE" },
-      { num: 12, x: 463, y: 155.2, price: 4196.92, line: "Apex Descending Ceiling", delta: 3200, action: "SUPPORT BOUNCE" },
-      { num: 13, x: 463, y: 155.5, price: 4196.88, line: "Inner Rejection Fan 2", delta: 3450, action: "SUPPORT BOUNCE" },
-      { num: 14, x: 501, y: 353.3, price: 4158.30, line: "Master Ascending Baseline", delta: -3700, action: "⚡ BEAR CASCADE DUMP" },
-      { num: 15, x: 516, y: 347.6, price: 4159.41, line: "Master Ascending Baseline", delta: 2200, action: "SUPPORT BOUNCE" },
-      { num: 16, x: 536, y: 340.0, price: 4160.89, line: "Master Ascending Baseline", delta: -2450, action: "RESISTANCE REJECTION" },
-      { num: 17, x: 536, y: 375.0, price: 4154.07, line: "Horizontal Breakdown Shelf", delta: -2700, action: "RESISTANCE REJECTION" },
-      { num: 18, x: 557, y: 242.7, price: 4179.87, line: "Inner Rejection Fan 1", delta: -2950, action: "RESISTANCE REJECTION" },
-      { num: 19, x: 568, y: 327.8, price: 4163.27, line: "Master Ascending Baseline", delta: -3200, action: "RESISTANCE REJECTION" },
-      { num: 20, x: 568, y: 375.0, price: 4154.07, line: "Horizontal Breakdown Shelf", delta: -3450, action: "RESISTANCE REJECTION" },
-      { num: 21, x: 589, y: 319.8, price: 4164.83, line: "Master Ascending Baseline", delta: -3700, action: "⚡ BEAR CASCADE DUMP" },
-      { num: 22, x: 589, y: 375.0, price: 4154.07, line: "Horizontal Breakdown Shelf", delta: -2200, action: "RESISTANCE REJECTION" },
-      { num: 23, x: 643, y: 208.2, price: 4186.59, line: "Apex Descending Ceiling", delta: -2450, action: "RESISTANCE REJECTION" },
-      { num: 24, x: 643, y: 212.0, price: 4185.86, line: "Inner Rejection Fan 2", delta: -2700, action: "RESISTANCE REJECTION" },
-      { num: 25, x: 698, y: 278.4, price: 4172.91, line: "Master Ascending Baseline", delta: -4800, action: "⚡ CATASTROPHIC RUPTURE WATERFALL" },
-      { num: 26, x: 716, y: 271.5, price: 4174.25, line: "Master Ascending Baseline", delta: -4800, action: "⚡ CATASTROPHIC RUPTURE WATERFALL" },
-      { num: 27, x: 746, y: 238.6, price: 4180.67, line: "Apex Descending Ceiling", delta: 3450, action: "SUPPORT BOUNCE" },
-      { num: 28, x: 746, y: 519.6, price: 4125.87, line: "Post-Rupture Waterfall Floor", delta: 3700, action: "⚡ REVERSAL THRESHOLD HIT" },
-      { num: 29, x: 801, y: 516.2, price: 4126.53, line: "Post-Rupture Waterfall Floor", delta: -2200, action: "RESISTANCE REJECTION" },
-      { num: 30, x: 893, y: 510.6, price: 4127.63, line: "Post-Rupture Waterfall Floor", delta: -3850, action: "⚡ BEAR 0 REACHED! ABSORPTION BASE" }
+      { num: 1, x: 203, y: 307.9, price: 4167.15, line: "Ascending Upper Wedge", delta: 2450, action: "SUPPORT BOUNCE" },
+      { num: 2, x: 219, y: 297.5, price: 4169.17, line: "Ascending Upper Wedge", delta: 2600, action: "SUPPORT BOUNCE" },
+      { num: 3, x: 231, y: 434.2, price: 4142.52, line: "Ascending Inner Median Ray", delta: -2800, action: "RESISTANCE REJECTION" },
+      { num: 4, x: 272, y: 402.3, price: 4148.75, line: "Ascending Inner Median Ray", delta: 2300, action: "SUPPORT BOUNCE" },
+      { num: 5, x: 286, y: 391.4, price: 4150.88, line: "Ascending Inner Median Ray", delta: -3650, action: "⚡ BEAR CASCADE DUMP" },
+      { num: 6, x: 304, y: 377.4, price: 4153.61, line: "Ascending Inner Median Ray", delta: -3400, action: "RESISTANCE REJECTION" },
+      { num: 7, x: 351, y: 340.7, price: 4160.75, line: "Ascending Inner Median Ray", delta: 2950, action: "SUPPORT BOUNCE" },
+      { num: 8, x: 377, y: 320.5, price: 4164.70, line: "Ascending Inner Median Ray", delta: -3100, action: "RESISTANCE REJECTION" },
+      { num: 9, x: 392, y: 308.8, price: 4166.98, line: "Ascending Inner Median Ray", delta: 3250, action: "SUPPORT BOUNCE" },
+      { num: 10, x: 419, y: 287.8, price: 4171.08, line: "Ascending Inner Median Ray", delta: 3550, action: "⚡ BULL EXTENSION HIT" },
+      { num: 11, x: 451, y: 262.8, price: 4175.94, line: "Ascending Inner Median Ray", delta: 3700, action: "⚡ BULL REVERSAL THRESHOLD" },
+      { num: 12, x: 465, y: 251.9, price: 4178.07, line: "Ascending Inner Median Ray", delta: -2900, action: "RESISTANCE REJECTION" },
+      { num: 13, x: 482, y: 238.7, price: 4180.65, line: "Ascending Inner Median Ray", delta: -3200, action: "RESISTANCE REJECTION" },
+      { num: 14, x: 504, y: 200.5, price: 4188.10, line: "Inner Rejection Fan Ray 1", delta: -3550, action: "⚡ TOP REVERSAL DUMP" },
+      { num: 15, x: 528, y: 220.6, price: 4184.17, line: "Inner Rejection Fan Ray 1", delta: -3100, action: "RESISTANCE REJECTION" },
+      { num: 16, x: 553, y: 375.0, price: 4154.07, line: "Horizontal Floor Shelf", delta: 2800, action: "SUPPORT ABSORPTION BOUNCE" },
+      { num: 17, x: 565, y: 375.0, price: 4154.07, line: "Horizontal Floor Shelf", delta: 3100, action: "SUPPORT ABSORPTION BOUNCE" },
+      { num: 18, x: 589, y: 271.8, price: 4174.19, line: "Inner Rejection Fan Ray 1", delta: -3600, action: "⚡ BEAR PRESSURE SURGE" },
+      { num: 19, x: 602, y: 196.7, price: 4188.84, line: "Apex Descending Ceiling", delta: -3800, action: "⚡ APEX CEILING REJECTION" },
+      { num: 20, x: 626, y: 302.9, price: 4168.14, line: "Inner Rejection Fan Ray 1", delta: -3200, action: "RESISTANCE REJECTION" },
+      { num: 21, x: 642, y: 305.9, price: 4167.55, line: "Master Ascending Baseline", delta: 2900, action: "SUPPORT BOUNCE" },
+      { num: 22, x: 662, y: 375.0, price: 4154.07, line: "Horizontal Floor Shelf", delta: 3300, action: "SUPPORT ABSORPTION BOUNCE" },
+      { num: 23, x: 714, y: 274.0, price: 4173.77, line: "Master Ascending Baseline", delta: -4200, action: "⚡ CATASTROPHIC BREAKDOWN" },
+      { num: 24, x: 729, y: 267.3, price: 4175.07, line: "Master Ascending Baseline", delta: -4600, action: "⚡ CATASTROPHIC BREAKDOWN" },
+      { num: 25, x: 742, y: 237.5, price: 4180.89, line: "Apex Descending Ceiling", delta: -3750, action: "⚡ LOWER HIGH REJECTION" },
+      { num: 26, x: 768, y: 518.8, price: 4126.03, line: "Lower Waterfall Floor", delta: 3600, action: "⚡ CAPITULATION ABSORPTION" },
+      { num: 27, x: 805, y: 516.3, price: 4126.51, line: "Lower Waterfall Floor", delta: 2700, action: "SUPPORT FLOOR BOUNCE" },
+      { num: 28, x: 822, y: 515.2, price: 4126.73, line: "Lower Waterfall Floor", delta: 3100, action: "SUPPORT FLOOR BOUNCE" },
+      { num: 29, x: 885, y: 511.0, price: 4127.55, line: "Lower Waterfall Floor", delta: 3450, action: "SUPPORT FLOOR BOUNCE" },
+      { num: 30, x: 904, y: 509.7, price: 4127.80, line: "Lower Waterfall Floor", delta: -3900, action: "⚡ BEAR 0 TEST REACHED!" }
     ];
 
     // LIVE TICK BAR (AT THE VERY END)
@@ -610,6 +610,7 @@
     }
 
     function highlightLiveBar() {
+      activeTouchIdx = "live";
       document.getElementById("inspTouchNum").className = "touch-id-badge live-tag";
       document.getElementById("inspTouchNum").textContent = `● LIVE BAR`;
       document.getElementById("inspPrice").textContent = `$${liveBarData.price.toFixed(2)}`;
