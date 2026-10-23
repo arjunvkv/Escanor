@@ -120,24 +120,27 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
     upperWickSum += upperWick * overlapRatio;
     lowerWickSum += lowerWick * overlapRatio;
 
-    let barBull = 0;
-    let barBear = 0;
+    // Sensitive Order Flow & Delta Decomposition:
+    // 1. Directional Displacement: (close - open) / range [-1.0, +1.0]
+    const displacement = (bar.close - bar.open) / barRange;
 
-    if (bar.close >= bar.open) {
-      const bullWeight = body + lowerWick * 1.25;
-      const bearWeight = upperWick * 1.25;
-      const totalWeight = bullWeight + bearWeight;
-      const bullRatio = totalWeight > 0 ? (bullWeight / totalWeight) : 0.65;
-      barBull = volInBox * bullRatio;
-      barBear = volInBox * (1 - bullRatio);
-    } else {
-      const bearWeight = body + upperWick * 1.25;
-      const bullWeight = lowerWick * 1.25;
-      const totalWeight = bearWeight + bullWeight;
-      const bearRatio = totalWeight > 0 ? (bearWeight / totalWeight) : 0.65;
-      barBear = volInBox * bearRatio;
-      barBull = volInBox * (1 - bearRatio);
-    }
+    // 2. Close Location (Money Flow Multiplier): where close settled relative to extremes [-1.0, +1.0]
+    const closeLocation = ((bar.close - bar.low) - (bar.high - bar.close)) / barRange;
+
+    // 3. Wick Rejection & Absorption at Box Boundaries:
+    // When price tests the lower boundary (overlapLow near bottomPrice), a lower wick represents active buyer defense (+delta)
+    // When price tests the upper boundary (overlapHigh near topPrice), an upper wick represents active seller defense (-delta)
+    const isAtFloor = overlapLow <= bottomPrice + 0.30 * priceRange;
+    const isAtCeiling = overlapHigh >= topPrice - 0.30 * priceRange;
+    const wickWeight = (isAtFloor || isAtCeiling) ? 1.6 : 1.0;
+    const wickDiff = ((lowerWick - upperWick) / barRange) * wickWeight;
+
+    // Composite un-dampened directional score [-1.0, +1.0]
+    const deltaScore = Math.max(-1.0, Math.min(1.0, displacement * 0.45 + closeLocation * 0.35 + wickDiff * 0.20));
+
+    const bullRatio = (1 + deltaScore) / 2;
+    const barBull = volInBox * bullRatio;
+    const barBear = volInBox * (1 - bullRatio);
 
     bullVol += barBull;
     bearVol += barBear;
@@ -164,8 +167,10 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
   const pocPrice = Number((bottomPrice + (pocBinIdx + 0.5) * binStep).toFixed(2));
 
   const netDelta = Math.round(bullVol - bearVol);
-  const bullPct = Math.min(99, Math.max(1, Math.round((bullVol / totalVol) * 100)));
-  const bearPct = 100 - bullPct;
+  const netDeltaPct = totalVol > 0 ? Number(((netDelta / totalVol) * 100).toFixed(1)) : 0.0;
+  const rawBullPct = totalVol > 0 ? (bullVol / totalVol) * 100 : 50.0;
+  const bullPct = Number(Math.min(99.9, Math.max(0.1, rawBullPct)).toFixed(1));
+  const bearPct = Number((100 - bullPct).toFixed(1));
 
   let verdict = 'BALANCED AUCTION';
   let verdictColor = '#38bdf8';
@@ -173,22 +178,22 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
   const isNearCeiling = (lastClose !== null && lastClose >= bottomPrice + 0.65 * priceRange);
   const isNearFloor = (lastClose !== null && lastClose <= bottomPrice + 0.35 * priceRange);
 
-  if (upperWickSum > lowerWickSum * 1.35 && isNearCeiling && bullPct >= 52) {
-    verdict = 'BEAR ABSORPTION / CEILING';
-    verdictColor = '#ffb300';
-  } else if (lowerWickSum > upperWickSum * 1.35 && isNearFloor && bearPct >= 52) {
+  if (lowerWickSum > upperWickSum * 1.25 && isNearFloor && (bullPct >= 48.0 || netDeltaPct >= -4.0)) {
     verdict = 'BULL ABSORPTION / SPRING';
     verdictColor = '#00f0ff';
-  } else if (bullPct >= 62) {
+  } else if (upperWickSum > lowerWickSum * 1.25 && isNearCeiling && (bearPct >= 48.0 || netDeltaPct <= 4.0)) {
+    verdict = 'BEAR ABSORPTION / CEILING';
+    verdictColor = '#ffb300';
+  } else if (bullPct >= 62.0 || netDeltaPct >= 24.0) {
     verdict = 'BULL INITIATIVE';
     verdictColor = '#00e676';
-  } else if (bearPct >= 62) {
+  } else if (bearPct >= 62.0 || netDeltaPct <= -24.0) {
     verdict = 'BEAR INITIATIVE';
     verdictColor = '#ff334b';
-  } else if (bullPct >= 54) {
+  } else if (bullPct >= 54.0 || netDeltaPct >= 8.0) {
     verdict = 'BULL DOMINANT';
     verdictColor = '#10b981';
-  } else if (bearPct >= 54) {
+  } else if (bearPct >= 54.0 || netDeltaPct <= -8.0) {
     verdict = 'BEAR DOMINANT';
     verdictColor = '#f43f5e';
   }
@@ -198,6 +203,7 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
     bullVol: Math.round(bullVol),
     bearVol: Math.round(bearVol),
     netDelta,
+    netDeltaPct,
     bullPct,
     bearPct,
     pocPrice,
@@ -341,11 +347,15 @@ function registerCustomOverlays() {
           const deltaColor = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
           const volStr = formatVolNumber(volMetrics.totalVol);
           const deltaStr = `${deltaSign}${formatVolNumber(volMetrics.netDelta)}`;
+          const deltaPctStr = `${volMetrics.netDeltaPct > 0 ? '+' : ''}${volMetrics.netDeltaPct.toFixed(1)}%`;
 
           if (boxW >= 120 && boxH >= 48) {
             // Full multi-line HUD badge
-            const line1 = `📊 ${volStr} | Δ ${deltaStr}`;
-            const line2 = `🟢 ${volMetrics.bullPct}%  |  ${volMetrics.bearPct}% 🔴`;
+            const showDeltaPct = (boxW >= 170);
+            const line1 = showDeltaPct
+              ? `📊 ${volStr} | Δ ${deltaStr} (${deltaPctStr})`
+              : `📊 ${volStr} | Δ ${deltaStr}`;
+            const line2 = `🟢 ${volMetrics.bullPct.toFixed(1)}%  |  ${volMetrics.bearPct.toFixed(1)}% 🔴`;
 
             figures.push({
               type: 'text',
@@ -424,12 +434,13 @@ function registerCustomOverlays() {
             }
           } else if (boxW >= 85 && boxH >= 28) {
             // Compact 2-line badge
+            const showCompactPct = (boxW >= 145);
             figures.push({
               type: 'text',
               attrs: {
                 x: minX + 5,
                 y: minY + 4,
-                text: `${volStr} (Δ${deltaStr})`,
+                text: showCompactPct ? `${volStr} (Δ${deltaStr} ${deltaPctStr})` : `${volStr} (Δ${deltaStr})`,
                 align: 'left',
                 baseline: 'top'
               },
@@ -452,7 +463,7 @@ function registerCustomOverlays() {
               attrs: {
                 x: minX + 5,
                 y: minY + 16,
-                text: `${volMetrics.bullPct}%🟢 ${volMetrics.bearPct}%🔴`,
+                text: `${volMetrics.bullPct.toFixed(1)}%🟢 ${volMetrics.bearPct.toFixed(1)}%🔴`,
                 align: 'left',
                 baseline: 'top'
               },

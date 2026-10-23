@@ -9,8 +9,8 @@
  * - In-app confirmation dialog (Zero browser alert/confirm popups)
  */
 
-import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232330';
-import { computeRectangleVolumeMetrics, patchOverlayViews } from './tv_chart_engine.js?v=202610232330';
+import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610240045';
+import { computeRectangleVolumeMetrics, patchOverlayViews } from './tv_chart_engine.js?v=202610240045';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -871,11 +871,12 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           if (totalVolEl) totalVolEl.textContent = `${volMetrics.totalVol.toLocaleString()} ticks`;
           if (netDeltaEl) {
             const sign = volMetrics.netDelta > 0 ? '+' : '';
-            netDeltaEl.textContent = `${sign}${volMetrics.netDelta.toLocaleString()}`;
+            const pctSign = volMetrics.netDeltaPct > 0 ? '+' : '';
+            netDeltaEl.innerHTML = `${sign}${volMetrics.netDelta.toLocaleString()} <span style="font-size:11px; color:#94a3b8; font-weight:600;">(${pctSign}${volMetrics.netDeltaPct.toFixed(1)}%)</span>`;
             netDeltaEl.style.color = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
           }
           if (deltaRatioEl) {
-            deltaRatioEl.innerHTML = `<span style="color:#00e676">${volMetrics.bullPct}% 🟢</span> / <span style="color:#ff334b">${volMetrics.bearPct}% 🔴</span>`;
+            deltaRatioEl.innerHTML = `<span style="color:#00e676; font-weight:700;">${volMetrics.bullPct.toFixed(1)}% 🟢</span> / <span style="color:#ff334b; font-weight:700;">${volMetrics.bearPct.toFixed(1)}% 🔴</span>`;
           }
           if (pocPriceEl) pocPriceEl.textContent = `$${volMetrics.pocPrice.toFixed(2)}`;
           if (verdictEl) {
