@@ -1,52 +1,16 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1792678428166_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1792685100000,
-          "value": 4059.5101997422375
-        },
-        {
-          "timestamp": 1792705500000,
-          "value": 4059.5101997422375
-        },
-        {
-          "timestamp": 1792705500000,
-          "value": 4055.8056828113704
-        },
-        {
-          "timestamp": 1792685100000,
-          "value": 4055.8056828113704
-        },
-        {
-          "timestamp": 1792685100000,
-          "value": 4057.657941276804
-        },
-        {
-          "timestamp": 1792705500000,
-          "value": 4057.657941276804
-        }
-      ],
-      "styles": null,
-      "extendData": {
-        "alarmMode": "BOTH",
-        "telegramAlert": true,
-        "_lastInside": false
-      }
-    },
-    {
-      "id": "overlay_1792678362251_1",
+      "id": "overlay_1792772383960_1",
       "name": "segment",
       "points": [
         {
-          "value": 4093.6226264806382,
-          "timestamp": 1792665900000
+          "value": 3992.9180105668697,
+          "timestamp": 1792775700000
         },
         {
-          "value": 4088.0658510843377,
-          "timestamp": 1792692300000
+          "value": 3995.3978116173625,
+          "timestamp": 1792788900000
         }
       ],
       "styles": {
@@ -66,16 +30,16 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1792678352559_1",
+      "id": "overlay_1792772134740_1",
       "name": "segment",
       "points": [
         {
-          "value": 4102.575209063567,
-          "timestamp": 1792660500000
+          "value": 3998.408998607247,
+          "timestamp": 1792779600000
         },
         {
-          "value": 4086.3679474910236,
-          "timestamp": 1792692000000
+          "value": 4006.3797876981175,
+          "timestamp": 1792786500000
         }
       ],
       "styles": {
@@ -95,16 +59,16 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1792646398173_1",
+      "id": "overlay_1792771395763_1",
       "name": "segment",
       "points": [
         {
-          "value": 4115.394647330712,
-          "timestamp": 1792483200000
+          "value": 4029.9317362972897,
+          "timestamp": 1792757400000
         },
         {
-          "value": 4153.530772465691,
-          "timestamp": 1792534500000
+          "value": 4033.9079111903397,
+          "timestamp": 1792781400000
         }
       ],
       "styles": {
@@ -124,16 +88,16 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1792645363395_1",
+      "id": "overlay_1792769105142_1",
       "name": "segment",
       "points": [
         {
-          "value": 4111.484720210657,
-          "timestamp": 1792499700000
+          "value": 4024.1599431643626,
+          "timestamp": 1792744200000
         },
         {
-          "value": 4122.850785928256,
-          "timestamp": 1792561800000
+          "value": 3999.8654792626726,
+          "timestamp": 1792785600000
         }
       ],
       "styles": {
@@ -153,335 +117,16 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1792646705587_1",
+      "id": "overlay_1792769075946_1",
       "name": "segment",
       "points": [
         {
-          "value": 4124.816836294046,
-          "timestamp": 1792577700000
+          "value": 4014.231917050691,
+          "timestamp": 1792746300000
         },
         {
-          "value": 4124.562240048926,
-          "timestamp": 1792600800000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792645398510_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4106.135983402373,
-          "timestamp": 1792554600000
-        },
-        {
-          "value": 4116.50002562012,
-          "timestamp": 1792601400000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792645551862_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4131.514502279102,
-          "timestamp": 1792545300000
-        },
-        {
-          "value": 4104.939800783076,
-          "timestamp": 1792586400000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792646090133_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4121.509466768132,
-          "timestamp": 1792602000000
-        },
-        {
-          "value": 4139.1957124178225,
-          "timestamp": 1792631400000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792646537778_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4121.076608364528,
-          "timestamp": 1792515300000
-        },
-        {
-          "value": 4132.570337401475,
-          "timestamp": 1792548900000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792646460105_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4128.191773958828,
-          "timestamp": 1792524000000
-        },
-        {
-          "value": 4113.851978684161,
-          "timestamp": 1792571100000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792645682627_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4123.119527993245,
-          "timestamp": 1792551600000
-        },
-        {
-          "value": 4131.012011591971,
-          "timestamp": 1792593300000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792645310387_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4104.548077162416,
-          "timestamp": 1792617000000
-        },
-        {
-          "value": 4110.648980084363,
-          "timestamp": 1792668900000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792646042787_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4149.784602279892,
-          "timestamp": 1792623900000
-        },
-        {
-          "value": 4099.530427931116,
-          "timestamp": 1792664400000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792677789447_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4069.2821573842557,
-          "timestamp": 1792655400000
-        },
-        {
-          "value": 4052.369003295231,
-          "timestamp": 1792692600000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792677973283_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4094.373432830784,
-          "timestamp": 1792654500000
-        },
-        {
-          "value": 4041.806469866271,
-          "timestamp": 1792692600000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792751902990_1",
-      "name": "segment",
-      "points": [
-        {
-          "value": 4000.769057626613,
-          "timestamp": 1792740900000
-        },
-        {
-          "value": 4024.72597188023,
-          "timestamp": 1792772700000
+          "value": 3991.923058371736,
+          "timestamp": 1792784700000
         }
       ],
       "styles": {
