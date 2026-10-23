@@ -227,12 +227,14 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     } : undefined;
 
     const isLine = isLineOverlay(overlayName) || overlayName === 'verticalStraightLine';
-    const zLvl = isLine ? 50 : (overlayName === 'rect' ? 10 : 20);
+    const isRect = (overlayName === 'rect');
+    const zLvl = isLine ? 50 : (isRect ? 45 : 20);
 
     try {
       chart.createOverlay({
         name: overlayName,
         zLevel: zLvl,
+        fixedZLevel: isRect ? true : false,
         styles: defaultStyles,
         onDrawEnd: ({ overlay }) => {
           if (isLineOverlay(overlayName) && window.__lineTradingManager && overlay) {
@@ -244,6 +246,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
               const sixPoints = normalizeRectPoints(overlay.points);
               chart.overrideOverlay({ id: overlay.id, points: sixPoints });
             }
+            recalculateRectZLevels(chart);
           }
           if ((overlayName === 'longPosition' || overlayName === 'shortPosition') && overlay) {
             if (overlay.points && overlay.points.length === 1) {
@@ -323,11 +326,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     } : params.styles;
 
     const isLine = isLineOverlay(ovName) || ovName === 'verticalStraightLine';
-    const zLvl = params.zLevel !== undefined ? params.zLevel : (isLine ? 50 : (ovName === 'rect' ? 10 : 20));
+    const isRect = (ovName === 'rect');
+    const zLvl = params.zLevel !== undefined ? params.zLevel : (isLine ? 50 : (isRect ? 45 : 20));
 
     const customParams = {
       ...params,
       zLevel: zLvl,
+      fixedZLevel: isRect ? true : Boolean(params.fixedZLevel),
       styles: defaultStyles,
       onDrawEnd: (args) => {
         if (params.onDrawEnd) params.onDrawEnd(args);

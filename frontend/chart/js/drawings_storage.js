@@ -207,8 +207,11 @@ export function recalculateRectZLevels(chart) {
   if (rects.length === 0) return;
 
   if (rects.length === 1) {
+    rects[0].fixedZLevel = true;
+    rects[0].zLevel = 15;
+    if (typeof rects[0].setPrevZLevel === 'function') rects[0].setPrevZLevel(15);
     if (typeof chart.overrideOverlay === 'function') {
-      chart.overrideOverlay({ id: rects[0].id, zLevel: 15 });
+      chart.overrideOverlay({ id: rects[0].id, zLevel: 15, fixedZLevel: true });
     }
     return;
   }
@@ -225,24 +228,31 @@ export function recalculateRectZLevels(chart) {
     return { overlay: r, area };
   });
 
-  // Sort DESCENDING: Largest macro box first (gets lowest zLevel 10)
-  // Smallest micro sub-box last (gets highest zLevel 45)
+  // Sort DESCENDING: Largest macro box first (lowest zLevel 10)
+  // Smallest micro sub-box last (highest zLevel 48)
   rectsWithArea.sort((a, b) => b.area - a.area);
 
   const minZ = 10;
-  const maxZ = 45;
+  const maxZ = 48;
   const count = rectsWithArea.length;
   const step = count > 1 ? ((maxZ - minZ) / (count - 1)) : 0;
 
   rectsWithArea.forEach((item, index) => {
     const assignedZ = Math.round(minZ + index * step);
-    if (item.overlay.zLevel !== assignedZ) {
-      item.overlay.zLevel = assignedZ;
-      if (typeof chart.overrideOverlay === 'function') {
-        chart.overrideOverlay({ id: item.overlay.id, zLevel: assignedZ });
-      }
+    item.overlay.fixedZLevel = true;
+    item.overlay.zLevel = assignedZ;
+    if (typeof item.overlay.setPrevZLevel === 'function') {
+      item.overlay.setPrevZLevel(assignedZ);
+    }
+    if (typeof chart.overrideOverlay === 'function') {
+      chart.overrideOverlay({ id: item.overlay.id, zLevel: assignedZ, fixedZLevel: true });
     }
   });
+
+  // Force chart store to re-sort overlays immediately
+  if (chart._chartStore && typeof chart._chartStore._sortOverlays === 'function') {
+    chart._chartStore._sortOverlays();
+  }
 }
 
 export function restoreDrawings(chart, drawingsList) {
@@ -252,8 +262,9 @@ export function restoreDrawings(chart, drawingsList) {
     drawingsList.forEach(d => {
       try {
         const isLine = ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'].includes(d.name);
-        const zLvl = d.zLevel !== undefined ? d.zLevel : (isLine ? 50 : (d.name === 'rect' ? 10 : 20));
-        const rawPoints = (d.name === 'rect' && d.points)
+        const isRect = (d.name === 'rect');
+        const zLvl = d.zLevel !== undefined ? d.zLevel : (isLine ? 50 : (isRect ? 10 : 20));
+        const rawPoints = (isRect && d.points)
           ? normalizeRectPoints(d.points)
           : d.points;
 
@@ -272,6 +283,7 @@ export function restoreDrawings(chart, drawingsList) {
           points: points,
           styles: d.styles,
           zLevel: zLvl,
+          fixedZLevel: isRect ? true : Boolean(d.fixedZLevel),
           extendData: d.extendData || {}
         });
       } catch (e) {

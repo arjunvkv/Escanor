@@ -218,6 +218,7 @@ function registerCustomOverlays() {
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: true,
     zLevel: 10,
+    fixedZLevel: true,
     createPointFigures: ({ overlay, coordinates, yAxis }) => {
       if (!coordinates || coordinates.length === 0) return [];
       const isArmed = Boolean(overlay?.extendData?.alarmMode && overlay.extendData.alarmMode !== 'OFF');
@@ -280,6 +281,7 @@ function registerCustomOverlays() {
                   { x: maxX, y: pocY }
                 ]
               },
+              ignoreEvent: true,
               styles: {
                 style: 'dashed',
                 color: '#ffb300',
@@ -298,6 +300,7 @@ function registerCustomOverlays() {
                   align: 'right',
                   baseline: 'middle'
                 },
+                ignoreEvent: true,
                 styles: {
                   color: '#ffb300',
                   size: 9.5,
@@ -336,6 +339,7 @@ function registerCustomOverlays() {
                 align: 'left',
                 baseline: 'top'
               },
+              ignoreEvent: true,
               styles: {
                 color: '#00e5ff',
                 size: 10,
@@ -361,6 +365,7 @@ function registerCustomOverlays() {
                 align: 'left',
                 baseline: 'top'
               },
+              ignoreEvent: true,
               styles: {
                 color: '#e2e8f0',
                 size: 9.5,
@@ -385,6 +390,7 @@ function registerCustomOverlays() {
                   align: 'left',
                   baseline: 'top'
                 },
+                ignoreEvent: true,
                 styles: {
                   color: volMetrics.verdictColor,
                   size: 8.5,
@@ -410,6 +416,7 @@ function registerCustomOverlays() {
                 align: 'left',
                 baseline: 'top'
               },
+              ignoreEvent: true,
               styles: {
                 color: '#00e5ff',
                 size: 9.5,
@@ -432,6 +439,7 @@ function registerCustomOverlays() {
                 align: 'left',
                 baseline: 'top'
               },
+              ignoreEvent: true,
               styles: {
                 color: '#cbd5e1',
                 size: 8.5,
@@ -456,6 +464,7 @@ function registerCustomOverlays() {
                 align: 'left',
                 baseline: 'top'
               },
+              ignoreEvent: true,
               styles: {
                 color: deltaColor,
                 size: 8.5,
