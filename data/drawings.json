@@ -34,36 +34,36 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1792774907236_1",
+      "id": "overlay_1792776250879_1",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792770900000,
-          "value": 4034.213897908915
+          "timestamp": 1792708500000,
+          "value": 4042.687940092166
         },
         {
-          "timestamp": 1792791900000,
-          "value": 4034.213897908915
+          "timestamp": 1792787400000,
+          "value": 4042.687940092166
         },
         {
-          "timestamp": 1792791900000,
-          "value": 3975.6753120799885
+          "timestamp": 1792787400000,
+          "value": 3973.556935483871
         },
         {
-          "timestamp": 1792770900000,
-          "value": 3975.6753120799885
+          "timestamp": 1792708500000,
+          "value": 3973.556935483871
         },
         {
-          "timestamp": 1792770900000,
-          "value": 4004.9446049944518
+          "timestamp": 1792708500000,
+          "value": 4008.1224377880185
         },
         {
-          "timestamp": 1792791900000,
-          "value": 4004.9446049944518
+          "timestamp": 1792787400000,
+          "value": 4008.1224377880185
         }
       ],
       "styles": null,
-      "zLevel": 22,
+      "zLevel": 29,
       "extendData": {}
     },
     {
@@ -71,78 +71,45 @@
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792731300000,
-          "value": 4030.2541428571426
+          "timestamp": 1792731000000,
+          "value": 4034.6719708141322
         },
         {
-          "timestamp": 1792773900000,
-          "value": 4030.2541428571426
+          "timestamp": 1792772700000,
+          "value": 4034.6719708141322
         },
         {
-          "timestamp": 1792773900000,
-          "value": 3984.9249999999997
+          "timestamp": 1792772700000,
+          "value": 3986.667044546851
         },
         {
-          "timestamp": 1792731300000,
-          "value": 3984.9249999999997
+          "timestamp": 1792731000000,
+          "value": 3986.667044546851
         },
         {
-          "timestamp": 1792731300000,
-          "value": 4007.589571428571
+          "timestamp": 1792731000000,
+          "value": 4010.6695076804917
         },
         {
-          "timestamp": 1792773900000,
-          "value": 4007.589571428571
+          "timestamp": 1792772700000,
+          "value": 4010.6695076804917
         }
       ],
       "styles": null,
-      "zLevel": 33,
+      "zLevel": 48,
       "extendData": {}
     },
     {
-      "id": "overlay_1792774949573_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1792776300000,
-          "value": 4005.3879785863073
-        },
-        {
-          "timestamp": 1792787100000,
-          "value": 4005.3879785863073
-        },
-        {
-          "timestamp": 1792787100000,
-          "value": 3992.8237603750263
-        },
-        {
-          "timestamp": 1792776300000,
-          "value": 3992.8237603750263
-        },
-        {
-          "timestamp": 1792776300000,
-          "value": 3999.105869480667
-        },
-        {
-          "timestamp": 1792787100000,
-          "value": 3999.105869480667
-        }
-      ],
-      "styles": null,
-      "zLevel": 45,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792775352494_1",
+      "id": "overlay_1792775147084_1",
       "name": "segment",
       "points": [
         {
-          "value": 4027.3432258064518,
-          "timestamp": 1792744200000
+          "value": 4000.034714285714,
+          "timestamp": 1792740600000
         },
         {
-          "value": 4029.7301198156683,
-          "timestamp": 1792766100000
+          "value": 4029.2048571428572,
+          "timestamp": 1792758900000
         }
       ],
       "styles": {
@@ -152,14 +119,14 @@
           "style": "solid"
         },
         "point": {
-          "color": "#ffffff",
-          "borderColor": "#ffffff",
+          "color": "#94a3b8",
+          "borderColor": "#94a3b8",
           "activeColor": "#ffffff",
           "activeBorderColor": "#ffffff",
-          "radius": 5.5
+          "radius": 4
         }
       },
-      "zLevel": 50,
+      "zLevel": 100,
       "extendData": {}
     },
     {
@@ -193,16 +160,16 @@
       "extendData": {}
     },
     {
-      "id": "overlay_1792775147084_1",
+      "id": "overlay_1792776140477_1",
       "name": "segment",
       "points": [
         {
-          "value": 4000.034714285714,
-          "timestamp": 1792740600000
+          "value": 4027.7825850368663,
+          "timestamp": 1792743300000
         },
         {
-          "value": 4029.2048571428572,
-          "timestamp": 1792758900000
+          "value": 4034.0974069502304,
+          "timestamp": 1792775100000
         }
       ],
       "styles": {

@@ -10,6 +10,9 @@ import { registerLivingFootprintIndicator } from './living_candle_engine.js?v=20
 // Global reference for chart instance
 let chartInstance = null;
 
+// Global preference: Hide Volume Overlays on all boxes (only rectangle lines shown)
+window.__hideAllRectVolumeOverlays = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_hide_all_rect_volume') === 'true');
+
 export function getChartInstance() {
   return chartInstance;
 }
@@ -259,10 +262,15 @@ function registerCustomOverlays() {
         ];
 
         // Dynamic Volume Consumption & Delta Metrics inside Rectangle
-        const dataList = chartInstance?.getDataList?.() || [];
-        const volMetrics = computeRectangleVolumeMetrics(overlay, dataList);
+        // Respect settings: hide volume overlay if disabled globally or on this specific box
+        const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
+        const isThisBoxHidden = Boolean(overlay?.extendData?.hideVolumeOverlay);
 
-        if (volMetrics && volMetrics.totalVol > 0) {
+        if (!isGlobalHidden && !isThisBoxHidden) {
+          const dataList = chartInstance?.getDataList?.() || [];
+          const volMetrics = computeRectangleVolumeMetrics(overlay, dataList);
+
+          if (volMetrics && volMetrics.totalVol > 0) {
           // 1. Render Volume POC Line (Point of Control)
           let pocY = null;
           if (yAxis && typeof yAxis.convertToPixel === 'function') {
@@ -480,6 +488,7 @@ function registerCustomOverlays() {
             });
           }
         }
+      }
 
         return figures;
       }
@@ -523,7 +532,8 @@ function registerCustomOverlays() {
     needDefaultPointFigure: true,
     needDefaultXAxisFigure: true,
     needDefaultYAxisFigure: false,
-    zLevel: 50,
+    zLevel: 200,
+    fixedZLevel: true,
     createPointFigures: ({ overlay, coordinates, bounding }) => {
       if (coordinates && coordinates.length > 0) {
         const x = coordinates[0].x;

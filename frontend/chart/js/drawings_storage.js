@@ -263,7 +263,7 @@ export function restoreDrawings(chart, drawingsList) {
       try {
         const isLine = ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'].includes(d.name);
         const isRect = (d.name === 'rect');
-        const zLvl = d.zLevel !== undefined ? d.zLevel : (isLine ? 50 : (isRect ? 10 : 20));
+        const zLvl = isLine ? 200 : (d.zLevel !== undefined ? d.zLevel : (isRect ? 10 : 20));
         const rawPoints = (isRect && d.points)
           ? normalizeRectPoints(d.points)
           : d.points;
@@ -283,7 +283,7 @@ export function restoreDrawings(chart, drawingsList) {
           points: points,
           styles: d.styles,
           zLevel: zLvl,
-          fixedZLevel: isRect ? true : Boolean(d.fixedZLevel),
+          fixedZLevel: (isLine || isRect) ? true : Boolean(d.fixedZLevel),
           extendData: d.extendData || {}
         });
       } catch (e) {

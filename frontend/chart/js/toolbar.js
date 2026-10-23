@@ -228,13 +228,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
 
     const isLine = isLineOverlay(overlayName) || overlayName === 'verticalStraightLine';
     const isRect = (overlayName === 'rect');
-    const zLvl = isLine ? 50 : (isRect ? 45 : 20);
+    const zLvl = isLine ? 200 : (isRect ? 45 : 20);
 
     try {
       chart.createOverlay({
         name: overlayName,
         zLevel: zLvl,
-        fixedZLevel: isRect ? true : false,
+        fixedZLevel: (isLine || isRect) ? true : false,
         styles: defaultStyles,
         onDrawEnd: ({ overlay }) => {
           if (isLineOverlay(overlayName) && window.__lineTradingManager && overlay) {
@@ -327,12 +327,12 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
 
     const isLine = isLineOverlay(ovName) || ovName === 'verticalStraightLine';
     const isRect = (ovName === 'rect');
-    const zLvl = params.zLevel !== undefined ? params.zLevel : (isLine ? 50 : (isRect ? 45 : 20));
+    const zLvl = isLine ? 200 : (params.zLevel !== undefined ? params.zLevel : (isRect ? 45 : 20));
 
     const customParams = {
       ...params,
       zLevel: zLvl,
-      fixedZLevel: isRect ? true : Boolean(params.fixedZLevel),
+      fixedZLevel: (isLine || isRect) ? true : Boolean(params.fixedZLevel),
       styles: defaultStyles,
       onDrawEnd: (args) => {
         if (params.onDrawEnd) params.onDrawEnd(args);
@@ -877,6 +877,16 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           tgCheck.checked = Boolean(selectedOverlay.extendData?.telegramAlert);
         }
 
+        const thisOverlayCheck = document.getElementById('tvRectHideThisOverlayCheck');
+        if (thisOverlayCheck) {
+          thisOverlayCheck.checked = Boolean(selectedOverlay.extendData?.hideVolumeOverlay);
+        }
+
+        const allOverlaysCheck = document.getElementById('tvRectHideAllOverlaysCheck');
+        if (allOverlaysCheck) {
+          allOverlaysCheck.checked = Boolean(window.__hideAllRectVolumeOverlays);
+        }
+
         const isQuickArmed = (curMode === 'BOTH' && Boolean(selectedOverlay.extendData?.telegramAlert));
         if (rectQuickAlarmBtn) rectQuickAlarmBtn.classList.toggle('active', isQuickArmed);
 
@@ -959,6 +969,37 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
 
       syncDrawingsToServer(currentSymbolRef, chart, false, true);
     }
+  });
+
+  // Volume Overlay Visibility Checkboxes (This Box Only / All Boxes)
+  const thisBoxOverlayCheck = document.getElementById('tvRectHideThisOverlayCheck');
+  thisBoxOverlayCheck?.addEventListener('change', (e) => {
+    if (selectedOverlay && selectedOverlay.name === 'rect') {
+      selectedOverlay.extendData = selectedOverlay.extendData || {};
+      selectedOverlay.extendData.hideVolumeOverlay = e.target.checked;
+      chart.overrideOverlay({
+        id: selectedOverlay.id,
+        extendData: selectedOverlay.extendData
+      });
+      syncDrawingsToServer(currentSymbolRef, chart, false, true);
+      showChartToast(e.target.checked ? 'Volume overlay hidden on this box' : 'Volume overlay visible on this box');
+    }
+  });
+
+  const allBoxesOverlayCheck = document.getElementById('tvRectHideAllOverlaysCheck');
+  allBoxesOverlayCheck?.addEventListener('change', (e) => {
+    const isHidden = e.target.checked;
+    window.__hideAllRectVolumeOverlays = isHidden;
+    try {
+      localStorage.setItem('escanor_hide_all_rect_volume', isHidden ? 'true' : 'false');
+    } catch (_) {}
+    if (typeof chart.getOverlays === 'function') {
+      const all = chart.getOverlays() || [];
+      all.filter(o => o.name === 'rect').forEach(r => {
+        chart.overrideOverlay({ id: r.id });
+      });
+    }
+    showChartToast(isHidden ? 'Volume overlay hidden on ALL boxes' : 'Volume overlay visible on all boxes');
   });
 
   // Rectangle Settings Modal Buttons

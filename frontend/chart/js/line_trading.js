@@ -628,7 +628,8 @@ export class LineTradingManager {
 
       this.chart.overrideOverlay({
         id: line.overlayId,
-        zLevel: 100,
+        zLevel: 200,
+        fixedZLevel: true,
         styles: {
           line: {
             color: baseColor,
