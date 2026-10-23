@@ -9,8 +9,8 @@
  * - In-app confirmation dialog (Zero browser alert/confirm popups)
  */
 
-import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232220';
-import { computeRectangleVolumeMetrics, patchOverlayViews } from './tv_chart_engine.js?v=202610232210';
+import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232330';
+import { computeRectangleVolumeMetrics, patchOverlayViews } from './tv_chart_engine.js?v=202610232330';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -902,6 +902,16 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           allOverlaysCheck.checked = Boolean(window.__hideAllRectVolumeOverlays);
         }
 
+        const thisFillCheck = document.getElementById('tvRectDisableThisFillCheck');
+        if (thisFillCheck) {
+          thisFillCheck.checked = Boolean(selectedOverlay.extendData?.disableFill);
+        }
+
+        const allFillCheck = document.getElementById('tvRectDisableAllFillCheck');
+        if (allFillCheck) {
+          allFillCheck.checked = Boolean(window.__disableAllRectFill);
+        }
+
         const isQuickArmed = (curMode === 'BOTH' && Boolean(selectedOverlay.extendData?.telegramAlert));
         if (rectQuickAlarmBtn) rectQuickAlarmBtn.classList.toggle('active', isQuickArmed);
 
@@ -1015,6 +1025,43 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       });
     }
     showChartToast(isHidden ? 'Volume overlay hidden on ALL boxes' : 'Volume overlay visible on all boxes');
+  });
+
+  // Box Fill Visibility Checkboxes (This Box Only / All Boxes)
+  const thisBoxFillCheck = document.getElementById('tvRectDisableThisFillCheck');
+  thisBoxFillCheck?.addEventListener('change', (e) => {
+    if (selectedOverlay && selectedOverlay.name === 'rect') {
+      selectedOverlay.extendData = selectedOverlay.extendData || {};
+      selectedOverlay.extendData.disableFill = e.target.checked;
+      chart.overrideOverlay({
+        id: selectedOverlay.id,
+        extendData: selectedOverlay.extendData
+      });
+      syncDrawingsToServer(currentSymbolRef, chart, false, true);
+      if (typeof chart.updatePane === 'function') {
+        chart.updatePane(1);
+      }
+      showChartToast(e.target.checked ? 'Box fill disabled on this box' : 'Box fill enabled on this box');
+    }
+  });
+
+  const allBoxesFillCheck = document.getElementById('tvRectDisableAllFillCheck');
+  allBoxesFillCheck?.addEventListener('change', (e) => {
+    const isDisabled = e.target.checked;
+    window.__disableAllRectFill = isDisabled;
+    try {
+      localStorage.setItem('escanor_disable_all_rect_fill', isDisabled ? 'true' : 'false');
+    } catch (_) {}
+    if (typeof chart.getOverlays === 'function') {
+      const all = chart.getOverlays() || [];
+      all.filter(o => o.name === 'rect').forEach(r => {
+        chart.overrideOverlay({ id: r.id });
+      });
+    }
+    if (typeof chart.updatePane === 'function') {
+      chart.updatePane(1);
+    }
+    showChartToast(isDisabled ? 'Box fill disabled on ALL boxes' : 'Box fill enabled on all boxes');
   });
 
   // Rectangle Settings Modal Buttons

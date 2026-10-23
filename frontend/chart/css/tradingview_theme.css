@@ -2227,6 +2227,8 @@ input[type="number"] {
 .tv-rect-modal-card {
   width: 360px;
   max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
 }
 
 .tv-rect-range-card {

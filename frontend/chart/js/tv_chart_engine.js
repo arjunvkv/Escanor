@@ -13,6 +13,9 @@ let chartInstance = null;
 // Global preference: Hide Volume Overlays on all boxes (only rectangle lines shown)
 window.__hideAllRectVolumeOverlays = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_hide_all_rect_volume') === 'true');
 
+// Global preference: Disable transparent fill on all boxes (outline only)
+window.__disableAllRectFill = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_disable_all_rect_fill') === 'true');
+
 export function getChartInstance() {
   return chartInstance;
 }
@@ -227,9 +230,15 @@ function registerCustomOverlays() {
       const isArmed = Boolean(overlay?.extendData?.alarmMode && overlay.extendData.alarmMode !== 'OFF');
       const isBoth = (overlay?.extendData?.alarmMode === 'BOTH');
 
+      const isGlobalFillDisabled = Boolean(window.__disableAllRectFill);
+      const isThisBoxFillDisabled = Boolean(overlay?.extendData?.disableFill);
+      const isFillDisabled = isGlobalFillDisabled || isThisBoxFillDisabled;
+
       const polyStyle = {
-        style: 'stroke_fill',
-        color: isArmed ? (isBoth ? 'rgba(245, 158, 11, 0.16)' : 'rgba(236, 64, 122, 0.14)') : 'rgba(236, 64, 122, 0.12)',
+        style: isFillDisabled ? 'stroke' : 'stroke_fill',
+        color: isFillDisabled
+          ? 'transparent'
+          : (isArmed ? (isBoth ? 'rgba(245, 158, 11, 0.16)' : 'rgba(236, 64, 122, 0.14)') : 'rgba(236, 64, 122, 0.12)'),
         borderColor: isArmed ? (isBoth ? '#f59e0b' : '#ec407a') : '#ec407a',
         borderSize: isArmed ? 2 : 1.5
       };
