@@ -568,6 +568,84 @@ function registerCustomOverlays() {
         }
       }
       recalculateRectZLevels(chart || chartInstance);
+    },
+    onClick: (event) => {
+      const overlay = event?.overlay;
+      const figure = event?.figure;
+      // 1. If a point handle was clicked (circle), it's a resize handle click - do not cycle!
+      if (figure && (figure.type === 'circle' || figure.name === 'circle' || String(figure.key || '').includes('point_'))) {
+        return true;
+      }
+
+      // 2. Check if multiple rectangle overlays overlap at this click point
+      const c = event?.chart || chartInstance;
+      if (!c || typeof c.getOverlays !== 'function') return true;
+
+      const allOverlays = c.getOverlays() || [];
+      const rects = allOverlays.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+      if (rects.length <= 1) return true;
+
+      // Click coordinates
+      const clickX = event?.x ?? event?.clientX;
+      const clickY = event?.y ?? event?.clientY;
+      if (typeof clickX !== 'number' || typeof clickY !== 'number') return true;
+
+      // Find all rects that contain this coordinate
+      const hitRects = [];
+      for (const r of rects) {
+        if (typeof c.convertToPixel !== 'function') continue;
+        const coords = c.convertToPixel(r.points);
+        if (!coords || coords.length < 2) continue;
+        const xs = coords.map(pt => pt.x);
+        const ys = coords.map(pt => pt.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
+        if (clickX >= minX && clickX <= maxX && clickY >= minY && clickY <= maxY) {
+          hitRects.push(r);
+        }
+      }
+
+      // If multiple rectangles overlap at this click location
+      if (hitRects.length > 1) {
+        const currentSelectedId = window.__selectedOverlay?.id;
+        // If the current rect is already selected, cycle to the next overlapping box!
+        if (currentSelectedId && hitRects.some(r => r.id === currentSelectedId)) {
+          const curIdx = hitRects.findIndex(r => r.id === currentSelectedId);
+          const nextRect = hitRects[(curIdx + 1) % hitRects.length];
+
+          if (nextRect && nextRect.id !== currentSelectedId) {
+            if (c._chartStore && typeof c._chartStore.setClickOverlayInfo === 'function') {
+              c._chartStore.setClickOverlayInfo({
+                paneId: 'candle_pane',
+                overlay: nextRect,
+                figureType: 'other',
+                figureIndex: -1,
+                figure: null
+              }, (ov) => {
+                if (typeof window.__handleOverlaySelected === 'function') {
+                  window.__handleOverlaySelected({ overlay: ov });
+                }
+              }, (ov) => {
+                if (typeof window.__handleOverlayDeselected === 'function') {
+                  window.__handleOverlayDeselected({ overlay: ov });
+                }
+              });
+              if (typeof c._chartStore._sortOverlays === 'function') {
+                c._chartStore._sortOverlays();
+              }
+              if (typeof c.updatePane === 'function') {
+                c.updatePane(1);
+              }
+              return true;
+            }
+          }
+        }
+      }
+
+      return true;
     }
   });
 
@@ -1876,7 +1954,71 @@ export function initTradingViewChart(containerId = 'klineChart') {
     console.warn('[TV Engine] LivingFootprint indicator init failed:', err);
   }
 
+  // Patch Overlay Views to guarantee that all resize handles ('circle') are prioritized above polygon bodies
+  try {
+    patchOverlayViews(chart);
+  } catch (err) {
+    console.warn('[TV Engine] patchOverlayViews failed:', err);
+  }
+
   return chart;
+}
+
+export function patchOverlayViews(chartRef) {
+  if (!chartRef || typeof chartRef.getDrawPanes !== 'function') return;
+  const panes = chartRef.getDrawPanes() || [];
+  panes.forEach(pane => {
+    const widget = typeof pane.getMainWidget === 'function' ? pane.getMainWidget() : null;
+    const ovView = widget?._overlayView;
+    if (ovView && !ovView.__enhancedHandles) {
+      ovView.__enhancedHandles = true;
+
+      const origDrawOverlay = ovView._drawOverlay.bind(ovView);
+      ovView._drawOverlay = function (ctx, overlay) {
+        this.__currentDrawingOverlay = overlay;
+        origDrawOverlay(ctx, overlay);
+        this.__currentDrawingOverlay = null;
+      };
+
+      const origCreateFigure = ovView.createFigure.bind(ovView);
+      ovView.createFigure = function (figureParam, events) {
+        const fig = origCreateFigure(figureParam, events);
+        if (fig && this.__currentDrawingOverlay) {
+          fig._overlay = this.__currentDrawingOverlay;
+          fig._overlayId = this.__currentDrawingOverlay.id;
+          fig._overlayName = this.__currentDrawingOverlay.name;
+        }
+        return fig;
+      };
+
+      const origDrawImp = ovView.drawImp.bind(ovView);
+      ovView.drawImp = function (ctx) {
+        origDrawImp(ctx);
+        // Prioritize resize handles: keep all point handle circles at the END of _children
+        // so that hit-testing tests point handles BEFORE any polygon body!
+        if (Array.isArray(this._children) && this._children.length > 1) {
+          const bodies = [];
+          const normalPoints = [];
+          const activePoints = [];
+          const selectedId = window.__selectedOverlay?.id;
+
+          for (let i = 0; i < this._children.length; i++) {
+            const child = this._children[i];
+            if (child && child.name === 'circle') {
+              if (selectedId && child._overlayId === selectedId) {
+                activePoints.push(child);
+              } else {
+                normalPoints.push(child);
+              }
+            } else {
+              bodies.push(child);
+            }
+          }
+          this._children = bodies.concat(normalPoints).concat(activePoints);
+        }
+      };
+    }
+  });
 }
 
 export function startCandleCountdown(timeframeMinutes = 5) {

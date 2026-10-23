@@ -10,7 +10,7 @@
  */
 
 import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232220';
-import { computeRectangleVolumeMetrics } from './tv_chart_engine.js?v=202610232210';
+import { computeRectangleVolumeMetrics, patchOverlayViews } from './tv_chart_engine.js?v=202610232210';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -587,6 +587,8 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         floatRectAlarmBtn.classList.toggle('armed', isAlarmArmed);
         floatRectAlarmBtn.title = isAlarmArmed ? '🔔 ALARM ARMED (BOTH + Telegram) - Click to Disarm' : 'Activate Alarm (BOTH In & Out + Telegram)';
       }
+      recalculateRectZLevels(chart);
+      patchOverlayViews(chart);
     }
     // 4. Vertical Straight Line -> Immediate Time Alarm activation (PC & Mobile)
     else if (selectedOverlay.name === 'verticalStraightLine') {
@@ -622,6 +624,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     }
 
     selectedOverlay = null;
+    window.__selectedOverlay = null;
+    recalculateRectZLevels(chart);
+
     if (window.__lineTradingManager && !window.__lineTradingManager.isDraggingSlTp) {
       window.__lineTradingManager.setSelectedLineId(null);
     }

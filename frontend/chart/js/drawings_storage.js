@@ -273,12 +273,16 @@ export function recalculateRectZLevels(chart) {
   const rects = allOverlays.filter(ov => ov.name === 'rect' && ov.points && ov.points.length >= 2);
   if (rects.length === 0) return;
 
+  const selectedId = window.__selectedOverlay?.id;
+
   if (rects.length === 1) {
+    const isSelected = (selectedId && rects[0].id === selectedId);
+    const z = isSelected ? 100 : 15;
     rects[0].fixedZLevel = true;
-    rects[0].zLevel = 15;
-    if (typeof rects[0].setPrevZLevel === 'function') rects[0].setPrevZLevel(15);
+    rects[0].zLevel = z;
+    if (typeof rects[0].setPrevZLevel === 'function') rects[0].setPrevZLevel(z);
     if (typeof chart.overrideOverlay === 'function') {
-      chart.overrideOverlay({ id: rects[0].id, zLevel: 15, fixedZLevel: true });
+      chart.overrideOverlay({ id: rects[0].id, zLevel: z, fixedZLevel: true });
     }
     return;
   }
@@ -305,7 +309,9 @@ export function recalculateRectZLevels(chart) {
   const step = count > 1 ? ((maxZ - minZ) / (count - 1)) : 0;
 
   rectsWithArea.forEach((item, index) => {
-    const assignedZ = Math.round(minZ + index * step);
+    const isSelected = (selectedId && item.overlay.id === selectedId);
+    // If currently selected, elevate to 100 so its 6 resize handles and body float above all other boxes
+    const assignedZ = isSelected ? 100 : Math.round(minZ + index * step);
     item.overlay.fixedZLevel = true;
     item.overlay.zLevel = assignedZ;
     if (typeof item.overlay.setPrevZLevel === 'function') {
