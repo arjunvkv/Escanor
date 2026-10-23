@@ -167,10 +167,10 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
   const pocPrice = Number((bottomPrice + (pocBinIdx + 0.5) * binStep).toFixed(2));
 
   const netDelta = Math.round(bullVol - bearVol);
-  const netDeltaPct = totalVol > 0 ? Number(((netDelta / totalVol) * 100).toFixed(1)) : 0.0;
-  const rawBullPct = totalVol > 0 ? (bullVol / totalVol) * 100 : 50.0;
-  const bullPct = Number(Math.min(99.9, Math.max(0.1, rawBullPct)).toFixed(1));
-  const bearPct = Number((100 - bullPct).toFixed(1));
+  const netDeltaPct = totalVol > 0 ? Math.round((netDelta / totalVol) * 100) : 0;
+  const rawBullPct = totalVol > 0 ? (bullVol / totalVol) * 100 : 50;
+  const bullPct = Math.min(99, Math.max(1, Math.round(rawBullPct)));
+  const bearPct = 100 - bullPct;
 
   let verdict = 'BALANCED AUCTION';
   let verdictColor = '#38bdf8';
@@ -347,15 +347,15 @@ function registerCustomOverlays() {
           const deltaColor = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
           const volStr = formatVolNumber(volMetrics.totalVol);
           const deltaStr = `${deltaSign}${formatVolNumber(volMetrics.netDelta)}`;
-          const deltaPctStr = `${volMetrics.netDeltaPct > 0 ? '+' : ''}${volMetrics.netDeltaPct.toFixed(1)}%`;
+          const deltaPctStr = `${volMetrics.netDeltaPct > 0 ? '+' : ''}${volMetrics.netDeltaPct}%`;
 
           if (boxW >= 120 && boxH >= 48) {
             // Full multi-line HUD badge
-            const showDeltaPct = (boxW >= 170);
+            const showDeltaPct = (boxW >= 165);
             const line1 = showDeltaPct
               ? `📊 ${volStr} | Δ ${deltaStr} (${deltaPctStr})`
               : `📊 ${volStr} | Δ ${deltaStr}`;
-            const line2 = `🟢 ${volMetrics.bullPct.toFixed(1)}%  |  ${volMetrics.bearPct.toFixed(1)}% 🔴`;
+            const line2 = `🟢 ${volMetrics.bullPct}%  |  ${volMetrics.bearPct}% 🔴`;
 
             figures.push({
               type: 'text',
@@ -463,7 +463,7 @@ function registerCustomOverlays() {
               attrs: {
                 x: minX + 5,
                 y: minY + 16,
-                text: `${volMetrics.bullPct.toFixed(1)}%🟢 ${volMetrics.bearPct.toFixed(1)}%🔴`,
+                text: `${volMetrics.bullPct}%🟢 ${volMetrics.bearPct}%🔴`,
                 align: 'left',
                 baseline: 'top'
               },
