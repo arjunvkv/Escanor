@@ -244,13 +244,6 @@
           </button>
         </div>
 
-        <!-- Volume Consumption Radar Button (Above Bottom Tool) -->
-        <button type="button" id="tvVolumeRadarBtn" class="tv-tool-btn" title="Toggle Volume Consumption Radar (30 Touches + Live Bar)" style="margin-top: auto; margin-bottom: 4px;">
-          <svg viewBox="0 0 24 24" width="18" height="18" fill="var(--tv-cyan, #00e5ff)">
-            <path d="M4 18h2v-4H4v4zm5 0h2V6H9v12zm5 0h2v-8h-2v8zm5 0h2v-12h-2v12z"/>
-          </svg>
-        </button>
-
         <!-- Bottom Left Sidebar Desk HUD Pill Button -->
         <div class="tv-sidebar-bottom-dock">
           <button type="button" id="tvSidebarHudPill" class="tv-sidebar-hud-pill" title="Toggle Desk HUD (Active Trades & Lines)">
@@ -260,49 +253,6 @@
           </button>
         </div>
       </aside>
-
-      <!-- Floating Volume Consumption Radar HUD (Pop-over) -->
-      <div id="tvVolumeRadarHud" class="tv-volume-radar-hud" style="display: none;">
-        <div class="tv-vr-header">
-          <div class="tv-vr-title">
-            <span style="color: #00e5ff;">📊</span>
-            <span>VOLUME CONSUMPTION (30 TOUCHES + LIVE)</span>
-          </div>
-          <button id="tvVolumeRadarCloseBtn" class="tv-vr-close-btn" title="Close">✕</button>
-        </div>
-
-        <div class="tv-vr-inspector">
-          <div style="display: flex; justify-content: space-between; align-items: baseline;">
-            <span id="vrInspTouchNum" class="tv-vr-badge">TOUCH #16 / 30</span>
-            <span id="vrInspPrice" style="font-size: 13px; font-weight: 800; color: #fff;">$4,198.78</span>
-          </div>
-          <div id="vrInspLineName" style="font-size: 11px; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-            Master Wedge Apex Climax
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
-            <div>Vol Consumed: <strong id="vrInspVol" style="color: #00e676;">+4,250 ticks</strong></div>
-            <div id="vrInspVerdict" style="color: #ffb300; font-weight: 700;">⚡ BULL EXHAUSTION (REVERSAL!)</div>
-          </div>
-        </div>
-
-        <div class="tv-vr-strip-wrap">
-          <div class="tv-vr-legend">
-            <span style="color: #00e676;">▲ +3,500 Bull Reversal</span>
-            <span style="color: #a855f7;">EQUILIBRIUM (0)</span>
-            <span style="color: #ff334b;">▼ -3,500 Bear Reversal</span>
-          </div>
-          <div class="tv-vr-window" id="vrBarsWindow">
-            <div class="tv-vr-track" id="vrBarsTrack">
-              <div class="tv-vr-thresh-bull"></div>
-              <div class="tv-vr-eq-line"></div>
-              <div class="tv-vr-thresh-bear"></div>
-            </div>
-          </div>
-          <div style="font-size: 9px; font-family: monospace; color: #8b949e; text-align: center; margin-top: 2px;">
-            Scroll left/right &bull; Hover bar for touch &bull; <strong>●LIVE</strong> bar at end
-          </div>
-        </div>
-      </div>
 
       <!-- Chart Viewport -->
       <main class="tv-chart-viewport">

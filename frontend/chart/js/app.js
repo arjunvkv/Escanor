@@ -12,7 +12,6 @@ import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { initVolumeRadar, updateLiveTick } from './volume_radar.js?v=202610231650';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -186,10 +185,9 @@ async function init() {
   window.__currentTimeframeMinutes = currentTimeframeMinutes;
   startCandleCountdown(currentTimeframeMinutes);
 
-  // 6. Initialize Left Toolbar, Trap Alerts & Volume Radar
+  // 6. Initialize Left Toolbar & Trap Alerts
   initToolbar(chart, currentSymbol);
   initTrapAlerts();
-  initVolumeRadar(chart, currentSymbol);
 
   // 7. Restore Server-Side Drawings
   try {
@@ -1107,8 +1105,6 @@ function connectWebSocket() {
               const dataList = chart.getDataList() || [];
               evaluateTrapLiveAlert(dataList, bid);
             }
-            // 4. 📊 Update Volume Radar Live Spot & Accumulation
-            updateLiveTick(bid, data.volume || -2150);
           }
           return;
         }
