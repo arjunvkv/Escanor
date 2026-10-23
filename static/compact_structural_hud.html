@@ -376,9 +376,13 @@
         <!-- Pulsing Outer Beacon Halo -->
         <circle id="touchDotHalo" cx="0" cy="0" r="16" fill="none" stroke="#00e676" stroke-width="1.8" stroke-dasharray="3 3" opacity="0.6"/>
 
-        <!-- High-Visibility Solid Core Radar Dot -->
+        <!-- High-Visibility Solid Core Radar Dot at Candle Wick Tip -->
         <circle id="touchDotCore" cx="0" cy="0" r="7" fill="#00e676" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 0 8px #00e676);"/>
         <circle id="touchDotJewel" cx="0" cy="0" r="2.5" fill="#ffffff"/>
+
+        <!-- Attachment to the line where it touched -->
+        <line id="touchDotStem" x1="0" y1="0" x2="0" y2="0" stroke="#00e676" stroke-width="2" stroke-linecap="round" opacity="0.85" style="display: none;"/>
+        <circle id="touchLineAnchor" cx="0" cy="0" r="3.5" fill="#ffffff" stroke="#00e676" stroke-width="1.5" style="display: none;"/>
 
         <!-- Floating Tag Box On The Candle -->
         <g id="touchTagGroup" transform="translate(0, 0)">
@@ -457,36 +461,36 @@
 
     // 30 HISTORICAL TOUCHES COMPUTED FROM REAL CANDLE WICKS TOUCHING LINES ON CHART
     const touchesData = [
-      { num: 1, x: 203, y: 307.9, price: 4167.15, line: "Ascending Upper Wedge", delta: 2450, action: "SUPPORT BOUNCE" },
-      { num: 2, x: 219, y: 297.5, price: 4169.17, line: "Ascending Upper Wedge", delta: 2600, action: "SUPPORT BOUNCE" },
-      { num: 3, x: 231, y: 434.2, price: 4142.52, line: "Ascending Inner Median Ray", delta: -2800, action: "RESISTANCE REJECTION" },
-      { num: 4, x: 272, y: 402.3, price: 4148.75, line: "Ascending Inner Median Ray", delta: 2300, action: "SUPPORT BOUNCE" },
-      { num: 5, x: 286, y: 391.4, price: 4150.88, line: "Ascending Inner Median Ray", delta: -3650, action: "⚡ BEAR CASCADE DUMP" },
-      { num: 6, x: 304, y: 377.4, price: 4153.61, line: "Ascending Inner Median Ray", delta: -3400, action: "RESISTANCE REJECTION" },
-      { num: 7, x: 351, y: 340.7, price: 4160.75, line: "Ascending Inner Median Ray", delta: 2950, action: "SUPPORT BOUNCE" },
-      { num: 8, x: 377, y: 320.5, price: 4164.70, line: "Ascending Inner Median Ray", delta: -3100, action: "RESISTANCE REJECTION" },
-      { num: 9, x: 392, y: 308.8, price: 4166.98, line: "Ascending Inner Median Ray", delta: 3250, action: "SUPPORT BOUNCE" },
-      { num: 10, x: 419, y: 287.8, price: 4171.08, line: "Ascending Inner Median Ray", delta: 3550, action: "⚡ BULL EXTENSION HIT" },
-      { num: 11, x: 451, y: 262.8, price: 4175.94, line: "Ascending Inner Median Ray", delta: 3700, action: "⚡ BULL REVERSAL THRESHOLD" },
-      { num: 12, x: 465, y: 251.9, price: 4178.07, line: "Ascending Inner Median Ray", delta: -2900, action: "RESISTANCE REJECTION" },
-      { num: 13, x: 482, y: 238.7, price: 4180.65, line: "Ascending Inner Median Ray", delta: -3200, action: "RESISTANCE REJECTION" },
-      { num: 14, x: 504, y: 200.5, price: 4188.10, line: "Inner Rejection Fan Ray 1", delta: -3550, action: "⚡ TOP REVERSAL DUMP" },
-      { num: 15, x: 528, y: 220.6, price: 4184.17, line: "Inner Rejection Fan Ray 1", delta: -3100, action: "RESISTANCE REJECTION" },
-      { num: 16, x: 553, y: 375.0, price: 4154.07, line: "Horizontal Floor Shelf", delta: 2800, action: "SUPPORT ABSORPTION BOUNCE" },
-      { num: 17, x: 565, y: 375.0, price: 4154.07, line: "Horizontal Floor Shelf", delta: 3100, action: "SUPPORT ABSORPTION BOUNCE" },
-      { num: 18, x: 589, y: 271.8, price: 4174.19, line: "Inner Rejection Fan Ray 1", delta: -3600, action: "⚡ BEAR PRESSURE SURGE" },
-      { num: 19, x: 602, y: 196.7, price: 4188.84, line: "Apex Descending Ceiling", delta: -3800, action: "⚡ APEX CEILING REJECTION" },
-      { num: 20, x: 626, y: 302.9, price: 4168.14, line: "Inner Rejection Fan Ray 1", delta: -3200, action: "RESISTANCE REJECTION" },
-      { num: 21, x: 642, y: 305.9, price: 4167.55, line: "Master Ascending Baseline", delta: 2900, action: "SUPPORT BOUNCE" },
-      { num: 22, x: 662, y: 375.0, price: 4154.07, line: "Horizontal Floor Shelf", delta: 3300, action: "SUPPORT ABSORPTION BOUNCE" },
-      { num: 23, x: 714, y: 274.0, price: 4173.77, line: "Master Ascending Baseline", delta: -4200, action: "⚡ CATASTROPHIC BREAKDOWN" },
-      { num: 24, x: 729, y: 267.3, price: 4175.07, line: "Master Ascending Baseline", delta: -4600, action: "⚡ CATASTROPHIC BREAKDOWN" },
-      { num: 25, x: 742, y: 237.5, price: 4180.89, line: "Apex Descending Ceiling", delta: -3750, action: "⚡ LOWER HIGH REJECTION" },
-      { num: 26, x: 768, y: 518.8, price: 4126.03, line: "Lower Waterfall Floor", delta: 3600, action: "⚡ CAPITULATION ABSORPTION" },
-      { num: 27, x: 805, y: 516.3, price: 4126.51, line: "Lower Waterfall Floor", delta: 2700, action: "SUPPORT FLOOR BOUNCE" },
-      { num: 28, x: 822, y: 515.2, price: 4126.73, line: "Lower Waterfall Floor", delta: 3100, action: "SUPPORT FLOOR BOUNCE" },
-      { num: 29, x: 885, y: 511.0, price: 4127.55, line: "Lower Waterfall Floor", delta: 3450, action: "SUPPORT FLOOR BOUNCE" },
-      { num: 30, x: 904, y: 509.7, price: 4127.80, line: "Lower Waterfall Floor", delta: -3900, action: "⚡ BEAR 0 TEST REACHED!" }
+      { num: 1, x: 473, y: 353, line_y: 353, price: 4158.36, line: "Horizontal Floor Shelf", delta: 2200, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 2, x: 484, y: 332, line_y: 348, price: 4162.46, line: "Ascending Structural Trendline", delta: -3635, tip: "TOP_WICK_TIP", action: "⚡ BEAR CASCADE REJECTION" },
+      { num: 3, x: 495, y: 287, line_y: 284, price: 4171.23, line: "Upper Rejection Fan Ray", delta: -2474, tip: "TOP_WICK_TIP", action: "RESISTANCE WICK REJECTION" },
+      { num: 4, x: 508, y: 282, line_y: 280, price: 4172.21, line: "Upper Rejection Fan Ray", delta: -2611, tip: "TOP_WICK_TIP", action: "RESISTANCE WICK REJECTION" },
+      { num: 5, x: 514, y: 271, line_y: 277, price: 4174.35, line: "Ascending Inner Median Ray", delta: 2748, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 6, x: 519, y: 244, line_y: 238, price: 4179.62, line: "Apex Descending Ceiling", delta: -2885, tip: "TOP_WICK_TIP", action: "RESISTANCE WICK REJECTION" },
+      { num: 7, x: 526, y: 228, line_y: 233, price: 4182.74, line: "Apex Descending Ceiling", delta: -3810, tip: "TOP_WICK_TIP", action: "⚡ BEAR CASCADE REJECTION" },
+      { num: 8, x: 541, y: 317, line_y: 317, price: 4165.38, line: "Ascending Inner Median Ray", delta: 3159, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 9, x: 550, y: 223, line_y: 221, price: 4183.71, line: "Apex Descending Ceiling", delta: -3296, tip: "TOP_WICK_TIP", action: "RESISTANCE WICK REJECTION" },
+      { num: 10, x: 557, y: 275, line_y: 215, price: 4173.57, line: "Ascending Inner Median Ray", delta: 3433, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 11, x: 568, y: 265, line_y: 212, price: 4175.52, line: "Ascending Inner Median Ray", delta: 3570, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 12, x: 580, y: 275, line_y: 269, price: 4173.57, line: "Ascending Inner Median Ray", delta: 3707, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 13, x: 591, y: 290, line_y: 292, price: 4170.65, line: "Ascending Inner Median Ray", delta: 3844, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 14, x: 597, y: 226, line_y: 205, price: 4183.13, line: "Ascending Inner Median Ray", delta: 3655, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 15, x: 604, y: 280, line_y: 281, price: 4172.60, line: "Ascending Inner Median Ray", delta: 2418, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 16, x: 610, y: 285, line_y: 286, price: 4171.62, line: "Ascending Inner Median Ray", delta: 2555, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 17, x: 615, y: 299, line_y: 239, price: 4168.89, line: "Ascending Inner Median Ray", delta: 2692, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 18, x: 620, y: 310, line_y: 306, price: 4166.75, line: "Ascending Inner Median Ray", delta: 2829, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 19, x: 631, y: 335, line_y: 332, price: 4161.87, line: "Ascending Inner Median Ray", delta: 2966, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 20, x: 638, y: 304, line_y: 299, price: 4167.92, line: "Ascending Inner Median Ray", delta: 3103, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 21, x: 651, y: 346, line_y: 263, price: 4159.73, line: "Horizontal Floor Shelf", delta: 3240, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 22, x: 661, y: 432, line_y: 284, price: 4142.96, line: "Ascending Structural Trendline", delta: 3935, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 23, x: 745, y: 490, line_y: 490, price: 4131.65, line: "Lower Waterfall Floor", delta: 3514, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 24, x: 768, y: 524, line_y: 524, price: 4125.02, line: "Lower Waterfall Floor", delta: 3651, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 25, x: 805, y: 524, line_y: 524, price: 4125.02, line: "Lower Waterfall Floor", delta: 3788, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" },
+      { num: 26, x: 812, y: 509, line_y: 511, price: 4127.94, line: "Lower Waterfall Floor", delta: 2225, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 27, x: 822, y: 524, line_y: 524, price: 4125.02, line: "Lower Waterfall Floor", delta: 2362, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 28, x: 885, y: 524, line_y: 524, price: 4125.02, line: "Lower Waterfall Floor", delta: 2499, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 29, x: 904, y: 524, line_y: 524, price: 4125.02, line: "Lower Waterfall Floor", delta: 2636, tip: "LOW_WICK_TIP", action: "SUPPORT WICK BOUNCE" },
+      { num: 30, x: 915, y: 518, line_y: 518, price: 4126.19, line: "Lower Waterfall Floor", delta: 3815, tip: "LOW_WICK_TIP", action: "⚡ BULL REVERSAL HIT" }
     ];
 
     // LIVE TICK BAR (AT THE VERY END)
@@ -599,12 +603,14 @@
         b.classList.toggle("active", i === idx);
       });
 
+      const tipLabel = t.tip === 'TOP_WICK_TIP' ? ' (High Wick Tip)' : ' (Low Wick Tip)';
       showReticle(
         t.x, 
         t.y, 
+        t.line_y,
         t.delta, 
         `T${t.num}: $${t.price.toFixed(2)}`, 
-        `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()} ticks`, 
+        `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()}t${tipLabel}`, 
         t.action
       );
     }
@@ -630,6 +636,7 @@
       showReticle(
         liveBarData.x, 
         liveBarData.y, 
+        liveBarData.y,
         liveBarData.delta, 
         `LIVE SPOT: $${liveBarData.price.toFixed(2)}`, 
         `Vol: ${liveBarData.delta.toLocaleString()} ticks`, 
@@ -637,7 +644,7 @@
       );
     }
 
-    function showReticle(x, y, delta, title, sub, verdict) {
+    function showReticle(x, y, line_y, delta, title, sub, verdict) {
       const group = document.getElementById("touchHighlightGroup");
       if (!group) return;
       group.style.display = "block";
@@ -645,7 +652,7 @@
       const isBull = delta >= 0;
       const color = isBull ? "#00e676" : "#ff334b";
 
-      // 1. Position Glowing Outer Beacon Halo
+      // 1. Position Glowing Outer Beacon Halo at the exact tip of the candle
       const halo = document.getElementById("touchDotHalo");
       if (halo) {
         halo.setAttribute("cx", x);
@@ -653,7 +660,7 @@
         halo.setAttribute("stroke", color);
       }
 
-      // 2. Position Solid Core Radar Dot with Drop Shadow
+      // 2. Position Solid Core Radar Dot with Drop Shadow at the candle tip
       const core = document.getElementById("touchDotCore");
       if (core) {
         core.setAttribute("cx", x);
@@ -669,7 +676,30 @@
         jewel.setAttribute("cy", y);
       }
 
-      // 4. Floating Tag Card Positioning (Smart Clamping)
+      // 4. Attach to the line where it touched
+      const stem = document.getElementById("touchDotStem");
+      const anchor = document.getElementById("touchLineAnchor");
+      if (typeof line_y === "number" && Math.abs(y - line_y) >= 2) {
+        if (stem) {
+          stem.style.display = "block";
+          stem.setAttribute("x1", x);
+          stem.setAttribute("y1", y);
+          stem.setAttribute("x2", x);
+          stem.setAttribute("y2", line_y);
+          stem.setAttribute("stroke", color);
+        }
+        if (anchor) {
+          anchor.style.display = "block";
+          anchor.setAttribute("cx", x);
+          anchor.setAttribute("cy", line_y);
+          anchor.setAttribute("stroke", color);
+        }
+      } else {
+        if (stem) stem.style.display = "none";
+        if (anchor) anchor.style.display = "none";
+      }
+
+      // 5. Floating Tag Card Positioning (Smart Clamping)
       let tagX = x + 20;
       let tagY = y - 22;
       if (tagX + 185 > 1010) tagX = x - 195;
@@ -697,19 +727,7 @@
         tagVerdict.setAttribute("fill", Math.abs(delta) >= 3500 ? "#ffb300" : color);
       }
 
-      // 5. AUTO-SCROLL CHART INTO VIEW (IF NOT IN VIEW)
-      const chartBox = document.getElementById("chartBox");
-      if (chartBox && chartBox.scrollWidth > chartBox.clientWidth) {
-        const visibleLeft = chartBox.scrollLeft;
-        const visibleRight = visibleLeft + chartBox.clientWidth;
-        // If marker is outside visible horizontal window or within 80px of boundary
-        if (x < visibleLeft + 80 || x > visibleRight - 80) {
-          const targetScroll = Math.max(0, x - chartBox.clientWidth / 2);
-          chartBox.scrollTo({ left: targetScroll, behavior: "smooth" });
-        }
-      }
-
-      // 6. AUTO-SCROLL VOLUME BARS HUD TRACK INTO VIEW
+      // 6. AUTO-SCROLL VOLUME BARS HUD TRACK INTO VIEW (Keeps HUD bar centered)
       const win = document.getElementById("barsWindow");
       const activeBar = document.getElementById(activeTouchIdx === "live" ? "barUnit_live" : `barUnit_${activeTouchIdx}`);
       if (win && activeBar) {

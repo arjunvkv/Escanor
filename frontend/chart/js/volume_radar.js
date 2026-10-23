@@ -155,10 +155,14 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
         if (bar.low <= lineVal && lineVal <= bar.high) {
           const isBull = bar.close >= bar.open;
           const vol = Math.max(150, Math.round(bar.volume || 1000));
+          const isTopTouch = Math.abs(bar.high - lineVal) < Math.abs(bar.low - lineVal);
+          const tipPrice = isTopTouch ? bar.high : bar.low;
           touches.push({
             dataIndex: bIdx,
             timestamp: bar.timestamp,
-            price: Math.round(lineVal * 100) / 100,
+            price: tipPrice,
+            linePrice: Math.round(lineVal * 100) / 100,
+            tipType: isTopTouch ? 'TOP_WICK_TIP' : 'LOW_WICK_TIP',
             line: lineLabel,
             isBull,
             volume: vol,
@@ -199,10 +203,14 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
         if (bar.low - 0.25 <= linePrice && linePrice <= bar.high + 0.25) {
           const isBull = bar.close >= bar.open;
           const vol = Math.max(150, Math.round(bar.volume || 1000));
+          const isTopTouch = Math.abs(bar.high - linePrice) < Math.abs(bar.low - linePrice);
+          const tipPrice = isTopTouch ? bar.high : bar.low;
           touches.push({
             dataIndex: bIdx,
             timestamp: bar.timestamp,
-            price: Math.round(linePrice * 100) / 100,
+            price: tipPrice,
+            linePrice: Math.round(linePrice * 100) / 100,
+            tipType: isTopTouch ? 'TOP_WICK_TIP' : 'LOW_WICK_TIP',
             line: lineLabel,
             isBull,
             volume: vol,
@@ -250,6 +258,8 @@ async function computeDynamicLineTouches(chart, symbol = 'XAUUSD') {
       dataIndex: t.dataIndex,
       timestamp: t.timestamp,
       price: t.price,
+      linePrice: t.linePrice,
+      tipType: t.tipType,
       line: t.line,
       delta: t.delta,
       action
@@ -451,33 +461,6 @@ function showChartReticle(t, idx) {
     }
   }
 
-  // AUTO-SCROLL CHART INTO VIEW (IF NOT IN VIEW)
-  if (chartInstanceRef) {
-    const isOutOfView = x === null || x < 60 || x > (vpWidth - 80);
-    if (isOutOfView) {
-      if (t.timestamp && typeof chartInstanceRef.scrollToTimestamp === 'function') {
-        chartInstanceRef.scrollToTimestamp(t.timestamp, 200);
-      } else if (typeof t.dataIndex === 'number' && typeof chartInstanceRef.scrollToDataIndex === 'function') {
-        chartInstanceRef.scrollToDataIndex(t.dataIndex, 200);
-      }
-
-      // Recalculate coordinates right after scroll frame completes
-      setTimeout(() => {
-        try {
-          let target = null;
-          if (t.timestamp && t.timestamp > 0) target = { timestamp: t.timestamp, value: t.price };
-          else if (typeof t.dataIndex === 'number') target = { dataIndex: t.dataIndex, value: t.price };
-          if (target) {
-            const freshCoords = chartInstanceRef.convertToPixel(target);
-            if (freshCoords && !isNaN(freshCoords.x) && !isNaN(freshCoords.y)) {
-              positionDotAndCard(freshCoords.x, freshCoords.y, t, vpWidth, vpHeight);
-            }
-          }
-        } catch (_) {}
-      }, 100);
-    }
-  }
-
   // Fallback geometric placement if chart conversion is not ready
   if (x === null || isNaN(x)) {
     x = Math.round(vpWidth * 0.15 + (idx / 30) * (vpWidth * 0.75));
@@ -491,7 +474,7 @@ function showChartReticle(t, idx) {
 
   positionDotAndCard(x, y, t, vpWidth, vpHeight);
 
-  // AUTO-SCROLL VOLUME BARS HUD TRACK INTO VIEW
+  // Auto-scroll volume bars HUD track into view (keeps active bar visible in bottom HUD strip)
   const win = document.getElementById('vrBarsWindow');
   const activeBar = document.getElementById(idx >= 30 ? 'vrBarUnit_live' : `vrBarUnit_${idx}`);
   if (win && activeBar) {
@@ -507,7 +490,7 @@ function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
   const isBull = t.delta >= 0;
   const color = isBull ? '#00e676' : '#ff334b';
 
-  // 1. Position Glowing Outer Beacon Halo
+  // 1. Position Glowing Outer Beacon Halo at the exact tip of the candle
   const halo = document.getElementById('tvVrDotHalo');
   if (halo) {
     halo.setAttribute('cx', x);
@@ -515,7 +498,7 @@ function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
     halo.setAttribute('stroke', color);
   }
 
-  // 2. Position Solid Core Radar Dot with Drop Shadow
+  // 2. Position Solid Core Radar Dot with Drop Shadow at the candle tip
   const core = document.getElementById('tvVrDotCore');
   if (core) {
     core.setAttribute('cx', x);
@@ -531,7 +514,38 @@ function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
     jewel.setAttribute('cy', y);
   }
 
-  // 4. Floating Tag Box On The Candle (Smart Clamping)
+  // 4. Attach to the line where it touched
+  let lineY = null;
+  if (chartInstanceRef && typeof t.linePrice === 'number' && typeof chartInstanceRef.convertToPixel === 'function') {
+    try {
+      const lp = chartInstanceRef.convertToPixel({ value: t.linePrice });
+      if (lp && typeof lp.y === 'number' && !isNaN(lp.y)) lineY = lp.y;
+    } catch (_) {}
+  }
+
+  const stem = document.getElementById('tvVrDotStem');
+  const anchor = document.getElementById('tvVrLineAnchor');
+  if (lineY !== null && Math.abs(y - lineY) >= 2) {
+    if (stem) {
+      stem.style.display = 'block';
+      stem.setAttribute('x1', x);
+      stem.setAttribute('y1', y);
+      stem.setAttribute('x2', x);
+      stem.setAttribute('y2', lineY);
+      stem.setAttribute('stroke', color);
+    }
+    if (anchor) {
+      anchor.style.display = 'block';
+      anchor.setAttribute('cx', x);
+      anchor.setAttribute('cy', lineY);
+      anchor.setAttribute('stroke', color);
+    }
+  } else {
+    if (stem) stem.style.display = 'none';
+    if (anchor) anchor.style.display = 'none';
+  }
+
+  // 5. Floating Tag Box On The Candle (Smart Clamping)
   let tagX = x + 20;
   let tagY = y - 22;
   if (tagX + 190 > vpWidth - 60) tagX = x - 200;
@@ -552,7 +566,8 @@ function positionDotAndCard(x, y, t, vpWidth, vpHeight) {
 
   const tagSub = document.getElementById('tvVrTagSub');
   if (tagSub) {
-    tagSub.textContent = `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()} ticks`;
+    const tipLabel = t.tipType === 'TOP_WICK_TIP' ? ' (High Wick Tip)' : (t.tipType === 'LOW_WICK_TIP' ? ' (Low Wick Tip)' : '');
+    tagSub.textContent = `Vol: ${t.delta > 0 ? '+' : ''}${t.delta.toLocaleString()}t${tipLabel}`;
   }
 
   const tagVerdict = document.getElementById('tvVrTagVerdict');
