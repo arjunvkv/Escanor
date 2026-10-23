@@ -1,0 +1,302 @@
+[
+  {
+    "num": 1,
+    "x": 196,
+    "price": 4137.64,
+    "line": "Master Baseline Ray (Anchor)",
+    "delta": 3850,
+    "type": "bull_bounce",
+    "rev": "REBOUND UP",
+    "y": 504.0
+  },
+  {
+    "num": 2,
+    "x": 218,
+    "price": 4145.2,
+    "line": "Lower Fan Ray 1",
+    "delta": 2400,
+    "type": "bull_continuation",
+    "rev": "CONTINUATION",
+    "y": 460.5
+  },
+  {
+    "num": 3,
+    "x": 240,
+    "price": 4154.8,
+    "line": "Inner Median Channel 1",
+    "delta": 3100,
+    "type": "bull_continuation",
+    "rev": "CONTINUATION",
+    "y": 405.2
+  },
+  {
+    "num": 4,
+    "x": 265,
+    "price": 4160.25,
+    "line": "Median Fan Ray (First Test)",
+    "delta": 3650,
+    "type": "bull_threshold",
+    "rev": "PULLBACK DETECTED",
+    "y": 373.8
+  },
+  {
+    "num": 5,
+    "x": 285,
+    "price": 4152.1,
+    "line": "Primary Support Ray Retest",
+    "delta": -2800,
+    "type": "bear_touch",
+    "rev": "ABSORPTION BOUNCE",
+    "y": 420.8
+  },
+  {
+    "num": 6,
+    "x": 305,
+    "price": 4165.4,
+    "line": "Median Fan Ray 2",
+    "delta": 3200,
+    "type": "bull_continuation",
+    "rev": "CONTINUATION",
+    "y": 344.2
+  },
+  {
+    "num": 7,
+    "x": 325,
+    "price": 4150.5,
+    "line": "Master Baseline Trampoline",
+    "delta": -3900,
+    "type": "bear_threshold",
+    "rev": "BEAR 0 EXHAUSTION / MASSIVE BOUNCE",
+    "y": 430.0
+  },
+  {
+    "num": 8,
+    "x": 345,
+    "price": 4168.9,
+    "line": "Inner Median Ray 3",
+    "delta": 2900,
+    "type": "bull_continuation",
+    "rev": "CONTINUATION",
+    "y": 324.0
+  },
+  {
+    "num": 9,
+    "x": 365,
+    "price": 4178.4,
+    "line": "Upper Channel Boundary 1",
+    "delta": 3450,
+    "type": "bull_continuation",
+    "rev": "CONTINUATION",
+    "y": 269.4
+  },
+  {
+    "num": 10,
+    "x": 380,
+    "price": 4172.1,
+    "line": "Pullback to Ascending Median",
+    "delta": -2100,
+    "type": "bear_touch",
+    "rev": "SUPPORT HELD",
+    "y": 305.6
+  },
+  {
+    "num": 11,
+    "x": 398,
+    "price": 4189.58,
+    "line": "Upper Wedge Boundary",
+    "delta": 3720,
+    "type": "bull_threshold",
+    "rev": "BULL EXHAUSTION APPROACH",
+    "y": 205.0
+  },
+  {
+    "num": 12,
+    "x": 412,
+    "price": 4183.2,
+    "line": "Wedge Inner Shelf",
+    "delta": -2500,
+    "type": "bear_touch",
+    "rev": "PINCH STALL",
+    "y": 241.7
+  },
+  {
+    "num": 13,
+    "x": 425,
+    "price": 4192.4,
+    "line": "Upper Wedge Resistance 2",
+    "delta": 3600,
+    "type": "bull_threshold",
+    "rev": "CEILING STALL",
+    "y": 188.8
+  },
+  {
+    "num": 14,
+    "x": 435,
+    "price": 4188.1,
+    "line": "Wedge Convergence Ray",
+    "delta": -1800,
+    "type": "bear_touch",
+    "rev": "TIGHT PINCH",
+    "y": 213.5
+  },
+  {
+    "num": 15,
+    "x": 442,
+    "price": 4195.8,
+    "line": "Apex Climax Sub-Ray",
+    "delta": 3800,
+    "type": "bull_threshold",
+    "rev": "BULL VOLUME SATURATED",
+    "y": 169.2
+  },
+  {
+    "num": 16,
+    "x": 446,
+    "price": 4198.78,
+    "line": "Master Wedge Apex Climax",
+    "delta": 4250,
+    "type": "bull_threshold",
+    "rev": "BULL 0 HIT! 100% REVERSAL TRIGGER",
+    "y": 152.0
+  },
+  {
+    "num": 17,
+    "x": 455,
+    "price": 4191.2,
+    "line": "Apex Rejection Down-Ray",
+    "delta": -3800,
+    "type": "bear_threshold",
+    "rev": "BEAR CASCADE INITIATED",
+    "y": 195.7
+  },
+  {
+    "num": 18,
+    "x": 472,
+    "price": 4176.5,
+    "line": "Median Fan Ray (Down-Slice)",
+    "delta": -4100,
+    "type": "bear_threshold",
+    "rev": "RAY SLICED THROUGH",
+    "y": 280.3
+  },
+  {
+    "num": 19,
+    "x": 488,
+    "price": 4168.91,
+    "line": "Inner Median Ray 2 (Down-Slice)",
+    "delta": -3950,
+    "type": "bear_threshold",
+    "rev": "ZERO SUPPORT / SLICED",
+    "y": 324.0
+  },
+  {
+    "num": 20,
+    "x": 505,
+    "price": 4160.2,
+    "line": "Lower Baseline Shelf",
+    "delta": -3400,
+    "type": "bear_touch",
+    "rev": "TEMPORARY PAUSE",
+    "y": 374.1
+  },
+  {
+    "num": 21,
+    "x": 524,
+    "price": 4187.67,
+    "line": "Bear Flag Upper Ceiling",
+    "delta": 3600,
+    "type": "bull_threshold",
+    "rev": "SELLER DISTRIBUTION REJECTION",
+    "y": 216.0
+  },
+  {
+    "num": 22,
+    "x": 548,
+    "price": 4178.5,
+    "line": "Bear Flag Midline",
+    "delta": -2900,
+    "type": "bear_touch",
+    "rev": "FLAG BREAKDOWN",
+    "y": 268.8
+  },
+  {
+    "num": 23,
+    "x": 580,
+    "price": 4182.1,
+    "line": "Secondary Fan Retest",
+    "delta": 2200,
+    "type": "bull_touch",
+    "rev": "FAILED PUSH",
+    "y": 248.1
+  },
+  {
+    "num": 24,
+    "x": 632,
+    "price": 4157.79,
+    "line": "Master Trendline Floor Rupture",
+    "delta": -4800,
+    "type": "bear_threshold",
+    "rev": "CATASTROPHIC RUPTURE / WATERFALL",
+    "y": 388.0
+  },
+  {
+    "num": 25,
+    "x": 655,
+    "price": 4148.5,
+    "line": "Intermediate Liquid Support",
+    "delta": -4200,
+    "type": "bear_threshold",
+    "rev": "SLICED ON HEAVY VOLUME",
+    "y": 441.5
+  },
+  {
+    "num": 26,
+    "x": 680,
+    "price": 4141.2,
+    "line": "Waterfall Liquidation Ray",
+    "delta": -3900,
+    "type": "bear_threshold",
+    "rev": "WATERFALL CASCADE",
+    "y": 483.5
+  },
+  {
+    "num": 27,
+    "x": 710,
+    "price": 4136.5,
+    "line": "Old Range 1 Support Level",
+    "delta": -3600,
+    "type": "bear_threshold",
+    "rev": "TEMPORARY STALL",
+    "y": 510.6
+  },
+  {
+    "num": 28,
+    "x": 750,
+    "price": 4125.8,
+    "line": "Day 2 Absorption Base Low",
+    "delta": -4100,
+    "type": "bear_threshold",
+    "rev": "BEAR 0 REACHED! ABSORPTION BASE",
+    "y": 572.2
+  },
+  {
+    "num": 29,
+    "x": 830,
+    "price": 4135.2,
+    "line": "Day 2 Range Ceiling",
+    "delta": 2800,
+    "type": "bull_touch",
+    "rev": "RANGE BOUND",
+    "y": 518.1
+  },
+  {
+    "num": 30,
+    "x": 920,
+    "price": 4128.09,
+    "line": "Live Spot Floor Line ($4,128.14)",
+    "delta": -3850,
+    "type": "bear_threshold",
+    "rev": "BEAR EXHAUSTION REVERSAL ACTIVE",
+    "y": 559.0
+  }
+]

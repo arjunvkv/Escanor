@@ -25,6 +25,7 @@
  */
 
 import { showChartToast, syncDrawingsToServer } from './drawings_storage.js';
+import { evaluateCandleTrapState } from './living_candle_engine.js';
 
 export const STORAGE_KEY_LINE_TRADING = 'escanor_line_trading_v1';
 
@@ -51,8 +52,9 @@ export class LineTradingManager {
 
     this.countdownTimer = null;
     this.isExecuting = false;
-    this.hudMinimized = localStorage.getItem('escanor_hud_minimized') === 'true';
+    this.hudMinimized = localStorage.getItem('escanor_hud_minimized') !== 'false'; // Compact pill by default
     this.activePositions = [];
+    this.posStartTimes = new Map();
 
     this._init();
   }
@@ -61,6 +63,33 @@ export class LineTradingManager {
     this.activePositions = Array.isArray(positions) ? positions : [];
     const activeTicketSet = new Set(this.activePositions.map(p => Number(p.ticket)));
 
+    // Clean up start times for closed positions
+    for (const ticket of this.posStartTimes.keys()) {
+      if (!activeTicketSet.has(Number(ticket))) {
+        this.posStartTimes.delete(Number(ticket));
+      }
+    }
+
+    // Initialize or preserve start time for each active position
+    const now = Date.now();
+    for (const pos of this.activePositions) {
+      const ticket = Number(pos.ticket);
+      if (!this.posStartTimes.has(ticket)) {
+        let startTime = now;
+        if (pos.open_epoch_utc && pos.open_epoch_utc > 0) {
+          startTime = pos.open_epoch_utc * 1000;
+        } else if (pos.elapsed_sec !== undefined && pos.elapsed_sec > 0) {
+          startTime = now - (pos.elapsed_sec * 1000);
+        } else if (pos.time && pos.time > 0) {
+          const nowSec = Math.floor(now / 1000);
+          if (pos.time > 1500000000 && Math.abs(nowSec - pos.time) < 86400 * 30) {
+            startTime = pos.time * 1000;
+          }
+        }
+        this.posStartTimes.set(ticket, startTime);
+      }
+    }
+
     // Monitor trades triggered by our lines:
     for (const line of this.lines.values()) {
       // Auto-link activeTradeTicket if MT5 position comment matches line.name (e.g. across reloads)
@@ -68,7 +97,12 @@ export class LineTradingManager {
         for (const pos of this.activePositions) {
           if (pos.comment && (pos.comment.includes(line.name) || pos.comment.includes(`Line Touch ${line.name}`))) {
             line.activeTradeTicket = Number(pos.ticket);
+            line.triggeredTicket = Number(pos.ticket);
+            line._lastTradeTicket = Number(pos.ticket);
             line._tradeActive = true;
+            if (!line._tradeActiveStartTime) {
+              line._tradeActiveStartTime = this.posStartTimes.get(Number(pos.ticket)) || now;
+            }
             break;
           }
         }
@@ -79,10 +113,22 @@ export class LineTradingManager {
         // If the trade was active and is now no longer in open activePositions:
         if (!activeTicketSet.has(ticket)) {
           line._tradeActive = false;
+          line._tradeActiveStartTime = null;
           line.activeTradeTicket = null;
+          line.triggeredTicket = null;
+          line._trapAutoBeArmed = false;
+          line._trapAutoBeTicket = null;
+          // USER RULE: Only THIS particular line trigger gets deactivated when its trade closes (even if in profit)
+          line.isArmed = false;
           this.applyLineColor(line.overlayId);
+          this._updateModalQuickArmBtn(line);
+          this._updateFloatingToolbarArmBtn(line);
           this.saveToStorage();
-          // Check MT5 closed deal history to see if it was a loss or win
+          if (this.chart) {
+            syncDrawingsToServer(this.symbol, this.chart, false);
+          }
+          this.renderHud(true);
+          // Check MT5 closed deal history to see if it was a loss or win for notification toast
           this._checkClosedTradeResult(line, ticket);
         } else {
           // Trade is actively open: ensure trigger line overlay is hidden (prevents double line)
@@ -96,8 +142,60 @@ export class LineTradingManager {
     this.renderHud();
   }
 
+  deactivateLine(line, reason = '') {
+    if (!line) return false;
+    line.isArmed = false;
+    line._tradeActive = false;
+    line._tradeActiveStartTime = null;
+    line.activeTradeTicket = null;
+    line.triggeredTicket = null;
+    line._trapAutoBeArmed = false;
+    line._trapAutoBeTicket = null;
+    this.applyLineColor(line.overlayId);
+    this._updateModalQuickArmBtn(line);
+    this._updateFloatingToolbarArmBtn(line);
+    this.saveToStorage();
+    if (this.chart) {
+      syncDrawingsToServer(this.symbol, this.chart, false);
+    }
+    this.renderHud(true);
+    if (reason) {
+      console.log(`[LineTrading] Deactivated line ${line.name}: ${reason}`);
+    }
+    return true;
+  }
+
+  deactivateLineByTicket(ticket, reason = '') {
+    if (!ticket) return false;
+    const numTicket = Number(ticket);
+    let matchedLine = null;
+    for (const line of this.lines.values()) {
+      if (Number(line.activeTradeTicket) === numTicket || Number(line.triggeredTicket) === numTicket || Number(line._lastTradeTicket) === numTicket) {
+        matchedLine = line;
+        break;
+      }
+    }
+    if (matchedLine) {
+      this.deactivateLine(matchedLine, `Trade #${numTicket} closed (${reason})`);
+      showChartToast(`🔒 ${matchedLine.name}: Trade #${numTicket} closed. Line trigger deactivated.`);
+      return true;
+    }
+    return false;
+  }
+
   async _checkClosedTradeResult(line, ticket) {
     try {
+      // USER RULE: The line trigger that activated this trade MUST be deactivated even if closed in profit.
+      line.isArmed = false;
+      this.applyLineColor(line.overlayId);
+      this._updateModalQuickArmBtn(line);
+      this._updateFloatingToolbarArmBtn(line);
+      this.saveToStorage();
+      if (this.chart) {
+        syncDrawingsToServer(this.symbol, this.chart, false);
+      }
+      this.renderHud(true);
+
       const res = await fetch(`/api/trade/ticket_result?ticket=${ticket}`);
       const data = await res.json();
       if (data && (data.status === 'CLOSED' || data.profit !== undefined)) {
@@ -105,24 +203,21 @@ export class LineTradingManager {
         const profit = Number(data.profit || 0);
 
         if (isLoss) {
-          // USER RULE: "when a trade is lost the let the lines be deactivated"
-          line.isArmed = false;
-          this.applyLineColor(line.overlayId);
-          this.saveToStorage();
-          this.renderHud();
-          showChartToast(`🛑 ${line.name}: Trade #${ticket} lost (-$${Math.abs(profit).toFixed(2)}). Line Deactivated!`);
+          showChartToast(`🛑 ${line.name}: Trade #${ticket} lost (-$${Math.abs(profit).toFixed(2)}). Line trigger deactivated.`);
         } else {
-          // Trade won or breakeven: Line remains active!
-          line.isArmed = true;
-          this.applyLineColor(line.overlayId);
-          this.saveToStorage();
-          this.renderHud();
-          const sign = profit >= 0 ? '+' : '';
-          showChartToast(`🟢 ${line.name}: Trade #${ticket} closed in profit (${sign}$${profit.toFixed(2)}). Line remains ACTIVE!`);
+          const sign = profit > 0 ? '+' : '';
+          const icon = profit > 0 ? '🟢' : '⚪';
+          showChartToast(`${icon} ${line.name}: Trade #${ticket} closed in profit (${sign}$${profit.toFixed(2)}). Line trigger deactivated.`);
         }
+      } else {
+        showChartToast(`🔒 ${line.name}: Trade #${ticket} closed. Line trigger deactivated.`);
       }
     } catch (err) {
       console.warn(`[LineTrading] Error checking ticket result for #${ticket}:`, err);
+      line.isArmed = false;
+      this.applyLineColor(line.overlayId);
+      this.saveToStorage();
+      this.renderHud(true);
     }
   }
 
@@ -145,7 +240,9 @@ export class LineTradingManager {
       );
       if (isSuccess) {
         showChartToast(`🚨 Closed #${numTicket}!`);
+        this.deactivateLineByTicket(numTicket, 'manual_kill');
         this.activePositions = this.activePositions.filter(p => Number(p.ticket) !== numTicket);
+        this.posStartTimes.delete(numTicket);
         if (window.__lastActivePositions) {
           window.__lastActivePositions = window.__lastActivePositions.filter(p => Number(p.ticket) !== numTicket);
         }
@@ -172,6 +269,7 @@ export class LineTradingManager {
       const data = await res.json();
       showChartToast(`🚨 Closed all positions! (${data.closed_count || 0} flattened)`);
       this.activePositions = [];
+      this.posStartTimes.clear();
       if (window.__lastActivePositions) {
         window.__lastActivePositions = [];
       }
@@ -214,17 +312,14 @@ export class LineTradingManager {
       localStorage.setItem('escanor_hud_minimized', String(this.hudMinimized));
     } catch (_) {}
 
+    const sidebarPill = document.getElementById('tvSidebarHudPill');
+    if (sidebarPill) {
+      sidebarPill.classList.toggle('open', !this.hudMinimized);
+    }
+
     if (this.hudEl) {
-      this.hudEl.classList.toggle('minimized', Boolean(this.hudMinimized));
-    }
-    const bodyList = document.getElementById('tvHudBodyList');
-    if (bodyList) {
-      bodyList.style.display = this.hudMinimized ? 'none' : 'flex';
-    }
-    const btn = this.hudEl?.querySelector('#tvHudMinBtn');
-    if (btn) {
-      btn.textContent = this.hudMinimized ? '▲' : '▼';
-      btn.title = this.hudMinimized ? 'Expand' : 'Minimize';
+      this.hudEl.style.display = this.hudMinimized ? 'none' : 'flex';
+      this.hudEl.classList.toggle('closed', Boolean(this.hudMinimized));
     }
     this.renderHud(true);
   }
@@ -236,7 +331,13 @@ export class LineTradingManager {
     this._startCountdownWatchdog();
     window.killTrade = (ticket) => this.killTrade(ticket);
     window.killAllTrades = () => this.killAllTrades();
-    window.toggleHudMinimize = () => this.toggleHudMinimize();
+    window.toggleHudMinimize = (forceState = null) => this.toggleHudMinimize(forceState);
+
+    const sidebarPill = document.getElementById('tvSidebarHudPill');
+    sidebarPill?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleHudMinimize();
+    });
   }
 
   loadFromStorage() {
@@ -250,6 +351,34 @@ export class LineTradingManager {
             if (item.lineType === 'verticalStraightLine' || item.name === 'verticalStraightLine') {
               cleaned = true;
               continue;
+            }
+            if (item.slPts === 6.0 || item.slPts === undefined || item.slPts === null) {
+              item.slPts = 3.0;
+              cleaned = true;
+            }
+            if (item.trapAutoSlToTip === undefined) {
+              item.trapAutoSlToTip = true;
+              cleaned = true;
+            }
+            if (item.trapImmediateTrigger === undefined) {
+              item.trapImmediateTrigger = true;
+              cleaned = true;
+            }
+            if (item.trapBeEnabled === undefined) {
+              item.trapBeEnabled = false;
+              cleaned = true;
+            }
+            if (item.trapBeDispPips === undefined) {
+              item.trapBeDispPips = (item.trapBeDispPts !== undefined) ? Math.round(Number(item.trapBeDispPts) * 10 * 10) / 10 : 15.0;
+              cleaned = true;
+            }
+            if (item.trapBeDispPts === undefined) {
+              item.trapBeDispPts = Math.round(item.trapBeDispPips * 0.10 * 100) / 100;
+              cleaned = true;
+            }
+            if (item.trapBeOffsetPips === undefined) {
+              item.trapBeOffsetPips = 0.3;
+              cleaned = true;
             }
             this.lines.set(String(item.overlayId), item);
           }
@@ -300,10 +429,17 @@ export class LineTradingManager {
         actionType: 'EXECUTE', // 'EXECUTE' or 'EXIT'
         direction: 'BUY',      // 'BUY' or 'SELL'
         volume: defLots,
-        slPts: 6.0,
+        slPts: 3.0,
         tpPts: 12.0,
         timerEnabled: false,
         autoCloseMins: 5.0,
+        trapColorEnabled: false,
+        trapAutoSlToTip: true,   // Auto SL to tip of triggered trap candle (default: ON)
+        trapImmediateTrigger: true, // Immediate trigger on trap candle form (default: ON)
+        trapBeEnabled: false,    // Trap auto-breakeven toggle (default: OFF)
+        trapBeDispPips: 15.0,    // BE trigger displacement in pips (default: 15.0 pips = 1.5 points)
+        trapBeDispPts: 1.5,      // Equivalent points
+        trapBeOffsetPips: 0.3,   // BE+ value in pips (default: 0.3 pips)
         triggered: false,
         triggeredAt: null,
         triggeredTicket: null,
@@ -345,6 +481,26 @@ export class LineTradingManager {
     syncDrawingsToServer(this.symbol, this.chart, false, true);
   }
 
+  deactivateAllLines() {
+    let count = 0;
+    for (const [id, line] of this.lines.entries()) {
+      if (line.isArmed) {
+        line.isArmed = false;
+        line._tradeActive = false;
+        this.applyLineColor(id);
+        this._updateModalQuickArmBtn(line);
+        this._updateFloatingToolbarArmBtn(line);
+        count++;
+      }
+    }
+    this.saveToStorage();
+    this.renderHud(true);
+    if (this.chart) {
+      syncDrawingsToServer(this.symbol, this.chart, false);
+    }
+    return count;
+  }
+
   reconcileWithChart(chartOverlays = []) {
     let changed = false;
     for (const [id, item] of Array.from(this.lines.entries())) {
@@ -373,12 +529,85 @@ export class LineTradingManager {
     return this.lines.get(String(overlayId)) || null;
   }
 
+  toggleLineArmed(overlayId) {
+    const idStr = String(overlayId);
+    let line = this.lines.get(idStr);
+    if (!line) {
+      this.registerLineOverlay({ id: overlayId });
+      line = this.lines.get(idStr);
+    }
+    if (!line) return false;
+
+    line.isArmed = !line.isArmed;
+    if (line.isArmed) {
+      line.activeTradeTicket = null;
+      line._tradeActive = false;
+      line._lastExecuteTrigger = 0;
+      line._lastExitTrigger = 0;
+      line.triggered = false;
+      line.triggeredAt = null;
+      line._lastTickBid = null;
+    }
+
+    this.applyLineColor(idStr);
+    this.saveToStorage();
+    this.updateSlTpProjections();
+    this.renderHud(true);
+
+    if (this.chart) {
+      syncDrawingsToServer(this.symbol, this.chart, false);
+    }
+
+    this._updateModalQuickArmBtn(line);
+    this._updateFloatingToolbarArmBtn(line);
+
+    return line.isArmed;
+  }
+
+  _updateFloatingToolbarArmBtn(line) {
+    const floatArmBtn = document.getElementById('tvFloatArmBtn');
+    if (!floatArmBtn || !line) return;
+    const isArmed = Boolean(line.isArmed);
+    floatArmBtn.classList.toggle('armed', isArmed);
+    floatArmBtn.classList.remove('buy', 'sell');
+    if (isArmed) {
+      if (line.direction === 'BUY') floatArmBtn.classList.add('buy');
+      else if (line.direction === 'SELL') floatArmBtn.classList.add('sell');
+    }
+    floatArmBtn.title = isArmed ? '⚡ ACTIVE / ARMED (Click to Deactivate)' : '⚪ DEACTIVATED (Click to Activate)';
+  }
+
+  _updateModalQuickArmBtn(line) {
+    const quickArmBtn = document.getElementById('tvLineQuickArmBtn');
+    if (!quickArmBtn || !line) return;
+    const isArmed = Boolean(line.isArmed);
+    quickArmBtn.classList.toggle('active', isArmed);
+    quickArmBtn.classList.toggle('armed', isArmed);
+    quickArmBtn.classList.remove('buy', 'sell');
+    if (isArmed) {
+      if (line.direction === 'BUY') quickArmBtn.classList.add('buy');
+      else if (line.direction === 'SELL') quickArmBtn.classList.add('sell');
+    }
+    const iconEl = document.getElementById('tvLineQuickArmIcon');
+    const textEl = document.getElementById('tvLineQuickArmText');
+    if (iconEl) iconEl.textContent = isArmed ? '⚡' : '⚪';
+    if (textEl) textEl.textContent = isArmed ? 'ACTIVE' : 'ACTIVATE';
+    quickArmBtn.title = isArmed ? 'Line Trigger is ACTIVE (Click to Deactivate)' : 'Line Trigger is DEACTIVATED (Click to Activate)';
+  }
+
   getLineColor(line) {
     if (!line) return '#94a3b8';
-    if (!line.isArmed) return '#94a3b8';  // Clean disarmed silver-gray
+
+    // If line is armed, or if currently being configured in modal
+    const isConfiguring = Boolean(this.selectedLineId && String(this.selectedLineId) === String(line.overlayId) && this.modalEl && this.modalEl.style.display !== 'none');
+    const isActivated = Boolean(line.isArmed || (isConfiguring && this._trapColorEnabled));
+
+    if (!isActivated) {
+      return '#94a3b8';  // Clean disarmed silver-gray
+    }
 
     if (line.actionType === 'EXECUTE') {
-      return line.direction === 'BUY' ? '#00f5a0' : '#ef4444';
+      return line.direction === 'BUY' ? '#00e5ff' : '#f59e0b';
     }
     if (line.actionType === 'EXIT') {
       return '#fbbf24'; // Yellow/Amber for Close All
@@ -391,116 +620,15 @@ export class LineTradingManager {
     const line = this.lines.get(String(overlayId));
     if (!line) return;
 
-    // Check if a trade triggered by this line is currently running in MT5
-    const isTradeActive = Boolean(
-      line._tradeActive ||
-      (line.activeTradeTicket && (this.activePositions || []).some(p => Number(p.ticket) === Number(line.activeTradeTicket)))
-    );
-
-    if (isTradeActive) {
-      // HIDE TRIGGER LINE OVERLAY WHILE TRADE IS ACTIVE:
-      // ActiveOrdersEngine renders the live active MT5 position entry line at the fill price
-      // with its live PnL badge and draggable SL/TP.
-      // Hiding the trigger line prevents duplicate parallel lines on the chart.
-      try {
-        const overlays = this.chart.getOverlays() || [];
-        const ov = overlays.find(o => String(o.id) === String(overlayId));
-        if (ov) {
-          if (!ov._origCpf && ov.createPointFigures) {
-            ov._origCpf = ov.createPointFigures;
-          }
-          ov.createPointFigures = () => [];
-        }
-        this.chart.overrideOverlay({
-          id: line.overlayId,
-          styles: {
-            line: {
-              color: 'transparent',
-              size: 0,
-              style: 'none'
-            },
-            point: {
-              color: 'transparent',
-              borderColor: 'transparent',
-              activeColor: 'transparent',
-              activeBorderColor: 'transparent',
-              radius: 0
-            }
-          }
-        });
-      } catch (e) {
-        console.warn('[LineTrading] Error hiding active trade line:', e);
-      }
-      return;
-    }
-
     const isSelected = (this.selectedLineId === String(overlayId));
     const baseColor = this.getLineColor(line);
-    const coreSize = line.isArmed ? 2.0 : 1.5;
-    const borderSize = coreSize + 1.0; // 0.5px white border on either side (thinner than line)
+    const coreSize = line.isArmed ? 2.5 : 1.5;
 
     try {
-      const overlays = this.chart.getOverlays() || [];
-      const ov = overlays.find(o => String(o.id) === String(overlayId));
-
-      if (ov) {
-        // Restore origCpf if it was overridden or hidden
-        if (ov._origCpf && !isSelected) {
-          ov.createPointFigures = ov._origCpf;
-          delete ov._origCpf;
-        }
-
-        if (isSelected) {
-          if (!ov._origCpf) {
-            ov._origCpf = ov.createPointFigures;
-          }
-          const origCpf = ov._origCpf || ((args) => {
-            const coords = args.coordinates || [];
-            if (coords.length >= 2) {
-              return [{ type: 'line', attrs: { coordinates: coords } }];
-            }
-            const y = coords[0]?.y ?? 0;
-            return [{ type: 'line', attrs: { coordinates: [{ x: 0, y }, { x: args.bounding.width, y }] } }];
-          });
-
-          ov.createPointFigures = (args) => {
-            const baseFigs = origCpf ? origCpf(args) : [];
-            const res = [];
-            for (const f of baseFigs) {
-              if (f.type === 'line') {
-                // 1. Outer thin white border (thinner than the line itself)
-                res.push({
-                  type: 'line',
-                  attrs: { ...f.attrs },
-                  styles: {
-                    ...(f.styles || {}),
-                    color: 'rgba(255, 255, 255, 0.95)',
-                    size: borderSize,
-                    style: 'solid'
-                  }
-                });
-                // 2. Core original grey line
-                res.push({
-                  type: 'line',
-                  attrs: { ...f.attrs },
-                  styles: {
-                    ...(f.styles || {}),
-                    color: baseColor,
-                    size: coreSize,
-                    style: 'solid'
-                  }
-                });
-              } else {
-                res.push(f);
-              }
-            }
-            return res;
-          };
-        }
-      }
 
       this.chart.overrideOverlay({
         id: line.overlayId,
+        zLevel: 100,
         styles: {
           line: {
             color: baseColor,
@@ -509,7 +637,7 @@ export class LineTradingManager {
           },
           point: {
             color: isSelected ? '#ffffff' : baseColor,
-            borderColor: isSelected ? baseColor : baseColor,
+            borderColor: isSelected ? '#ffffff' : baseColor,
             activeColor: '#ffffff',
             activeBorderColor: '#ffffff',
             radius: isSelected ? 5.5 : (line.isArmed ? 5 : 4)
@@ -517,6 +645,9 @@ export class LineTradingManager {
         }
       });
       syncDrawingsToServer(this.symbol, this.chart, false);
+      if (isSelected) {
+        this._updateFloatingToolbarArmBtn(line);
+      }
     } catch (e) {
       console.warn('[LineTrading] Error applying line color:', e);
     }
@@ -596,7 +727,7 @@ export class LineTradingManager {
 
     const isBuy = (line.direction === 'BUY');
     const volume = (typeof window.getGlobalLot === 'function') ? window.getGlobalLot() : Math.max(0.01, Number(line.volume || 1.00));
-    const slPts = Math.max(0.1, Number(line.slPts || 6.0));
+    const slPts = Math.max(0.1, Number(line.slPts || 3.0));
     const tpPts = Math.max(0.1, Number(line.tpPts || 12.0));
 
     const tpPrice = isBuy ? (linePrice + tpPts) : (linePrice - tpPts);
@@ -917,6 +1048,48 @@ export class LineTradingManager {
     const dataList = this.chart.getDataList() || [];
     const latestBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
 
+    // 🛡️ REAL-TIME TRAP CANDLE AUTO-BREAKEVEN WATCHDOG (+0.3p at +1.5pt displacement):
+    // USER RULE: "let it break even at 1.5 points instead of 2.5 and break even + 0.3 pips"
+    for (const line of this.lines.values()) {
+      if (line._trapAutoBeArmed && line._trapAutoBeTicket) {
+        const ticketNum = Number(line._trapAutoBeTicket);
+        const posIsOpen = this.activePositions && this.activePositions.some(p => Number(p.ticket) === ticketNum);
+        if (!posIsOpen) {
+          line._trapAutoBeArmed = false;
+          line._trapAutoBeTicket = null;
+          continue;
+        }
+
+        const isBuy = line._trapAutoBeSide === 'BUY';
+        const threshold = line._trapDispThreshold;
+        const targetSl = line._trapTargetSl;
+        const curPrice = isBuy ? bid : (ask || bid);
+        const hitDisplacement = isBuy ? (curPrice >= threshold) : (curPrice <= threshold);
+
+        if (hitDisplacement && targetSl) {
+          line._trapAutoBeArmed = false; // Disarm immediately to prevent duplicate firing
+          console.log(`[LineTrading] 🛡️ Trap Auto-BE displacement reached (${isBuy ? '+' : '-'}1.5pt @ $${curPrice})! Modifying #${ticketNum} -> SL $${targetSl}`);
+          fetch('/api/trade/modify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ticket: ticketNum, sl: targetSl })
+          }).then(r => r.json()).then(res => {
+            if (res && res.status === 'OK') {
+              showChartToast(`🛡️ Trap Auto-Breakeven (+0.3p)! #${ticketNum} SL moved to $${targetSl.toFixed(2)}`);
+              if (!window.__activeTradesSlTp) window.__activeTradesSlTp = {};
+              window.__activeTradesSlTp[ticketNum] = { ...(window.__activeTradesSlTp[ticketNum] || {}), sl: targetSl };
+              if (window.__activeOrdersEngine) {
+                const pos = window.__activeOrdersEngine.activePositions?.find(p => Number(p.ticket) === ticketNum);
+                if (pos) pos.sl = targetSl;
+                window.__activeOrdersEngine.render();
+              }
+              this.renderHud();
+            }
+          }).catch(e => console.warn('[LineTrading] Trap auto-BE error:', e));
+        }
+      }
+    }
+
     for (const line of this.lines.values()) {
       const ov = overlayMap.get(String(line.overlayId));
       if (!ov || !ov.points || ov.points.length === 0) continue;
@@ -932,29 +1105,113 @@ export class LineTradingManager {
       // ONLY armed lines trigger collision execution:
       if (!line.isArmed) continue;
 
+      if (window.__isDrawdownLocked) {
+        line.isArmed = false;
+        continue;
+      }
+
       // USER RULE: "only one trade should be active at a time even it touches any line"
-      // If ANY position is currently open in MT5, DO NOT trigger any entry line!
-      // (EXIT / Close lines can still trigger to close positions)
+      // USER RULE: "only 1 trade should be active at a time"
+      // If ANY position is currently open in MT5 or currently executing, DO NOT trigger any entry line!
       const hasActivePositions = (this.activePositions && this.activePositions.length > 0) ||
                                  (window.__lastActivePositions && window.__lastActivePositions.length > 0) ||
-                                 Boolean(this.isExecuting);
+                                 Boolean(this.isExecuting) ||
+                                 Boolean(window.__isExecutingTrade);
       if (line.actionType === 'EXECUTE' && hasActivePositions) {
         continue;
       }
 
       // COLLISION CHECK:
       // The chart price space is BID (all candles & wicks are rendered at Bid).
-      // A trigger occurs when:
-      // 1. Bid crossed the line between the previous tick and current tick
-      // 2. Bid touched within 0.08 pt (float tolerance < 1 pip, exact touch)
-      // 3. Or current candle's high/low physically encompasses linePrice and live bid is close (within 0.20 pt)
-      const crossed = (prevBid <= linePrice && bid >= linePrice) ||
-                      (prevBid >= linePrice && bid <= linePrice);
-      const touched = Math.abs(bid - linePrice) <= 0.08;
-      const candleTouched = Boolean(latestBar && latestBar.low <= linePrice && latestBar.high >= linePrice && Math.abs(bid - linePrice) <= 0.20);
+      if (line.trapColorEnabled && line.actionType === 'EXECUTE') {
+        // ⚡ CANDLE TRAP COLOR TRIGGER MODE:
+        // USER RULE: It MUST be the CURRENT touched candle that forms Cyan or Yellow (NOT previous candles)!
+        // Triggers the split-second the CURRENT touching candle forms Cyan (for BUY) or Yellow (for SELL)
+        // even if price has moved away from the line, as long as any part of the candle is touching/overlapping the line.
+        let trapTriggered = false;
 
-      if (crossed || touched || candleTouched) {
-        this._executeLineTrigger(line, linePrice);
+        if (latestBar) {
+          // Bar deduplication: Do not re-trigger on the exact same bar that already fired
+          if (line._lastTriggeredBarTime && line._lastTriggeredBarTime === latestBar.timestamp) {
+            continue;
+          }
+
+          // Evaluate the current living candle (dataList.length - 1)
+          const trapStateCurr = evaluateCandleTrapState(dataList, dataList.length - 1, linePrice);
+          const isImmediate = (line.trapImmediateTrigger !== false);
+
+          if (isImmediate) {
+            // Immediate Trigger Mode: Fires immediately on trap form & line touch
+            if (trapStateCurr.candleOverlapsLine) {
+              if (line.direction === 'BUY' && trapStateCurr.isCyan) {
+                trapTriggered = true;
+              } else if (line.direction === 'SELL' && trapStateCurr.isYellow) {
+                trapTriggered = true;
+              }
+            }
+          } else {
+            // Ignition Mode: Registers trap and waits for price to break the trap candle's extreme
+            if (!line._pendingTrapCandle) {
+              if (trapStateCurr.candleOverlapsLine) {
+                if (line.direction === 'BUY' && trapStateCurr.isCyan) {
+                  line._pendingTrapCandle = { high: latestBar.high, low: latestBar.low, barTime: latestBar.timestamp, dir: 'BUY' };
+                } else if (line.direction === 'SELL' && trapStateCurr.isYellow) {
+                  line._pendingTrapCandle = { high: latestBar.high, low: latestBar.low, barTime: latestBar.timestamp, dir: 'SELL' };
+                }
+              }
+            } else {
+              if (line.direction === 'BUY') {
+                if (bid > line._pendingTrapCandle.high) {
+                  trapTriggered = true;
+                  line._pendingTrapCandle = null;
+                } else if (bid < (line._pendingTrapCandle.low - 0.20)) {
+                  line._pendingTrapCandle = null; // Breached below trap low, invalidated
+                }
+              } else if (line.direction === 'SELL') {
+                if (bid < line._pendingTrapCandle.low) {
+                  trapTriggered = true;
+                  line._pendingTrapCandle = null;
+                } else if (bid > (line._pendingTrapCandle.high + 0.20)) {
+                  line._pendingTrapCandle = null; // Breached above trap high, invalidated
+                }
+              }
+            }
+          }
+        }
+
+        if (trapTriggered) {
+          line._lastTriggeredBarTime = latestBar ? latestBar.timestamp : Date.now();
+          line._lastTriggeredBar = latestBar;
+          this._executeLineTrigger(line, linePrice);
+          break; // Stop evaluating further lines on this tick! Only 1 trade active at a time!
+        }
+      } else {
+        // Standard touch trigger (when candle trap trigger is INACTIVE):
+        // ⚡ DIRECTIONAL SPREAD-COMPENSATED PRICING: BUY fills at Ask, SELL fills at Bid!
+        const isBuyAction = (line.direction === 'BUY');
+        const triggerTestPrice = isBuyAction ? (ask || bid) : bid;
+
+        // 1. Initial tick anchor guard: Never trigger on the first tick after arming!
+        if (line._lastTickTestPrice === undefined || line._lastTickTestPrice === null) {
+          line._lastTickTestPrice = triggerTestPrice;
+          continue;
+        }
+
+        const prevPrice = line._lastTickTestPrice;
+        line._lastTickTestPrice = triggerTestPrice; // update for next tick
+
+        // 2. Strict touch threshold: 0.05 pt ($0.05 / 0.5 pip) - must be an actual physical touch!
+        const isTouched = Math.abs(triggerTestPrice - linePrice) <= 0.05;
+
+        // 3. Directional cross: price must have moved across the line from one side to the other
+        const crossedFromBelow = (prevPrice < linePrice && triggerTestPrice >= linePrice);
+        const crossedFromAbove = (prevPrice > linePrice && triggerTestPrice <= linePrice);
+        const isCrossed = crossedFromBelow || crossedFromAbove;
+
+        if (isTouched || isCrossed) {
+          this._executeLineTrigger(line, linePrice);
+          break; // Stop evaluating further lines on this tick! Only 1 trade active at a time!
+        }
       }
     }
 
@@ -995,48 +1252,69 @@ export class LineTradingManager {
 
       // 2. Sloped Lines (Segment, Ray, Trend Line, etc.)
       const dataList = this.chart ? (this.chart.getDataList() || []) : [];
-      const latestBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
-      const latestIndex = dataList.length > 0 ? dataList.length - 1 : 0;
+      if (dataList.length === 0) return (v1 + v2) / 2;
+
+      const latestBar = dataList[dataList.length - 1];
+      const latestIndex = dataList.length - 1;
       const latestTime = latestBar ? latestBar.timestamp : Date.now();
 
-      const idx1 = (p1.dataIndex !== undefined) ? Number(p1.dataIndex) : null;
-      const idx2 = (p2.dataIndex !== undefined) ? Number(p2.dataIndex) : null;
       const t1 = (p1.timestamp !== undefined && p1.timestamp > 0) ? Number(p1.timestamp) : null;
       const t2 = (p2.timestamp !== undefined && p2.timestamp > 0) ? Number(p2.timestamp) : null;
 
-      // Method A: Interpolate by dataIndex (most accurate for chart candles)
-      if (idx1 !== null && idx2 !== null && idx1 !== idx2) {
-        const slope = (v2 - v1) / (idx2 - idx1);
-        const curVal = v1 + slope * (latestIndex - idx1);
-        if (!isNaN(curVal) && curVal > 0) return curVal;
-      }
+      const isSegment = (overlay.name === 'segment');
+      const lineObj = this.lines.get(String(overlay.id));
+      const isExtended = Boolean(lineObj?.extendRay) || (overlay.name === 'rayLine') || (overlay.name === 'straightLine');
 
-      // Method B: Interpolate by timestamp
+      const barMs = (dataList.length >= 2)
+        ? Math.max(1000, dataList[dataList.length - 1].timestamp - dataList[dataList.length - 2].timestamp)
+        : ((window.__currentTimeframeMinutes || 5) * 60 * 1000);
+
+      // Interpolate with timestamps (most robust across scrolls and timeframes)
       if (t1 !== null && t2 !== null && t1 !== t2) {
-        const slope = (v2 - v1) / (t2 - t1);
-        const curVal = v1 + slope * (latestTime - t1);
-        if (!isNaN(curVal) && curVal > 0) return curVal;
-      }
+        const pLeft = (t1 <= t2) ? p1 : p2;
+        const pRight = (t1 <= t2) ? p2 : p1;
+        const vLeft = Number(pLeft.value);
+        const vRight = Number(pRight.value);
+        const tLeft = Number(pLeft.timestamp);
+        const tRight = Number(pRight.timestamp);
 
-      // Method C: Mixed (one has timestamp, other only has dataIndex)
-      if (dataList.length >= 2) {
-        const barDuration = Math.max(1000, dataList[dataList.length - 1].timestamp - dataList[dataList.length - 2].timestamp);
-        let time1 = t1;
-        let time2 = t2;
-        if (time1 === null && idx1 !== null) {
-          time1 = latestTime - (latestIndex - idx1) * barDuration;
+        // If it's a finite segment (NOT extended ray):
+        // If current candle is past the end of the segment, it has expired in the past!
+        if (isSegment && !isExtended) {
+          if (latestTime > (tRight + barMs * 0.75)) {
+            return null; // Segment ended in the past; cannot trigger on current candle!
+          }
+          if (latestTime < (tLeft - barMs * 0.75)) {
+            return null; // Segment starts in the future!
+          }
         }
-        if (time2 === null && idx2 !== null) {
-          time2 = latestTime - (latestIndex - idx2) * barDuration;
-        }
-        if (time1 !== null && time2 !== null && time1 !== time2) {
-          const slope = (v2 - v1) / (time2 - time1);
-          const curVal = v1 + slope * (latestTime - time1);
+
+        const timeDelta = tRight - tLeft;
+        if (timeDelta > 0) {
+          const slopePerMs = (vRight - vLeft) / timeDelta;
+          const curVal = vRight + slopePerMs * (latestTime - tRight);
           if (!isNaN(curVal) && curVal > 0) return curVal;
         }
       }
 
-      // Fallback: Average of the two values
+      // Fallback with dataIndex relative to current bar
+      const idx1 = (p1.dataIndex !== undefined) ? Number(p1.dataIndex) : null;
+      const idx2 = (p2.dataIndex !== undefined) ? Number(p2.dataIndex) : null;
+      if (idx1 !== null && idx2 !== null && idx1 !== idx2) {
+        const pLeft = (idx1 <= idx2) ? p1 : p2;
+        const pRight = (idx1 <= idx2) ? p2 : p1;
+        const idxLeft = Math.min(idx1, idx2);
+        const idxRight = Math.max(idx1, idx2);
+
+        if (isSegment && !isExtended && latestIndex > idxRight) {
+          return null; // Segment ended in the past
+        }
+
+        const slope = (Number(pRight.value) - Number(pLeft.value)) / (idxRight - idxLeft);
+        const curVal = Number(pRight.value) + slope * (latestIndex - idxRight);
+        if (!isNaN(curVal) && curVal > 0) return curVal;
+      }
+
       return (v1 + v2) / 2;
     }
 
@@ -1070,9 +1348,20 @@ export class LineTradingManager {
       return;
     }
 
-    // 2. Trade Entry Line (EXECUTE): USER RULE: "only one trade should be active at a time even it touches any line"
+    // 2. Trade Entry Line (EXECUTE): USER RULE: "only 1 trade should be active at a time"
+    if (window.__isDrawdownLocked) {
+      console.warn(`[LineTrading] ⛔ Drawdown locked: blocked trade on ${line.name}`);
+      showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Trading is LOCKED until manually disabled in settings.');
+      line.isArmed = false;
+      this.applyLineColor(line.overlayId);
+      this.renderHud();
+      return;
+    }
+
     const hasActivePositions = (this.activePositions && this.activePositions.length > 0) ||
-                               (window.__lastActivePositions && window.__lastActivePositions.length > 0);
+                               (window.__lastActivePositions && window.__lastActivePositions.length > 0) ||
+                               Boolean(this.isExecuting) ||
+                               Boolean(window.__isExecutingTrade);
     if (hasActivePositions) {
       console.log(`[LineTrading] 🛑 Blocked entry on ${line.name}: only 1 trade active at a time!`);
       return;
@@ -1083,37 +1372,98 @@ export class LineTradingManager {
     line._lastExecuteTrigger = now;
 
     this.isExecuting = true;
+    window.__isExecutingTrade = true;
     console.log(`[LineTrading] ⚡ ENTRY TRIGGER HIT on ${line.name} @ $${triggerPrice.toFixed(2)} (${line.direction})`);
 
     try {
       const side = line.direction || 'BUY';
       const vol = (typeof window.getGlobalLot === 'function') ? window.getGlobalLot() : (line.volume || 1.00);
-      const slPts = line.slPts || 6.0;
+      const slPts = line.slPts || 3.0;
       const tpPts = line.tpPts || 12.0;
 
-      const slPrice = side === 'BUY' ? triggerPrice - slPts : triggerPrice + slPts;
+      let slPrice = side === 'BUY' ? triggerPrice - slPts : triggerPrice + slPts;
       const tpPrice = side === 'BUY' ? triggerPrice + tpPts : triggerPrice - tpPts;
 
-      const res = await fetch('/api/trade/execute', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: this.symbol,
-          side: side,
-          volume: vol,
-          sl: Math.round(slPrice * 100) / 100,
-          tp: Math.round(tpPrice * 100) / 100,
-          comment: `Line Touch ${line.name}`
-        })
-      });
+      // Auto SL to tip of triggered trap candle (default: ON)
+      const isTrap = Boolean(line.trapColorEnabled);
+      const autoSlToTip = isTrap && (line.trapAutoSlToTip !== false);
+      const triggeredBar = line._lastTriggeredBar;
+      if (autoSlToTip && triggeredBar) {
+        if (side === 'BUY' && typeof triggeredBar.low === 'number' && triggeredBar.low < triggerPrice) {
+          slPrice = Math.round(triggeredBar.low * 100) / 100;
+          console.log(`[LineTrading] 🎯 Auto SL placed at Cyan candle tip (Low: $${slPrice.toFixed(2)})`);
+        } else if (side === 'SELL' && typeof triggeredBar.high === 'number' && triggeredBar.high > triggerPrice) {
+          slPrice = Math.round(triggeredBar.high * 100) / 100;
+          console.log(`[LineTrading] 🎯 Auto SL placed at Yellow candle tip (High: $${slPrice.toFixed(2)})`);
+        }
+      }
 
-      const data = await res.json();
+      // Trap Auto-Breakeven toggle (default: OFF) & displacement/offset (both in pips)
+      const trapBeOn = isTrap && Boolean(line.trapBeEnabled);
+      const dispPips = (typeof line.trapBeDispPips === 'number' && line.trapBeDispPips > 0) ? line.trapBeDispPips : ((typeof line.trapBeDispPts === 'number' && line.trapBeDispPts > 0) ? line.trapBeDispPts * 10 : 15.0);
+      const dispPts = Math.round(dispPips * 0.10 * 100) / 100;
+      const offsetPips = (typeof line.trapBeOffsetPips === 'number' && line.trapBeOffsetPips >= 0) ? line.trapBeOffsetPips : 0.3;
+
+      const tradePayload = {
+        action: 'EXECUTE_LINE',
+        request_id: 'exec_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        symbol: this.symbol,
+        side: side,
+        volume: vol,
+        sl: Math.round(slPrice * 100) / 100,
+        tp: Math.round(tpPrice * 100) / 100,
+        comment: isTrap ? `Trap ${side === 'BUY' ? 'CYAN' : 'YELLOW'} ${line.name}` : `Line Touch ${line.name}`,
+        source: 'line',
+        trap_trade: trapBeOn,
+        trap_be_enabled: trapBeOn,
+        trigger_price: triggerPrice,
+        auto_be_displacement: dispPts,
+        auto_be_displacement_pips: dispPips,
+        auto_be_offset_pips: offsetPips
+      };
+
+      // ⚡ Fast execution route: Send directly over open WebSocket (<1ms) or fallback to HTTP POST
+      let data = null;
+      const ws = window.__escanorWs;
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        data = await new Promise((resolve) => {
+          const timer = setTimeout(() => {
+            if (window.__pendingWsExecutions) window.__pendingWsExecutions.delete(tradePayload.request_id);
+            resolve({ status: 'FAILED', error: 'Execution timeout after 8000ms' });
+          }, 8000);
+
+          if (!window.__pendingWsExecutions) window.__pendingWsExecutions = new Map();
+          window.__pendingWsExecutions.set(tradePayload.request_id, (result) => {
+            clearTimeout(timer);
+            resolve(result);
+          });
+
+          try {
+            ws.send(JSON.stringify(tradePayload));
+          } catch (e) {
+            clearTimeout(timer);
+            if (window.__pendingWsExecutions) window.__pendingWsExecutions.delete(tradePayload.request_id);
+            resolve(null);
+          }
+        });
+      }
+
+      if (!data) {
+        const res = await fetch('/api/trade/execute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tradePayload)
+        });
+        data = await res.json();
+      }
       if (data && (data.status === 'EXECUTED' || data.ticket)) {
         const ticket = data.ticket;
         line.activeTradeTicket = ticket;
         line.triggeredTicket = ticket;
         line._tradeActive = true;
-        // Optimistically record position so applyLineColor immediately hides the trigger line
+        line._tradeActiveStartTime = Date.now();
+        this.posStartTimes.set(Number(ticket), Date.now());
+        // Optimistically record position to prevent any subsequent trade trigger
         const finalSl = Math.round(slPrice * 100) / 100;
         const finalTp = Math.round(tpPrice * 100) / 100;
         if (!this.activePositions.some(p => Number(p.ticket) === Number(ticket))) {
@@ -1124,9 +1474,10 @@ export class LineTradingManager {
             volume: vol,
             sl: finalSl,
             tp: finalTp,
-            comment: `Line Touch ${line.name}`
+            comment: line.trapColorEnabled ? `Trap ${side === 'BUY' ? 'CYAN' : 'YELLOW'} ${line.name}` : `Line Touch ${line.name}`
           });
         }
+        window.__lastActivePositions = this.activePositions;
         window.__activeTradeTriggerTime = Date.now();
         window.__posActiveClientStart = Date.now();
         if (!window.__activeTradesSlTp) window.__activeTradesSlTp = {};
@@ -1138,9 +1489,28 @@ export class LineTradingManager {
             ask: this.currentAsk
           });
         }
-        // THE LINE REMAINS ARMED AND ACTIVE!
+        // THE LINE REMAINS ARMED AND ACTIVE (AND FULLY VISIBLE ON CHART)!
         line.isArmed = true;
-        showChartToast(`⚡ ${line.name}: Filled ${side} ${vol}L! Ticket #${ticket}. Line remains ARMED!`);
+        if (line.trapColorEnabled) {
+          const trapName = side === 'BUY' ? 'CYAN BUY TRAP' : 'YELLOW SELL TRAP';
+          if (trapBeOn) {
+            line._trapAutoBeTicket = ticket;
+            line._trapTriggerPrice = triggerPrice;
+            line._trapAutoBeSide = side;
+            line._trapAutoBeArmed = true;
+            // 0.3 pips on Gold = 0.03 point ($0.03) -> delta = offsetPips * 0.10
+            const offsetDelta = Math.round(offsetPips * 0.10 * 100) / 100;
+            line._trapDispThreshold = side === 'BUY' ? Math.round((triggerPrice + dispPts) * 100) / 100 : Math.round((triggerPrice - dispPts) * 100) / 100;
+            line._trapTargetSl = side === 'BUY' ? Math.round((triggerPrice + offsetDelta) * 100) / 100 : Math.round((triggerPrice - offsetDelta) * 100) / 100;
+            showChartToast(`⚡ ${line.name} [${trapName}]: Filled ${side} ${vol}L! #${ticket}. Auto-BE +${offsetPips}p armed @ ${dispPips}p disp ($${line._trapDispThreshold.toFixed(2)})`);
+          } else {
+            line._trapAutoBeArmed = false;
+            line._trapAutoBeTicket = null;
+            showChartToast(`⚡ ${line.name} [${trapName}]: Filled ${side} ${vol}L! #${ticket}. Line remains ARMED!`);
+          }
+        } else {
+          showChartToast(`⚡ ${line.name}: Filled ${side} ${vol}L! Ticket #${ticket}. Line remains ARMED!`);
+        }
 
         if (line.timerEnabled && line.autoCloseMins > 0) {
           line.triggeredCountdownEnd = Date.now() + (line.autoCloseMins * 60 * 1000);
@@ -1154,6 +1524,7 @@ export class LineTradingManager {
       showChartToast(`⚠️ Network error executing trigger`);
     } finally {
       this.isExecuting = false;
+      window.__isExecutingTrade = false;
       this.applyLineColor(line.overlayId);
       this.saveToStorage();
       this.renderHud();
@@ -1247,7 +1618,7 @@ export class LineTradingManager {
     const slInput = document.getElementById('tvLineSlPts');
     const tpInput = document.getElementById('tvLineTpPts');
     if (volInput) volInput.value = line.volume || 0.50;
-    if (slInput) slInput.value = line.slPts || 6.0;
+    if (slInput) slInput.value = line.slPts || 3.0;
     if (tpInput) tpInput.value = line.tpPts || 12.0;
 
     // Auto-Close Timer toggle button (Button instead of checkbox)
@@ -1268,13 +1639,86 @@ export class LineTradingManager {
       btnRay.classList.toggle('active', this._extendRay);
     }
 
+    // Candle Trap Trigger toggle (Cyan Buy / Yellow Sell)
+    this._trapColorEnabled = Boolean(line.trapColorEnabled);
+
+    // Auto-SL to Tip of Triggered Trap Candle (default: true / ON)
+    this._trapAutoSlToTip = line.trapAutoSlToTip !== undefined ? Boolean(line.trapAutoSlToTip) : true;
+    const btnTrapAutoSl = document.getElementById('tvBtnToggleTrapAutoSl');
+    if (btnTrapAutoSl) {
+      btnTrapAutoSl.textContent = this._trapAutoSlToTip ? 'ON' : 'OFF';
+      btnTrapAutoSl.classList.toggle('active', this._trapAutoSlToTip);
+    }
+
+    // Trap Auto-Breakeven toggle (default: false / OFF)
+    this._trapBeEnabled = line.trapBeEnabled !== undefined ? Boolean(line.trapBeEnabled) : false;
+    const btnTrapBe = document.getElementById('tvBtnToggleTrapBe');
+    const grpTrapBe = document.getElementById('tvTrapBeControls');
+    const trapBeDispInput = document.getElementById('tvLineTrapBeDispPips') || document.getElementById('tvLineTrapBeDispPts');
+    const trapBeOffsetInput = document.getElementById('tvLineTrapBeOffsetPips');
+
+    if (btnTrapBe) {
+      btnTrapBe.textContent = this._trapBeEnabled ? 'ON' : 'OFF';
+      btnTrapBe.classList.toggle('active', this._trapBeEnabled);
+    }
+    if (grpTrapBe) {
+      grpTrapBe.style.display = this._trapBeEnabled ? 'grid' : 'none';
+    }
+    if (trapBeDispInput) {
+      const dispP = line.trapBeDispPips !== undefined ? line.trapBeDispPips : (line.trapBeDispPts !== undefined ? line.trapBeDispPts * 10 : 15.0);
+      trapBeDispInput.value = dispP;
+    }
+    if (trapBeOffsetInput) trapBeOffsetInput.value = line.trapBeOffsetPips !== undefined ? line.trapBeOffsetPips : 0.3;
+
+    // Immediate Trigger on Trap Form toggle (default: true / ON)
+    this._trapImmediateTrigger = line.trapImmediateTrigger !== undefined ? Boolean(line.trapImmediateTrigger) : true;
+    const btnTrapImm = document.getElementById('tvBtnToggleTrapImmediate');
+    if (btnTrapImm) {
+      btnTrapImm.textContent = this._trapImmediateTrigger ? 'ON' : 'OFF';
+      btnTrapImm.classList.toggle('active', this._trapImmediateTrigger);
+    }
+
+    this._updateTrapColorUI();
+
     this._updateDollarPnlBox();
     this._updateColorIndicator();
+    this._updateModalQuickArmBtn(line);
     this.applyLineColor(idStr);
     this.updateSlTpProjections();
     this.renderHud(true);
 
     this.modalEl.style.display = 'flex';
+  }
+
+  _updateTrapColorUI() {
+    const isBuy = document.getElementById('tvLineDirBuy')?.classList.contains('active');
+    const pill = document.getElementById('tvTrapColorPill');
+    const btn = document.getElementById('tvBtnToggleTrapColor');
+    const grpSub = document.getElementById('tvTrapSubSettingsGroup');
+
+    if (pill) {
+      if (isBuy) {
+        pill.textContent = 'Cyan BUY';
+        pill.className = 'tv-trap-badge cyan';
+      } else {
+        pill.textContent = 'Yellow SELL';
+        pill.className = 'tv-trap-badge yellow';
+      }
+    }
+
+    if (btn) {
+      btn.textContent = this._trapColorEnabled ? 'ON' : 'OFF';
+      btn.className = 'tv-btn-toggle';
+      if (this._trapColorEnabled) {
+        btn.classList.add(isBuy ? 'trap-active-cyan' : 'trap-active-yellow');
+      }
+    }
+
+    if (grpSub) {
+      grpSub.style.display = this._trapColorEnabled ? 'flex' : 'none';
+    }
+
+    this._updateColorIndicator();
   }
 
   _bindModalEvents() {
@@ -1286,6 +1730,21 @@ export class LineTradingManager {
       this.loadFromStorage();
       this.updateSlTpProjections();
       this.renderHud(true);
+    });
+
+    // Quick Arm / Deactivate Toggle Button in Header
+    document.getElementById('tvLineQuickArmBtn')?.addEventListener('click', () => {
+      if (!this.selectedLineId) return;
+      const isArmed = this.toggleLineArmed(this.selectedLineId);
+      const line = this.lines.get(this.selectedLineId);
+      const name = line?.name || 'Line Trigger';
+      const dir = line?.direction || 'BUY';
+      const lots = line?.volume || (typeof window.getGlobalLot === 'function' ? window.getGlobalLot() : 1.0);
+      if (isArmed) {
+        showChartToast(`⚡ ACTIVE: ${name} (${dir} ${Number(lots).toFixed(2)}L)`);
+      } else {
+        showChartToast(`⚪ DEACTIVATED: ${name}`);
+      }
     });
 
     // Touch Trigger Action: Segmented Tabs (Buttons/tabs instead of checkboxes)
@@ -1324,22 +1783,82 @@ export class LineTradingManager {
     btnBuy?.addEventListener('click', () => {
       btnBuy.classList.add('active');
       btnSell?.classList.remove('active');
-      this._updateColorIndicator();
+      this._updateTrapColorUI();
       const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
       if (line) {
         line.direction = 'BUY';
+        this.applyLineColor(line.overlayId);
         this.updateSlTpProjections();
       }
     });
     btnSell?.addEventListener('click', () => {
       btnSell.classList.add('active');
       btnBuy?.classList.remove('active');
-      this._updateColorIndicator();
+      this._updateTrapColorUI();
       const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
       if (line) {
         line.direction = 'SELL';
+        this.applyLineColor(line.overlayId);
         this.updateSlTpProjections();
       }
+    });
+
+    // Candle Trap Color Trigger Toggle Button
+    const btnTrap = document.getElementById('tvBtnToggleTrapColor');
+    btnTrap?.addEventListener('click', () => {
+      this._trapColorEnabled = !this._trapColorEnabled;
+      this._updateTrapColorUI();
+      const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
+      if (line) {
+        line.trapColorEnabled = Boolean(this._trapColorEnabled);
+        this.applyLineColor(line.overlayId);
+      }
+    });
+
+    // Auto-SL to Trap Candle Tip toggle button (Default: ON)
+    const btnTrapAutoSl = document.getElementById('tvBtnToggleTrapAutoSl');
+    btnTrapAutoSl?.addEventListener('click', () => {
+      this._trapAutoSlToTip = !this._trapAutoSlToTip;
+      btnTrapAutoSl.textContent = this._trapAutoSlToTip ? 'ON' : 'OFF';
+      btnTrapAutoSl.classList.toggle('active', this._trapAutoSlToTip);
+      const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
+      if (line) line.trapAutoSlToTip = Boolean(this._trapAutoSlToTip);
+    });
+
+    // Trap Auto-Breakeven toggle button (Default: OFF)
+    const btnTrapBe = document.getElementById('tvBtnToggleTrapBe');
+    const grpTrapBe = document.getElementById('tvTrapBeControls');
+    btnTrapBe?.addEventListener('click', () => {
+      this._trapBeEnabled = !this._trapBeEnabled;
+      btnTrapBe.textContent = this._trapBeEnabled ? 'ON' : 'OFF';
+      btnTrapBe.classList.toggle('active', this._trapBeEnabled);
+      if (grpTrapBe) grpTrapBe.style.display = this._trapBeEnabled ? 'grid' : 'none';
+      const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
+      if (line) line.trapBeEnabled = Boolean(this._trapBeEnabled);
+    });
+
+    const onTrapDispInput = (e) => {
+      const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
+      if (line) {
+        line.trapBeDispPips = Math.max(0.1, Number(e.target.value || 15.0));
+        line.trapBeDispPts = Math.round(line.trapBeDispPips * 0.10 * 100) / 100;
+      }
+    };
+    document.getElementById('tvLineTrapBeDispPips')?.addEventListener('input', onTrapDispInput);
+    document.getElementById('tvLineTrapBeDispPts')?.addEventListener('input', onTrapDispInput);
+    document.getElementById('tvLineTrapBeOffsetPips')?.addEventListener('input', (e) => {
+      const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
+      if (line) line.trapBeOffsetPips = Math.max(0.1, Number(e.target.value || 0.3));
+    });
+
+    // Immediate Trigger on Trap Form toggle button (Default: ON)
+    const btnTrapImm = document.getElementById('tvBtnToggleTrapImmediate');
+    btnTrapImm?.addEventListener('click', () => {
+      this._trapImmediateTrigger = !this._trapImmediateTrigger;
+      btnTrapImm.textContent = this._trapImmediateTrigger ? 'ON' : 'OFF';
+      btnTrapImm.classList.toggle('active', this._trapImmediateTrigger);
+      const line = this.selectedLineId ? this.lines.get(this.selectedLineId) : null;
+      if (line) line.trapImmediateTrigger = Boolean(this._trapImmediateTrigger);
     });
 
     // Recalculate dollar PnL and live projections on input changes
@@ -1411,7 +1930,7 @@ export class LineTradingManager {
 
   _updateDollarPnlBox() {
     const vol = (typeof window.getGlobalLot === 'function') ? window.getGlobalLot() : Math.max(0.01, Number(localStorage.getItem('escanor_global_lot') || 1.00));
-    const slPts = Math.max(0.1, Number(document.getElementById('tvLineSlPts')?.value || 6.0));
+    const slPts = Math.max(0.1, Number(document.getElementById('tvLineSlPts')?.value || 3.0));
     const tpPts = Math.max(0.1, Number(document.getElementById('tvLineTpPts')?.value || 12.0));
 
     const dollarTp = (tpPts * vol * 100);
@@ -1436,19 +1955,42 @@ export class LineTradingManager {
     const isBuy = document.getElementById('tvLineDirBuy')?.classList.contains('active');
 
     const ind = document.getElementById('tvLineColorIndicator');
-    if (!ind) return;
+    const armBtn = document.getElementById('tvLineArmBtn');
 
-    if (isExec) {
-      if (isBuy) {
-        ind.textContent = '🟢 GREEN (BUY TRADE)';
-        ind.className = 'line-color-badge-green';
+    if (ind) {
+      if (isExec) {
+        if (isBuy) {
+          ind.textContent = '⚡ CYAN (BUY DIRECTION)';
+          ind.className = 'line-color-badge-cyan';
+        } else {
+          ind.textContent = '⚡ YELLOW (SELL DIRECTION)';
+          ind.className = 'line-color-badge-yellow';
+        }
       } else {
-        ind.textContent = '🔴 RED (SELL TRADE)';
-        ind.className = 'line-color-badge-red';
+        ind.textContent = '🟡 AMBER (EXIT ALL)';
+        ind.className = 'line-color-badge-yellow';
       }
-    } else {
-      ind.textContent = '🟡 YELLOW (EXIT ALL)';
-      ind.className = 'line-color-badge-yellow';
+    }
+
+    if (armBtn) {
+      if (isExec) {
+        if (isBuy) {
+          armBtn.textContent = '⚡ Arm & Activate (CYAN BUY)';
+          armBtn.style.background = '#00e5ff';
+          armBtn.style.color = '#061118';
+          armBtn.style.boxShadow = '0 0 14px rgba(0, 229, 255, 0.45)';
+        } else {
+          armBtn.textContent = '⚡ Arm & Activate (YELLOW SELL)';
+          armBtn.style.background = '#f59e0b';
+          armBtn.style.color = '#061118';
+          armBtn.style.boxShadow = '0 0 14px rgba(245, 158, 11, 0.45)';
+        }
+      } else {
+        armBtn.textContent = '🚨 Arm & Activate (EXIT ALL)';
+        armBtn.style.background = '#fbbf24';
+        armBtn.style.color = '#061118';
+        armBtn.style.boxShadow = '0 0 14px rgba(251, 191, 36, 0.45)';
+      }
     }
   }
 
@@ -1468,11 +2010,19 @@ export class LineTradingManager {
     line.actionType = this._currentActionType || 'EXECUTE';
     line.direction = isBuy ? 'BUY' : 'SELL';
     line.volume = globalLot;
-    line.slPts = Math.max(0.1, Number(slInput?.value || 6.0));
+    line.slPts = Math.max(0.1, Number(slInput?.value || 3.0));
     line.tpPts = Math.max(0.1, Number(tpInput?.value || 12.0));
     line.timerEnabled = Boolean(this._timerEnabled);
     line.autoCloseMins = Number(timerMins?.value || 5.0);
     line.extendRay = Boolean(this._extendRay);
+    line.trapColorEnabled = Boolean(this._trapColorEnabled);
+    line.trapAutoSlToTip = this._trapAutoSlToTip !== undefined ? Boolean(this._trapAutoSlToTip) : true;
+    line.trapImmediateTrigger = this._trapImmediateTrigger !== undefined ? Boolean(this._trapImmediateTrigger) : true;
+    line.trapBeEnabled = Boolean(this._trapBeEnabled);
+    const dispPipsVal = Math.max(0.1, Number(document.getElementById('tvLineTrapBeDispPips')?.value || document.getElementById('tvLineTrapBeDispPts')?.value || 15.0));
+    line.trapBeDispPips = dispPipsVal;
+    line.trapBeDispPts = Math.round(dispPipsVal * 0.10 * 100) / 100;
+    line.trapBeOffsetPips = Math.max(0.1, Number(document.getElementById('tvLineTrapBeOffsetPips')?.value || 0.3));
     line.isArmed = isArmed;
     line.triggered = false; // Reset trigger state on re-arming
     if (isArmed) {
@@ -1480,6 +2030,7 @@ export class LineTradingManager {
       line._tradeActive = false;
       line._lastExecuteTrigger = 0;
       line._lastExitTrigger = 0;
+      line._lastTickBid = null;
     }
 
     // Calculate initial price and point distance immediately
@@ -1501,6 +2052,8 @@ export class LineTradingManager {
     this.saveToStorage();
     this.updateSlTpProjections();
     this.renderHud(true);
+    this._updateModalQuickArmBtn(line);
+    this._updateFloatingToolbarArmBtn(line);
   }
 
   // =========================================================================
@@ -1542,18 +2095,10 @@ export class LineTradingManager {
         if (act === 'settings') {
           this.openSettingsModal(id);
         } else if (act === 'toggle' && line) {
-          line.isArmed = !line.isArmed;
-          if (line.isArmed) {
-            line.activeTradeTicket = null;
-            line._tradeActive = false;
-            line._lastExecuteTrigger = 0;
-            line._lastExitTrigger = 0;
-          }
-          this.applyLineColor(id);
-          this.saveToStorage();
-          this.updateSlTpProjections();
-          showChartToast(line.isArmed ? `🟢 Armed ${line.name}` : `⚪ Paused ${line.name}`);
-          this.renderHud(true);
+          const isArmed = this.toggleLineArmed(id);
+          const dir = line.direction || 'BUY';
+          const lots = line.volume || (typeof window.getGlobalLot === 'function' ? window.getGlobalLot() : 1.0);
+          showChartToast(isArmed ? `⚡ ACTIVE: ${line.name} (${dir} ${Number(lots).toFixed(2)}L)` : `⚪ DEACTIVATED: ${line.name}`);
         } else if (act === 'delete' && line) {
           this.removeLineOverlay(id);
           showChartToast(`Deleted ${line.name}`);
@@ -1609,6 +2154,84 @@ export class LineTradingManager {
     }
   }
 
+  _formatElapsedSec(sec) {
+    const totalSec = Math.max(0, Math.floor(sec));
+    const m = Math.floor(totalSec / 60).toString().padStart(2, '0');
+    const s = (totalSec % 60).toString().padStart(2, '0');
+    if (totalSec >= 3600) {
+      const h = Math.floor(totalSec / 3600).toString().padStart(2, '0');
+      const remM = Math.floor((totalSec % 3600) / 60).toString().padStart(2, '0');
+      return `${h}:${remM}:${s}`;
+    }
+    return `${m}:${s}`;
+  }
+
+  _getPosElapsedStr(pos) {
+    if (!pos) return '00:00';
+    const ticket = Number(pos.ticket);
+    const start = this.posStartTimes.get(ticket) || (pos.open_epoch_utc ? pos.open_epoch_utc * 1000 : (pos.elapsed_sec ? Date.now() - (pos.elapsed_sec * 1000) : Date.now()));
+    const elapsedSec = Math.max(0, (Date.now() - start) / 1000);
+    return this._formatElapsedSec(elapsedSec);
+  }
+
+  _getLineElapsedStr(line) {
+    if (!line) return '00:00';
+    if (line.activeTradeTicket && this.posStartTimes.has(Number(line.activeTradeTicket))) {
+      const start = this.posStartTimes.get(Number(line.activeTradeTicket));
+      return this._formatElapsedSec(Math.max(0, (Date.now() - start) / 1000));
+    }
+    if (line._tradeActiveStartTime) {
+      return this._formatElapsedSec(Math.max(0, (Date.now() - line._tradeActiveStartTime) / 1000));
+    }
+    return '00:00';
+  }
+
+  _updateSidebarPill(activePositions = [], allLines = [], armedCount = 0) {
+    const pill = document.getElementById('tvSidebarHudPill');
+    const iconEl = document.getElementById('tvSidebarHudIcon');
+    const summaryEl = document.getElementById('tvSidebarHudSummary');
+    if (!pill || !iconEl || !summaryEl) return;
+
+    pill.classList.toggle('open', !this.hudMinimized);
+    pill.classList.remove('has-trades', 'loss', 'has-armed');
+
+    if (activePositions.length > 0) {
+      let totalPnl = 0;
+      for (const pos of activePositions) {
+        const isBuy = pos.type === 'BUY' || pos.type === 0 || String(pos.type).toUpperCase().includes('BUY');
+        const openPrice = Number(pos.price_open !== undefined ? pos.price_open : pos.price);
+        const volume = Number(pos.volume || 0.50);
+        let profitDollar = Number(pos.profit !== undefined ? pos.profit : 0);
+        if (this.currentSpot && openPrice > 0) {
+          const curP = isBuy ? this.currentSpot : (this.currentAsk || this.currentSpot);
+          const profitPts = isBuy ? (curP - openPrice) : (openPrice - curP);
+          profitDollar = profitPts * volume * 100;
+        }
+        totalPnl += profitDollar;
+      }
+
+      pill.classList.add('has-trades');
+      if (totalPnl < 0) pill.classList.add('loss');
+      iconEl.textContent = '🟢';
+      const sign = totalPnl >= 0 ? '+' : '-';
+      summaryEl.textContent = `${activePositions.length}T ${sign}$${Math.abs(totalPnl).toFixed(0)}`;
+      pill.title = `Active Trades: ${activePositions.length} (${sign}$${Math.abs(totalPnl).toFixed(2)}) • Click to ${this.hudMinimized ? 'Open' : 'Close'} HUD`;
+    } else if (armedCount > 0) {
+      pill.classList.add('has-armed');
+      iconEl.textContent = '⚡';
+      summaryEl.textContent = `${armedCount}L`;
+      pill.title = `Armed Lines: ${armedCount} • Click to ${this.hudMinimized ? 'Open' : 'Close'} HUD`;
+    } else if (allLines.length > 0) {
+      iconEl.textContent = '📐';
+      summaryEl.textContent = `${allLines.length}L`;
+      pill.title = `Drawn Lines: ${allLines.length} • Click to ${this.hudMinimized ? 'Open' : 'Close'} HUD`;
+    } else {
+      iconEl.textContent = '⚡';
+      summaryEl.textContent = 'HUD';
+      pill.title = `Desk HUD • Click to ${this.hudMinimized ? 'Open' : 'Close'}`;
+    }
+  }
+
   renderHud(forceFull = false) {
     if (!this.hudEl) return;
 
@@ -1616,6 +2239,10 @@ export class LineTradingManager {
 
     const allLines = Array.from(this.lines.values());
     const activePositions = this.activePositions || [];
+    const armedCount = allLines.filter(l => l.isArmed).length;
+
+    // Always update the compact sidebar pill
+    this._updateSidebarPill(activePositions, allLines, armedCount);
 
     if (allLines.length === 0 && activePositions.length === 0) {
       this.hudEl.style.display = 'none';
@@ -1623,11 +2250,14 @@ export class LineTradingManager {
       return;
     }
 
+    if (this.hudMinimized) {
+      this.hudEl.style.display = 'none';
+      return;
+    }
+
     this.hudEl.style.display = 'flex';
-    this.hudEl.classList.toggle('minimized', Boolean(this.hudMinimized));
 
     // Header title and count badge
-    const armedCount = allLines.filter(l => l.isArmed).length;
     let headerTitle = armedCount > 0 ? 'ARMED LINES' : 'DESK HUD';
     let headerCount = armedCount > 0 ? `${armedCount} ARMED` : `${allLines.length} LINES`;
 
@@ -1639,18 +2269,17 @@ export class LineTradingManager {
       headerCount = String(activePositions.length);
     }
 
-    // Build unique structural signature (including selection state, volume, SL, and TP)
-    const structureKey = `${this.selectedLineId || 'none'}|${activePositions.map(p => p.ticket).join(',')}|${allLines.map(l => `${l.overlayId}:${l.isArmed}:${l.actionType}:${l.direction}:${l.volume}:${l.slPts}:${l.tpPts}:${l.name}`).join(',')}`;
+    // Build unique structural signature (including selection state, volume, SL, TP, and trade active state)
+    const structureKey = `${this.selectedLineId || 'none'}|${activePositions.map(p => p.ticket).join(',')}|${allLines.map(l => `${l.overlayId}:${l.isArmed}:${l._tradeActive}:${l.actionType}:${l.direction}:${l.trapColorEnabled}:${l.volume}:${l.slPts}:${l.tpPts}:${l.name}`).join(',')}`;
 
     // If structure is identical and body exists, perform non-destructive in-place DOM update!
     const bodyList = document.getElementById('tvHudBodyList');
     if (!forceFull && this._lastHudStructureKey === structureKey && bodyList) {
-      bodyList.style.display = this.hudMinimized ? 'none' : 'flex';
-      const minBtn = this.hudEl.querySelector('#tvHudMinBtn');
-      if (minBtn) {
-        minBtn.textContent = this.hudMinimized ? '▲' : '▼';
-        minBtn.title = this.hudMinimized ? 'Expand' : 'Minimize';
+      if (this.hudMinimized) {
+        this.hudEl.style.display = 'none';
+        return;
       }
+      this.hudEl.style.display = 'flex';
 
       // 1. Update header title & count
       const titleEl = this.hudEl.querySelector('.tv-hud-title');
@@ -1690,6 +2319,43 @@ export class LineTradingManager {
           if (dollarEl && dollarEl.textContent !== dollarStr) dollarEl.textContent = dollarStr;
           if (pipsEl && pipsEl.textContent !== pipsStr) pipsEl.textContent = pipsStr;
         }
+
+        const elapsedText = `⏱ ${this._getPosElapsedStr(pos)}`;
+        const posTimerEl = itemEl.querySelector('.tv-hud-pos-timer');
+        if (posTimerEl) {
+          if (posTimerEl.textContent !== elapsedText) posTimerEl.textContent = elapsedText;
+        } else {
+          const rowBottom = itemEl.querySelector('.tv-hud-pos-row-bottom');
+          if (rowBottom) {
+            rowBottom.insertAdjacentHTML('beforeend', `<span class="tv-hud-pos-timer" title="Active Trade Duration">${elapsedText}</span>`);
+          }
+        }
+
+        const beBtn = itemEl.querySelector('.tv-hud-be-btn');
+        if (beBtn) {
+          const isArmed = Array.isArray(window.__armedBreakevenTickets) && window.__armedBreakevenTickets.map(Number).includes(ticket);
+          if (isArmed) {
+            if (!beBtn.classList.contains('armed')) {
+              beBtn.classList.add('armed');
+              beBtn.innerHTML = '<span>🛡️ BE (ARMED)</span>';
+              beBtn.style.background = 'rgba(0, 229, 255, 0.25)';
+              beBtn.style.border = '1px solid #00e5ff';
+              beBtn.style.color = '#00e5ff';
+              beBtn.style.fontWeight = 'bold';
+              beBtn.title = 'Breakeven is ARMED (+0.2 pip) — Click to disarm (Alt + B)';
+            }
+          } else {
+            if (beBtn.classList.contains('armed')) {
+              beBtn.classList.remove('armed');
+              beBtn.innerHTML = '<span>🛡️ BE</span>';
+              beBtn.style.background = '';
+              beBtn.style.border = '';
+              beBtn.style.color = '';
+              beBtn.style.fontWeight = '';
+              beBtn.title = 'Move SL to Breakeven + 0.2 pip (Alt + B)';
+            }
+          }
+        }
       }
 
       // 3. Update line badges, distances & countdowns in-place
@@ -1727,11 +2393,12 @@ export class LineTradingManager {
 
         let actionBadge = '';
         let actionClass = '';
+        const trapNote = line.trapColorEnabled ? (line.direction === 'BUY' ? ' [CYAN]' : ' [YELLOW]') : '';
         if (isArmed) {
-          actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
-          actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
+          actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L${trapNote}`;
+          actionClass = isExit ? 'exit' : (line.trapColorEnabled ? (line.direction === 'BUY' ? 'trap-cyan' : 'trap-yellow') : (line.direction === 'BUY' ? 'buy' : 'sell'));
         } else {
-          actionBadge = isExit ? 'CLOSE ALL (PAUSED)' : `${line.direction} ${line.volume}L (PAUSED)`;
+          actionBadge = isExit ? 'CLOSE ALL (PAUSED)' : `${line.direction} ${line.volume}L${trapNote} (PAUSED)`;
           actionClass = 'paused';
         }
 
@@ -1743,9 +2410,15 @@ export class LineTradingManager {
 
         const toggleBtn = itemEl.querySelector('.tv-hud-act-btn[data-act="toggle"]');
         if (toggleBtn) {
-          const expectedIcon = isArmed ? '⏸' : '▶';
+          const expectedIcon = isArmed ? '⚡' : '⚪';
           if (toggleBtn.textContent.trim() !== expectedIcon) toggleBtn.textContent = expectedIcon;
-          toggleBtn.title = isArmed ? 'Pause / Disarm' : 'Activate / Arm';
+          toggleBtn.title = isArmed ? '⚡ ACTIVE (Click to Deactivate)' : '⚪ DEACTIVATED (Click to Activate)';
+          toggleBtn.classList.toggle('armed', isArmed);
+          toggleBtn.classList.remove('buy', 'sell');
+          if (isArmed) {
+            if (line.direction === 'BUY') toggleBtn.classList.add('buy');
+            else if (line.direction === 'SELL') toggleBtn.classList.add('sell');
+          }
         }
 
         let distStr = '-- pt';
@@ -1758,6 +2431,23 @@ export class LineTradingManager {
 
         const distEl = itemEl.querySelector('.tv-hud-item-dist');
         if (distEl && distEl.textContent !== distStr) distEl.textContent = distStr;
+
+        // Trade active counter on line item
+        const lineHasActiveTrade = Boolean(line._tradeActive || (line.activeTradeTicket && activePositions.some(p => Number(p.ticket) === Number(line.activeTradeTicket))));
+        const lineCounterEl = itemEl.querySelector('.tv-hud-line-trade-counter');
+        if (lineHasActiveTrade) {
+          const lineElapsedText = `⚡ ACTIVE ⏱ ${this._getLineElapsedStr(line)}`;
+          if (lineCounterEl) {
+            if (lineCounterEl.textContent !== lineElapsedText) lineCounterEl.textContent = lineElapsedText;
+          } else {
+            const distNode = itemEl.querySelector('.tv-hud-item-dist');
+            if (distNode) {
+              distNode.insertAdjacentHTML('afterend', `<span class="tv-hud-line-trade-counter" title="Trade Active Duration">${lineElapsedText}</span>`);
+            }
+          }
+        } else if (lineCounterEl) {
+          lineCounterEl.remove();
+        }
 
         let timerHtml = '';
         if (line.triggeredCountdownEnd) {
@@ -1789,15 +2479,15 @@ export class LineTradingManager {
     this._lastHudStructureKey = structureKey;
 
     let html = `
-      <div class="tv-hud-header" onclick="window.toggleHudMinimize && window.toggleHudMinimize();" title="Click to minimize or expand">
+      <div class="tv-hud-header">
         <div class="tv-hud-title-box">
-          <span class="tv-hud-dot" style="color: ${activePositions.length > 0 ? '#00f5a0' : (armedCount > 0 ? '#00f5a0' : '#787b86')};">●</span>
+          <span class="tv-hud-dot" style="color: ${activePositions.length > 0 ? '#00e5ff' : (armedCount > 0 ? '#00e5ff' : '#787b86')};">●</span>
           <span class="tv-hud-title">${headerTitle}</span>
           <span class="tv-hud-count">${headerCount}</span>
         </div>
-        <button id="tvHudMinBtn" class="tv-hud-min-btn" onclick="window.toggleHudMinimize && window.toggleHudMinimize(); event.stopPropagation();" title="${this.hudMinimized ? 'Expand' : 'Minimize'}" style="touch-action: manipulation; cursor: pointer;">${this.hudMinimized ? '▲' : '▼'}</button>
+        <button id="tvHudCloseBtn" class="tv-hud-close-x" onclick="window.toggleHudMinimize && window.toggleHudMinimize(true); event.stopPropagation();" title="Close Desk HUD">✕</button>
       </div>
-      <div class="tv-hud-body" id="tvHudBodyList" style="display: ${this.hudMinimized ? 'none' : 'flex'};">
+      <div class="tv-hud-body" id="tvHudBodyList">
     `;
 
     // 1. Render Active Trades Section
@@ -1840,16 +2530,28 @@ export class LineTradingManager {
                 <span class="tv-hud-pos-ticket">#${ticket}</span>
                 <span class="tv-hud-pos-open">@ $${openPrice.toFixed(2)}</span>
               </div>
-              <button class="tv-hud-kill-btn" data-ticket="${ticket}" onclick="window.killTrade && window.killTrade('${ticket}'); event.stopPropagation();" title="Kill / Close #${ticket} immediately" style="touch-action: manipulation; cursor: pointer;">
-                <span class="tv-kill-icon">✕</span>
-                <span>KILL</span>
-              </button>
+              <div class="tv-hud-pos-actions" style="display: flex; align-items: center; gap: 4px;">
+                ${(Array.isArray(window.__armedBreakevenTickets) && window.__armedBreakevenTickets.map(Number).includes(ticket)) ? `
+                <button class="tv-hud-be-btn armed" data-ticket="${ticket}" onclick="window.executeTriggerBreakeven && window.executeTriggerBreakeven('${ticket}'); event.stopPropagation();" title="Breakeven is ARMED (+0.2 pip) — Click to disarm (Alt + B)" style="touch-action: manipulation; cursor: pointer; background: rgba(0, 229, 255, 0.25); border: 1px solid #00e5ff; color: #00e5ff; font-weight: bold;">
+                  <span>🛡️ BE (ARMED)</span>
+                </button>
+                ` : `
+                <button class="tv-hud-be-btn" data-ticket="${ticket}" onclick="window.executeTriggerBreakeven && window.executeTriggerBreakeven('${ticket}'); event.stopPropagation();" title="Move SL to Breakeven + 0.2 pip (Alt + B)" style="touch-action: manipulation; cursor: pointer;">
+                  <span>🛡️ BE</span>
+                </button>
+                `}
+                <button class="tv-hud-kill-btn" data-ticket="${ticket}" onclick="window.killTrade && window.killTrade('${ticket}'); event.stopPropagation();" title="Kill / Close #${ticket} immediately" style="touch-action: manipulation; cursor: pointer;">
+                  <span class="tv-kill-icon">✕</span>
+                  <span>KILL</span>
+                </button>
+              </div>
             </div>
             <div class="tv-hud-pos-row-bottom">
               <div class="tv-hud-pos-pnl ${pnlClass}">
                 <span class="tv-pnl-dollar">${dollarStr}</span>
                 <span class="tv-pnl-pips">${pipsStr}</span>
               </div>
+              <span class="tv-hud-pos-timer" title="Active Trade Duration">⏱ ${this._getPosElapsedStr(pos)}</span>
             </div>
           </div>
         `;
@@ -1873,11 +2575,12 @@ export class LineTradingManager {
 
         let actionBadge = '';
         let actionClass = '';
+        const trapNote = line.trapColorEnabled ? (line.direction === 'BUY' ? ' [CYAN]' : ' [YELLOW]') : '';
         if (isArmed) {
-          actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L`;
-          actionClass = isExit ? 'exit' : (line.direction === 'BUY' ? 'buy' : 'sell');
+          actionBadge = isExit ? 'CLOSE ALL' : `${line.direction} ${line.volume}L${trapNote}`;
+          actionClass = isExit ? 'exit' : (line.trapColorEnabled ? (line.direction === 'BUY' ? 'trap-cyan' : 'trap-yellow') : (line.direction === 'BUY' ? 'buy' : 'sell'));
         } else {
-          actionBadge = isExit ? 'CLOSE ALL (PAUSED)' : `${line.direction} ${line.volume}L (PAUSED)`;
+          actionBadge = isExit ? 'CLOSE ALL (PAUSED)' : `${line.direction} ${line.volume}L${trapNote} (PAUSED)`;
           actionClass = 'paused';
         }
 
@@ -1900,6 +2603,8 @@ export class LineTradingManager {
         }
 
         const isSelected = (this.selectedLineId === String(line.overlayId));
+        const lineHasActiveTrade = Boolean(line._tradeActive || (line.activeTradeTicket && activePositions.some(p => Number(p.ticket) === Number(line.activeTradeTicket))));
+        const activeCounterHtml = lineHasActiveTrade ? `<span class="tv-hud-line-trade-counter" title="Trade Active Duration">⚡ ACTIVE ⏱ ${this._getLineElapsedStr(line)}</span>` : '';
 
         html += `
           <div class="tv-hud-item ${isArmed ? '' : 'paused-item'} ${isSelected ? 'selected' : ''}" data-line-id="${line.overlayId}">
@@ -1910,11 +2615,12 @@ export class LineTradingManager {
             </div>
             <div class="tv-hud-item-bottom">
               <span class="tv-hud-item-dist">${distStr}</span>
+              ${activeCounterHtml}
               ${timerHtml}
               <div class="tv-hud-item-actions">
                 <button class="tv-hud-act-btn" data-act="settings" data-id="${line.overlayId}" title="Settings" style="touch-action: manipulation; cursor: pointer;">⚙</button>
-                <button class="tv-hud-act-btn" data-act="toggle" data-id="${line.overlayId}" title="${isArmed ? 'Pause / Disarm' : 'Activate / Arm'}" style="touch-action: manipulation; cursor: pointer;">
-                  ${isArmed ? '⏸' : '▶'}
+                <button class="tv-hud-act-btn ${isArmed ? 'armed' : ''} ${isArmed ? (line.direction === 'BUY' ? 'buy' : 'sell') : ''}" data-act="toggle" data-id="${line.overlayId}" title="${isArmed ? '⚡ ACTIVE (Click to Deactivate)' : '⚪ DEACTIVATED (Click to Activate)'}" style="touch-action: manipulation; cursor: pointer;">
+                  ${isArmed ? '⚡' : '⚪'}
                 </button>
                 <button class="tv-hud-act-btn delete" data-act="delete" data-id="${line.overlayId}" title="Delete" style="touch-action: manipulation; cursor: pointer;">✕</button>
               </div>

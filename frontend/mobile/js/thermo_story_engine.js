@@ -118,8 +118,11 @@ function seedHistoryFromTelemetry(tel, now) {
 }
 
 export function updateGaugeStoryNumbers(tel) {
-  const tape = (tel && tel.tape) || {};
-  const silver = (tel && tel.silver) || {};
+  if (!tel || !tel.tape) {
+    return window.__lastGaugeStory || {};
+  }
+  const tape = tel.tape || {};
+  const silver = tel.silver || {};
   const impulseData = tel.impulse || (tape && tape.impulse) || {};
   const now = Date.now();
 
@@ -303,6 +306,8 @@ export function updateGaugeStoryNumbers(tel) {
     impulse: { top: impTop, bottom: impBottom },
     silver: { top: leadTop, bottom: leadBottom }
   };
+  window.__lastGaugeStory = res;
+  return res;
 }
 
 /**

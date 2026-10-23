@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610130040">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610160020">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -15,25 +15,6 @@
     <!-- ========================================================================= -->
     <header class="tv-top-bar">
       <div class="tv-top-left">
-        <button id="symbolDropdownBtn" class="tv-symbol-btn" title="Instrument">
-          <span>XAUUSD</span>
-          <span style="font-size: 10px; color: var(--tv-text-secondary);">▼</span>
-        </button>
-
-        <div class="tv-divider"></div>
-
-        <!-- Timeframe Selector -->
-        <div id="timeframeButtonGroup" style="display: flex; gap: 2px;">
-          <button class="tv-tf-btn" data-tf="1">1m</button>
-          <button class="tv-tf-btn active" data-tf="5">5m</button>
-          <button class="tv-tf-btn" data-tf="15">15m</button>
-          <button class="tv-tf-btn" data-tf="60">1h</button>
-          <button class="tv-tf-btn" data-tf="240">4h</button>
-          <button class="tv-tf-btn" data-tf="1440">D</button>
-        </div>
-
-        <div class="tv-divider"></div>
-
         <!-- Top-Left TradingView Quick Order Pad (Red Sell / Blue Buy / Spread) -->
         <div class="tv-order-pad">
           <button id="tvQuickSellBtn" class="tv-order-btn sell" title="Sell at market (Alt + PageDown)">
@@ -49,15 +30,34 @@
             <span id="tvTopBuyPrice">----.--</span>
           </button>
         </div>
+
+        <div class="tv-divider"></div>
+
+        <!-- Shortcut Order SL & TP Dollar Inputs (Alt + PageUp / Alt + PageDown) -->
+        <div id="tvHeaderShortcutSlTpContainer" class="tv-top-doll-container" title="Shortcut Order SL & TP in Dollars (Alt + PageUp / Alt + PageDown)">
+          <span class="tv-top-doll-tag sl">SL $</span>
+          <input type="number" id="tvHeaderSlDollarsInput" class="tv-top-doll-input" placeholder="0" min="0" step="5" title="Shortcut Stop Loss in Dollars ($)" />
+          <span class="tv-top-doll-tag tp">TP $</span>
+          <input type="number" id="tvHeaderTpDollarsInput" class="tv-top-doll-input" placeholder="0" min="0" step="5" title="Shortcut Take Profit in Dollars ($)" />
+        </div>
+
+        <div class="tv-divider"></div>
+
+        <!-- Move / Trail SL Dollar Input (Alt + Home) -->
+        <div id="tvHeaderLockSlContainer" class="tv-top-doll-container" title="Move / Trail SL into this Dollar value (Alt + Home)">
+          <span class="tv-top-doll-tag lock">TRAIL/LOCK $</span>
+          <input type="number" id="tvHeaderLockSlDollarsInput" class="tv-top-doll-input" placeholder="0" min="0" step="5" title="Move/Trail Stop Loss into this Dollar value (Alt + Home)" />
+          <button type="button" id="tvHeaderLockSlBtn" class="tv-top-doll-btn" title="Execute Move/Trail SL (Alt + Home)">⚡</button>
+        </div>
       </div>
 
       <div class="tv-top-right">
-        <!-- Highlighted Active Trade Timer Box with Close All Button -->
+        <!-- Highlighted Active Trade Timer Box with Breakeven Button -->
         <div id="tvActiveTradeTimerBadge" class="tv-top-trade-timer" style="display: none;" title="Active trade duration">
           <span class="tv-timer-pulse-dot"></span>
           <span class="tv-timer-text">ACTIVE TRADE</span>
           <span id="tvActiveTradeTimerClock" class="tv-timer-clock">00:00</span>
-          <button type="button" id="tvTopCloseAllTradesBtn" class="tv-top-close-all-btn" title="Close all active trades immediately (Alt + End)">✕ CLOSE ALL</button>
+          <button type="button" id="tvTopBreakevenBtn" class="tv-top-be-btn" title="Move Stop Loss to Breakeven + 0.2 pip (Alt + B)">🛡️ BE +0.2p</button>
         </div>
 
         <!-- Unified Global Terminal Lot Control (One Single Lot Everywhere) -->
@@ -74,15 +74,40 @@
           </div>
         </div>
 
+        <!-- Daily Max Drawdown Countdown Pill (Click to Open Settings) -->
+        <div id="tvHeaderDrawdownContainer" class="tv-top-dd-wrap">
+          <button type="button" id="tvDrawdownCountdownBtn" class="tv-top-dd-btn" title="Daily Max Drawdown Protection (Click to Open Settings)">
+            <span class="tv-dd-icon">🛡️</span>
+            <span class="tv-dd-label">DD:</span>
+            <span id="tvDrawdownCountdownVal" class="tv-dd-val">$500.00</span>
+          </button>
+        </div>
+
+        <!-- Real-Time Cyan / Yellow Trap Alert Toggle Button -->
+        <button type="button" id="tvTrapLiveAlertBtn" class="tv-top-trap-alert-btn" title="Live Trap Alert (Cyan & Yellow): Triggers PC Sound & Telegram alerts twice in a 3s gap when formed">
+          <span class="tv-trap-alert-icon">⚡</span>
+          <span class="tv-trap-alert-text">Trap Alert</span>
+          <span id="tvTrapLiveAlertStatus" class="tv-trap-alert-status">OFF</span>
+        </button>
+
+        <!-- Global Deactivate All Alarms Button (Deactivate all alarms anywhere on any device) -->
+        <button id="tvDeactivateAllAlarmsBtn" class="tv-top-deactivate-alarms-btn" title="Deactivate all alarms anywhere or on any device (boxes, lines, mobile gauges)">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            <path d="M18.63 13A17.89 17.89 0 0 1 18 8"></path>
+            <path d="M6.26 6.26A5.86 5.86 0 0 0 6 8c0 7-3 9-3 9h14"></path>
+            <path d="M18 8a6 6 0 0 0-9.33-5"></path>
+            <line x1="1" y1="1" x2="23" y2="23"></line>
+          </svg>
+          <span>Deactivate Alarms</span>
+        </button>
+
         <button id="tvClearAllDrawingsTopBtn" class="tv-top-clear-btn" title="Remove all line and box drawings">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
           </svg>
           <span>Clear Drawings</span>
         </button>
-        <a href="/mobile" style="color: var(--tv-text-secondary); text-decoration: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; background: var(--tv-bg-secondary); border: 1px solid var(--tv-border); font-weight: 600;">
-          📱 Mobile HUD
-        </a>
         <button id="tvResetZoomBtn" class="tv-icon-btn" title="Reset View">
           <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
             <path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
@@ -95,6 +120,52 @@
         </button>
       </div>
     </header>
+
+    <!-- ========================================================================= -->
+    <!-- 🧭 MICRO MACRO RIBBON & 5H FOOTPRINT CONTROLS                             -->
+    <!-- ========================================================================= -->
+    <div id="tvMicroMacroRibbon" class="tv-macro-ribbon">
+      <div class="tv-macro-left">
+        <span class="tv-fp-ribbon-label">5H FP:</span>
+        <div id="fpIntelligenceGroup" class="tv-fp-intelligence-group">
+          <!-- 1. Trap Counts (4/5 with color codes) -->
+          <span id="fpTrapsPill" class="tv-fp-pill" title="5H Footprint Bull Traps (Cyan Absorption) / Bear Traps (Yellow Distribution)">
+            <span id="fpCyanCount" class="fp-cyan-num">● 0</span>
+            <span class="fp-divider">/</span>
+            <span id="fpYellowCount" class="fp-yellow-num">● 0</span>
+          </span>
+
+          <!-- 2. Pure Cyan / Yellow Candle Domination -->
+          <span id="fpPressurePill" class="tv-fp-pill fp-domination-pill" title="5H Pure Cyan / Yellow Trap Candle Domination">
+            <span class="fp-pressure-title">DOMINATION:</span>
+            <span id="fpBullPressure" class="fp-cyan-num">50%</span>
+            <span class="fp-divider">/</span>
+            <span id="fpBearPressure" class="fp-yellow-num">50%</span>
+          </span>
+
+          <!-- 3. Session VWAP Institutional Regime Pill -->
+          <span id="fpVwapRegimePill" class="tv-fp-pill fp-vwap-pill" title="Session VWAP (Volume-Weighted Price) Institutional Regime">
+            <span class="fp-vwap-dot"></span>
+            <span id="fpVwapRegimeText">VWAP: --</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="tv-macro-center">
+        <div id="activeSessionBadge" class="tv-session-pill">
+          <span class="tv-session-dot"></span>
+          <span id="activeSessionText">GLOBAL SESSIONS</span>
+        </div>
+      </div>
+
+      <div class="tv-macro-right">
+        <button id="toggleFootprintBtn" class="tv-footprint-toggle active" title="Toggle 5-Hour Living Footprint & POC morphology on Candles">
+          <span class="tv-fp-icon">⚡</span>
+          <span>5H FOOTPRINT: ON</span>
+        </button>
+        <button id="tvFootprintInfoBtn" class="tv-footprint-info-icon" title="What do these Footprint colors, dots and lines mean? (Click for Visual Guide)">ⓘ</button>
+      </div>
+    </div>
 
     <!-- ========================================================================= -->
     <!-- 📐 MAIN WORKSPACE                                                         -->
@@ -172,7 +243,66 @@
             <span>│</span> <span>Vertical Line (Alt+V)</span>
           </button>
         </div>
+
+        <!-- Volume Consumption Radar Button (Above Bottom Tool) -->
+        <button type="button" id="tvVolumeRadarBtn" class="tv-tool-btn" title="Toggle Volume Consumption Radar (30 Touches + Live Bar)" style="margin-top: auto; margin-bottom: 4px;">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="var(--tv-cyan, #00e5ff)">
+            <path d="M4 18h2v-4H4v4zm5 0h2V6H9v12zm5 0h2v-8h-2v8zm5 0h2v-12h-2v12z"/>
+          </svg>
+        </button>
+
+        <!-- Bottom Left Sidebar Desk HUD Pill Button -->
+        <div class="tv-sidebar-bottom-dock">
+          <button type="button" id="tvSidebarHudPill" class="tv-sidebar-hud-pill" title="Toggle Desk HUD (Active Trades & Lines)">
+            <span class="tv-shud-pulse"></span>
+            <span id="tvSidebarHudIcon" class="tv-shud-icon">⚡</span>
+            <span id="tvSidebarHudSummary" class="tv-shud-summary">HUD</span>
+          </button>
+        </div>
       </aside>
+
+      <!-- Floating Volume Consumption Radar HUD (Pop-over) -->
+      <div id="tvVolumeRadarHud" class="tv-volume-radar-hud" style="display: none;">
+        <div class="tv-vr-header">
+          <div class="tv-vr-title">
+            <span style="color: #00e5ff;">📊</span>
+            <span>VOLUME CONSUMPTION (30 TOUCHES + LIVE)</span>
+          </div>
+          <button id="tvVolumeRadarCloseBtn" class="tv-vr-close-btn" title="Close">✕</button>
+        </div>
+
+        <div class="tv-vr-inspector">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;">
+            <span id="vrInspTouchNum" class="tv-vr-badge">TOUCH #16 / 30</span>
+            <span id="vrInspPrice" style="font-size: 13px; font-weight: 800; color: #fff;">$4,198.78</span>
+          </div>
+          <div id="vrInspLineName" style="font-size: 11px; font-weight: 600; color: #e6edf3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            Master Wedge Apex Climax
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 3px;">
+            <div>Vol Consumed: <strong id="vrInspVol" style="color: #00e676;">+4,250 ticks</strong></div>
+            <div id="vrInspVerdict" style="color: #ffb300; font-weight: 700;">⚡ BULL EXHAUSTION (REVERSAL!)</div>
+          </div>
+        </div>
+
+        <div class="tv-vr-strip-wrap">
+          <div class="tv-vr-legend">
+            <span style="color: #00e676;">▲ +3,500 Bull Reversal</span>
+            <span style="color: #a855f7;">EQUILIBRIUM (0)</span>
+            <span style="color: #ff334b;">▼ -3,500 Bear Reversal</span>
+          </div>
+          <div class="tv-vr-window" id="vrBarsWindow">
+            <div class="tv-vr-track" id="vrBarsTrack">
+              <div class="tv-vr-thresh-bull"></div>
+              <div class="tv-vr-eq-line"></div>
+              <div class="tv-vr-thresh-bear"></div>
+            </div>
+          </div>
+          <div style="font-size: 9px; font-family: monospace; color: #8b949e; text-align: center; margin-top: 2px;">
+            Scroll left/right &bull; Hover bar for touch &bull; <strong>●LIVE</strong> bar at end
+          </div>
+        </div>
+      </div>
 
       <!-- Chart Viewport -->
       <main class="tv-chart-viewport">
@@ -187,6 +317,14 @@
         <div id="tvCountdownTimer" class="tv-countdown-badge" style="bottom: 30px;">
           --:--
         </div>
+
+        <!-- Floating Round Pill Close All Button in Bottom Right Corner of Chart -->
+        <button type="button" id="tvFloatingCloseAllBtn" class="tv-round-close-pill" style="display: none;" title="Close All Active Trades immediately (Alt + End)">
+          <span class="tv-rc-icon">✕</span>
+          <span class="tv-rc-label">CLOSE ALL</span>
+          <span id="tvFloatingCloseAllBadge" class="tv-rc-badge">0</span>
+          <span id="tvFloatingCloseAllPnl" class="tv-rc-pnl">+$0.00</span>
+        </button>
 
         <!-- Canvas Container -->
         <div id="klineChart"></div>
@@ -243,7 +381,13 @@
             <span class="tv-modal-header-title">LINE TRADING SETTINGS</span>
             <span id="tvLineColorIndicator" class="line-color-badge-green">⚪ DISARMED</span>
           </div>
-          <button id="tvCloseLineModalBtn" class="tv-modal-close" title="Close">✕</button>
+          <div class="tv-modal-header-right" style="display: flex; align-items: center; gap: 8px;">
+            <button type="button" id="tvLineQuickArmBtn" class="tv-btn-quick-alarm" title="Quickly Toggle Line Trigger Active/Inactive">
+              <span id="tvLineQuickArmIcon">⚡</span>
+              <span id="tvLineQuickArmText">ACTIVATE</span>
+            </button>
+            <button id="tvCloseLineModalBtn" class="tv-modal-close" title="Close">✕</button>
+          </div>
         </div>
 
         <div class="tv-modal-body">
@@ -284,15 +428,88 @@
                 </button>
               </div>
 
+              <!-- Candle Trap Color Trigger Toggle (Cyan for Buy, Yellow for Sell on candle touch/overlap) -->
+              <div class="tv-feature-toggle-card tv-trap-trigger-card" style="margin-top: 8px; margin-bottom: 8px;">
+                <div class="tv-feature-header-row">
+                  <div class="tv-feature-left">
+                    <span class="tv-feature-icon" style="font-size: 14px;">⚡</span>
+                    <div>
+                      <div class="tv-feature-name" style="display: flex; align-items: center; gap: 6px;">
+                        <span>Candle Trap Trigger</span>
+                        <span id="tvTrapColorPill" class="tv-trap-badge cyan">Cyan BUY</span>
+                      </div>
+                      <div class="tv-feature-desc">Active split-sec candle touches line & forms Cyan (Buy) or Yellow (Sell)</div>
+                    </div>
+                  </div>
+                  <button type="button" id="tvBtnToggleTrapColor" class="tv-btn-toggle" title="Toggle Candle Trap Color Trigger">OFF</button>
+                </div>
+              </div>
+
+              <!-- Candle Trap Sub-Settings: Auto-SL to Tip & Auto-Breakeven -->
+              <div id="tvTrapSubSettingsGroup" class="tv-trap-sub-group" style="display: none; flex-direction: column; gap: 8px; margin-top: -2px; margin-bottom: 8px;">
+                <!-- 1. Auto SL to Tip of Triggered Trap Candle (Default: ON) -->
+                <div class="tv-feature-toggle-card">
+                  <div class="tv-feature-header-row">
+                    <div class="tv-feature-left">
+                      <span class="tv-feature-icon" style="font-size: 14px;">🎯</span>
+                      <div>
+                        <div class="tv-feature-name">Auto SL to Trap Candle Tip</div>
+                        <div class="tv-feature-desc">Place SL at rejection wick tip (Low for Buy, High for Sell)</div>
+                      </div>
+                    </div>
+                    <button type="button" id="tvBtnToggleTrapAutoSl" class="tv-btn-toggle active" title="Auto place Stop Loss at the tip of the triggered trap candle">ON</button>
+                  </div>
+                </div>
+
+                <!-- 2. Trap Auto-Breakeven (Default: OFF) with 2 input boxes -->
+                <div class="tv-feature-toggle-card">
+                  <div class="tv-feature-header-row">
+                    <div class="tv-feature-left">
+                      <span class="tv-feature-icon" style="font-size: 14px;">🛡️</span>
+                      <div>
+                        <div class="tv-feature-name">Trap Auto-Breakeven</div>
+                        <div class="tv-feature-desc">Move SL to Breakeven+ once displacement target is reached</div>
+                      </div>
+                    </div>
+                    <button type="button" id="tvBtnToggleTrapBe" class="tv-btn-toggle" title="Toggle Auto-Breakeven on Trap Trades">OFF</button>
+                  </div>
+                  <!-- 2 Input Boxes for Displacement and BE+ Value -->
+                  <div id="tvTrapBeControls" class="tv-params-grid" style="grid-template-columns: 1fr 1fr; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.08); display: none;">
+                    <div class="tv-param-box">
+                      <label class="tv-param-label" title="Displacement from trigger price required to fire breakeven (in pips, 10 pips = $1.00)">BE TRIGGER DISP (PIPS)</label>
+                      <input type="number" id="tvLineTrapBeDispPips" class="tv-param-input" value="15.0" step="1" min="1">
+                    </div>
+                    <div class="tv-param-box">
+                      <label class="tv-param-label" title="Pips into profit to lock in as new Stop Loss">BE+ VALUE (PIPS)</label>
+                      <input type="number" id="tvLineTrapBeOffsetPips" class="tv-param-input" value="0.3" step="0.1" min="0.1">
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 3. Immediate Trigger on Trap Form (Default: ON) -->
+                <div class="tv-feature-toggle-card">
+                  <div class="tv-feature-header-row">
+                    <div class="tv-feature-left">
+                      <span class="tv-feature-icon" style="font-size: 14px;">⚡</span>
+                      <div>
+                        <div class="tv-feature-name">Immediate Trigger on Trap Form</div>
+                        <div class="tv-feature-desc">Fire entry immediately when trap forms (ON) vs waiting for Ignition (OFF)</div>
+                      </div>
+                    </div>
+                    <button type="button" id="tvBtnToggleTrapImmediate" class="tv-btn-toggle active" title="Immediately trigger trade when trap candle is formed (ON) vs waiting for ignition breakout (OFF)">ON</button>
+                  </div>
+                </div>
+              </div>
+
               <!-- 2-Column Parameters Grid (Stop Loss & Take Profit; Lots defined globally on header) -->
               <div class="tv-params-grid" style="grid-template-columns: 1fr 1fr;">
                 <div class="tv-param-box">
                   <label class="tv-param-label">STOP LOSS (PTS)</label>
-                  <input type="number" id="tvLineSlPts" class="tv-param-input" value="6.0" step="0.5" min="0.5">
+                  <input type="number" id="tvLineSlPts" class="tv-param-input" value="3" step="0.5" min="0.5">
                 </div>
                 <div class="tv-param-box">
                   <label class="tv-param-label">TAKE PROFIT (PTS)</label>
-                  <input type="number" id="tvLineTpPts" class="tv-param-input" value="12.0" step="0.5" min="0.5">
+                  <input type="number" id="tvLineTpPts" class="tv-param-input" value="12" step="0.5" min="0.5">
                 </div>
               </div>
 
@@ -307,12 +524,12 @@
                   </div>
                   <div class="tv-outcome-col sl">
                     <span class="tv-outcome-lbl">MAX RISK</span>
-                    <span id="tvLineDollarSl" class="tv-outcome-val text-rose">-$300.00</span>
-                    <span id="tvLineDollarSlSub" class="tv-outcome-sub">-6.0 pt</span>
+                    <span id="tvLineDollarSl" class="tv-outcome-val text-rose">-$150.00</span>
+                    <span id="tvLineDollarSlSub" class="tv-outcome-sub">-3.0 pt</span>
                   </div>
                   <div class="tv-outcome-col rr">
                     <span class="tv-outcome-lbl">REWARD : RISK</span>
-                    <span id="tvLineRrRatio" class="tv-outcome-val text-blue">1 : 2.0</span>
+                    <span id="tvLineRrRatio" class="tv-outcome-val text-blue">1 : 4.0</span>
                     <span class="tv-outcome-sub">Asymmetry</span>
                   </div>
                 </div>
@@ -375,9 +592,9 @@
 
             <!-- Color Codes Info -->
             <div class="tv-color-guide">
-              <span class="tv-guide-chip green">● Green: Armed BUY</span>
-              <span class="tv-guide-chip red">● Red: Armed SELL</span>
-              <span class="tv-guide-chip yellow">● Yellow: Close All</span>
+              <span class="tv-guide-chip cyan">● Cyan: Armed BUY</span>
+              <span class="tv-guide-chip yellow">● Yellow: Armed SELL</span>
+              <span class="tv-guide-chip amber">● Amber: Close All</span>
               <span class="tv-guide-chip gray">● Gray: Disarmed</span>
             </div>
           </div>
@@ -494,11 +711,209 @@
       </div>
     </div>
 
+    <!-- ========================================================================= -->
+    <!-- 🛡️ DAILY MAX DRAWDOWN SETTINGS MODAL                                      -->
+    <!-- ========================================================================= -->
+    <div id="tvDrawdownModal" class="tv-modal-backdrop" style="display: none;">
+      <div class="tv-modal-card tv-dd-modal-card">
+        <div class="tv-modal-header">
+          <div class="tv-modal-header-left">
+            <span class="tv-modal-header-icon">🛡️</span>
+            <span class="tv-modal-header-title">DAILY MAX DRAWDOWN GUARD</span>
+          </div>
+          <button id="tvCloseDrawdownModalBtn" class="tv-modal-close" title="Close">✕</button>
+        </div>
+        <div class="tv-modal-body">
+          <!-- Lockout Warning Banner -->
+          <div id="tvDdLockBanner" class="tv-dd-lock-banner" style="display: none;">
+            <div class="tv-dd-lock-banner-title">🔒 DRAWDOWN LIMIT HIT — TRADING LOCKED</div>
+            <div class="tv-dd-lock-banner-sub">Daily loss reached $0.00 buffer. All trades flattened & triggers disarmed.</div>
+            <button type="button" id="tvDdUnlockBtn" class="tv-dd-unlock-btn">🔓 UNLOCK / OVERRIDE LOCK</button>
+          </div>
+
+          <!-- Protection Toggle -->
+          <div class="tv-section-card">
+            <div class="tv-feature-header-row">
+              <div class="tv-feature-left">
+                <span class="tv-feature-icon">🛡️</span>
+                <div>
+                  <div class="tv-feature-name">Daily Drawdown Protection</div>
+                  <div class="tv-feature-desc">Auto-closes all trades & disarms triggers when daily loss reaches limit</div>
+                </div>
+              </div>
+              <button type="button" id="tvBtnToggleDd" class="tv-btn-toggle active">ON</button>
+            </div>
+          </div>
+
+          <!-- Max Drawdown Input & Quick Presets -->
+          <div class="tv-section-card">
+            <span class="tv-field-label">MAX DRAWDOWN PER DAY ($ USD)</span>
+            <div class="tv-dd-input-wrap">
+              <span class="tv-input-lead-icon">$</span>
+              <input type="number" id="tvInputMaxDd" class="tv-dd-input" value="500" min="1" step="25" placeholder="500">
+            </div>
+            <div class="tv-dd-presets">
+              <button type="button" class="tv-dd-preset-btn" data-val="250">$250</button>
+              <button type="button" class="tv-dd-preset-btn" data-val="500">$500</button>
+              <button type="button" class="tv-dd-preset-btn" data-val="1000">$1,000</button>
+              <button type="button" class="tv-dd-preset-btn" data-val="2000">$2,000</button>
+              <button type="button" class="tv-dd-preset-btn" data-val="5000">$5,000</button>
+            </div>
+          </div>
+
+          <!-- Real-Time Stats Breakdown -->
+          <div class="tv-section-card">
+            <div class="tv-section-title">TODAY'S PERFORMANCE & REMAINING BUFFER</div>
+            <div class="tv-dd-stats-grid">
+              <div class="tv-dd-stat-box">
+                <div class="tv-dd-stat-label">TODAY REALIZED</div>
+                <div id="tvDdStatRealized" class="tv-dd-stat-val">+$0.00</div>
+              </div>
+              <div class="tv-dd-stat-box">
+                <div class="tv-dd-stat-label">OPEN FLOATING</div>
+                <div id="tvDdStatFloating" class="tv-dd-stat-val">+$0.00</div>
+              </div>
+              <div class="tv-dd-stat-box">
+                <div class="tv-dd-stat-label">TOTAL TODAY NET</div>
+                <div id="tvDdStatNet" class="tv-dd-stat-val">+$0.00</div>
+              </div>
+              <div class="tv-dd-stat-box highlight">
+                <div class="tv-dd-stat-label">REMAINING BUFFER</div>
+                <div id="tvDdStatRemaining" class="tv-dd-stat-val">$500.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tv-modal-footer">
+          <button type="button" id="tvCancelDdModalBtn" class="tv-btn-modal-disarm">Cancel</button>
+          <button type="button" id="tvSaveDdModalBtn" class="tv-btn-modal-arm">Save Settings</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- ⚡ 5H FOOTPRINT VISUAL GUIDE MODAL (COLORS, DOTS, LINES EXPLAINED)        -->
+    <!-- ========================================================================= -->
+    <div id="tvFootprintLegendModal" class="tv-modal-backdrop" style="display: none;">
+      <div class="tv-modal-card" style="max-width: 440px; border: 1px solid #38bdf8; box-shadow: 0 10px 40px rgba(0, 240, 255, 0.2);">
+        <div class="tv-modal-header" style="background: linear-gradient(90deg, #091224, #0e1e38);">
+          <div class="tv-modal-header-left" style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 16px;">⚡</span>
+            <span class="tv-modal-header-title" style="color: #38bdf8; font-weight: 800;">5H FOOTPRINT VISUAL GUIDE</span>
+          </div>
+          <button id="tvCloseFootprintModalBtn" class="tv-modal-close" title="Close">✕</button>
+        </div>
+
+        <div class="tv-modal-body" style="padding: 14px; max-height: 75vh; overflow-y: auto; font-family: -apple-system, sans-serif; font-size: 12px; line-height: 1.5; color: #cbd5e1;">
+          
+          <!-- Section 1: CANDLE BODY COLORS -->
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">1. Candle Colors (Who Is Trading)</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <!-- Cyan: Bottom Trap -->
+              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(0, 240, 255, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.3);">
+                <div style="width: 14px; height: 18px; background: rgba(0, 240, 255, 0.6); border: 1.5px solid #00f0ff; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
+                <div>
+                  <div style="font-weight: 800; color: #38bdf8;">Electric Cyan — Bottom Trap (Buyers Absorbed Selling)</div>
+                  <div style="font-size: 11.5px; color: #94a3b8;">Sellers tried dumping the market, but big institutional limit buys soaked up all contracts. Price refused to fall. Often a bottom reversal.</div>
+                </div>
+              </div>
+
+              <!-- Amber: Top Trap -->
+              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(245, 158, 11, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);">
+                <div style="width: 14px; height: 18px; background: rgba(245, 158, 11, 0.6); border: 1.5px solid #f59e0b; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
+                <div>
+                  <div style="font-weight: 800; color: #fbbf24;">Burnt Amber — Top Trap (Sellers Absorbed Buying)</div>
+                  <div style="font-size: 11.5px; color: #94a3b8;">Buyers chased higher, but institutional limit sells absorbed every order. Price stalled and capped. Often a top reversal.</div>
+                </div>
+              </div>
+
+              <!-- Green: Real Buyers -->
+              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(16, 185, 129, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">
+                <div style="width: 14px; height: 18px; background: #10b981; border: 1.5px solid #34d399; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
+                <div>
+                  <div style="font-weight: 800; color: #34d399;">Vibrant Emerald — Strong Bull Momentum</div>
+                  <div style="font-size: 11.5px; color: #94a3b8;">Large directional volume pushing price up aggressively. Real buyer control. Do not short this.</div>
+                </div>
+              </div>
+
+              <!-- Red: Real Sellers -->
+              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(224, 69, 123, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(224, 69, 123, 0.3);">
+                <div style="width: 14px; height: 18px; background: #e0457b; border: 1.5px solid #f43f5e; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
+                <div>
+                  <div style="font-weight: 800; color: #f43f5e;">Deep Rose / Crimson — Strong Bear Momentum</div>
+                  <div style="font-size: 11.5px; color: #94a3b8;">Heavy selling displacing price down with speed. Real seller control. Do not buy this.</div>
+                </div>
+              </div>
+
+              <!-- Slate Grey: Chop -->
+              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(71, 85, 105, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(71, 85, 105, 0.25);">
+                <div style="width: 14px; height: 18px; background: rgba(71, 85, 105, 0.5); border: 1.5px solid #64748b; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
+                <div>
+                  <div style="font-weight: 800; color: #94a3b8;">Desaturated Slate — Low-Volume Chop / Noise</div>
+                  <div style="font-size: 11.5px; color: #64748b;">Thin retail churn with zero institutional participation. Stay out and protect capital.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: LINES & DOTS (ANATOMY) -->
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">2. Lines, Dots & Marks (What They Mean)</div>
+            
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <!-- White Dash: POC -->
+              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="width: 22px; height: 2px; background: #ffffff; box-shadow: 0 0 4px #ffffff; flex-shrink: 0;"></div>
+                <div>
+                  <span style="font-weight: 800; color: #ffffff;">White Line inside Body (POC):</span>
+                  <span style="font-size: 11.5px; color: #94a3b8;"> Point of Control. The exact price where the biggest volume traded in that candle.</span>
+                </div>
+              </div>
+
+              <!-- Glowing Spine: Absorption Wick -->
+              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="width: 22px; height: 4px; background: #00f0ff; box-shadow: 0 0 6px #00f0ff; border-radius: 2px; flex-shrink: 0;"></div>
+                <div>
+                  <span style="font-weight: 800; color: #38bdf8;">Glowing Wick Core:</span>
+                  <span style="font-size: 11.5px; color: #94a3b8;"> 70%+ of the aggressive volume was absorbed inside this wick. Shows institutional rejection.</span>
+                </div>
+              </div>
+
+              <!-- White Tip Dot: Rejection Speed -->
+              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <div style="width: 8px; height: 8px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 6px #ffffff; flex-shrink: 0; margin-left: 7px;"></div>
+                <div>
+                  <span style="font-weight: 800; color: #ffffff;">White Dot at Wick Tip:</span>
+                  <span style="font-size: 11.5px; color: #94a3b8;"> Fast rejection velocity. Price probed the high/low and bounced away in under 45 seconds.</span>
+                </div>
+              </div>
+
+              <!-- Arrow: Ignition -->
+              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
+                <span style="font-size: 14px; color: #10b981; flex-shrink: 0; width: 22px; text-align: center;">▲ / ▼</span>
+                <div>
+                  <span style="font-weight: 800; color: #34d399;">Micro Triangles (Ignition):</span>
+                  <span style="font-size: 11.5px; color: #94a3b8;"> Ignition candle displacing immediately out of an absorption wick. Confirmation trigger.</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="tv-modal-footer" style="padding: 10px 14px; background: #0c101c; border-top: 1px solid #1e293b; display: flex; justify-content: flex-end;">
+          <button type="button" id="tvCloseFootprintModalDoneBtn" class="tv-btn-primary" style="padding: 5px 16px; font-weight: 800; border-radius: 6px; background: #2563eb; color: #ffffff;">Got it</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Notification Toast -->
     <div id="tvToast" class="tv-toast">Drawing Saved</div>
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610130040"></script>
+  <script type="module" src="/chart/js/app.js?v=202610221035"></script>
 </body>
 </html>

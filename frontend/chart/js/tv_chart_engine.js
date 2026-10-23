@@ -4,7 +4,8 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, handleRectPressedMove } from './drawings_storage.js?v=202610121855';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove } from './drawings_storage.js?v=202610221030';
+import { registerLivingFootprintIndicator } from './living_candle_engine.js?v=202610140655';
 
 // Global reference for chart instance
 let chartInstance = null;
@@ -19,7 +20,7 @@ function registerCustomOverlays() {
 
   const supported = klinecharts.getSupportedOverlays();
 
-  // 1. Custom Box / Rectangle overlay: 4 corners adjustable + 2 middle vertical handles to drag left/right to extend width
+  // 1. Custom Box / Rectangle overlay: 4 corners resizable + 2 middle vertical handles to adjust width
   klinecharts.registerOverlay({
     name: 'rect',
     totalStep: 3,
@@ -39,33 +40,25 @@ function registerCustomOverlays() {
         borderSize: isArmed ? 2 : 1.5
       };
 
-      if (coordinates.length >= 4) {
+      if (coordinates.length >= 2) {
+        // Enforce 100% geometric rectangle: (minX, minY) to (maxX, maxY)
+        // Guaranteed to NEVER deform into a trapezoid or sloped polygon!
+        const xs = coordinates.map(c => c.x);
+        const ys = coordinates.map(c => c.y);
+        const minX = Math.min(...xs);
+        const maxX = Math.max(...xs);
+        const minY = Math.min(...ys);
+        const maxY = Math.max(...ys);
+
         return [
           {
             type: 'polygon',
             attrs: {
               coordinates: [
-                { x: coordinates[0].x, y: coordinates[0].y },
-                { x: coordinates[1].x, y: coordinates[1].y },
-                { x: coordinates[2].x, y: coordinates[2].y },
-                { x: coordinates[3].x, y: coordinates[3].y }
-              ]
-            },
-            styles: polyStyle
-          }
-        ];
-      } else if (coordinates.length === 2) {
-        const [p1, p2] = coordinates;
-        const y2 = window.__isShiftPressed ? p1.y : p2.y;
-        return [
-          {
-            type: 'polygon',
-            attrs: {
-              coordinates: [
-                { x: p1.x, y: p1.y },
-                { x: p2.x, y: p1.y },
-                { x: p2.x, y: y2 },
-                { x: p1.x, y: y2 }
+                { x: minX, y: minY },
+                { x: maxX, y: minY },
+                { x: maxX, y: maxY },
+                { x: minX, y: maxY }
               ]
             },
             styles: polyStyle
@@ -76,14 +69,24 @@ function registerCustomOverlays() {
     },
     performEventPressedMove: ({ points, performPointIndex }) => {
       if (points?.length === 6) {
-        handleRectPressedMove(points, performPointIndex);
+        handleRectPressedMove(points, performPointIndex, chartInstance?.getDataList?.(), window.__currentTimeframeMinutes || 5);
       } else if (window.__isShiftPressed && points?.length >= 2 && performPointIndex === 1) {
         points[1].value = points[0].value;
       }
     },
     onDrawEnd: ({ overlay, chart }) => {
-      if (overlay?.points && overlay.points.length === 2) {
-        const sixPoints = expandRectPointsToSix(overlay.points);
+      if (overlay?.points && overlay.points.length >= 2) {
+        const sixPoints = normalizeRectPoints(overlay.points);
+        if (chart && typeof chart.overrideOverlay === 'function') {
+          chart.overrideOverlay({ id: overlay.id, points: sixPoints });
+        } else {
+          overlay.points = sixPoints;
+        }
+      }
+    },
+    onPressedMoveEnd: ({ overlay, chart }) => {
+      if (overlay?.name === 'rect' && overlay?.points) {
+        const sixPoints = normalizeRectPoints(overlay.points);
         if (chart && typeof chart.overrideOverlay === 'function') {
           chart.overrideOverlay({ id: overlay.id, points: sixPoints });
         } else {
@@ -1366,6 +1369,17 @@ export function initTradingViewChart(containerId = 'klineChart') {
   try {
     chart.removeOverlay({ id: 'sys_session_timeline' });
   } catch (_e) {}
+
+  // Register and initialize Living Footprint indicator directly on candle pane (single unified chart)
+  try {
+    registerLivingFootprintIndicator();
+    try {
+      chart.removeIndicator({ name: 'LivingFootprint' });
+    } catch (_e) {}
+    chart.createIndicator({ name: 'LivingFootprint', paneId: 'candle_pane' }, true);
+  } catch (err) {
+    console.warn('[TV Engine] LivingFootprint indicator init failed:', err);
+  }
 
   return chart;
 }

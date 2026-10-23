@@ -80,10 +80,19 @@ def execute_market_order(
         deal_ticket = res.order
         if (sl and float(sl) > 0) or (tp and float(tp) > 0):
             try:
-                time.sleep(0.08)
-                modify_position(deal_ticket, sl=sl, tp=tp)
+                # Fast check: only call modify_position if MT5 broker omitted SL/TP from initial deal
+                open_pos = mt5.positions_get(ticket=deal_ticket)
+                need_modify = True
+                if open_pos and len(open_pos) > 0:
+                    p = open_pos[0]
+                    sl_ok = not (sl and float(sl) > 0) or (abs(getattr(p, 'sl', 0.0) - float(sl)) < 0.01)
+                    tp_ok = not (tp and float(tp) > 0) or (abs(getattr(p, 'tp', 0.0) - float(tp)) < 0.01)
+                    if sl_ok and tp_ok:
+                        need_modify = False
+                if need_modify:
+                    modify_position(deal_ticket, sl=sl, tp=tp)
             except Exception as _e:
-                logger.warning(f"Auto SL/TP modify error on #{deal_ticket}: {_e}")
+                logger.warning(f"Fast SL/TP verify/modify on #{deal_ticket}: {_e}")
         return {
             "status": "EXECUTED",
             "symbol": symbol,
@@ -195,28 +204,32 @@ def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float]
                 if clean_sl > 0 and clean_sl >= (bid - min_dist):
                     return {
                         "status": "FAILED",
-                        "error": f"Invalid Stop Loss: For BUY #{ticket}, SL (${clean_sl:.2f}) must be below market bid (${bid:.2f})"
+                        "code": "STOPS_TOO_CLOSE",
+                        "error": f"Cannot set Stop Loss at ${clean_sl:.2f}: Price not in profit yet (Market Bid ${bid:.2f} must be above SL)"
                     }
                 if clean_tp > 0 and clean_tp <= (ask + min_dist):
                     return {
                         "status": "FAILED",
-                        "error": f"Invalid Take Profit: For BUY #{ticket}, TP (${clean_tp:.2f}) must be above market ask (${ask:.2f})"
+                        "code": "STOPS_TOO_CLOSE",
+                        "error": f"Cannot set Take Profit at ${clean_tp:.2f}: Market Ask (${ask:.2f}) is already at or above TP"
                     }
             elif pos.type == 1:  # SELL
                 if clean_sl > 0 and clean_sl <= (ask + min_dist):
                     return {
                         "status": "FAILED",
-                        "error": f"Invalid Stop Loss: For SELL #{ticket}, SL (${clean_sl:.2f}) must be above market ask (${ask:.2f})"
+                        "code": "STOPS_TOO_CLOSE",
+                        "error": f"Cannot set Stop Loss at ${clean_sl:.2f}: Price not in profit yet (Market Ask ${ask:.2f} must be below SL)"
                     }
                 if clean_tp > 0 and clean_tp >= (bid - min_dist):
                     return {
                         "status": "FAILED",
-                        "error": f"Invalid Take Profit: For SELL #{ticket}, TP (${clean_tp:.2f}) must be below market bid (${bid:.2f})"
+                        "code": "STOPS_TOO_CLOSE",
+                        "error": f"Cannot set Take Profit at ${clean_tp:.2f}: Market Bid (${bid:.2f}) is already at or below TP"
                     }
 
         req = {
             "action": mt5.TRADE_ACTION_SLTP,
-            "position": ticket,
+            "position": int(pos.ticket),
             "symbol": pos.symbol,
             "sl": clean_sl,
             "tp": clean_tp
@@ -279,26 +292,24 @@ def close_position(ticket: int, is_pending: bool = False) -> Dict[str, Any]:
             return {"status": "OK", "ticket": ticket, "message": "Pending order canceled"}
         return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}: {getattr(res, 'comment', 'Failed')}"}
 
-    # 2. Check in positions
+    # 2. Check in positions (retry loop for newly filled positions)
     pos = None
-    for p in mt5.positions_get() or ():
-        if p.ticket == ticket:
-            pos = p
+    for _ in range(15):
+        positions = mt5.positions_get(ticket=ticket)
+        if positions and len(positions) > 0:
+            pos = positions[0]
             break
+        all_pos = mt5.positions_get() or ()
+        for p in all_pos:
+            if p.ticket == ticket or getattr(p, "identifier", 0) == ticket:
+                pos = p
+                break
+        if pos:
+            break
+        time.sleep(0.1)
 
     if not pos:
-        # Check if it was actually a pending order in orders_get
-        for o in mt5.orders_get() or ():
-            if o.ticket == ticket:
-                req = {
-                    "action": mt5.TRADE_ACTION_REMOVE,
-                    "order": ticket
-                }
-                res = mt5.order_send(req)
-                if res and res.retcode == mt5.TRADE_RETCODE_DONE:
-                    return {"status": "OK", "ticket": ticket, "message": "Pending order canceled"}
-                return {"status": "FAILED", "error": f"Retcode {getattr(res, 'retcode', None)}"}
-        return {"status": "FAILED", "error": f"Ticket #{ticket} not found"}
+        return {"status": "FAILED", "error": f"Ticket #{ticket} not found in open positions"}
 
     close_type = mt5.ORDER_TYPE_SELL if pos.type == 0 else mt5.ORDER_TYPE_BUY
     tick = mt5.symbol_info_tick(pos.symbol)
@@ -325,9 +336,13 @@ def close_position(ticket: int, is_pending: bool = False) -> Dict[str, Any]:
         "type_filling": filling_mode
     }
     res = mt5.order_send(req)
-    if not res or res.retcode == 10030:
-        req["type_filling"] = mt5.ORDER_FILLING_FOK if filling_mode != mt5.ORDER_FILLING_FOK else mt5.ORDER_FILLING_IOC
-        res = mt5.order_send(req)
+    if not res or res.retcode not in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
+        for alt_fill in (mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN):
+            if alt_fill != filling_mode:
+                req["type_filling"] = alt_fill
+                res = mt5.order_send(req)
+                if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
+                    break
 
     if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
         return {"status": "OK", "ticket": ticket, "close_price": price}

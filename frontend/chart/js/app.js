@@ -4,12 +4,15 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610130040';
-import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610130040';
-import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610130040';
-import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610130040';
-import { LineTradingManager } from './line_trading.js?v=202610130040';
-import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610130040';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610221035';
+import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610221035';
+import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610221035';
+import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
+import { LineTradingManager } from './line_trading.js?v=202610141545';
+import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
+import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
+import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
+import { initVolumeRadar, updateLiveTick } from './volume_radar.js?v=202610231650';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -101,6 +104,7 @@ async function init() {
             chart.setBarSpace(6.0);
             chart.setOffsetRightDistance(80);
             chart.scrollToRealTime();
+            updateFootprintIntelligenceUI();
           }
         }, 50);
       } catch (err) {
@@ -179,10 +183,13 @@ async function init() {
   });
 
   // 5. Start Countdown Timer
+  window.__currentTimeframeMinutes = currentTimeframeMinutes;
   startCandleCountdown(currentTimeframeMinutes);
 
-  // 6. Initialize Left Toolbar
+  // 6. Initialize Left Toolbar, Trap Alerts & Volume Radar
   initToolbar(chart, currentSymbol);
+  initTrapAlerts();
+  initVolumeRadar(chart, currentSymbol);
 
   // 7. Restore Server-Side Drawings
   try {
@@ -238,6 +245,59 @@ async function init() {
       chart.scrollToRealTime();
     }
   });
+
+  // Global Deactivate All Alarms Anywhere / Any Device Button (Left of Clear Drawings)
+  const deactivateAllAlarmsBtn = document.getElementById('tvDeactivateAllAlarmsBtn');
+  deactivateAllAlarmsBtn?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    // 1. Immediately deactivate all local chart drawing alarms
+    deactivateAllAlarmsGlobally(false);
+
+    // 2. Dispatch to backend to deactivate on server & broadcast across all devices
+    try {
+      await fetch('/api/alarms/deactivate_all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol: currentSymbol })
+      });
+    } catch (err) {
+      console.warn('[Escanor TV] Failed to call /api/alarms/deactivate_all:', err);
+    }
+  });
+
+  // 5-Hour Living Footprint & POC Toggle Button
+  const fpToggleBtn = document.getElementById('toggleFootprintBtn');
+  fpToggleBtn?.addEventListener('click', () => {
+    const next = !isFootprintEnabled();
+    setFootprintEnabled(next);
+    fpToggleBtn.classList.toggle('active', next);
+    const labelSpan = fpToggleBtn.querySelector('span:last-child');
+    if (labelSpan) {
+      labelSpan.textContent = next ? '5H FOOTPRINT: ON' : '5H FOOTPRINT: OFF';
+    }
+    if (chart) {
+      try {
+        chart.overrideIndicator({ paneId: 'candle_pane', name: 'LivingFootprint' });
+      } catch (_e) {}
+      chart.resize();
+    }
+  });
+
+  // 5-Hour Footprint Visual Guide Modal & Ribbon (i) Button
+  const fpModal = document.getElementById('tvFootprintLegendModal');
+  const openFootprintLegend = () => {
+    if (fpModal) fpModal.style.display = 'flex';
+  };
+  const closeFootprintLegend = () => {
+    if (fpModal) fpModal.style.display = 'none';
+  };
+
+  document.getElementById('tvFootprintInfoBtn')?.addEventListener('click', openFootprintLegend);
+  document.getElementById('tvCloseFootprintModalBtn')?.addEventListener('click', closeFootprintLegend);
+  document.getElementById('tvCloseFootprintModalDoneBtn')?.addEventListener('click', closeFootprintLegend);
+  fpModal?.addEventListener('click', (e) => {
+    if (e.target === fpModal) closeFootprintLegend();
+  });
 }
 
 function setupTimeframeButtons() {
@@ -259,7 +319,9 @@ function setupTimeframeButtons() {
       hasReachedStart = false;
       chartReady = false;
       setTimeout(() => { chartReady = true; }, 1200);
-      chart.resetData(() => {});
+      chart.resetData(() => {
+        setTimeout(updateFootprintIntelligenceUI, 200);
+      });
     });
   });
 }
@@ -269,6 +331,10 @@ function setupQuickOrderPad() {
   const buyBtn = document.getElementById('tvQuickBuyBtn');
 
   sellBtn?.addEventListener('click', () => {
+    if (window.__isDrawdownLocked) {
+      showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Trading is LOCKED until manually disabled in settings.');
+      return;
+    }
     const lot = (typeof window.getGlobalLot === 'function') ? window.getGlobalLot() : 1.0;
     showTvConfirm('Market Execution', `Execute MARKET SELL ${lot.toFixed(2)} lot on ${currentSymbol}?`, async () => {
       try {
@@ -309,6 +375,10 @@ function setupQuickOrderPad() {
   });
 
   buyBtn?.addEventListener('click', () => {
+    if (window.__isDrawdownLocked) {
+      showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Trading is LOCKED until manually disabled in settings.');
+      return;
+    }
     const lot = (typeof window.getGlobalLot === 'function') ? window.getGlobalLot() : 1.0;
     showTvConfirm('Market Execution', `Execute MARKET BUY ${lot.toFixed(2)} lot on ${currentSymbol}?`, async () => {
       try {
@@ -348,25 +418,38 @@ function setupQuickOrderPad() {
     });
   });
 
-  // Top Bar Close All Active Trades Button inside Active Trade Timer Box
-  const topCloseAllBtn = document.getElementById('tvTopCloseAllTradesBtn');
-  topCloseAllBtn?.addEventListener('click', (e) => {
+  // Top Bar Breakeven Button inside Active Trade Timer Box
+  const topBreakevenBtn = document.getElementById('tvTopBreakevenBtn');
+  topBreakevenBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    executeTriggerBreakeven();
+  });
+
+  // Floating Round Pill Close All Button in Bottom Right Corner of Chart
+  const floatingCloseAllBtn = document.getElementById('tvFloatingCloseAllBtn');
+  floatingCloseAllBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
     showTvConfirm('Close All Active Trades', 'Are you sure you want to CLOSE ALL open positions immediately?', async () => {
-      topCloseAllBtn.disabled = true;
-      topCloseAllBtn.textContent = 'CLOSING...';
+      floatingCloseAllBtn.disabled = true;
       try {
         await executeImmediateCloseAllTrades();
       } finally {
-        topCloseAllBtn.disabled = false;
-        topCloseAllBtn.textContent = '✕ CLOSE ALL';
+        floatingCloseAllBtn.disabled = false;
       }
     });
   });
 
-  // Hotkeys: Alt + PageUp (Immediate BUY), Alt + PageDown (Immediate SELL), Alt + End (Immediate CLOSE ALL)
+  // Daily Max Drawdown Guard Setup
+  initDrawdownGuard();
+
+  // Header Dollar Inputs Initialization (SL $, TP $, LOCK/TRAIL $)
+  initHeaderDollarInputs();
+
+  // Hotkeys: Alt + PageUp (Immediate BUY), Alt + PageDown (Immediate SELL), Alt + End (Immediate CLOSE ALL), Alt + B (Breakeven + 0.2 pip), Alt + Home (Move/Trail SL)
   // Supports both Left Alt and Right Alt (AltGraph on Windows/international keyboards)
+  let lastHotkeyTriggerTime = 0;
   window.addEventListener('keydown', (e) => {
     const isAltActive = Boolean(e.altKey || (typeof e.getModifierState === 'function' && (e.getModifierState('Alt') || e.getModifierState('AltGraph'))));
     if (!isAltActive) return;
@@ -374,7 +457,17 @@ function setupQuickOrderPad() {
     const isPageUp = (e.key === 'PageUp' || e.code === 'PageUp');
     const isPageDown = (e.key === 'PageDown' || e.code === 'PageDown');
     const isEnd = (e.key === 'End' || e.code === 'End');
-    if (!isPageUp && !isPageDown && !isEnd) return;
+    const isB = (e.key === 'b' || e.key === 'B' || e.code === 'KeyB');
+    const isHome = (e.key === 'Home' || e.code === 'Home');
+    if (!isPageUp && !isPageDown && !isEnd && !isB && !isHome) return;
+
+    // Debounce rapid key bounce / OS repeat
+    const now = Date.now();
+    if (now - lastHotkeyTriggerTime < 500) {
+      e.preventDefault();
+      return;
+    }
+    lastHotkeyTriggerTime = now;
 
     e.preventDefault();
     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
@@ -382,16 +475,84 @@ function setupQuickOrderPad() {
     }
 
     if (isPageUp) {
+      if (window.__isDrawdownLocked) {
+        showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Trading is LOCKED until manually disabled in settings.');
+        return;
+      }
       executeImmediateMarketOrder('BUY');
     } else if (isPageDown) {
+      if (window.__isDrawdownLocked) {
+        showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Trading is LOCKED until manually disabled in settings.');
+        return;
+      }
       executeImmediateMarketOrder('SELL');
     } else if (isEnd) {
       executeImmediateCloseAllTrades();
+    } else if (isB) {
+      executeTriggerBreakeven();
+    } else if (isHome) {
+      executeMoveOrTrailSlToDollars();
     }
   });
 }
 
+function initHeaderDollarInputs() {
+  const slInp = document.getElementById('tvHeaderSlDollarsInput');
+  const tpInp = document.getElementById('tvHeaderTpDollarsInput');
+  const lockInp = document.getElementById('tvHeaderLockSlDollarsInput');
+  const lockBtn = document.getElementById('tvHeaderLockSlBtn');
+
+  if (slInp) {
+    const saved = localStorage.getItem('tv_shortcut_sl_dollars');
+    if (saved !== null) slInp.value = saved;
+    slInp.addEventListener('input', () => {
+      localStorage.setItem('tv_shortcut_sl_dollars', slInp.value);
+    });
+  }
+  if (tpInp) {
+    const saved = localStorage.getItem('tv_shortcut_tp_dollars');
+    if (saved !== null) tpInp.value = saved;
+    tpInp.addEventListener('input', () => {
+      localStorage.setItem('tv_shortcut_tp_dollars', tpInp.value);
+    });
+  }
+  if (lockInp) {
+    const saved = localStorage.getItem('tv_shortcut_lock_dollars');
+    if (saved !== null) lockInp.value = saved;
+    lockInp.addEventListener('input', () => {
+      localStorage.setItem('tv_shortcut_lock_dollars', lockInp.value);
+    });
+  }
+  if (lockBtn) {
+    lockBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      executeMoveOrTrailSlToDollars();
+    });
+  }
+}
+
 export async function executeImmediateMarketOrder(side = 'BUY') {
+  if (window.__isDrawdownLocked) {
+    showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Trading is LOCKED until manually disabled in settings.');
+    return;
+  }
+
+  // 1. STRICT SINGLE ACTIVE POSITION & IN-FLIGHT MUTEX: Only 1 trade allowed active at a time!
+  if (window.__isExecutingTrade) {
+    console.log('[Hotkey] Trade execution already in flight — blocked duplicate trigger.');
+    return;
+  }
+
+  const hasActivePositions = (window.__lastActivePositions && window.__lastActivePositions.length > 0) ||
+                             (lineTrading && lineTrading.activePositions && lineTrading.activePositions.length > 0);
+  if (hasActivePositions) {
+    showChartToast('🛑 Trade blocked: 1 trade already active. Only 1 active trade allowed!');
+    return;
+  }
+
+  window.__isExecutingTrade = true;
+
   const lot = (typeof window.getGlobalLot === 'function')
     ? window.getGlobalLot()
     : (parseFloat(document.getElementById('tvHeaderLotInput')?.value) || 1.0);
@@ -399,30 +560,95 @@ export async function executeImmediateMarketOrder(side = 'BUY') {
   const curPrice = isBuy
     ? (lastKnownSpot?.ask || lastKnownSpot?.bid || 0)
     : (lastKnownSpot?.bid || lastKnownSpot?.ask || 0);
-  const slVal = curPrice > 0 ? (isBuy ? Math.round((curPrice - 6.0) * 100) / 100 : Math.round((curPrice + 6.0) * 100) / 100) : undefined;
-  const tpVal = curPrice > 0 ? (isBuy ? Math.round((curPrice + 12.0) * 100) / 100 : Math.round((curPrice - 12.0) * 100) / 100) : undefined;
 
-  showChartToast(`⚡ Executing immediate ${side.toUpperCase()} ${lot.toFixed(2)}L...`);
+  // Read SL & TP dollar inputs from header (Applies strictly to shortcut trigger Alt+PgUp/PgDn)
+  const slDollarsInput = document.getElementById('tvHeaderSlDollarsInput');
+  const tpDollarsInput = document.getElementById('tvHeaderTpDollarsInput');
+  const slDollars = slDollarsInput ? parseFloat(slDollarsInput.value) : 0;
+  const tpDollars = tpDollarsInput ? parseFloat(tpDollarsInput.value) : 0;
+
+  // Gold contract size: 100 oz per standard lot
+  // 1 standard lot (1.00) = 100 units. A $1.00 move in XAUUSD price = $100.00 per lot.
+  // For 'lot' size: Dollar change per $1.00 price move = lot * 100
+  const contractSize = 100.0;
+  const dollarPerDollarMove = lot * contractSize;
+
+  let slVal = undefined;
+  let tpVal = undefined;
+
+  if (curPrice > 0 && dollarPerDollarMove > 0) {
+    if (!isNaN(slDollars) && slDollars > 0) {
+      const slDist = slDollars / dollarPerDollarMove;
+      slVal = isBuy
+        ? Math.round((curPrice - slDist) * 100) / 100
+        : Math.round((curPrice + slDist) * 100) / 100;
+    }
+    if (!isNaN(tpDollars) && tpDollars > 0) {
+      const tpDist = tpDollars / dollarPerDollarMove;
+      tpVal = isBuy
+        ? Math.round((curPrice + tpDist) * 100) / 100
+        : Math.round((curPrice - tpDist) * 100) / 100;
+    }
+  }
+
+  const slDesc = (slVal && slDollars > 0) ? ` | SL -$${slDollars.toFixed(0)} ($${slVal.toFixed(2)})` : '';
+  const tpDesc = (tpVal && tpDollars > 0) ? ` | TP +$${tpDollars.toFixed(0)} ($${tpVal.toFixed(2)})` : '';
+
+  showChartToast(`⚡ Executing immediate ${side.toUpperCase()} ${lot.toFixed(2)}L${slDesc}${tpDesc}...`);
+
+  const tradePayload = {
+    action: 'EXECUTE_HOTKEY',
+    request_id: 'hotkey_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+    symbol: currentSymbol || 'XAUUSD',
+    side: side.toUpperCase(),
+    volume: lot,
+    sl: slVal,
+    tp: tpVal,
+    comment: `Hotkey Alt+Page${isBuy ? 'Up' : 'Down'} ${side.toUpperCase()}`,
+    source: 'hotkey'
+  };
 
   try {
-    const res = await fetch('/api/trade/execute', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        symbol: currentSymbol || 'XAUUSD',
-        side: side.toUpperCase(),
-        volume: lot,
-        sl: slVal,
-        tp: tpVal,
-        comment: `Hotkey Alt+Page${isBuy ? 'Up' : 'Down'} ${side.toUpperCase()}`,
-        source: 'hotkey'
-      })
-    });
-    const data = await res.json();
+    let data = null;
+    const ws = window.__escanorWs;
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      // Send once over WebSocket and wait up to 8000ms for MT5 broker fill confirmation
+      data = await new Promise((resolve) => {
+        const timer = setTimeout(() => {
+          if (window.__pendingWsExecutions) window.__pendingWsExecutions.delete(tradePayload.request_id);
+          resolve({ status: 'FAILED', error: 'Execution timeout after 8000ms' });
+        }, 8000);
+
+        if (!window.__pendingWsExecutions) window.__pendingWsExecutions = new Map();
+        window.__pendingWsExecutions.set(tradePayload.request_id, (result) => {
+          clearTimeout(timer);
+          resolve(result);
+        });
+
+        try {
+          ws.send(JSON.stringify(tradePayload));
+        } catch (e) {
+          clearTimeout(timer);
+          if (window.__pendingWsExecutions) window.__pendingWsExecutions.delete(tradePayload.request_id);
+          resolve(null);
+        }
+      });
+    }
+
+    // ONLY fallback to HTTP if WebSocket was closed or threw an exception
+    if (!data) {
+      const res = await fetch('/api/trade/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(tradePayload)
+      });
+      data = await res.json();
+    }
+
     const isSuccess = data && (data.status === 'EXECUTED' || data.status === 'OK' || (data.ticket && !data.error && data.status !== 'FAILED'));
     if (isSuccess) {
       const ticket = data.ticket || data.order;
-      if (ticket && slVal && tpVal) {
+      if (ticket && (slVal || tpVal)) {
         if (!window.__activeTradesSlTp) window.__activeTradesSlTp = {};
         window.__activeTradesSlTp[ticket] = { sl: slVal, tp: tpVal };
       }
@@ -435,6 +661,10 @@ export async function executeImmediateMarketOrder(side = 'BUY') {
     }
   } catch (err) {
     showChartToast(`❌ Trade error: ${err.message}`);
+  } finally {
+    setTimeout(() => {
+      window.__isExecutingTrade = false;
+    }, 400);
   }
 }
 
@@ -477,6 +707,183 @@ export async function executeImmediateCloseAllTrades() {
 
 window.executeImmediateMarketOrder = executeImmediateMarketOrder;
 window.executeImmediateCloseAllTrades = executeImmediateCloseAllTrades;
+
+export function updateTopBreakevenBtnUI() {
+  const topBeBtn = document.getElementById('tvTopBreakevenBtn');
+  if (!topBeBtn) return;
+  const isAnyArmed = Array.isArray(window.__armedBreakevenTickets) && window.__armedBreakevenTickets.length > 0;
+  if (isAnyArmed) {
+    topBeBtn.innerHTML = '<span>🛡️ BE (ARMED)</span>';
+    topBeBtn.style.background = 'rgba(0, 229, 255, 0.25)';
+    topBeBtn.style.borderColor = '#00e5ff';
+    topBeBtn.style.color = '#00e5ff';
+    topBeBtn.style.fontWeight = 'bold';
+    topBeBtn.title = 'Breakeven is ARMED (+0.2 pip) — Click to disarm (Alt + B)';
+  } else {
+    topBeBtn.innerHTML = '<span>🛡️ BE</span>';
+    topBeBtn.style.background = '';
+    topBeBtn.style.borderColor = '';
+    topBeBtn.style.color = '';
+    topBeBtn.style.fontWeight = '';
+    topBeBtn.title = 'Move Stop Loss to Breakeven + 0.2 pip (Alt + B)';
+  }
+}
+window.updateTopBreakevenBtnUI = updateTopBreakevenBtnUI;
+
+export async function executeTriggerBreakeven(ticket = null, action = 'toggle') {
+  showChartToast('🛡️ Checking Breakeven (+0.2 pip)...');
+  try {
+    const payload = {
+      symbol: currentSymbol || 'XAUUSD',
+      offset_pips: 0.2,
+      action: action
+    };
+    if (ticket) payload.ticket = Number(ticket);
+
+    const res = await fetch('/api/trade/breakeven', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    if (data && data.status === 'OK') {
+      if (data.action === 'MODIFIED' || data.modified_count > 0) {
+        const details = (data.results || []).filter(r => r.status === 'MODIFIED').map(r => `#${r.ticket} SL -> $${Number(r.sl).toFixed(2)}`).join(', ');
+        showChartToast(`🛡️ Breakeven Set (+0.2 pip)! ${details}`);
+
+        // Optimistically update active positions SL on frontend immediately
+        if (lineTrading && Array.isArray(lineTrading.activePositions)) {
+          for (const r of data.results || []) {
+            if (r.status === 'MODIFIED') {
+              const p = lineTrading.activePositions.find(pos => Number(pos.ticket) === Number(r.ticket));
+              if (p) p.sl = Number(r.sl);
+              if (!window.__activeTradesSlTp) window.__activeTradesSlTp = {};
+              window.__activeTradesSlTp[r.ticket] = { ...(window.__activeTradesSlTp[r.ticket] || {}), sl: Number(r.sl) };
+            }
+          }
+          lineTrading.renderHud();
+        }
+        if (activeOrdersEngine && Array.isArray(activeOrdersEngine.activePositions)) {
+          for (const r of data.results || []) {
+            if (r.status === 'MODIFIED') {
+              const p = activeOrdersEngine.activePositions.find(pos => Number(pos.ticket) === Number(r.ticket));
+              if (p) p.sl = Number(r.sl);
+            }
+          }
+          activeOrdersEngine.render();
+        }
+        if (window.__armedBreakevenTickets) {
+          for (const r of data.results || []) {
+            if (r.status === 'MODIFIED') {
+              window.__armedBreakevenTickets = window.__armedBreakevenTickets.filter(t => Number(t) !== Number(r.ticket));
+            }
+          }
+        }
+        updateTopBreakevenBtnUI();
+      } else if (data.action === 'ARMED' || data.armed_count > 0) {
+        const armed = (data.results || []).find(r => r.status === 'ARMED') || {};
+        const cond = armed.target_condition ? ` (${armed.target_condition})` : '';
+        const targetPrice = armed.sl ? ` at $${Number(armed.sl).toFixed(2)}` : '';
+        showChartToast(`🛡️ Breakeven Armed (+0.2 pip)! Will auto-set SL${targetPrice} once in profit${cond}`);
+
+        if (!window.__armedBreakevenTickets) window.__armedBreakevenTickets = [];
+        for (const r of data.results || []) {
+          if (r.status === 'ARMED' && !window.__armedBreakevenTickets.map(Number).includes(Number(r.ticket))) {
+            window.__armedBreakevenTickets.push(Number(r.ticket));
+          }
+        }
+        if (lineTrading) lineTrading.renderHud();
+        updateTopBreakevenBtnUI();
+      } else if (data.action === 'DISARMED' || data.disarmed_count > 0) {
+        showChartToast('🛡️ Breakeven Disarmed');
+        if (window.__armedBreakevenTickets && ticket) {
+          window.__armedBreakevenTickets = window.__armedBreakevenTickets.filter(t => Number(t) !== Number(ticket));
+        } else if (data.disarmed_count > 0) {
+          window.__armedBreakevenTickets = [];
+        }
+        if (lineTrading) lineTrading.renderHud();
+        updateTopBreakevenBtnUI();
+      }
+    } else {
+      const err = data?.error || 'Could not move to Breakeven';
+      showChartToast(`⚠️ ${err}`);
+    }
+  } catch (err) {
+    showChartToast(`❌ Breakeven error: ${err.message}`);
+  }
+}
+
+window.executeTriggerBreakeven = executeTriggerBreakeven;
+
+export async function executeMoveOrTrailSlToDollars() {
+  const inputEl = document.getElementById('tvHeaderLockSlDollarsInput');
+  const rawVal = inputEl ? inputEl.value.trim() : '';
+  const dollars = parseFloat(rawVal);
+
+  if (isNaN(dollars) || dollars < 0) {
+    showChartToast('⚠️ Please specify a valid dollar value in the TRAIL/LOCK $ box.');
+    inputEl?.focus();
+    return;
+  }
+
+  showChartToast(`🛡️ Moving / Trailing SL into $${dollars.toFixed(2)} for open positions...`);
+
+  try {
+    const res = await fetch('/api/trade/move_sl_dollars', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbol: currentSymbol || 'XAUUSD',
+        dollars: dollars
+      })
+    });
+    const data = await res.json();
+    if (data && data.status === 'OK') {
+      const results = data.results || [];
+      const modItems = results.filter(r => r.status === 'MODIFIED');
+      const armItems = results.filter(r => r.status === 'ARMED');
+
+      if (modItems.length > 0) {
+        const details = modItems.map(r => `#${r.ticket} SL -> $${Number(r.sl).toFixed(2)} (+$${dollars})`).join(', ');
+        showChartToast(`🛡️ SL Moved to +$${dollars}! ${details}`);
+      } else if (armItems.length > 0) {
+        const details = armItems.map(r => `#${r.ticket} Target SL $${Number(r.sl).toFixed(2)}`).join(', ');
+        showChartToast(`🎯 Auto-Lock +$${dollars} ARMED! ${details}`);
+      } else {
+        showChartToast(`🛡️ Move SL updated (${results.length} position(s)).`);
+      }
+
+      // Optimistically update active positions SL on frontend
+      if (lineTrading && Array.isArray(lineTrading.activePositions)) {
+        for (const r of results) {
+          if (r.status === 'MODIFIED') {
+            const p = lineTrading.activePositions.find(pos => Number(pos.ticket) === Number(r.ticket));
+            if (p) p.sl = Number(r.sl);
+            if (!window.__activeTradesSlTp) window.__activeTradesSlTp = {};
+            window.__activeTradesSlTp[r.ticket] = { ...(window.__activeTradesSlTp[r.ticket] || {}), sl: Number(r.sl) };
+          }
+        }
+        lineTrading.renderHud();
+      }
+      if (activeOrdersEngine && Array.isArray(activeOrdersEngine.activePositions)) {
+        for (const r of results) {
+          if (r.status === 'MODIFIED') {
+            const p = activeOrdersEngine.activePositions.find(pos => Number(pos.ticket) === Number(r.ticket));
+            if (p) p.sl = Number(r.sl);
+          }
+        }
+        activeOrdersEngine.render();
+      }
+    } else {
+      showChartToast(`❌ Move SL failed: ${data?.error || 'Unknown error'}`);
+    }
+  } catch (err) {
+    console.error('executeMoveOrTrailSlToDollars error:', err);
+    showChartToast(`❌ Move SL error: ${err.message}`);
+  }
+}
+
+window.executeMoveOrTrailSlToDollars = executeMoveOrTrailSlToDollars;
 
 export function deactivateAllTradeDrawings(reason = 'mobile_close') {
   let count = 0;
@@ -526,6 +933,140 @@ export function deactivateAllTradeDrawings(reason = 'mobile_close') {
 
 window.deactivateAllTradeDrawings = deactivateAllTradeDrawings;
 
+export function deactivateAllAlarmsGlobally(isRemote = false) {
+  let count = 0;
+  window.__allAlarmsDeactivated = true;
+
+  // Clear any persistent gauge alarms from local storage
+  try {
+    localStorage.removeItem('escanor_gauge_alarms_v1');
+    localStorage.setItem('escanor_gauge_alarms_v1', '[]');
+  } catch (_e) {}
+
+  // 1. Deactivate all chart drawings alarms and reset styling to unarmed
+  if (chart) {
+    const overlays = chart.getOverlays() || [];
+    for (const ov of overlays) {
+      let changed = false;
+
+      // Rectangle alarms
+      if (ov.name === 'rect') {
+        if (ov.extendData) {
+          if (ov.extendData.alarmMode && ov.extendData.alarmMode !== 'OFF') count++;
+          ov.extendData.alarmMode = 'OFF';
+          ov.extendData.telegramAlert = false;
+          ov.extendData.alarmActive = false;
+          ov.extendData.alerted = true;
+          ov.extendData.isArmed = false;
+          delete ov.extendData._lastInside;
+          delete ov.extendData._lastFired;
+          changed = true;
+        }
+        // Revert style to unarmed pink
+        ov.styles = {
+          style: 'stroke_fill',
+          color: 'rgba(236, 64, 122, 0.12)',
+          borderColor: '#ec407a',
+          borderSize: 1.5
+        };
+        changed = true;
+      }
+
+      // Vertical line alarms
+      if (ov.name === 'verticalStraightLine' || ov.name === 'verticalLine') {
+        if (ov.extendData) {
+          if (ov.extendData.alarmActive) count++;
+          ov.extendData.alarmActive = false;
+          ov.extendData.alerted = true;
+          ov.extendData.alarmMode = 'OFF';
+          ov.extendData.telegramAlert = false;
+          changed = true;
+        }
+      }
+
+      // Position tools
+      if (ov.name === 'longPosition' || ov.name === 'shortPosition') {
+        if (ov.extendData && ov.extendData.isArmed) {
+          ov.extendData.isArmed = false;
+          changed = true;
+          count++;
+        }
+      }
+
+      // Any generic drawing alarms
+      if (ov.extendData) {
+        if (ov.extendData.alarmMode && ov.extendData.alarmMode !== 'OFF') {
+          ov.extendData.alarmMode = 'OFF';
+          changed = true;
+          count++;
+        }
+        if (ov.extendData.alarmActive) {
+          ov.extendData.alarmActive = false;
+          ov.extendData.alerted = true;
+          changed = true;
+          count++;
+        }
+        if (ov.extendData.isArmed) {
+          ov.extendData.isArmed = false;
+          changed = true;
+          count++;
+        }
+        if (ov.extendData.armedSide) {
+          ov.extendData.armedSide = null;
+          changed = true;
+        }
+        if (ov.extendData.telegramAlert) {
+          ov.extendData.telegramAlert = false;
+          changed = true;
+        }
+      }
+
+      if (changed) {
+        try {
+          chart.overrideOverlay(ov);
+        } catch (_e) {}
+      }
+    }
+
+    // Reset floating toolbar buttons if visible
+    const floatRectAlarmBtn = document.getElementById('tvFloatRectAlarmBtn');
+    if (floatRectAlarmBtn) {
+      floatRectAlarmBtn.classList.remove('active');
+      floatRectAlarmBtn.textContent = 'Alarm: OFF';
+    }
+    const floatVertAlarmBtn = document.getElementById('tvFloatVertAlarmBtn');
+    if (floatVertAlarmBtn) {
+      floatVertAlarmBtn.classList.remove('active');
+      floatVertAlarmBtn.textContent = 'Time Alarm: OFF';
+    }
+    const floatArmBtn = document.getElementById('tvFloatArmBtn');
+    if (floatArmBtn) {
+      floatArmBtn.classList.remove('armed');
+      floatArmBtn.title = 'Arm Trade Trigger (DISARMED)';
+    }
+
+    // Sync updated disarmed drawings to server
+    syncDrawingsToServer(currentSymbol, chart, false, true);
+  }
+
+  // 2. Deactivate all Line Trading lines
+  if (lineTrading && typeof lineTrading.deactivateAllLines === 'function') {
+    count += lineTrading.deactivateAllLines();
+  } else if (window.__lineTradingManager && typeof window.__lineTradingManager.deactivateAllLines === 'function') {
+    count += window.__lineTradingManager.deactivateAllLines();
+  }
+
+  // 3. Clear active trade duration timer badge
+  window.__activeTradeTriggerTime = null;
+  try { sessionStorage.removeItem('escanor_active_trade_trigger_time'); } catch (e) {}
+  updateActiveTradeTimerUI([]);
+
+  console.log(`[Escanor TV] Deactivated all alarms everywhere (${count} disarmed, remote: ${isRemote})`);
+  showChartToast('🔕 All Alarms Deactivated (All Devices)');
+}
+
+window.deactivateAllAlarmsGlobally = deactivateAllAlarmsGlobally;
+
 function connectWebSocket() {
   const host = window.location.hostname || '127.0.0.1';
   // Try port 5056 first, or fall back to current port /ws
@@ -537,6 +1078,7 @@ function connectWebSocket() {
 
     wsConn.onopen = () => {
       console.log('[Escanor TV] WebSocket connected');
+      window.__escanorWs = wsConn;
       const st = document.getElementById('tvStatusText');
       if (st) st.textContent = 'MT5 LIVE • 5056 WS';
     };
@@ -544,8 +1086,81 @@ function connectWebSocket() {
     wsConn.onmessage = (evt) => {
       try {
         const data = JSON.parse(evt.data);
+
+        // ⚡ ULTRA-FAST 15ms TICK STREAM: Feed Line Trading & Chart Immediately!
+        if (data && data.type === 'TICK') {
+          const bid = Number(data.bid);
+          const ask = Number(data.ask);
+          if (bid && !isNaN(bid)) {
+            lastKnownSpot = { bid, ask: ask || bid };
+            window.__lastKnownSpot = lastKnownSpot;
+            // 1. Immediately evaluate Line Trading triggers (15ms tick cadence!)
+            if (lineTrading) {
+              lineTrading.onPriceTick(bid, ask || bid);
+            }
+            // 2. Immediately update candle chart live bar
+            if (typeof liveBarCallback === 'function') {
+              liveBarCallback({ bid, ask: ask || bid, time: data.time_msc || Date.now() });
+            }
+            // 3. ⚡ Real-Time Trap Candle Alert Evaluation (Cyan & Yellow)
+            if (window.__trapAlertActive && chart) {
+              const dataList = chart.getDataList() || [];
+              evaluateTrapLiveAlert(dataList, bid);
+            }
+            // 4. 📊 Update Volume Radar Live Spot & Accumulation
+            updateLiveTick(bid, data.volume || -2150);
+          }
+          return;
+        }
+
+        // Fast WebSocket Direct Trade Execution Result
+        if (data && data.type === 'TRADE_EXECUTION_RESULT') {
+          if (window.__pendingWsExecutions && data.request_id && window.__pendingWsExecutions.has(data.request_id)) {
+            const cb = window.__pendingWsExecutions.get(data.request_id);
+            window.__pendingWsExecutions.delete(data.request_id);
+            cb(data.result);
+          }
+          return;
+        }
+
+        if (data && data.type === 'DEACTIVATE_ALL_ALARMS') {
+          deactivateAllAlarmsGlobally(true);
+          return;
+        }
         if (data && (data.type === 'DEACTIVATE_TRADE_DRAWINGS' || data.action === 'DEACTIVATE_ALL')) {
-          deactivateAllTradeDrawings(data.source || 'mobile');
+          if (data.action === 'DEACTIVATE_TICKET' && data.closed_ticket) {
+            const ticket = Number(data.closed_ticket);
+            if (lineTrading && typeof lineTrading.deactivateLineByTicket === 'function') {
+              lineTrading.deactivateLineByTicket(ticket, data.source || 'server_close');
+            } else if (window.__lineTradingManager && typeof window.__lineTradingManager.deactivateLineByTicket === 'function') {
+              window.__lineTradingManager.deactivateLineByTicket(ticket, data.source || 'server_close');
+            }
+          } else {
+            deactivateAllTradeDrawings(data.source || 'mobile');
+          }
+          return;
+        }
+        if (data && data.type === 'BREAKEVEN_TRIGGERED') {
+          const isTrap = Boolean(data.is_trap);
+          const pipsText = data.offset_pips !== undefined ? `${data.offset_pips}p` : (isTrap ? '0.3p' : '0.2 pip');
+          const label = isTrap ? `Trap Auto-Breakeven (+${pipsText})` : `Breakeven (+${pipsText})`;
+          showChartToast(`🛡️ ${label} Activated! #${data.ticket} SL moved to $${Number(data.sl).toFixed(2)}`);
+          if (window.__armedBreakevenTickets) {
+            window.__armedBreakevenTickets = window.__armedBreakevenTickets.filter(t => Number(t) !== Number(data.ticket));
+          }
+          if (lineTrading && Array.isArray(lineTrading.activePositions)) {
+            const p = lineTrading.activePositions.find(pos => Number(pos.ticket) === Number(data.ticket));
+            if (p) p.sl = Number(data.sl);
+            if (!window.__activeTradesSlTp) window.__activeTradesSlTp = {};
+            window.__activeTradesSlTp[data.ticket] = { ...(window.__activeTradesSlTp[data.ticket] || {}), sl: Number(data.sl) };
+            lineTrading.renderHud();
+          }
+          if (activeOrdersEngine && Array.isArray(activeOrdersEngine.activePositions)) {
+            const p = activeOrdersEngine.activePositions.find(pos => Number(pos.ticket) === Number(data.ticket));
+            if (p) p.sl = Number(data.sl);
+            activeOrdersEngine.render();
+          }
+          updateTopBreakevenBtnUI();
           return;
         }
         handleLiveTelemetry(data);
@@ -650,6 +1265,27 @@ export function updateActiveTradeTimerUI(activePositions) {
   const isTriggerRecent = triggerStartTime && (now - triggerStartTime < 120000);
   const isTradeActive = hasPositions || isTriggerRecent;
 
+  // Floating Round Pill Close All Button in Bottom Right Corner of Chart
+  const floatingCloseBtn = document.getElementById('tvFloatingCloseAllBtn');
+  const floatingBadge = document.getElementById('tvFloatingCloseAllBadge');
+  const floatingPnl = document.getElementById('tvFloatingCloseAllPnl');
+
+  if (hasPositions && floatingCloseBtn) {
+    floatingCloseBtn.style.display = 'inline-flex';
+    if (floatingBadge) floatingBadge.textContent = String(activePositions.length);
+    let totalPnl = 0;
+    for (const p of activePositions) {
+      totalPnl += Number(p.profit !== undefined ? p.profit : (p.pnl !== undefined ? p.pnl : 0));
+    }
+    if (floatingPnl) {
+      const sign = totalPnl >= 0 ? '+' : '-';
+      floatingPnl.textContent = `${sign}$${Math.abs(totalPnl).toFixed(2)}`;
+      floatingPnl.className = `tv-rc-pnl ${totalPnl >= 0 ? 'profit' : 'loss'}`;
+    }
+  } else if (floatingCloseBtn) {
+    floatingCloseBtn.style.display = 'none';
+  }
+
   if (!isTradeActive) {
     badgeEl.style.display = 'none';
     window.__activeTradeTriggerTime = null;
@@ -701,8 +1337,316 @@ setInterval(() => {
   }
 }, 1000);
 
+// =========================================================================
+// 🛡️ DAILY MAX DRAWDOWN PROTECTION & COUNTDOWN GUARD
+// =========================================================================
+
+let currentDrawdownData = null;
+window.__isDrawdownLocked = false;
+
+export function initDrawdownGuard() {
+  const ddBtn = document.getElementById('tvDrawdownCountdownBtn');
+  const ddModal = document.getElementById('tvDrawdownModal');
+  const closeBtn = document.getElementById('tvCloseDrawdownModalBtn');
+  const cancelBtn = document.getElementById('tvCancelDdModalBtn');
+  const saveBtn = document.getElementById('tvSaveDdModalBtn');
+  const toggleBtn = document.getElementById('tvBtnToggleDd');
+  const unlockBtn = document.getElementById('tvDdUnlockBtn');
+  const inputMax = document.getElementById('tvInputMaxDd');
+  const presetBtns = document.querySelectorAll('.tv-dd-preset-btn');
+
+  // Open modal on countdown button click
+  ddBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (ddModal) {
+      window.__ddToggleUserModified = false;
+      ddModal.style.display = 'flex';
+      fetchDrawdownConfig();
+    }
+  });
+
+  // Close modal
+  const closeModal = () => {
+    window.__ddToggleUserModified = false;
+    if (ddModal) ddModal.style.display = 'none';
+  };
+  closeBtn?.addEventListener('click', closeModal);
+  cancelBtn?.addEventListener('click', closeModal);
+  ddModal?.addEventListener('click', (e) => {
+    if (e.target === ddModal) closeModal();
+  });
+
+  // Toggle button (ON / OFF)
+  toggleBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const isActive = toggleBtn.classList.contains('active');
+    toggleBtn.classList.toggle('active', !isActive);
+    toggleBtn.textContent = !isActive ? 'ON' : 'OFF';
+    window.__ddToggleUserModified = true;
+  });
+
+  // Preset buttons
+  presetBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const val = btn.getAttribute('data-val');
+      if (val && inputMax) {
+        inputMax.value = val;
+      }
+    });
+  });
+
+  // Save Settings
+  saveBtn?.addEventListener('click', async () => {
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+    try {
+      const maxVal = parseFloat(inputMax?.value) || 500;
+      const isEnabled = toggleBtn?.classList.contains('active') ?? true;
+      const res = await fetch('/api/drawdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          max_drawdown: maxVal,
+          enabled: isEnabled,
+          is_locked: isEnabled ? undefined : false
+        })
+      });
+      const data = await res.json();
+      const stats = data?.stats || data;
+      if (stats && (stats.max_drawdown !== undefined || stats.status === 'OK')) {
+        window.__ddToggleUserModified = false;
+        if (!isEnabled) {
+          window.__isDrawdownLocked = false;
+        }
+        updateDrawdownUI(stats);
+        showChartToast(`🛡️ Daily Drawdown ${isEnabled ? 'ON ($' + maxVal.toFixed(2) + ')' : 'TURNED OFF'}`);
+        closeModal();
+      } else {
+        showChartToast('⚠️ Failed to update drawdown settings');
+      }
+    } catch (err) {
+      showChartToast(`Error: ${err.message}`);
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Settings';
+    }
+  });
+
+  // Manual Unlock button
+  unlockBtn?.addEventListener('click', async () => {
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Unlocking...';
+    try {
+      const res = await fetch('/api/drawdown', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_locked: false })
+      });
+      const data = await res.json();
+      const stats = data?.stats || data;
+      if (stats) {
+        window.__isDrawdownLocked = false;
+        updateDrawdownUI(stats);
+        showChartToast('🔓 Daily Drawdown Lock Released! Trading re-enabled.');
+      }
+    } catch (err) {
+      showChartToast(`Unlock error: ${err.message}`);
+    } finally {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = '🔓 UNLOCK / OVERRIDE LOCK';
+    }
+  });
+
+  // Initial fetch
+  fetchDrawdownConfig();
+}
+
+async function fetchDrawdownConfig() {
+  try {
+    const res = await fetch('/api/drawdown');
+    const data = await res.json();
+    const stats = data?.stats || data;
+    if (stats) {
+      updateDrawdownUI(stats);
+    }
+  } catch (_e) {}
+}
+
+export function updateDrawdownUI(dd) {
+  if (!dd) return;
+  currentDrawdownData = dd;
+  const isEnabled = (dd.enabled !== false);
+  const isLocked = Boolean(dd.is_locked) && isEnabled;
+  const wasLocked = Boolean(window.__isDrawdownLocked);
+  window.__isDrawdownLocked = isLocked;
+
+  // If newly locked, trigger immediate disarm of everything
+  if (isLocked && !wasLocked) {
+    deactivateAllTradeDrawings('drawdown_locked');
+    deactivateAllAlarmsGlobally(false);
+    showChartToast('🔒 DAILY DRAWDOWN LIMIT HIT! All trades flattened & triggers deactivated.');
+  }
+
+  // Update Countdown Button outside LOTS section in top header
+  const btn = document.getElementById('tvDrawdownCountdownBtn');
+  const valEl = document.getElementById('tvDrawdownCountdownVal');
+  const iconEl = btn ? btn.querySelector('.tv-dd-icon') : null;
+
+  if (btn && valEl) {
+    // Clear previous shade classes
+    btn.classList.remove(
+      'locked', 'warning', 'off',
+      'dd-shade-blue-full', 'dd-shade-blue-mid',
+      'dd-shade-orange-amber', 'dd-shade-orange-mid', 'dd-shade-orange-deep',
+      'dd-shade-red-crit', 'dd-shade-locked', 'dd-shade-off'
+    );
+
+    const maxDd = (typeof dd.max_drawdown === 'number' && dd.max_drawdown > 0) ? dd.max_drawdown : 500.0;
+    const remaining = typeof dd.remaining === 'number' ? Math.max(0, dd.remaining) : Math.max(0, maxDd - (dd.today_loss || 0));
+    const ratio = maxDd > 0 ? Math.max(0, Math.min(1, remaining / maxDd)) : 0;
+
+    if (!isEnabled) {
+      valEl.textContent = 'OFF';
+      btn.classList.add('dd-shade-off', 'off');
+      btn.style.removeProperty('--dd-bg');
+      btn.style.removeProperty('--dd-border');
+      btn.style.removeProperty('--dd-color');
+      btn.style.removeProperty('--dd-glow');
+      btn.style.removeProperty('--dd-label-color');
+      if (iconEl) iconEl.textContent = '🛡️';
+      btn.title = 'Daily Drawdown Protection is OFF (Click to Open Settings)';
+    } else if (isLocked || remaining <= 0.001) {
+      valEl.textContent = '$0.00 LOCKED';
+      btn.classList.add('dd-shade-locked', 'locked');
+      btn.style.removeProperty('--dd-bg');
+      btn.style.removeProperty('--dd-border');
+      btn.style.removeProperty('--dd-color');
+      btn.style.removeProperty('--dd-glow');
+      btn.style.removeProperty('--dd-label-color');
+      if (iconEl) iconEl.textContent = '🔒';
+      btn.title = `DAILY DRAWDOWN LIMIT HIT ($0.00)! Trading is LOCKED — limit: $${maxDd.toFixed(2)} (Click to Unlock/Settings)`;
+    } else {
+      valEl.textContent = `$${remaining.toFixed(2)}`;
+
+      // Calculate dynamic color shade: BLUE -> ORANGE -> RED for FULL -> LOW -> LOCKED
+      let shadeClass = 'dd-shade-blue-full';
+      let r, g, b;
+      let labelColor = '#7dd3fc';
+
+      if (ratio >= 0.65) {
+        // BLUE SHADES (Full buffer: 0.65 to 1.0)
+        shadeClass = ratio >= 0.85 ? 'dd-shade-blue-full' : 'dd-shade-blue-mid';
+        const t = (ratio - 0.65) / 0.35; // 0 to 1
+        r = Math.round(96 + (56 - 96) * t);
+        g = Math.round(165 + (189 - 165) * t);
+        b = Math.round(250 + (248 - 250) * t);
+        labelColor = ratio >= 0.85 ? '#7dd3fc' : '#93c5fd';
+        if (iconEl) iconEl.textContent = '🛡️';
+      } else if (ratio >= 0.20) {
+        // ORANGE / AMBER SHADES (Moderate to Low buffer: 0.20 to 0.65)
+        if (ratio >= 0.45) {
+          shadeClass = 'dd-shade-orange-amber';
+          labelColor = '#fde68a';
+        } else if (ratio >= 0.30) {
+          shadeClass = 'dd-shade-orange-mid';
+          labelColor = '#fdba74';
+        } else {
+          shadeClass = 'dd-shade-orange-deep';
+          labelColor = '#fed7aa';
+        }
+
+        const t = (ratio - 0.20) / 0.45; // 0 (Deep Orange) to 1 (Warm Gold)
+        r = Math.round(249 + (251 - 249) * t);
+        g = Math.round(115 + (191 - 115) * t);
+        b = Math.round(22 + (36 - 22) * t);
+        if (iconEl) iconEl.textContent = ratio < 0.35 ? '⚠️' : '🛡️';
+      } else {
+        // RED CRITICAL SHADES (Critical Low buffer: 0.0 to 0.20)
+        shadeClass = 'dd-shade-red-crit';
+        const t = ratio / 0.20; // 0 (Crimson Red) to 1 (Deep Orange)
+        r = Math.round(239 + (249 - 239) * t);
+        g = Math.round(68 + (115 - 68) * t);
+        b = Math.round(68 + (22 - 68) * t);
+        labelColor = '#fca5a5';
+        if (iconEl) iconEl.textContent = '⚠️';
+      }
+
+      btn.classList.add(shadeClass);
+
+      // Real-time smooth dynamic CSS variables
+      btn.style.setProperty('--dd-color', `rgb(${r}, ${g}, ${b})`);
+      btn.style.setProperty('--dd-bg', `rgba(${r}, ${g}, ${b}, 0.16)`);
+      btn.style.setProperty('--dd-border', `rgba(${r}, ${g}, ${b}, 0.65)`);
+      btn.style.setProperty('--dd-glow', `0 0 10px rgba(${r}, ${g}, ${b}, 0.35)`);
+      btn.style.setProperty('--dd-label-color', labelColor);
+
+      const pct = Math.round(ratio * 100);
+      btn.title = `Daily Drawdown Buffer: $${remaining.toFixed(2)} / $${maxDd.toFixed(2)} (${pct}% remaining) — Click to Open Settings`;
+    }
+  }
+
+  // Update Modal if open
+  updateDrawdownModalUI(dd);
+}
+
+export function updateDrawdownModalUI(dd) {
+  if (!dd) return;
+  const lockBanner = document.getElementById('tvDdLockBanner');
+  if (lockBanner) {
+    const isLockedAndEnabled = Boolean(dd.is_locked) && (dd.enabled !== false);
+    lockBanner.style.display = isLockedAndEnabled ? 'block' : 'none';
+  }
+
+  const statRealized = document.getElementById('tvDdStatRealized');
+  const statFloating = document.getElementById('tvDdStatFloating');
+  const statNet = document.getElementById('tvDdStatNet');
+  const statRemaining = document.getElementById('tvDdStatRemaining');
+
+  const r = (dd.today_realized !== undefined) ? Number(dd.today_realized) : Number(dd.realized || 0);
+  const f = (dd.today_floating !== undefined) ? Number(dd.today_floating) : Number(dd.floating || 0);
+  const n = (dd.today_net !== undefined) ? Number(dd.today_net) : Number(dd.net_today || 0);
+  const rem = (dd.remaining !== undefined) ? Number(dd.remaining) : 0;
+  const maxDd = Number(dd.max_drawdown || 500);
+
+  if (statRealized) {
+    statRealized.textContent = `${r >= 0 ? '+' : '-'}$${Math.abs(r).toFixed(2)}`;
+    statRealized.className = `tv-dd-stat-val ${r >= 0 ? 'pos' : 'neg'}`;
+  }
+  if (statFloating) {
+    statFloating.textContent = `${f >= 0 ? '+' : '-'}$${Math.abs(f).toFixed(2)}`;
+    statFloating.className = `tv-dd-stat-val ${f >= 0 ? 'pos' : 'neg'}`;
+  }
+  if (statNet) {
+    statNet.textContent = `${n >= 0 ? '+' : '-'}$${Math.abs(n).toFixed(2)}`;
+    statNet.className = `tv-dd-stat-val ${n >= 0 ? 'pos' : 'neg'}`;
+  }
+  if (statRemaining) {
+    statRemaining.textContent = `$${rem.toFixed(2)}`;
+    statRemaining.className = `tv-dd-stat-val ${rem <= 0 ? 'neg' : (rem < (maxDd * 0.25) ? 'warn' : 'pos')}`;
+  }
+
+  // Populate input and toggle only if user is not actively editing them in open modal
+  const isModalOpen = (document.getElementById('tvDrawdownModal')?.style.display !== 'none');
+  const inputMax = document.getElementById('tvInputMaxDd');
+  if (inputMax && document.activeElement !== inputMax && (!isModalOpen || !inputMax.value)) {
+    inputMax.value = dd.max_drawdown;
+  }
+  const toggleBtn = document.getElementById('tvBtnToggleDd');
+  if (toggleBtn && (!isModalOpen || !window.__ddToggleUserModified)) {
+    const isAct = dd.enabled !== false;
+    toggleBtn.classList.toggle('active', isAct);
+    toggleBtn.textContent = isAct ? 'ON' : 'OFF';
+  }
+}
+
 function handleLiveTelemetry(tel) {
   if (!tel || tel.status !== 'OK') return;
+
+  if (tel.drawdown) {
+    updateDrawdownUI(tel.drawdown);
+  }
 
   if (tel.server_time || tel.tick_time) {
     window.__lastBrokerTime = Number(tel.server_time || tel.tick_time);
@@ -713,6 +1657,11 @@ function handleLiveTelemetry(tel) {
   const spread = tel.spread_pts;
 
   lastKnownSpot = { bid, ask, spread };
+
+  if (Array.isArray(tel.armed_breakevens)) {
+    window.__armedBreakevenTickets = tel.armed_breakevens;
+    updateTopBreakevenBtnUI();
+  }
 
   // Evaluate rectangle box alarms (hits box, out of box, both)
   if (bid && chart) {
@@ -800,6 +1749,8 @@ function handleLiveTelemetry(tel) {
       volume: barVolume
     });
 
+    updateFootprintIntelligenceUI(barClose);
+
     // Synchronize top countdown timer to exact broker candle close
     const countdownEl = document.getElementById('tvCountdownTimer');
     if (countdownEl) {
@@ -838,6 +1789,147 @@ function handleLiveTelemetry(tel) {
   if (structuralLevels) {
     structuralLevels.updateLevels(tel);
   }
+
+  // 6. Update 5H Footprint Intelligence Ribbon & Session Badge
+  updateFootprintIntelligenceUI(bid || lastKnownSpot?.bid);
+  updateActiveSessionUI(tel.sessions);
+}
+
+function updateFootprintIntelligenceUI(spotPrice = null) {
+  if (!chart) return;
+  const dataList = chart.getDataList() || [];
+  if (!dataList || dataList.length < 5) return;
+
+  const curSpot = (typeof spotPrice === 'number' && spotPrice > 0)
+    ? spotPrice
+    : (lastKnownSpot?.bid || lastKnownSpot?.ask || (dataList.length > 0 ? dataList[dataList.length - 1].close : 0));
+
+  const metrics = computeFootprintMetrics(dataList, curSpot);
+
+  // ⚡ Evaluate Real-Time Trap Candle Alert (Cyan & Yellow)
+  if (window.__trapAlertActive) {
+    evaluateTrapLiveAlert(dataList, curSpot);
+  }
+
+  // 1. Trap Counts Pill: e.g. "● 1 (2✕) / ● 1" showing surviving vs dead traps
+  const cyanEl = document.getElementById('fpCyanCount');
+  const yellowEl = document.getElementById('fpYellowCount');
+  if (cyanEl) {
+    const deadText = (metrics.brokenCyan > 0) ? ` (${metrics.brokenCyan}✕)` : '';
+    cyanEl.textContent = `● ${metrics.activeCyan ?? metrics.cyanTraps}${deadText}`;
+    cyanEl.title = `${metrics.activeCyan ?? metrics.cyanTraps} active surviving Cyan traps, ${metrics.brokenCyan || 0} broken/swept traps`;
+  }
+  if (yellowEl) {
+    const deadText = (metrics.brokenYellow > 0) ? ` (${metrics.brokenYellow}✕)` : '';
+    yellowEl.textContent = `● ${metrics.activeYellow ?? metrics.yellowTraps}${deadText}`;
+    yellowEl.title = `${metrics.activeYellow ?? metrics.yellowTraps} active surviving Yellow traps, ${metrics.brokenYellow || 0} broken/swept traps`;
+  }
+
+  // 2. Pure Cyan / Yellow Candle Domination Pill with Net Survival calculation
+  const pillEl = document.getElementById('fpPressurePill');
+  const cyanDomEl = document.getElementById('fpBullPressure');
+  const yellowDomEl = document.getElementById('fpBearPressure');
+  const cPct = (metrics.cyanDomPct !== undefined) ? metrics.cyanDomPct : metrics.bullPressurePct;
+  const yPct = (metrics.yellowDomPct !== undefined) ? metrics.yellowDomPct : metrics.bearPressurePct;
+
+  if (cyanDomEl) cyanDomEl.textContent = `${cPct}%`;
+  if (yellowDomEl) yellowDomEl.textContent = `${yPct}%`;
+
+  if (pillEl) {
+    pillEl.classList.remove('cyan-dominant', 'yellow-dominant', 'bear-cascade', 'bull-expansion');
+    cyanDomEl?.classList.remove('leader', 'trailing');
+    yellowDomEl?.classList.remove('leader', 'trailing');
+
+    if (metrics.dominant === 'BEAR_CASCADE') {
+      pillEl.classList.add('bear-cascade', 'yellow-dominant');
+      yellowDomEl?.classList.add('leader');
+      cyanDomEl?.classList.add('trailing');
+      pillEl.title = `5H Orderflow: 🔴 BEAR CASCADE ACTIVE (${metrics.brokenCyan || 0} bottom traps failed/dead). Sellers dominating tape.`;
+    } else if (metrics.dominant === 'BULL_EXPANSION') {
+      pillEl.classList.add('bull-expansion', 'cyan-dominant');
+      cyanDomEl?.classList.add('leader');
+      yellowDomEl?.classList.add('trailing');
+      pillEl.title = `5H Orderflow: 🟢 BULL EXPANSION ACTIVE (${metrics.brokenYellow || 0} top traps failed/dead). Buyers dominating tape.`;
+    } else if (cPct > 55) {
+      pillEl.classList.add('cyan-dominant');
+      cyanDomEl?.classList.add('leader');
+      yellowDomEl?.classList.add('trailing');
+      pillEl.title = `5H Net Domination: ${cPct}% CYAN Absorption vs ${yPct}% YELLOW Distribution (${metrics.activeCyan || 0} active Cyan vs ${metrics.activeYellow || 0} active Yellow traps) — Buyers Dominating`;
+    } else if (yPct > 55) {
+      pillEl.classList.add('yellow-dominant');
+      yellowDomEl?.classList.add('leader');
+      cyanDomEl?.classList.add('trailing');
+      pillEl.title = `5H Net Domination: ${yPct}% YELLOW Distribution vs ${cPct}% CYAN Absorption (${metrics.activeYellow || 0} active Yellow vs ${metrics.activeCyan || 0} active Cyan traps) — Sellers Dominating`;
+    } else {
+      pillEl.title = `5H Net Domination: Balanced ${cPct}% / ${yPct}% (${metrics.activeCyan || 0} Cyan vs ${metrics.activeYellow || 0} Yellow traps)`;
+    }
+  }
+
+  // 3. Session VWAP Institutional Regime Pill
+  const vwapPill = document.getElementById('fpVwapRegimePill');
+  const vwapText = document.getElementById('fpVwapRegimeText');
+  if (vwapPill && vwapText) {
+    vwapPill.classList.remove('markdown', 'markup');
+    if (metrics.sessionVwap) {
+      const vVal = metrics.sessionVwap.toFixed(2);
+      if (metrics.isBelowVwap) {
+        vwapPill.classList.add('markdown');
+        vwapText.textContent = `VWAP: $${vVal} • MARKDOWN`;
+        vwapPill.title = `Session VWAP: $${vVal}. Spot is below VWAP — Institutional Markdown Regime (Sell bias)`;
+      } else if (metrics.isAboveVwap) {
+        vwapPill.classList.add('markup');
+        vwapText.textContent = `VWAP: $${vVal} • MARKUP`;
+        vwapPill.title = `Session VWAP: $${vVal}. Spot is above VWAP — Institutional Markup Regime (Buy bias)`;
+      } else {
+        vwapText.textContent = `VWAP: $${vVal} • VALUE`;
+        vwapPill.title = `Session VWAP: $${vVal}. Spot is at volume-weighted value equilibrium.`;
+      }
+    } else {
+      vwapText.textContent = 'VWAP: --';
+    }
+  }
+}
+
+window.updateFootprintIntelligenceUI = updateFootprintIntelligenceUI;
+
+function updateActiveSessionUI(sessions) {
+  const badge = document.getElementById('activeSessionBadge');
+  const txt = document.getElementById('activeSessionText');
+  if (!badge || !txt) return;
+
+  let activeName = null;
+  if (Array.isArray(sessions)) {
+    const act = sessions.find(s => s.active || s.is_active);
+    if (act) activeName = (act.name || act.title || 'ACTIVE').toUpperCase() + ' ACTIVE';
+  } else if (typeof sessions === 'object' && sessions !== null) {
+    for (const [k, v] of Object.entries(sessions)) {
+      if (v && (v.active || v.is_active)) {
+        activeName = `${k.toUpperCase()} ACTIVE`;
+        break;
+      }
+    }
+  }
+
+  // Fallback to accurate IST time clock calculation
+  if (!activeName) {
+    const now = new Date();
+    const utcMinutes = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const istMinutes = (utcMinutes + 330) % 1440;
+
+    if (istMinutes >= 18 * 60 && istMinutes <= 21 * 60 + 30) {
+      activeName = '⚡ LONDON-NY OVERLAP ACTIVE';
+    } else if (istMinutes >= 12 * 60 + 30 && istMinutes <= 21 * 60 + 30) {
+      activeName = '🟢 LONDON EXPANSION ACTIVE';
+    } else if (istMinutes >= 18 * 60 || istMinutes <= 2 * 60 + 30) {
+      activeName = '🟢 NEW YORK SESSION ACTIVE';
+    } else if (istMinutes >= 5 * 60 + 30 && istMinutes <= 14 * 60 + 30) {
+      activeName = '🌐 ASIAN CORE ACTIVE';
+    } else {
+      activeName = '🌐 GLOBAL SESSIONS ACTIVE';
+    }
+  }
+
+  txt.textContent = activeName;
 }
 
 if (document.readyState === 'loading') {

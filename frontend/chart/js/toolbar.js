@@ -9,7 +9,7 @@
  * - In-app confirmation dialog (Zero browser alert/confirm popups)
  */
 
-import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, handleRectPressedMove } from './drawings_storage.js?v=202610122335';
+import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove } from './drawings_storage.js?v=202610221030';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -239,8 +239,8 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
             window.__lineTradingManager.registerLineOverlay(overlay, overlayName);
           }
           if (overlayName === 'rect' && overlay) {
-            if (overlay.points && overlay.points.length === 2) {
-              const sixPoints = expandRectPointsToSix(overlay.points);
+            if (overlay.points && overlay.points.length >= 2) {
+              const sixPoints = normalizeRectPoints(overlay.points);
               chart.overrideOverlay({ id: overlay.id, points: sixPoints });
             }
           }
@@ -263,12 +263,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           syncDrawingsToServer(currentSymbolRef, chart);
           setActive(toolCrosshair, 'crosshair');
         },
-        performEventPressedMove: ({ points, performPointIndex }) => {
+        performEventPressedMove: ({ points, performPointIndex, currentStep }) => {
+          if (window.__isRestoringDrawings) return;
           if (isLineOverlay(overlayName) && window.__lineTradingManager) {
             window.__lineTradingManager.setDragging(true);
           }
           if (overlayName === 'rect' && points?.length === 6) {
-            handleRectPressedMove(points, performPointIndex);
+            handleRectPressedMove(points, performPointIndex, chart.getDataList(), window.__currentTimeframeMinutes || 5);
           }
           // If Shift is pressed, lock to horizontal level
           if (window.__isShiftPressed && points.length >= 2 && performPointIndex === 1) {
@@ -335,8 +336,8 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         }
         if (ovName === 'rect' && args?.overlay) {
           const ov = args.overlay;
-          if (ov.points && ov.points.length === 2) {
-            const sixPoints = expandRectPointsToSix(ov.points);
+          if (ov.points && ov.points.length >= 2) {
+            const sixPoints = normalizeRectPoints(ov.points);
             chart.overrideOverlay({ id: ov.id, points: sixPoints });
           }
         }
@@ -359,6 +360,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         }
       },
       performEventPressedMove: (args) => {
+        if (window.__isRestoringDrawings) return;
         if (params.performEventPressedMove) params.performEventPressedMove(args);
         if (isLineOverlay(ovName) && window.__lineTradingManager) {
           window.__lineTradingManager.setDragging(true);
@@ -396,10 +398,11 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         }
 
         if (ovName === 'rect' && args.points?.length === 6) {
-          handleRectPressedMove(args.points, args.performPointIndex);
+          handleRectPressedMove(args.points, args.performPointIndex, chart.getDataList(), window.__currentTimeframeMinutes || 5);
         }
       },
       performEventMoveForDrawing: (args) => {
+        if (window.__isRestoringDrawings || args?.currentStep === -1) return;
         if (params.performEventMoveForDrawing) params.performEventMoveForDrawing(args);
         const pt = args.points?.[args.performPointIndex];
         if (pt && typeof pt.dataIndex === 'number') {
@@ -421,6 +424,10 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         if (params.onPressedMoveEnd) params.onPressedMoveEnd(args);
         if (isLineOverlay(ovName) && window.__lineTradingManager) {
           window.__lineTradingManager.setDragging(false);
+        }
+        if (ovName === 'rect' && args?.overlay?.points) {
+          const sixPoints = normalizeRectPoints(args.overlay.points);
+          chart.overrideOverlay({ id: args.overlay.id, points: sixPoints });
         }
         syncDrawingsToServer(currentSymbolRef, chart);
       },
@@ -524,18 +531,36 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     applyFloatingBarPosition();
 
     // Show contextual quick action icon on the right side of Settings gear:
-    // 1. Long & Short position tools -> Arm / Disarm Trade Trigger
-    if (selectedOverlay.name === 'longPosition' || selectedOverlay.name === 'shortPosition') {
+    // 1. Line Tools (Trend Line, Ray Line, Extended Line, Horizontal Line) -> Arm / Disarm Trade Trigger
+    if (isLineOverlay(selectedOverlay.name) && window.__lineTradingManager) {
+      if (floatArmBtn) {
+        floatArmBtn.style.display = 'flex';
+        const lineConfig = window.__lineTradingManager.getLineConfig(selectedOverlay.id);
+        const isArmed = lineConfig ? Boolean(lineConfig.isArmed) : false;
+        floatArmBtn.classList.toggle('armed', isArmed);
+        floatArmBtn.classList.remove('buy', 'sell');
+        if (isArmed && lineConfig) {
+          if (lineConfig.direction === 'BUY') floatArmBtn.classList.add('buy');
+          else if (lineConfig.direction === 'SELL') floatArmBtn.classList.add('sell');
+        }
+        floatArmBtn.title = isArmed ? '⚡ ACTIVE / ARMED (Click to Deactivate)' : '⚪ DEACTIVATED (Click to Activate)';
+      }
+      if (floatRectAlarmBtn) floatRectAlarmBtn.style.display = 'none';
+      if (floatVertAlarmBtn) floatVertAlarmBtn.style.display = 'none';
+    }
+    // 2. Long & Short position tools -> Arm / Disarm Trade Trigger
+    else if (selectedOverlay.name === 'longPosition' || selectedOverlay.name === 'shortPosition') {
       if (floatArmBtn) {
         floatArmBtn.style.display = 'flex';
         const isArmed = Boolean(selectedOverlay.extendData?.isArmed);
         floatArmBtn.classList.toggle('armed', isArmed);
+        floatArmBtn.classList.remove('buy', 'sell');
         floatArmBtn.title = isArmed ? '⚡ ARMED (Click to Disarm)' : 'Arm Trade Trigger (Click to Arm)';
       }
       if (floatRectAlarmBtn) floatRectAlarmBtn.style.display = 'none';
       if (floatVertAlarmBtn) floatVertAlarmBtn.style.display = 'none';
     }
-    // 2. Rectangle tool -> Immediate Alarm activation (BOTH In & Out + Telegram)
+    // 3. Rectangle tool -> Immediate Alarm activation (BOTH In & Out + Telegram)
     else if (selectedOverlay.name === 'rect') {
       if (floatArmBtn) floatArmBtn.style.display = 'none';
       if (floatVertAlarmBtn) floatVertAlarmBtn.style.display = 'none';
@@ -546,7 +571,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         floatRectAlarmBtn.title = isAlarmArmed ? '🔔 ALARM ARMED (BOTH + Telegram) - Click to Disarm' : 'Activate Alarm (BOTH In & Out + Telegram)';
       }
     }
-    // 3. Vertical Straight Line -> Immediate Time Alarm activation (PC & Mobile)
+    // 4. Vertical Straight Line -> Immediate Time Alarm activation (PC & Mobile)
     else if (selectedOverlay.name === 'verticalStraightLine') {
       if (floatArmBtn) floatArmBtn.style.display = 'none';
       if (floatRectAlarmBtn) floatRectAlarmBtn.style.display = 'none';
@@ -620,6 +645,28 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   floatArmBtn?.addEventListener('click', (e) => {
     e.stopPropagation();
     if (!selectedOverlay) return;
+
+    // 1. Line Tools (Trend Line, Ray Line, Extended Line, Horizontal Line) -> Immediate Arm/Deactivate Toggle
+    if (isLineOverlay(selectedOverlay.name) && window.__lineTradingManager) {
+      const isArmed = window.__lineTradingManager.toggleLineArmed(selectedOverlay.id);
+      const line = window.__lineTradingManager.getLineConfig(selectedOverlay.id);
+      const name = line?.name || 'Line Trigger';
+      const dir = line?.direction || 'BUY';
+      const lots = line?.volume || (typeof getGlobalLot === 'function' ? getGlobalLot() : 1.0);
+
+      floatArmBtn.classList.toggle('armed', isArmed);
+      floatArmBtn.classList.remove('buy', 'sell');
+      if (isArmed && line) {
+        if (dir === 'BUY') floatArmBtn.classList.add('buy');
+        else if (dir === 'SELL') floatArmBtn.classList.add('sell');
+        showChartToast(`⚡ ACTIVE: ${name} (${dir} ${Number(lots).toFixed(2)}L)`);
+      } else {
+        showChartToast(`⚪ DEACTIVATED: ${name}`);
+      }
+      floatArmBtn.title = isArmed ? '⚡ ACTIVE / ARMED (Click to Deactivate)' : '⚪ DEACTIVATED (Click to Activate)';
+      return;
+    }
+
     if (selectedOverlay.name !== 'longPosition' && selectedOverlay.name !== 'shortPosition') return;
 
     selectedOverlay.extendData = selectedOverlay.extendData || {};
@@ -673,6 +720,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       showChartToast('⚪ Box Alarm Disarmed (OFF)');
     } else {
       // Immediately activate BOTH in and out + Telegram
+      window.__allAlarmsDeactivated = false;
       rectOverlay.extendData.alarmMode = 'BOTH';
       rectOverlay.extendData.telegramAlert = true;
       rectOverlay.extendData._lastInside = undefined;
@@ -728,6 +776,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       showChartToast('⚪ Vertical Line Alarm Disarmed');
     } else {
       // Arm
+      window.__allAlarmsDeactivated = false;
       vertOverlay.extendData.alarmActive = true;
       vertOverlay.extendData.telegramAlert = true;
       vertOverlay.extendData.armedAt = Date.now();
@@ -1073,8 +1122,8 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   window.addEventListener('keydown', (e) => {
     const isAltActive = Boolean(e.altKey || (typeof e.getModifierState === 'function' && (e.getModifierState('Alt') || e.getModifierState('AltGraph'))));
 
-    // Let trading hotkeys (Alt+PageUp, Alt+PageDown, Alt+End) pass directly to app.js
-    if (isAltActive && (['PageUp', 'PageDown', 'End'].includes(e.key) || ['PageUp', 'PageDown', 'End'].includes(e.code))) {
+    // Let trading hotkeys (Alt+PageUp, Alt+PageDown, Alt+End, Alt+B, Alt+Home) pass directly to app.js
+    if (isAltActive && (['PageUp', 'PageDown', 'End', 'b', 'B', 'Home'].includes(e.key) || ['PageUp', 'PageDown', 'End', 'KeyB', 'Home'].includes(e.code))) {
       return;
     }
 
@@ -1179,6 +1228,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
 let alarmAudioCtx = null;
 
 export function playAlarmChime() {
+  if (window.__allAlarmsDeactivated === true) {
+    return;
+  }
   try {
     if (!alarmAudioCtx) {
       alarmAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1215,6 +1267,7 @@ export function playAlarmChime() {
 }
 
 async function dispatchTelegramBoxAlarm(eventTitle, spot, bottom, top, mode) {
+  if (window.__allAlarmsDeactivated === true) return;
   try {
     const timeStr = new Date().toLocaleTimeString('en-US', { hour12: false });
     const msg = `🚨 <b>ESCANOR BOX PRICE ALARM</b>\n` +
@@ -1239,6 +1292,7 @@ async function dispatchTelegramBoxAlarm(eventTitle, spot, bottom, top, mode) {
 }
 
 export function evaluateRectangleAlarms(spot, chartRef) {
+  if (window.__allAlarmsDeactivated === true) return;
   if (!chartRef || !spot || typeof spot !== 'number' || isNaN(spot)) return;
   const overlays = chartRef.getOverlays() || [];
   const rects = overlays.filter(o => o.name === 'rect' && o.extendData?.alarmMode && o.extendData.alarmMode !== 'OFF');
@@ -1324,6 +1378,7 @@ async function dispatchTelegramVertAlarm(spot, lineTimestamp) {
 }
 
 export function evaluateVerticalLineAlarms(spot, chartRef) {
+  if (window.__allAlarmsDeactivated === true) return;
   if (!chartRef) return;
   const overlays = chartRef.getOverlays() || [];
   const armedLines = overlays.filter(o => o.name === 'verticalStraightLine' && o.extendData?.alarmActive && !o.extendData.alerted);
@@ -1419,6 +1474,8 @@ let lastPosEvalBid = null;
 let lastPosEvalAsk = null;
 
 export function evaluatePositionTriggers(bid, ask, chartRef) {
+  if (window.__allAlarmsDeactivated === true) return;
+  if (window.__isDrawdownLocked) return;
   if (!chartRef || typeof bid !== 'number' || typeof ask !== 'number') return;
   const overlays = chartRef.getOverlays() || [];
   const armedPositions = overlays.filter(o => 
@@ -1470,6 +1527,14 @@ export function evaluatePositionTriggers(bid, ask, chartRef) {
     }
 
     if (triggered) {
+      if (window.__isDrawdownLocked) {
+        pos.extendData.isArmed = false;
+        chartRef.overrideOverlay({ id: pos.id, extendData: pos.extendData });
+        syncDrawingsToServer(currentSymbolRef, chartRef, false, true);
+        showChartToast('⛔ DAILY DRAWDOWN HIT ($0.00). Position trigger blocked.');
+        return;
+      }
+
       // 1. Immediately disarm to prevent duplicate firing
       pos.extendData.isArmed = false;
       chartRef.overrideOverlay({ id: pos.id, extendData: pos.extendData });

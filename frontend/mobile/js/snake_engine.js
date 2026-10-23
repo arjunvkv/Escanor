@@ -50,7 +50,7 @@ window.onWindowDropdownChange = onWindowDropdownChange;
 
 export function renderWindowHighLows(tel) {
   const grid = document.getElementById('windowHighLowGrid');
-  if (!grid) return;
+  if (!grid || !tel || (!tel.tape && !tel.peak_trough_windows)) return;
 
   const now = Date.now();
   const activeLead = window.selectedLeadGauge || 'XAG';
