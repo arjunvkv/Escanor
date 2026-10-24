@@ -2167,12 +2167,26 @@ export function updateExtensionSeriesRibbon(chart) {
   });
   seqHtml += '</div>';
 
-  // 2. Friction Shift Capsule (⚡ -51% FRICTION)
+  // 2. Friction Shift Capsule (Traffic Light: Green = Vacuum, Yellow = Balanced, Red = Wall)
   const shiftVal = dossier ? dossier.deltaEvr : 0;
   const shiftSign = shiftVal >= 0 ? '+' : '';
+  let frictionCls = 'friction-yellow';
+  let frictionIcon = '⚖️';
+  let frictionNote = 'BALANCED';
+
+  if (shiftVal <= -20) {
+    frictionCls = 'friction-green';
+    frictionIcon = '⚡';
+    frictionNote = 'VACUUM';
+  } else if (shiftVal >= 30) {
+    frictionCls = 'friction-red';
+    frictionIcon = '🔥';
+    frictionNote = 'WALL';
+  }
+
   const frictionHtml = `
-    <div class="tv-ext-chip friction" title="Effort vs Result Friction Shift across Sequence">
-      <span>⚡ ${shiftSign}${shiftVal}% FRICTION</span>
+    <div class="tv-ext-chip ${frictionCls}" title="Effort vs Result Friction Shift: ${shiftSign}${shiftVal}% (${frictionNote})">
+      <span>${frictionIcon} ${shiftSign}${shiftVal}% FRICTION</span>
     </div>
   `;
 
