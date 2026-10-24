@@ -445,6 +445,40 @@ function registerCustomOverlays() {
                     size: 1.8
                   }
                 });
+
+                // Numeric badge on the blue trend line showing excursion points
+                const midX = (ptStart.x + ptFav.x) / 2;
+                const midY = (ptStart.y + ptFav.y) / 2;
+                const perpAngle = angle - Math.PI / 2;
+                const offsetDist = 10;
+                const labelX = clampX(midX + offsetDist * Math.cos(perpAngle));
+                const labelY = clampY(midY + offsetDist * Math.sin(perpAngle));
+
+                figures.push({
+                  type: 'text',
+                  attrs: {
+                    x: labelX,
+                    y: labelY,
+                    text: `+${m.favMove.toFixed(1)}`,
+                    align: 'center',
+                    baseline: 'middle'
+                  },
+                  ignoreEvent: true,
+                  styles: {
+                    color: '#00e5ff',
+                    size: 9.5,
+                    weight: '800',
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                    backgroundColor: 'rgba(13, 17, 26, 0.90)',
+                    borderColor: 'rgba(0, 229, 255, 0.55)',
+                    borderSize: 1,
+                    paddingLeft: 4,
+                    paddingRight: 4,
+                    paddingTop: 1.5,
+                    paddingBottom: 1.5,
+                    borderRadius: 3
+                  }
+                });
               }
             }
           }
@@ -2082,6 +2116,8 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
   const N = samples.length;
   let totalNetDelta = 0;
   let totalVolume = 0;
+  let totalBullVol = 0;
+  let totalBearVol = 0;
   let maxHigh = -Infinity;
   let minLow = Infinity;
   let highestEvrSample = null;
@@ -2093,6 +2129,11 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     const m = s.metrics;
     totalNetDelta += m.netDelta;
     totalVolume += m.totalVol;
+    const bullV = (typeof m.bullVol === 'number') ? m.bullVol : m.totalVol * ((m.bullPct || 50) / 100);
+    const bearV = (typeof m.bearVol === 'number') ? m.bearVol : m.totalVol * ((m.bearPct || 50) / 100);
+    totalBullVol += bullV;
+    totalBearVol += bearV;
+
     if (m.H_b > maxHigh) maxHigh = m.H_b;
     if (m.L_b < minLow) minLow = m.L_b;
 
@@ -2132,6 +2173,8 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
       totalVol: m.totalVol,
       netDelta: m.netDelta,
       netDeltaPct: m.netDeltaPct,
+      bullPct: m.bullPct || 50,
+      bearPct: m.bearPct || 50,
       absorbPct: m.absorbPct,
       absorbLevel: m.absorbLevel,
       evr,
@@ -2145,17 +2188,13 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
 
   // Effort vs Result Shift across sequence
   const deltaEvr = Math.round(((lastSample.evr - firstSample.evr) / Math.max(1, firstSample.evr)) * 100);
-  let evrNarrative = '';
   let evrStatusBadge = 'BALANCED FLOW';
   if (deltaEvr > 40) {
     evrStatusBadge = 'FRICTION SPIKE 🔥';
-    evrNarrative = `Friction escalated by +${deltaEvr}% across the sequence. Each subsequent point of extension required drastically more volume (${lastSample.evr.toLocaleString()} vol/pt vs ${firstSample.evr.toLocaleString()} initial). This reflects institutional limit absorption and aggressive exhaustion into the boundary.`;
   } else if (deltaEvr < -30) {
     evrStatusBadge = 'VACUUM ACCELERATION ⚡';
-    evrNarrative = `Friction collapsed by ${deltaEvr}% across the sequence. Price traversed range with decreasing volume resistance (${lastSample.evr.toLocaleString()} vol/pt vs ${firstSample.evr.toLocaleString()} initial), signalling a liquidity vacuum / rapid slip through thin order books.`;
   } else {
     evrStatusBadge = 'SUSTAINED FLOW ⚖️';
-    evrNarrative = `Effort-to-result ratio remained stable (${deltaEvr >= 0 ? '+' : ''}${deltaEvr}% shift). Volume participation scaled proportionally with price excursion without structural clogging.`;
   }
 
   // Who is actually playing out
@@ -2163,27 +2202,24 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
   const livePrice = lastBar ? lastBar.close : lastSample.P_1;
 
   const netDeltaPct = totalVolume > 0 ? Math.round((totalNetDelta / totalVolume) * 100) : 0;
+  const netBullPct = totalVolume > 0 ? Math.max(5, Math.min(95, Math.round((totalBullVol / totalVolume) * 100))) : 50;
+  const netBearPct = 100 - netBullPct;
+
   let whoBadge = 'PASSIVE ABSORPTION';
-  let whoNarrative = '';
   const networkRange = Math.max(0.1, maxHigh - minLow);
   const nearCeiling = (livePrice >= maxHigh - 0.25 * networkRange);
   const nearFloor = (livePrice <= minLow + 0.25 * networkRange);
 
   if (nearCeiling && (lastSample.absorbPct >= 60 || totalNetDelta < 0 || lastSample.netDeltaPct < -5)) {
     whoBadge = 'PASSIVE CEILING DEFENSE (LIMIT SELLER)';
-    whoNarrative = `Passive institutional limit sellers are dominating at the ceiling ($${maxHigh.toFixed(2)}). Despite upward attempts, aggressive buyers are being absorbed without displacement, leaving cumulative delta negative or fading (${netDeltaPct}% net delta).`;
   } else if (nearFloor && (lastSample.absorbPct >= 60 || totalNetDelta > 0 || lastSample.netDeltaPct > 5)) {
     whoBadge = 'PASSIVE FLOOR DEFENSE (LIMIT BUYER)';
-    whoNarrative = `Passive institutional limit buyers are absorbing sell-side market orders at the floor ($${minLow.toFixed(2)}). Downside excursion is meeting heavy bid-side resting liquidity with high absorption (${lastSample.absorbPct}%).`;
   } else if (lastSample.d === 1 && totalNetDelta > 0) {
     whoBadge = 'AGGRESSIVE BUYER INITIATIVE';
-    whoNarrative = `Aggressive buyers are active, driving price upward via market orders (+${netDeltaPct}% net network delta). Resting liquidity is yielding rather than absorbing.`;
   } else if (lastSample.d === -1 && totalNetDelta < 0) {
     whoBadge = 'AGGRESSIVE SELLER INITIATIVE';
-    whoNarrative = `Aggressive sellers are dominating, driving down-moves through bids (-${Math.abs(netDeltaPct)}% net network delta).`;
   } else {
     whoBadge = 'ROTATIONAL INVENTORY EXCHANGE';
-    whoNarrative = `Order flow is evenly matched with balanced market orders and resting two-sided depth. Neither side has established structural dominance.`;
   }
 
   // Strongest Structural Inflection Nodes
@@ -2193,7 +2229,15 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
   // Runway & Vacuum
   const distCeiling = Math.max(0, maxHigh - livePrice);
   const distFloor = Math.max(0, livePrice - minLow);
+  const distEq = Math.abs(livePrice - eqShelf);
+  const distAnchor = Math.abs(livePrice - primaryAnchor);
   const invalidationTripwire = lastSample.d === 1 ? minLow : maxHigh;
+
+  const pricePinPct = Math.max(2, Math.min(98, Math.round(((livePrice - minLow) / networkRange) * 100)));
+  const upperRunwayPct = Math.max(5, Math.min(95, Math.round((distCeiling / networkRange) * 100)));
+  const lowerRunwayPct = Math.max(5, Math.min(95, Math.round((distFloor / networkRange) * 100)));
+  const maxEvr = Math.max(3000, ...sampleAudits.map(s => s.evr));
+  const maxFav = Math.max(1, ...sampleAudits.map(s => s.favMove));
 
   return {
     symbol: window.__currentSymbol || 'XAUUSD',
@@ -2202,6 +2246,8 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     totalVolume,
     totalNetDelta,
     netDeltaPct,
+    netBullPct,
+    netBearPct,
     maxHigh,
     minLow,
     networkRange,
@@ -2210,15 +2256,20 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     lastSample,
     deltaEvr,
     evrStatusBadge,
-    evrNarrative,
     whoBadge,
-    whoNarrative,
     primaryAnchor,
     highestVolSample,
     highestEvrSample,
     eqShelf,
     distCeiling,
     distFloor,
+    distEq,
+    distAnchor,
+    pricePinPct,
+    upperRunwayPct,
+    lowerRunwayPct,
+    maxEvr,
+    maxFav,
     invalidationTripwire
   };
 }
@@ -2268,7 +2319,7 @@ export function openExtensionNetworkModal(chart) {
   // Update sample count badge
   if (badgeEl) badgeEl.textContent = `${dossier.sampleCount} SAMPLE${dossier.sampleCount > 1 ? 'S' : ''} CONNECTED`;
 
-  // Render Connected Sample Timeline Cards
+  // Render Connected Sample Timeline Cards with Mini Bars & Fuel Gauges
   if (trackEl) {
     let cardsHtml = '';
     dossier.samples.forEach((s, idx) => {
@@ -2278,32 +2329,45 @@ export function openExtensionNetworkModal(chart) {
       const dirIcon = s.d === 1 ? '↗ UP' : '↘ DOWN';
       const deltaCls = s.netDelta > 0 ? 'bull' : (s.netDelta < 0 ? 'bear' : '');
       const deltaSign = s.netDelta > 0 ? '+' : '';
+      const excursionBarPct = Math.max(8, Math.min(100, Math.round((s.favMove / dossier.maxFav) * 100)));
 
       cardsHtml += `
         <div class="tv-network-sample-card ${activeCls}">
           <div class="tv-network-sample-header">
-            <span class="tv-network-sample-title">SAMPLE #${s.boxNum}${isLast ? ' (LATEST)' : ''}</span>
+            <span class="tv-network-sample-title">SAMPLE #${s.boxNum}${isLast ? ' • LATEST' : ''}</span>
             <span class="tv-network-sample-dir ${dirCls}">${dirIcon} +${s.favMove.toFixed(1)}</span>
           </div>
-          <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">Price Range</span>
-            <span class="tv-network-stat-val">$${s.H_b.toFixed(2)} - $${s.L_b.toFixed(2)} (${s.R_b.toFixed(2)})</span>
+
+          <!-- Mini Excursion Bar -->
+          <div class="tv-visual-bar-wrap" title="Excursion Progress: +${s.favMove.toFixed(1)} pts">
+            <div class="tv-visual-bar-fill ${dirCls}" style="width: ${excursionBarPct}%;"></div>
           </div>
-          <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">Total Volume</span>
-            <span class="tv-network-stat-val highlight">${formatVolNumber(s.totalVol)}</span>
+
+          <!-- Mini Tug-of-War Split Bar -->
+          <div class="tv-mini-split-bar" title="Buy: ${s.bullPct}% | Sell: ${s.bearPct}%">
+            <div class="tv-split-bull" style="width: ${s.bullPct}%;"></div>
+            <div class="tv-split-bear" style="width: ${s.bearPct}%;"></div>
           </div>
+
           <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">Net Delta</span>
-            <span class="tv-network-stat-val ${deltaCls}">${deltaSign}${formatVolNumber(s.netDelta)} (${s.netDeltaPct}%)</span>
+            <span class="tv-network-stat-label">Volume & Δ</span>
+            <span class="tv-network-stat-val ${deltaCls}">${formatVolNumber(s.totalVol)} | ${deltaSign}${formatVolNumber(s.netDelta)}</span>
           </div>
+
           <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">EVR (Fuel Burn)</span>
-            <span class="tv-network-stat-val ${s.frictionCls}">${s.evr.toLocaleString()} v/pt</span>
+            <span class="tv-network-stat-label">Fuel Burn</span>
+            <span class="tv-fuel-badge ${s.frictionCls}">${s.evr.toLocaleString()} v/pt</span>
           </div>
-          <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">Absorption Rate</span>
-            <span class="tv-network-stat-val ${s.absorbPct >= 60 ? 'warn' : 'highlight'}">${s.absorbPct}% (${s.absorbLevel})</span>
+
+          <!-- Absorption Shield Mini Bar -->
+          <div class="tv-absorb-bar-wrap" title="Absorption Shield: ${s.absorbPct}%">
+            <div class="tv-absorb-bar-label">
+              <span>Absorption Shield</span>
+              <span class="${s.absorbPct >= 65 ? 'bear' : 'highlight'}">${s.absorbPct}%</span>
+            </div>
+            <div class="tv-absorb-bar-track">
+              <div class="tv-absorb-bar-fill ${s.absorbPct >= 65 ? 'high' : 'normal'}" style="width: ${s.absorbPct}%;"></div>
+            </div>
           </div>
         </div>
       `;
@@ -2311,96 +2375,199 @@ export function openExtensionNetworkModal(chart) {
     trackEl.innerHTML = cardsHtml;
   }
 
-  // Card 1: WHO IS ACTUALLY PLAYING OUT
+  // Card 1: WHO IS ACTUALLY PLAYING OUT (Interactive Tug-of-War & Shield Meter)
   if (whoBadge) whoBadge.textContent = dossier.whoBadge;
   if (whoContent) {
     const totalDeltaSign = dossier.totalNetDelta > 0 ? '+' : '';
     const totalDeltaCls = dossier.totalNetDelta > 0 ? 'bull' : (dossier.totalNetDelta < 0 ? 'bear' : '');
+    const isShieldActive = dossier.lastSample.absorbPct >= 65;
+
     whoContent.innerHTML = `
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Cumulative Network Delta</span>
-        <span class="tv-network-stat-val ${totalDeltaCls}">${totalDeltaSign}${formatVolNumber(dossier.totalNetDelta)} (${dossier.netDeltaPct}%)</span>
+      <!-- Tug-of-War Split Bar Widget -->
+      <div class="tv-tow-container">
+        <div class="tv-tow-header">
+          <span class="tv-tow-side bull">⚡ BUYERS ${dossier.netBullPct}%</span>
+          <span class="tv-tow-side bear">SELLERS ${dossier.netBearPct}% ⚡</span>
+        </div>
+        <div class="tv-tow-bar-outer" title="Aggressor Ratio: ${dossier.netBullPct}% Buy vs ${dossier.netBearPct}% Sell">
+          <div class="tv-tow-bull-fill" style="width: ${dossier.netBullPct}%;"></div>
+          <div class="tv-tow-bear-fill" style="width: ${dossier.netBearPct}%;"></div>
+          <div class="tv-tow-needle" style="left: ${dossier.netBullPct}%;"></div>
+        </div>
+        <div class="tv-network-stat-row" style="border: none; padding: 0;">
+          <span class="tv-network-stat-label">Net Delta Pull</span>
+          <span class="tv-network-stat-val ${totalDeltaCls}">${totalDeltaSign}${formatVolNumber(dossier.totalNetDelta)} (${dossier.netDeltaPct}%)</span>
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Latest Box Absorption</span>
-        <span class="tv-network-stat-val highlight">${dossier.lastSample.absorbPct}% (${dossier.lastSample.absorbLevel})</span>
+
+      <!-- Segmented Absorption Shield Gauge Widget -->
+      <div class="tv-shield-gauge-wrap">
+        <div class="tv-shield-gauge-header">
+          <span>INSTITUTIONAL ABSORPTION SHIELD</span>
+          <span class="tv-network-stat-val ${isShieldActive ? 'bear' : 'highlight'}">${dossier.lastSample.absorbPct}% (${dossier.lastSample.absorbLevel})</span>
+        </div>
+        <div class="tv-shield-segments" title="Absorption Intensity: ${dossier.lastSample.absorbPct}%">
+          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 20 ? 'active-low' : ''}"></div>
+          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 40 ? 'active-low' : ''}"></div>
+          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 60 ? 'active-mid' : ''}"></div>
+          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 75 ? 'active-high' : ''}"></div>
+          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 90 ? 'active-high' : ''}"></div>
+        </div>
+        <div class="tv-status-banner ${isShieldActive ? 'shield' : (dossier.totalNetDelta > 0 ? 'wave' : 'balanced')}">
+          <span>${isShieldActive ? '🛡️' : (dossier.totalNetDelta > 0 ? '🚀' : '⚖️')}</span>
+          <span>${dossier.whoBadge}</span>
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Aggressor vs Passive State</span>
-        <span class="tv-network-stat-val warn">${dossier.whoBadge}</span>
+
+      <!-- Boundary Range Pinpoint Locator -->
+      <div class="tv-range-track-wrap">
+        <div class="tv-range-track-labels">
+          <span>FLOOR $${dossier.minLow.toFixed(2)}</span>
+          <span>50% EQ $${dossier.eqShelf.toFixed(2)}</span>
+          <span>CEILING $${dossier.maxHigh.toFixed(2)}</span>
+        </div>
+        <div class="tv-range-track-bar" title="Live Price Relative to Range: ${dossier.pricePinPct}%">
+          <div class="tv-range-pin" style="left: ${dossier.pricePinPct}%;" title="Live: $${dossier.livePrice.toFixed(2)}"></div>
+        </div>
       </div>
-      <div class="tv-network-narrative">${dossier.whoNarrative}</div>
     `;
   }
 
-  // Card 2: EFFORT VS RESULT (FUEL BURN ENGINE)
+  // Card 2: EFFORT VS RESULT (Speedometer Gauge & Shift Bars)
   if (fuelBadge) fuelBadge.textContent = dossier.evrStatusBadge;
   if (fuelContent) {
-    const evrDeltaSign = dossier.deltaEvr >= 0 ? '+' : '';
-    const evrCls = dossier.deltaEvr > 40 ? 'bear' : (dossier.deltaEvr < -30 ? 'bull' : 'warn');
+    const evrCls = dossier.deltaEvr > 40 ? 'spike' : (dossier.deltaEvr < -30 ? 'vacuum' : 'stable');
+    const needlePct = Math.max(5, Math.min(95, Math.round((dossier.lastSample.evr / 3000) * 100)));
+    const firstBarPct = Math.max(5, Math.min(100, Math.round((dossier.firstSample.evr / dossier.maxEvr) * 100)));
+    const lastBarPct = Math.max(5, Math.min(100, Math.round((dossier.lastSample.evr / dossier.maxEvr) * 100)));
+
     fuelContent.innerHTML = `
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Initial vs Current Fuel Burn</span>
-        <span class="tv-network-stat-val">${dossier.firstSample.evr.toLocaleString()} → ${dossier.lastSample.evr.toLocaleString()} v/pt</span>
+      <!-- Friction Speedometer Meter -->
+      <div class="tv-speedo-box">
+        <div class="tv-speedo-labels">
+          <span style="color: #34d399;">⚡ Clean (<1.2k)</span>
+          <span style="color: #fbbf24;">⚠️ High (1.2k-2.4k)</span>
+          <span style="color: #f87171;">🔥 Extreme (>2.4k)</span>
+        </div>
+        <div class="tv-speedo-track" title="Current Burn: ${dossier.lastSample.evr.toLocaleString()} v/pt">
+          <div class="tv-speedo-needle" style="left: ${needlePct}%;"></div>
+        </div>
+        <div class="tv-network-stat-row" style="border: none; padding: 0;">
+          <span class="tv-network-stat-label">Active Burn Rate</span>
+          <span class="tv-network-stat-val ${dossier.lastSample.frictionCls}">${dossier.lastSample.evr.toLocaleString()} VOL / PT (${dossier.lastSample.frictionTag})</span>
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Sequence Friction Shift</span>
-        <span class="tv-network-stat-val ${evrCls}">${evrDeltaSign}${dossier.deltaEvr}%</span>
+
+      <!-- Sequence Shift Dual Comparison Bars -->
+      <div class="tv-shift-box">
+        <div class="tv-shift-bars-row">
+          <div class="tv-shift-bar-item">
+            <div class="tv-shift-bar-label">
+              <span>Sample #1 (Baseline)</span>
+              <span>${dossier.firstSample.evr.toLocaleString()} v/pt</span>
+            </div>
+            <div class="tv-shift-bar-track">
+              <div class="tv-shift-bar-fill first" style="width: ${firstBarPct}%;"></div>
+            </div>
+          </div>
+          <div class="tv-shift-bar-item">
+            <div class="tv-shift-bar-label">
+              <span>Latest Sample #${dossier.sampleCount}</span>
+              <span>${dossier.lastSample.evr.toLocaleString()} v/pt</span>
+            </div>
+            <div class="tv-shift-bar-track">
+              <div class="tv-shift-bar-fill last" style="width: ${lastBarPct}%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tv-shift-pill ${evrCls}">
+          ${dossier.deltaEvr > 40 ? '🔥 +' + dossier.deltaEvr + '% FRICTION ESCALATION • LIMIT CLOGGING' : (dossier.deltaEvr < -30 ? '⚡ ' + dossier.deltaEvr + '% FRICTION COLLAPSE • LIQUIDITY VACUUM' : '⚖️ ' + (dossier.deltaEvr >= 0 ? '+' : '') + dossier.deltaEvr + '% PROPORTIONAL FLOW')}
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Peak Friction Sample</span>
-        <span class="tv-network-stat-val warn">Sample #${dossier.highestEvrSample ? dossier.highestEvrSample.idx : 1} (${dossier.highestEvrSample ? dossier.highestEvrSample.evr.toLocaleString() : 0} v/pt)</span>
-      </div>
-      <div class="tv-network-narrative">${dossier.evrNarrative}</div>
     `;
   }
 
-  // Card 3: STRONGEST STRUCTURAL INFLECTION NODES
+  // Card 3: STRONGEST STRUCTURAL INFLECTION NODES (Vertical Depth Ladder)
   if (nodesBadge) nodesBadge.textContent = 'CRITICAL SHELVES';
   if (nodesContent) {
-    const live = dossier.livePrice;
     nodesContent.innerHTML = `
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Network Apex (Resistance Ceiling)</span>
-        <span class="tv-network-stat-val bear">$${dossier.maxHigh.toFixed(2)} (${(dossier.maxHigh - live >= 0 ? '+' : '') + (dossier.maxHigh - live).toFixed(1)} pts)</span>
+      <div class="tv-depth-ladder">
+        <div class="tv-ladder-node ceiling">
+          <span class="tv-node-badge bear">🔴 CEILING RESISTANCE</span>
+          <span class="tv-node-price">$${dossier.maxHigh.toFixed(2)}</span>
+          <span class="tv-node-dist">+${dossier.distCeiling.toFixed(1)} pts</span>
+        </div>
+
+        <div class="tv-ladder-node mid">
+          <span class="tv-node-badge warn">⚡ 50% MID-EQUILIBRIUM</span>
+          <span class="tv-node-price">$${dossier.eqShelf.toFixed(2)}</span>
+          <span class="tv-node-dist">${dossier.livePrice >= dossier.eqShelf ? '-' : '+'}${dossier.distEq.toFixed(1)} pts</span>
+        </div>
+
+        <div class="tv-ladder-live-pointer">
+          <span>► LIVE MARKET REFERENCE</span>
+          <span class="tv-node-price" style="color: #00e5ff;">$${dossier.livePrice.toFixed(2)}</span>
+        </div>
+
+        <div class="tv-ladder-node anchor">
+          <span class="tv-node-badge highlight">⚓ PEAK VOLUME ANCHOR</span>
+          <span class="tv-node-price">$${dossier.primaryAnchor.toFixed(2)}</span>
+          <span class="tv-node-dist">${dossier.livePrice >= dossier.primaryAnchor ? '-' : '+'}${dossier.distAnchor.toFixed(1)} pts</span>
+        </div>
+
+        <div class="tv-ladder-node floor">
+          <span class="tv-node-badge bull">🟢 SUPPORT FLOOR</span>
+          <span class="tv-node-price">$${dossier.minLow.toFixed(2)}</span>
+          <span class="tv-node-dist">-${dossier.distFloor.toFixed(1)} pts</span>
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Network Floor (Support Base)</span>
-        <span class="tv-network-stat-val bull">$${dossier.minLow.toFixed(2)} (${(dossier.minLow - live <= 0 ? '' : '+') + (dossier.minLow - live).toFixed(1)} pts)</span>
-      </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Peak Volume Anchor Shelf</span>
-        <span class="tv-network-stat-val highlight">$${dossier.primaryAnchor.toFixed(2)} (Sample #${dossier.highestVolSample ? dossier.highestVolSample.idx : 1})</span>
-      </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Mid-Structure Equilibrium Shelf</span>
-        <span class="tv-network-stat-val warn">$${dossier.eqShelf.toFixed(2)}</span>
-      </div>
-      <div class="tv-network-narrative">Strongest volume defense anchor sits at <strong>$${dossier.primaryAnchor.toFixed(2)}</strong>. This is the institutional shelf where maximum contracts changed hands across the network.</div>
     `;
   }
 
-  // Card 4: STRUCTURAL RUNWAY & LIQUIDITY VACUUM
+  // Card 4: STRUCTURAL RUNWAY & LIQUIDITY VACUUM (Runway Meters, Hazard Box, Vacuum Dial)
   if (runwayBadge) runwayBadge.textContent = 'MANUAL PLANNING RUNWAY';
   if (runwayContent) {
+    const isAbsorbing = dossier.lastSample.absorbPct >= 65;
+    const isVacuum = dossier.deltaEvr <= -30;
+    const isRange = !isAbsorbing && !isVacuum;
+
     runwayContent.innerHTML = `
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Live Reference Price</span>
-        <span class="tv-network-stat-val highlight">$${dossier.livePrice.toFixed(2)}</span>
+      <div class="tv-runway-box">
+        <div class="tv-runway-item">
+          <div class="tv-runway-header upper">
+            <span>⬆ UPPER RUNWAY TO CEILING</span>
+            <span>${dossier.distCeiling.toFixed(1)} PTS</span>
+          </div>
+          <div class="tv-runway-track">
+            <div class="tv-runway-fill upper" style="width: ${dossier.upperRunwayPct}%;"></div>
+          </div>
+        </div>
+
+        <div class="tv-runway-item">
+          <div class="tv-runway-header lower">
+            <span>⬇ LOWER RUNWAY TO FLOOR</span>
+            <span>${dossier.distFloor.toFixed(1)} PTS</span>
+          </div>
+          <div class="tv-runway-track">
+            <div class="tv-runway-fill lower" style="width: ${dossier.lowerRunwayPct}%;"></div>
+          </div>
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Upper Clearance to Ceiling</span>
-        <span class="tv-network-stat-val bear">${dossier.distCeiling.toFixed(1)} pts runway</span>
+
+      <div class="tv-hazard-box">
+        <span class="tv-hazard-icon">⚠️</span>
+        <div>
+          <div class="tv-hazard-title">CRITICAL TRIPWIRE: $${dossier.invalidationTripwire.toFixed(2)}</div>
+          <div class="tv-hazard-sub">Clean close beyond this invalidates the active structural sequence</div>
+        </div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Lower Clearance to Floor</span>
-        <span class="tv-network-stat-val bull">${dossier.distFloor.toFixed(1)} pts runway</span>
+
+      <div class="tv-vacuum-dial">
+        <div class="tv-vacuum-pill ${isAbsorbing ? 'active' : ''}">🛡️ LIMIT ABSORPTION</div>
+        <div class="tv-vacuum-pill ${isRange ? 'active' : ''}">🔄 RANGE ROTATION</div>
+        <div class="tv-vacuum-pill ${isVacuum ? 'active' : ''}">🚀 LIQUIDITY VACUUM</div>
       </div>
-      <div class="tv-network-stat-row">
-        <span class="tv-network-stat-label">Critical Structural Invalidation</span>
-        <span class="tv-network-stat-val warn">$${dossier.invalidationTripwire.toFixed(2)}</span>
-      </div>
-      <div class="tv-network-narrative">Manual Planning Note: Structure gives <strong>${dossier.distCeiling.toFixed(1)} pts</strong> upward clearance vs <strong>${dossier.distFloor.toFixed(1)} pts</strong> downward runway. Invalidation of this structural sequence occurs on a clean close beyond <strong>$${dossier.invalidationTripwire.toFixed(2)}</strong>.</div>
     `;
   }
 

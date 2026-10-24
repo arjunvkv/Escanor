@@ -13,8 +13,22 @@ assert.ok(!engineCode.includes('quadraticCurveTo(midX, midY, endX, endY)'), 'Gol
 assert.ok(!engineCode.includes('Full 5-line structured card'), '5-line HUD card must be removed from in-box overlay');
 assert.ok(!engineCode.includes('Compact 2-line badge'), 'Compact badge must be removed from in-box overlay');
 assert.ok(!engineCode.includes('Micro 1-line tag'), 'Micro tag must be removed from in-box overlay');
-assert.ok(!engineCode.includes('Cyan Favourable Pill Badge at ptFav'), 'Favourable pill badge must be removed from box');
-assert.ok(!engineCode.includes('Crimson Adverse Pill Badge at ptAdv'), 'Adverse pill badge must be removed from box');
+
+// Ensure blue line shows excursion numbers!
+assert.ok(engineCode.includes('Numeric badge on the blue trend line showing excursion points'), 'Numeric badge on the blue trend line must be present');
+assert.ok(engineCode.includes("text: `+${m.favMove.toFixed(1)}`"), 'Blue line must show +X.X numeric excursion');
+
+// Ensure narrative text paragraphs are eliminated in favor of rich widgets
+assert.ok(!engineCode.includes('tv-network-narrative'), 'Text narrative paragraphs must be removed in favor of rich visual widgets');
+
+// Ensure rich interactive widgets exist in openExtensionNetworkModal
+assert.ok(engineCode.includes('tv-tow-container'), 'Tug-of-war container must be present');
+assert.ok(engineCode.includes('tv-shield-gauge-wrap'), 'Shield gauge meter must be present');
+assert.ok(engineCode.includes('tv-speedo-box'), 'Speedometer gauge must be present');
+assert.ok(engineCode.includes('tv-depth-ladder'), 'Depth ladder must be present');
+assert.ok(engineCode.includes('tv-runway-box'), 'Runway progress meters must be present');
+assert.ok(engineCode.includes('tv-hazard-box'), 'Hazard tripwire box must be present');
+assert.ok(engineCode.includes('tv-vacuum-dial'), 'Vacuum dial must be present');
 
 // Ensure red anchor and cyan trend arrow remain
 assert.ok(engineCode.includes("text: '✕'"), "Red ✕ start anchor must remain");
@@ -22,11 +36,14 @@ assert.ok(engineCode.includes("color: '#ff1744'"), "Red color for anchor must re
 assert.ok(engineCode.includes("coordinates: [ptStart, ptFav]"), "Cyan favourable excursion arrow must remain");
 assert.ok(engineCode.includes("color: '#00e5ff'"), "Cyan/blue color for excursion arrow must remain");
 
-console.log('✓ Chart Canvas Cleanup Verification: PASSED (Zero in-box text clutter, zero golden arcs, trend vector preserved)');
+console.log('✓ Chart Canvas Cleanup Verification: PASSED (Zero text clutter, blue line numbers verified, zero golden arcs)');
 
 // 2. Test mathematical logic of computeNetworkDossier
 function mockComputeNetworkDossier(sampleRects, mockCandles) {
   // Simulate the dossier engine
+  let totalBullVol = 0;
+  let totalBearVol = 0;
+
   const samples = sampleRects.map((r, idx) => {
     const H_b = Math.max(r.p1, r.p2);
     const L_b = Math.min(r.p1, r.p2);
@@ -40,8 +57,13 @@ function mockComputeNetworkDossier(sampleRects, mockCandles) {
     const totalVol = r.vol || 5000;
     const netDelta = r.delta || 1200;
     const netDeltaPct = Math.round((netDelta / totalVol) * 100);
+    const bullPct = r.bullPct || 60;
+    const bearPct = 100 - bullPct;
     const absorbPct = r.absorb || 45;
     const evr = Math.round(totalVol / R_b);
+
+    totalBullVol += totalVol * (bullPct / 100);
+    totalBearVol += totalVol * (bearPct / 100);
 
     let frictionTag = 'CLEAN FLOW ⚡';
     if (evr >= 2400) frictionTag = 'EXTREME BURN 🔥';
@@ -62,6 +84,8 @@ function mockComputeNetworkDossier(sampleRects, mockCandles) {
       totalVol,
       netDelta,
       netDeltaPct,
+      bullPct,
+      bearPct,
       absorbPct,
       evr,
       frictionTag
@@ -102,13 +126,21 @@ function mockComputeNetworkDossier(sampleRects, mockCandles) {
   const eqShelf = (maxHigh + minLow) / 2;
   const distCeiling = Math.max(0, maxHigh - livePrice);
   const distFloor = Math.max(0, livePrice - minLow);
+  const networkRange = Math.max(0.1, maxHigh - minLow);
   const invalidationTripwire = lastSample.d === 1 ? minLow : maxHigh;
+
+  const netBullPct = Math.round((totalBullVol / totalVolume) * 100);
+  const netBearPct = 100 - netBullPct;
+  const upperRunwayPct = Math.round((distCeiling / networkRange) * 100);
+  const lowerRunwayPct = Math.round((distFloor / networkRange) * 100);
 
   return {
     sampleCount: N,
     samples,
     totalVolume,
     totalNetDelta,
+    netBullPct,
+    netBearPct,
     maxHigh,
     minLow,
     deltaEvr,
@@ -118,15 +150,17 @@ function mockComputeNetworkDossier(sampleRects, mockCandles) {
     eqShelf,
     distCeiling,
     distFloor,
+    upperRunwayPct,
+    lowerRunwayPct,
     invalidationTripwire
   };
 }
 
 // Test with 3 connected sample boxes
 const mockBoxes = [
-  { t0: 1000, p1: 2720, p2: 2710, p0: 2711, p1_end: 2719, vol: 8000, delta: 2500, absorb: 35 },
-  { t0: 2000, p1: 2735, p2: 2722, p0: 2723, p1_end: 2734, vol: 14000, delta: 3800, absorb: 52 },
-  { t0: 3000, p1: 2750, p2: 2738, p0: 2739, p1_end: 2748, vol: 32000, delta: -900, absorb: 74 }
+  { t0: 1000, p1: 2720, p2: 2710, p0: 2711, p1_end: 2719, vol: 8000, delta: 2500, bullPct: 65, absorb: 35 },
+  { t0: 2000, p1: 2735, p2: 2722, p0: 2723, p1_end: 2734, vol: 14000, delta: 3800, bullPct: 63, absorb: 52 },
+  { t0: 3000, p1: 2750, p2: 2738, p0: 2739, p1_end: 2748, vol: 32000, delta: -900, bullPct: 48, absorb: 74 }
 ];
 
 const dossier = mockComputeNetworkDossier(mockBoxes);
@@ -139,12 +173,13 @@ assert.strictEqual(dossier.primaryAnchor, 2739);
 assert.strictEqual(dossier.eqShelf, 2730);
 assert.ok(dossier.deltaEvr > 50, 'EVR should reflect friction spike as volume explodes near ceiling');
 assert.strictEqual(dossier.invalidationTripwire, 2710);
+assert.ok(dossier.netBullPct > 0 && dossier.netBullPct < 100, 'Tug-of-war bull pct valid');
+assert.ok(dossier.upperRunwayPct >= 0 && dossier.lowerRunwayPct >= 0, 'Runway percentages valid');
 
 console.log('✓ Multi-Box Network Dossier Computation: PASSED (All mathematical invariants verified)');
 console.log('  - Sample Count:', dossier.sampleCount);
-console.log('  - Network Ceiling:', dossier.maxHigh);
-console.log('  - Network Floor:', dossier.minLow);
+console.log('  - Tug-of-War Ratio:', dossier.netBullPct + '% Buyers vs ' + dossier.netBearPct + '% Sellers');
 console.log('  - Sequence Fuel Burn Shift (ΔEVR):', dossier.deltaEvr + '%');
 console.log('  - Peak Volume Anchor:', dossier.primaryAnchor);
-console.log('  - Runway to Ceiling:', dossier.distCeiling.toFixed(1), 'pts');
-console.log('  - Runway to Floor:', dossier.distFloor.toFixed(1), 'pts');
+console.log('  - Upper Runway:', dossier.distCeiling.toFixed(1), 'pts (' + dossier.upperRunwayPct + '%)');
+console.log('  - Lower Runway:', dossier.distFloor.toFixed(1), 'pts (' + dossier.lowerRunwayPct + '%)');
