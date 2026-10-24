@@ -2129,32 +2129,95 @@ export function updateExtensionSeriesRibbon(chart) {
     return { overlay: r, t0, metrics };
   }).sort((a, b) => a.t0 - b.t0);
 
-  let pillsHtml = '';
-  let lastFav = 0;
+  // Compute dossier to derive empirical Delta, EVR Friction shift, Fuel, and Regime
+  const dossier = computeNetworkDossier(rects, dataList);
+  const isBear = dossier ? dossier.isBear : true;
+
+  // Pure Regime Spectrum Palette for B1, B2, B3... matching the modal linePalette
+  const bearStyles = [
+    { color: '#fca5a5', bg: 'rgba(252, 165, 165, 0.12)', border: 'rgba(248, 113, 113, 0.35)', shadow: 'none' },
+    { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.16)', border: 'rgba(239, 68, 68, 0.45)', shadow: 'none' },
+    { color: '#fee2e2', bg: '#dc2626', border: '#dc2626', shadow: '0 0 8px rgba(220, 38, 38, 0.6)' },
+    { color: '#ffffff', bg: '#b91c1c', border: '#ef4444', shadow: '0 0 10px rgba(239, 68, 68, 0.7)' }
+  ];
+  const bullStyles = [
+    { color: '#86efac', bg: 'rgba(134, 239, 172, 0.12)', border: 'rgba(74, 222, 128, 0.35)', shadow: 'none' },
+    { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.16)', border: 'rgba(34, 197, 94, 0.45)', shadow: 'none' },
+    { color: '#000000', bg: '#16a34a', border: '#16a34a', shadow: '0 0 8px rgba(22, 163, 74, 0.6)' },
+    { color: '#000000', bg: '#22c55e', border: '#4ade80', shadow: '0 0 10px rgba(34, 197, 94, 0.7)' }
+  ];
+  const palette = isBear ? bearStyles : bullStyles;
+
+  // 1. Build Sequence Micro-Group with Underlying Modal Spectrum Shades
+  let seqHtml = '<div class="tv-ext-seq-group" title="Box Excursion Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const fav = item.metrics ? item.metrics.favMove : 0;
-    lastFav = fav;
-    const isCurrent = (idx === sortedRects.length - 1);
-    const label = isCurrent ? `Current: +${fav.toFixed(1)}` : `+${fav.toFixed(1)}`;
-    const cls = isCurrent ? 'tv-ext-pill active' : 'tv-ext-pill';
-    pillsHtml += `<span class="${cls}">[${label}]</span>`;
-    pillsHtml += `<span class="tv-ext-arrow">→</span>`;
+    const styleObj = palette[Math.min(idx, palette.length - 1)];
+    const isLast = (idx === sortedRects.length - 1);
+    const boxLabel = `B${idx + 1}: +${fav.toFixed(1)}pt`;
+    
+    seqHtml += `
+      <span class="tv-ext-box-tag" data-box-idx="${idx}" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
+        ${boxLabel}
+      </span>
+    `;
+    if (!isLast) {
+      seqHtml += `<span class="tv-ext-arrow">→</span>`;
+    }
   });
+  seqHtml += '</div>';
 
-  // Calculate projected Next Target: round up to nearest structural 50/100 or 1.5x
-  let nextTarget = 200;
-  if (lastFav > 0) {
-    if (lastFav < 50) nextTarget = 50;
-    else if (lastFav < 100) nextTarget = 100;
-    else if (lastFav < 150) nextTarget = 150;
-    else if (lastFav < 200) nextTarget = 200;
-    else nextTarget = Math.ceil((lastFav + 25) / 50) * 50;
-  }
-  pillsHtml += `<span class="tv-ext-pill target">[Next: ${nextTarget} (Watch Zone)]</span>`;
-  pillsHtml += `<span class="tv-ext-pill dossier-btn" id="tvTriggerDossierPill" title="Open Structural Sample Network Dossier">🌐 Deep Dossier ↗</span>`;
+  // 2. Friction Shift Capsule (⚡ -51% FRICTION)
+  const shiftVal = dossier ? dossier.deltaEvr : 0;
+  const shiftSign = shiftVal >= 0 ? '+' : '';
+  const frictionHtml = `
+    <div class="tv-ext-chip friction" title="Effort vs Result Friction Shift across Sequence">
+      <span>⚡ ${shiftSign}${shiftVal}% FRICTION</span>
+    </div>
+  `;
 
-  trackEl.innerHTML = pillsHtml;
+  // 3. Order Flow Net Delta Capsule (💧 -7.9k Δ)
+  const netDelta = dossier ? dossier.totalNetDelta : 0;
+  const deltaSign = netDelta >= 0 ? '+' : '';
+  const deltaCls = netDelta < 0 ? 'delta-bear' : 'delta-bull';
+  const deltaHtml = `
+    <div class="tv-ext-chip ${deltaCls}" title="Net Cumulative Order Flow Delta">
+      <span>💧 ${deltaSign}${formatVolNumber(netDelta)} Δ</span>
+    </div>
+  `;
+
+  // 4. Nominal Dollar Squeeze Fuel Capsule (💰 $31.6M FUEL) with matching metric shade
+  const trappedContracts = Math.abs(netDelta) > 0 ? Math.abs(netDelta) : Math.round((dossier?.totalVolume || 1000) * 0.25);
+  const livePrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : 4000;
+  const fuelMillions = Math.max(0.1, (trappedContracts * livePrice) / 1000000).toFixed(1);
+  const fuelCls = isBear ? 'fuel-bear' : 'fuel-bull';
+  const fuelHtml = `
+    <div class="tv-ext-chip ${fuelCls}" title="Nominal Gold Contract Dollar Value of Trapped Positions">
+      <span>💰 $${fuelMillions}M FUEL</span>
+    </div>
+  `;
+
+  // Assemble all capsules in track (zero dossier button, zero bull/bear text, zero runway, zero poc)
+  trackEl.innerHTML = `${seqHtml}${frictionHtml}${deltaHtml}${fuelHtml}`;
   ribbonEl.style.display = 'flex';
+
+  // Clicking on the ribbon or ANY item inside it opens the modal
+  ribbonEl.onclick = function(e) {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const targetTag = e?.target?.closest?.('.tv-ext-box-tag');
+    if (targetTag && targetTag.hasAttribute('data-box-idx')) {
+      const bIdx = targetTag.getAttribute('data-box-idx');
+      openExtensionNetworkModal(c);
+      if (typeof window.__selectNexusTab === 'function') {
+        window.__selectNexusTab(`box_${bIdx}`);
+      }
+    } else {
+      openExtensionNetworkModal(c);
+    }
+  };
 
   if (typeof syncStructuralInflectionLines === 'function') {
     syncStructuralInflectionLines(c);

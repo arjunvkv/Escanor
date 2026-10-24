@@ -3192,21 +3192,20 @@ input[type="number"] {
   color: #ef4444;
 }
 
-/* 🚀 EXTENSION SERIES (FAVOURABLE MOVE) FLOATING RIBBON */
+/* 🚀 EXTENSION AUCTION TELEMETRY STRIP (CONCEPT 3C REFINED) */
 /* ========================================================================= */
 .tv-extension-ribbon {
   position: absolute;
-  top: 12px;
+  top: 10px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 25;
-  background: rgba(13, 17, 26, 0.94);
-  backdrop-filter: blur(8px);
-  border: 1.5px dashed rgba(245, 158, 11, 0.55);
+  background: rgba(10, 17, 34, 0.94);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
-  padding: 6px 14px 8px 14px;
+  padding: 4px 6px;
   display: flex;
-  flex-direction: column;
   align-items: center;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
   pointer-events: auto;
@@ -3217,8 +3216,8 @@ input[type="number"] {
 }
 
 .tv-extension-ribbon:hover {
-  border: 1.5px solid #00e5ff;
-  box-shadow: 0 10px 32px rgba(0, 229, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85);
   transform: translateX(-50%) translateY(-1px);
 }
 
@@ -3227,59 +3226,93 @@ input[type="number"] {
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
-.tv-ext-title {
-  font-size: 10px;
-  font-weight: 800;
-  letter-spacing: 0.8px;
-  color: #00e5ff;
-  text-transform: uppercase;
-  margin-bottom: 5px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
 .tv-ext-track {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   flex-wrap: nowrap;
 }
 
-.tv-ext-pill {
-  padding: 3px 9px;
+.tv-ext-seq-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  padding: 2.5px 6px;
+}
+
+.tv-ext-box-tag {
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  cursor: pointer;
+}
+
+.tv-ext-box-tag:hover {
+  filter: brightness(1.2);
+}
+
+.tv-ext-arrow {
+  color: #64748b;
+  font-size: 10px;
+  margin: 0 1px;
+}
+
+.tv-ext-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
   border-radius: 5px;
   font-size: 11px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
   font-weight: 800;
   white-space: nowrap;
-  letter-spacing: 0.3px;
   transition: all 0.15s ease;
+  cursor: pointer;
 }
 
-.tv-ext-pill.completed {
-  background: rgba(16, 185, 129, 0.16);
-  border: 1px solid #10b981;
-  color: #34d399;
+.tv-ext-chip:hover {
+  filter: brightness(1.15);
 }
 
-.tv-ext-pill.current {
-  background: rgba(168, 85, 247, 0.18);
-  border: 1.5px solid #a855f7;
-  color: #f3e8ff;
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+.tv-ext-chip.friction {
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38bdf8;
 }
 
-.tv-ext-pill.target {
-  background: rgba(245, 158, 11, 0.14);
-  border: 1px dashed #f59e0b;
-  color: #fbbf24;
+.tv-ext-chip.delta-bear {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.40);
+  color: #ef4444;
 }
 
-.tv-ext-arrow {
-  color: #eab308;
-  font-size: 13px;
-  font-weight: 900;
+.tv-ext-chip.delta-bull {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.40);
+  color: #22c55e;
+}
+
+.tv-ext-chip.fuel-bear {
+  background: rgba(239, 68, 68, 0.14);
+  border: 1px solid rgba(239, 68, 68, 0.40);
+  color: #fca5a5;
+}
+
+.tv-ext-chip.fuel-bull {
+  background: rgba(34, 197, 94, 0.14);
+  border: 1px solid rgba(34, 197, 94, 0.40);
+  color: #86efac;
 }
 
 .tv-dir-btn {
@@ -3292,22 +3325,6 @@ input[type="number"] {
 
 .tv-dir-btn.active {
   box-shadow: 0 0 0 1px #3b82f6, 0 2px 8px rgba(59, 130, 246, 0.25);
-}
-
-.tv-ext-pill.dossier-btn {
-  background: rgba(0, 229, 255, 0.16);
-  border: 1px solid #00e5ff;
-  color: #38bdf8;
-  cursor: pointer;
-  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
-  font-weight: 800;
-  transition: all 0.15s ease;
-}
-
-.tv-ext-pill.dossier-btn:hover {
-  background: #00e5ff;
-  color: #0b0f19;
-  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
 }
 
 /* ========================================================================= */
