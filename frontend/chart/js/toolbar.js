@@ -1192,10 +1192,10 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
 
   const toggleLinesBtn = document.getElementById('tvToggleInflectionLinesBtn');
   if (toggleLinesBtn) {
-    toggleLinesBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+    toggleLinesBtn.onclick = (e) => {
+      if (e) e.stopPropagation();
       toggleStructuralInflectionLines(chart);
-    });
+    };
   }
 
   const networkModal = document.getElementById('tvExtensionNetworkModal');

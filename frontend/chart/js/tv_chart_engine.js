@@ -2730,10 +2730,15 @@ export function openExtensionNetworkModal(chart) {
   // Wire Chart Lines Toggle Button
   const toggleLinesBtn = document.getElementById('tvToggleInflectionLinesBtn');
   if (toggleLinesBtn) {
-    toggleLinesBtn.onclick = function() {
+    toggleLinesBtn.onclick = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       toggleStructuralInflectionLines(c);
     };
   }
+  updateInflectionLinesButtonUI();
 
   // Wire Close Buttons
   const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
@@ -2761,7 +2766,15 @@ export function syncStructuralInflectionLines(chart) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
   if (!c || typeof c.getOverlays !== 'function') return;
 
-  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+  if (typeof window !== 'undefined') {
+    window.__inflectionLinesState = window.__inflectionLinesState || {
+      ceiling: false,
+      mid: false,
+      anchor: false,
+      floor: false
+    };
+  }
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
     anchor: false,
@@ -2776,7 +2789,8 @@ export function syncStructuralInflectionLines(chart) {
     return;
   }
 
-  const dossier = computeNetworkDossier(null, c.getDataList?.());
+  const dataList = c.getDataList?.() || [];
+  const dossier = computeNetworkDossier(null, dataList);
   if (!dossier) {
     for (const lvl of INFLECTION_LEVEL_KEYS) {
       try { c.removeOverlay({ id: lvl.id }); } catch (_) {}
@@ -2793,6 +2807,9 @@ export function syncStructuralInflectionLines(chart) {
     floor: 'FLOOR'
   };
 
+  const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+  const lastTs = lastBar?.timestamp || Date.now();
+
   for (const lvl of INFLECTION_LEVEL_KEYS) {
     const isActive = !!state[lvl.key];
     const price = dossier[lvl.prop];
@@ -2805,7 +2822,7 @@ export function syncStructuralInflectionLines(chart) {
     const options = {
       id: lvl.id,
       name: 'structuralLevel',
-      points: [{ value: price }],
+      points: [{ timestamp: lastTs, value: price }],
       lock: true,
       extendData: {
         key: lvl.id,
@@ -2843,7 +2860,15 @@ window.__syncStructuralInflectionLines = syncStructuralInflectionLines;
 export function updateInflectionLinesButtonUI() {
   const btn = document.getElementById('tvToggleInflectionLinesBtn');
   const btnText = document.getElementById('tvToggleInflectionLinesBtnText');
-  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+  if (typeof window !== 'undefined') {
+    window.__inflectionLinesState = window.__inflectionLinesState || {
+      ceiling: false,
+      mid: false,
+      anchor: false,
+      floor: false
+    };
+  }
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
     anchor: false,
@@ -2854,8 +2879,14 @@ export function updateInflectionLinesButtonUI() {
   if (btn) {
     if (anyActive) {
       btn.classList.add('active');
+      btn.style.background = 'rgba(239, 68, 68, 0.16)';
+      btn.style.border = '1px solid #ef4444';
+      btn.style.color = '#ef4444';
     } else {
       btn.classList.remove('active');
+      btn.style.background = 'rgba(0, 245, 212, 0.12)';
+      btn.style.border = '1px solid #00f5d4';
+      btn.style.color = '#00f5d4';
     }
   }
 
@@ -2882,12 +2913,28 @@ export function updateInflectionLinesButtonUI() {
 }
 window.__updateInflectionLinesButtonUI = updateInflectionLinesButtonUI;
 
+let lastToggleTime = 0;
+
 /**
  * Toggles all 4 structural inflection reference lines simultaneously.
  */
 export function toggleStructuralInflectionLines(chart, forceState = null) {
+  const now = Date.now();
+  if (forceState === null && (now - lastToggleTime) < 150) {
+    return;
+  }
+  lastToggleTime = now;
+
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
-  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+  if (typeof window !== 'undefined') {
+    window.__inflectionLinesState = window.__inflectionLinesState || {
+      ceiling: false,
+      mid: false,
+      anchor: false,
+      floor: false
+    };
+  }
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
     anchor: false,
@@ -2915,7 +2962,15 @@ window.__toggleStructuralInflectionLines = toggleStructuralInflectionLines;
  */
 export function toggleSingleInflectionLine(key, chart) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
-  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+  if (typeof window !== 'undefined') {
+    window.__inflectionLinesState = window.__inflectionLinesState || {
+      ceiling: false,
+      mid: false,
+      anchor: false,
+      floor: false
+    };
+  }
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
     anchor: false,
