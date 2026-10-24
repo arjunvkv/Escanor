@@ -127,7 +127,6 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
 
     if (firstBarIndex === null) firstBarIndex = i;
     lastBarIndex = i;
-    barsInBox.push({ bar, index: i });
 
     if (bar.high > observedHigh) {
       observedHigh = bar.high;
@@ -145,10 +144,21 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     const overlapRatio = Math.min(1.0, overlapRange / barRange);
 
     const vol = Number(bar.volume || bar.tick_volume || 1);
-    const volInBox = vol * (overlapRatio > 0 ? overlapRatio : 1.0);
+    const volInBox = overlapRange > 0 ? (vol * overlapRatio) : 0;
 
     totalVol += volInBox;
-    candleCount++;
+    if (volInBox > 0) candleCount++;
+
+    const effTypPrice = (overlapHigh + overlapLow + Math.max(overlapLow, Math.min(overlapHigh, bar.close))) / 3;
+
+    barsInBox.push({
+      bar,
+      index: i,
+      volInBox,
+      effectiveLow: overlapLow,
+      effectiveHigh: overlapHigh,
+      effectiveTypPrice: effTypPrice
+    });
 
     const upperWick = bar.high - Math.max(bar.open, bar.close);
     const lowerWick = Math.min(bar.open, bar.close) - bar.low;
@@ -267,9 +277,9 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
   const boxBins = new Float64Array(boxBinCount);
 
   barsInBox.forEach(item => {
-    const b = item.bar;
-    const vol = Number(b.volume || b.tick_volume || 1);
-    const typPrice = (b.high + b.low + b.close) / 3;
+    const vol = item.volInBox;
+    if (vol <= 0) return;
+    const typPrice = item.effectiveTypPrice;
     weightedPriceSum += typPrice * vol;
 
     if (vol > maxBarVol) {
@@ -277,8 +287,8 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
       maxBarPrice = typPrice;
     }
 
-    const lowBin = Math.max(0, Math.min(boxBinCount - 1, Math.floor((b.low - bottomPrice) / boxBinStep)));
-    const highBin = Math.max(0, Math.min(boxBinCount - 1, Math.floor((b.high - bottomPrice) / boxBinStep)));
+    const lowBin = Math.max(0, Math.min(boxBinCount - 1, Math.floor((item.effectiveLow - bottomPrice) / boxBinStep)));
+    const highBin = Math.max(0, Math.min(boxBinCount - 1, Math.floor((item.effectiveHigh - bottomPrice) / boxBinStep)));
     const span = Math.max(1, highBin - lowBin + 1);
     const volPerBin = vol / span;
     for (let bi = lowBin; bi <= highBin; bi++) {
@@ -2305,13 +2315,20 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
         if (!b || seenBarTimes.has(b.timestamp)) return;
         seenBarTimes.add(b.timestamp);
 
-        const vol = Number(b.volume || b.tick_volume || 1);
-        const typPrice = (b.high + b.low + b.close) / 3;
+        const vol = (item.volInBox !== undefined) ? item.volInBox : Number(b.volume || b.tick_volume || 1);
+        if (vol <= 0) return;
+
+        const effLow = (item.effectiveLow !== undefined) ? item.effectiveLow : Math.max(b.low, minLow);
+        const effHigh = (item.effectiveHigh !== undefined) ? item.effectiveHigh : Math.min(b.high, maxHigh);
+        const typPrice = (item.effectiveTypPrice !== undefined)
+          ? item.effectiveTypPrice
+          : (effHigh + effLow + Math.max(effLow, Math.min(effHigh, b.close))) / 3;
+
         netWeightedPrice += typPrice * vol;
         netTotalVolCount += vol;
 
-        const lowBin = Math.max(0, Math.min(netBinCount - 1, Math.floor((b.low - minLow) / netBinStep)));
-        const highBin = Math.max(0, Math.min(netBinCount - 1, Math.floor((b.high - minLow) / netBinStep)));
+        const lowBin = Math.max(0, Math.min(netBinCount - 1, Math.floor((effLow - minLow) / netBinStep)));
+        const highBin = Math.max(0, Math.min(netBinCount - 1, Math.floor((effHigh - minLow) / netBinStep)));
         const span = Math.max(1, highBin - lowBin + 1);
         const volPerBin = vol / span;
         for (let bi = lowBin; bi <= highBin; bi++) {
