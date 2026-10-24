@@ -2557,21 +2557,36 @@ export function openExtensionNetworkModal(chart) {
       scopeTitle = `CEILING RESISTANCE AUDIT • $${d.maxHigh.toFixed(2)} • WALL TEST`;
     }
 
-    if (subtitleEl) subtitleEl.textContent = scopeTitle;
+    const themeColor = d.isBear ? '#ef4444' : '#22c55e';
+    const themeSoft = d.isBear ? '#fca5a5' : '#86efac';
+    const themeBg = d.isBear ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
+    const themeBorder = d.isBear ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)';
+
+    // Update outer frame polygon stroke
+    const framePolygon = document.getElementById('tvNexusFramePolygon');
+    if (framePolygon) framePolygon.setAttribute('stroke', themeColor);
+
+    const tabDot = document.getElementById('tvNexusTabDot');
+    if (tabDot) tabDot.style.background = themeColor;
+
+    if (subtitleEl) {
+      subtitleEl.textContent = scopeTitle;
+      subtitleEl.style.color = themeSoft;
+    }
 
     // 3. Status Pill
     const pill = document.getElementById('tvNexusStatusPill');
     if (pill) {
       if (d.isBear) {
         pill.textContent = 'BEAR ACCELERATION';
-        pill.style.background = '#f43f5e';
+        pill.style.background = '#ef4444';
         pill.style.color = '#ffffff';
-        pill.style.boxShadow = '0 0 16px rgba(244,63,94,0.8)';
+        pill.style.boxShadow = '0 0 16px rgba(239, 68, 68, 0.8)';
       } else {
         pill.textContent = 'BULL ACCELERATION';
-        pill.style.background = '#00f5d4';
-        pill.style.color = '#050811';
-        pill.style.boxShadow = '0 0 16px rgba(0,245,212,0.8)';
+        pill.style.background = '#22c55e';
+        pill.style.color = '#000000';
+        pill.style.boxShadow = '0 0 16px rgba(34, 197, 94, 0.8)';
       }
     }
 
@@ -2579,8 +2594,47 @@ export function openExtensionNetworkModal(chart) {
     const runwayGapBadge = document.getElementById('tvNexusRunwayGapBadge');
     if (runwayGapBadge) {
       runwayGapBadge.textContent = d.runwayGapText;
-      runwayGapBadge.style.color = d.runwayHeaderColor;
+      runwayGapBadge.style.color = themeColor;
+      runwayGapBadge.style.background = themeBg;
+      runwayGapBadge.style.borderColor = themeBorder;
     }
+
+    const shelfCeilingRow = document.getElementById('tvNexusShelfCeilingRow');
+    const shelfCeilingLabel = document.getElementById('tvNexusShelfCeilingLabel');
+    if (shelfCeilingRow) {
+      shelfCeilingRow.style.borderColor = themeBorder;
+      shelfCeilingRow.style.background = themeBg;
+    }
+    if (shelfCeilingLabel) {
+      shelfCeilingLabel.textContent = d.isBear ? '🔴 CEILING' : '🟢 CEILING BREAK';
+      shelfCeilingLabel.style.color = themeColor;
+    }
+
+    const shelfLiveRow = document.getElementById('tvNexusShelfLiveRow');
+    const shelfLiveLabel = document.getElementById('tvNexusShelfLiveLabel');
+    const shelfLivePing = document.getElementById('tvNexusShelfLivePing');
+    if (shelfLiveRow) {
+      shelfLiveRow.style.borderColor = themeColor;
+      shelfLiveRow.style.background = themeBg;
+    }
+    if (shelfLiveLabel) {
+      shelfLiveLabel.style.color = themeSoft;
+    }
+    if (shelfLivePing) {
+      shelfLivePing.style.background = themeColor;
+    }
+
+    const shelfFloorRow = document.getElementById('tvNexusShelfFloorRow');
+    const shelfFloorLabel = document.getElementById('tvNexusShelfFloorLabel');
+    if (shelfFloorRow) {
+      shelfFloorRow.style.borderColor = themeBorder;
+      shelfFloorRow.style.background = themeBg;
+    }
+    if (shelfFloorLabel) {
+      shelfFloorLabel.textContent = d.isBear ? '🔴 FLOOR BREAK' : '🟢 FLOOR BASE';
+      shelfFloorLabel.style.color = themeColor;
+    }
+
     const shelfCeiling = document.getElementById('tvNexusShelfCeiling');
     const shelfLive = document.getElementById('tvNexusShelfLive');
     const shelfVwap = document.getElementById('tvNexusShelfVwap');
@@ -2594,7 +2648,7 @@ export function openExtensionNetworkModal(chart) {
     if (shelfFloor) shelfFloor.textContent = `$${d.minLow.toFixed(2)}`;
     if (shelfStop) {
       shelfStop.textContent = d.invalidationText;
-      shelfStop.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
+      shelfStop.style.color = '#ef4444'; // Invalidation tripwire is red
     }
 
     // 4B. Order Flow Squeeze Fuel & Tape Velocity Telemetry
@@ -2614,17 +2668,24 @@ export function openExtensionNetworkModal(chart) {
 
     if (trappedTitle) {
       trappedTitle.textContent = d.isBear ? '⚡ TRAPPED BUYERS' : '⚡ TRAPPED SELLERS';
+      trappedTitle.style.color = themeColor;
     }
     if (trappedDeltaEl) {
       const deltaSign = scopeDelta < 0 ? '-' : '+';
       const pressureLabel = d.isBear ? 'BEAR PRESSURE' : 'BULL PRESSURE';
       trappedDeltaEl.textContent = `${deltaSign}${formatVolNumber(Math.abs(scopeDelta))} Δ (${pressureLabel})`;
+      trappedDeltaEl.style.color = themeColor;
     }
     if (squeezeFuelBadge) {
       squeezeFuelBadge.textContent = `$${fuelMillions}M FUEL`;
+      squeezeFuelBadge.style.color = themeColor;
+      squeezeFuelBadge.style.background = themeBg;
+      squeezeFuelBadge.style.borderColor = themeBorder;
     }
     if (squeezeFuelBar) {
       squeezeFuelBar.style.width = `${squeezePressurePct}%`;
+      squeezeFuelBar.style.background = themeColor; // Pure solid single shade
+      squeezeFuelBar.style.boxShadow = `0 0 10px ${themeColor}aa`;
     }
     if (squeezeTriggerVal) {
       const trigSign = d.isBear ? '<' : '>';
@@ -2634,10 +2695,11 @@ export function openExtensionNetworkModal(chart) {
     }
     if (squeezePressureVal) {
       squeezePressureVal.textContent = `${squeezePressurePct}% ${d.isBear ? 'BEAR COIL' : 'BULL COIL'}`;
+      squeezePressureVal.style.color = themeColor;
     }
     if (squeezeStatusVal) {
       squeezeStatusVal.textContent = d.isBear ? 'ACTIVE BEAR BREAK' : 'ACTIVE BULL BREAK';
-      squeezeStatusVal.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
+      squeezeStatusVal.style.color = themeColor;
     }
 
     // Card 2B: Tape Velocity & Burn Rate Accelerometer
@@ -2649,6 +2711,7 @@ export function openExtensionNetworkModal(chart) {
     const surgePct = Math.round(((baseMudSpeed - vacuumSpeed) / vacuumSpeed) * 100);
     const tapeBarWidth = Math.max(20, Math.min(95, Math.round((speedRatio / 4) * 85)));
 
+    const tapeTitle = document.getElementById('tvNexusTapeTitle');
     const tapeSurgeBadge = document.getElementById('tvNexusTapeSurgeBadge');
     const tapeSpeedVal = document.getElementById('tvNexusTapeSpeedVal');
     const tapeSpeedBar = document.getElementById('tvNexusTapeSpeedBar');
@@ -2656,14 +2719,21 @@ export function openExtensionNetworkModal(chart) {
     const tapeSurgePct = document.getElementById('tvNexusTapeSurgePct');
     const tapeStatusVal = document.getElementById('tvNexusTapeStatusVal');
 
+    if (tapeTitle) tapeTitle.style.color = themeColor;
     if (tapeSurgeBadge) {
       tapeSurgeBadge.textContent = `⚡ ${surgeMultiplier}x ${d.isBear ? 'BEAR SPEED' : 'BULL SPEED'}`;
+      tapeSurgeBadge.style.color = themeColor;
+      tapeSurgeBadge.style.background = themeBg;
+      tapeSurgeBadge.style.borderColor = themeBorder;
     }
     if (tapeSpeedVal) {
-      tapeSpeedVal.textContent = `${vacuumSpeed}s / PT (FAST)`;
+      tapeSpeedVal.textContent = `${vacuumSpeed}s / PT (${vacuumSpeed <= 30 ? 'MAX SPEED' : 'FAST'})`;
+      tapeSpeedVal.style.color = themeColor;
     }
     if (tapeSpeedBar) {
       tapeSpeedBar.style.width = `${tapeBarWidth}%`;
+      tapeSpeedBar.style.background = themeColor; // Pure solid single shade
+      tapeSpeedBar.style.boxShadow = `0 0 10px ${themeColor}aa`;
     }
     if (tapeBaseSpeedVal) {
       tapeBaseSpeedVal.textContent = `BASE: ${baseMudSpeed}s/PT (${d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING'})`;
@@ -2671,67 +2741,73 @@ export function openExtensionNetworkModal(chart) {
     if (tapeSurgePct) {
       const surgeSign = surgePct >= 0 ? '+' : '';
       tapeSurgePct.textContent = `${surgeSign}${surgePct}% SPEED SURGE`;
+      tapeSurgePct.style.color = themeColor;
     }
     if (tapeStatusVal) {
       tapeStatusVal.textContent = d.isBear ? 'CLEAN BEAR FLOW' : 'CLEAN BULL FLOW';
-      tapeStatusVal.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
+      tapeStatusVal.style.color = themeColor;
     }
 
-    // 5. Pipeline Load (3D Cylinders)
+    // 5. Pipeline Load (3D Cylinders with Pure Solid Single Shades)
+    const loadTitle = document.getElementById('tvNexusLoadTitle');
+    if (loadTitle) loadTitle.style.color = themeSoft;
     const loadValEl = document.getElementById('tvNexusLoadVal');
     if (loadValEl) {
       const loadText = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
       loadValEl.textContent = `${scopeEvr.toLocaleString()} v/pt (${loadText})`;
-      loadValEl.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
+      loadValEl.style.color = themeColor;
     }
     const box1Lbl = document.getElementById('tvNexusLoadBox1Lbl');
     const box2Lbl = document.getElementById('tvNexusLoadBox2Lbl');
-    if (box1Lbl) box1Lbl.textContent = `B1: ${d.firstSample.evr.toLocaleString()} v/pt`;
-    if (box2Lbl) box2Lbl.innerHTML = `B${d.sampleCount}: <strong style="color: #00f5d4;">${d.lastSample.evr.toLocaleString()} v/pt</strong>`;
+    if (box1Lbl) {
+      box1Lbl.textContent = `B1: ${d.firstSample.evr.toLocaleString()} v/pt`;
+      box1Lbl.style.color = themeSoft;
+    }
+    if (box2Lbl) {
+      box2Lbl.innerHTML = `B${d.sampleCount}: <strong style="color: ${themeColor};">${d.lastSample.evr.toLocaleString()} v/pt</strong>`;
+    }
 
     const loadContainer = document.getElementById('tvNexusLoadBarsContainer');
     if (loadContainer) {
-      // 8 Proportional Volume Profile bars
+      // 8 Proportional Volume Profile bars with solid single shades
       const barsCount = 8;
       let barsHtml = '';
       const maxCol = Math.max(...d.samples.map(s => s.totalVol), 1000);
+      const cylinderPalette = d.isBear
+        ? ['#450a0a', '#7f1d1d', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#ef4444']
+        : ['#052e16', '#14532d', '#166534', '#15803d', '#16a34a', '#22c55e', '#4ade80', '#22c55e'];
 
       for (let i = 0; i < barsCount; i++) {
-        const isPocBar = (i === 4 || i === barsCount - 1);
         const colVol = Math.round((0.3 + (i / barsCount) * 0.7) * (scopeVol / 3));
         const heightPct = Math.max(18, Math.min(100, Math.round((colVol / maxCol) * 100)));
         const tagText = formatVolNumber(colVol);
+        const barCol = cylinderPalette[i % cylinderPalette.length];
+        const isPeak = (i === barsCount - 1);
         
-        if (isPocBar) {
-          barsHtml += `
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
-              <div style="font-size: 8px; font-family: monospace; color: #00f5d4; font-weight: 800; margin-bottom: 1px;">${tagText}</div>
-              <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #065f46, #00f5d4); border-top: 2px solid #ffffff; box-shadow: 0 0 10px rgba(0,245,212,0.6);"></div>
-            </div>
-          `;
-        } else {
-          barsHtml += `
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
-              <div style="font-size: 8px; font-family: monospace; color: #64748b; margin-bottom: 1px;">${tagText}</div>
-              <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #4c1d95, #8b5cf6); border-top: 2px solid #c4b5fd; box-shadow: 0 0 8px rgba(139,92,246,0.3);"></div>
-            </div>
-          `;
-        }
+        barsHtml += `
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
+            <div style="font-size: 8px; font-family: monospace; color: ${isPeak ? '#ffffff' : themeSoft}; ${isPeak ? 'background:'+barCol+'; padding:0 3px; border-radius:2px;' : ''} font-weight: 800; margin-bottom: 1px;">${tagText}</div>
+            <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background-color: ${barCol}; ${isPeak ? 'box-shadow: 0 0 10px '+barCol+';' : ''}"></div>
+          </div>
+        `;
       }
       loadContainer.innerHTML = barsHtml;
     }
 
     // 6. Overlapping Multi-Box Harmonic Oscilloscope (Delta & Absorption)
+    const deltaChartTitle = document.getElementById('tvNexusDeltaChartTitle');
+    if (deltaChartTitle) deltaChartTitle.style.color = themeSoft;
+
     const oscMetaEl = document.getElementById('tvNexusOscMeta');
     if (oscMetaEl) {
       const deltaSign = scopeDelta >= 0 ? '+' : '';
-      const deltaColor = scopeDelta >= 0 ? '#00f5d4' : '#f43f5e';
-      oscMetaEl.innerHTML = `ABSORB: <strong style="color: #00f5d4;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
+      const deltaColor = scopeDelta >= 0 ? '#22c55e' : '#ef4444';
+      oscMetaEl.innerHTML = `ABSORB: <strong style="color: #facc15;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
     }
 
     const deltaLegend = document.getElementById('tvNexusDeltaOscLegend');
     if (deltaLegend && d.samples) {
-      const boxPalette = ['#8b5cf6', '#00f5d4', '#fbbf24', '#f43f5e', '#38bdf8', '#10b981'];
+      const boxPalette = ['#22c55e', '#facc15', '#ef4444', '#38bdf8', '#a855f7', '#ec4899'];
       let legHtml = '';
       d.samples.forEach((s, idx) => {
         const col = boxPalette[idx % boxPalette.length];
@@ -2796,12 +2872,12 @@ export function openExtensionNetworkModal(chart) {
       if (calloutVacuum) calloutVacuum.style.display = 'block';
       if (calloutRunway) calloutRunway.style.display = 'block';
       if (oscAreaNote) {
+        oscAreaNote.style.color = themeSoft;
         oscAreaNote.textContent = d.isBear
-          ? 'ALL 3 BOXES: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
-          : 'ALL 3 BOXES: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
+          ? 'SEQUENCE: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
+          : 'SEQUENCE: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
       }
     } else if (tabKey === 'box_0') {
-      // Box 1 Solo: Building Base
       if (lineBox1) {
         lineBox1.style.opacity = '1';
         lineBox1.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75');
@@ -2816,11 +2892,11 @@ export function openExtensionNetworkModal(chart) {
       if (calloutVacuum) calloutVacuum.style.display = 'none';
       if (calloutRunway) calloutRunway.style.display = 'none';
       if (oscAreaNote) {
+        oscAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
         oscAreaNote.textContent = `BOX 1: ${term} // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT`;
       }
     } else if (tabKey === 'box_1') {
-      // Box 2 Solo: Break Sequence
       if (lineBox1) lineBox1.style.opacity = '0.15';
       if (lineBox2) {
         lineBox2.style.opacity = '1';
@@ -2835,11 +2911,11 @@ export function openExtensionNetworkModal(chart) {
       if (calloutVacuum) calloutVacuum.style.display = 'block';
       if (calloutRunway) calloutRunway.style.display = 'none';
       if (oscAreaNote) {
+        oscAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
         oscAreaNote.textContent = `BOX 2: ${term} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (-51% FRICTION)`;
       }
     } else if (tabKey === 'box_2') {
-      // Box 3 Solo: Runway Extension
       if (lineBox1) lineBox1.style.opacity = '0.15';
       if (lineBox2) lineBox2.style.opacity = '0.15';
       if (lineBox3) {
@@ -2854,22 +2930,26 @@ export function openExtensionNetworkModal(chart) {
       if (calloutVacuum) calloutVacuum.style.display = 'none';
       if (calloutRunway) calloutRunway.style.display = 'block';
       if (oscAreaNote) {
+        oscAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY';
         oscAreaNote.textContent = `BOX 3: ${term} // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT`;
       }
     }
 
     // 7. Second Command Oscillation Line Chart (EVR & Effort vs Result Friction Harmonic)
+    const evrChartTitle = document.getElementById('tvNexusEvrChartTitle');
+    if (evrChartTitle) evrChartTitle.style.color = themeSoft;
+
     const evrMetaEl = document.getElementById('tvNexusEvrOscMeta');
     if (evrMetaEl) {
-      const evrTag = d.lastSample.frictionTag || 'CLEAN FLOW ⚡';
+      const evrTag = d.isBear ? 'EXTREME BURN 🔥' : 'STRONG TAKEOFF 🔥';
       const evrSign = d.deltaEvr >= 0 ? '+' : '';
-      evrMetaEl.innerHTML = `EFFORT: <strong style="color: #00f5d4;">${evrTag}</strong> • SHIFT: <strong style="color: #00f5d4;">${evrSign}${d.deltaEvr}%</strong>`;
+      evrMetaEl.innerHTML = `EFFORT: <strong style="color: ${themeColor};">${evrTag}</strong> • SHIFT: <strong style="color: #facc15;">${evrSign}${d.deltaEvr}%</strong>`;
     }
 
     const evrLegend = document.getElementById('tvNexusEvrOscLegend');
     if (evrLegend && d.samples) {
-      const boxPalette = ['#8b5cf6', '#00f5d4', '#fbbf24', '#f43f5e', '#38bdf8', '#10b981'];
+      const boxPalette = ['#22c55e', '#facc15', '#ef4444', '#38bdf8', '#a855f7', '#ec4899'];
       let evrLegHtml = '';
       d.samples.forEach((s, idx) => {
         const col = boxPalette[idx % boxPalette.length];
@@ -2921,9 +3001,10 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutShift) evrCalloutShift.style.display = 'block';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
       if (evrAreaNote) {
+        evrAreaNote.style.color = themeSoft;
         evrAreaNote.textContent = d.isBear
-          ? 'EFFORT SHIFT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
-          : 'EFFORT SHIFT: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
+          ? 'EFFORT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
+          : 'EFFORT: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
       }
     } else if (tabKey === 'box_0') {
       if (evrLineBox1) evrLineBox1.style.opacity = '1';
@@ -2937,6 +3018,7 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutShift) evrCalloutShift.style.display = 'none';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
       if (evrAreaNote) {
+        evrAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
         evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // ${term}`;
       }
@@ -2952,6 +3034,7 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutShift) evrCalloutShift.style.display = 'block';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
       if (evrAreaNote) {
+        evrAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
         evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${term} (-51% FRICTION)`;
       }
@@ -2967,6 +3050,7 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutShift) evrCalloutShift.style.display = 'none';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
       if (evrAreaNote) {
+        evrAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY';
         evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // ${term}`;
       }
@@ -2978,11 +3062,26 @@ export function openExtensionNetworkModal(chart) {
     const footVwap = document.getElementById('tvNexusFootVwap');
     const footPoc = document.getElementById('tvNexusFootPoc');
     const footFloor = document.getElementById('tvNexusFootFloor');
-    if (footCeiling) footCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
-    if (footMid) footMid.textContent = `$${d.eqShelf.toFixed(2)}`;
-    if (footVwap) footVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
-    if (footPoc) footPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
-    if (footFloor) footFloor.textContent = `$${d.minLow.toFixed(2)}`;
+    if (footCeiling) {
+      footCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
+      footCeiling.style.color = d.isBear ? '#ef4444' : '#22c55e';
+    }
+    if (footMid) {
+      footMid.textContent = `$${d.eqShelf.toFixed(2)}`;
+      footMid.style.color = '#facc15';
+    }
+    if (footVwap) {
+      footVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
+      footVwap.style.color = '#f59e0b';
+    }
+    if (footPoc) {
+      footPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
+      footPoc.style.color = '#facc15';
+    }
+    if (footFloor) {
+      footFloor.textContent = `$${d.minLow.toFixed(2)}`;
+      footFloor.style.color = d.isBear ? '#ef4444' : '#22c55e';
+    }
   };
 
   // Wire Chart Lines Toggle Button
