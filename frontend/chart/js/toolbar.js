@@ -10,7 +10,7 @@
  */
 
 import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
-import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon } from './tv_chart_engine.js?v=202610241430';
+import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal } from './tv_chart_engine.js?v=202610241430';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -1182,6 +1182,29 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     if (rectModal) rectModal.style.display = 'none';
   });
 
+  // Structural Sample Network Dossier Modal & Extension Series Ribbon Click
+  const extRibbon = document.getElementById('tvExtensionSeriesRibbon');
+  if (extRibbon) {
+    extRibbon.addEventListener('click', () => {
+      openExtensionNetworkModal(chart);
+    });
+  }
+
+  const networkModal = document.getElementById('tvExtensionNetworkModal');
+  const closeNetworkBtn = document.getElementById('tvCloseNetworkModalBtn');
+  const closeNetworkBtnDone = document.getElementById('tvCloseNetworkModalBtnDone');
+
+  function closeNetworkModal() {
+    if (networkModal) networkModal.style.display = 'none';
+  }
+  closeNetworkBtn?.addEventListener('click', closeNetworkModal);
+  closeNetworkBtnDone?.addEventListener('click', closeNetworkModal);
+  if (networkModal) {
+    networkModal.addEventListener('click', (e) => {
+      if (e.target === networkModal) closeNetworkModal();
+    });
+  }
+
   // Unified Global Lot Settings Logic
   function getGlobalLot() {
     const val = parseFloat(localStorage.getItem('escanor_global_lot') || localStorage.getItem('escanor_measure_lots') || '1.00');
@@ -1370,6 +1393,8 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       if (settingsModal) settingsModal.style.display = 'none';
       const confirmModal = document.getElementById('tvConfirmModal');
       if (confirmModal) confirmModal.style.display = 'none';
+      const networkModal = document.getElementById('tvExtensionNetworkModal');
+      if (networkModal) networkModal.style.display = 'none';
     }
 
     // 3. 'R' or 'Alt+R' -> Shortcut to draw rectangle

@@ -354,7 +354,7 @@ function registerCustomOverlays() {
           }
         ];
 
-        // Empirical Structural Excursion & Flow Metrics inside Rectangle
+        // Visual In-Box Trend Excursion Vector (Clean Canvas: Red ✕ Anchor & Cyan/Blue Trend Vector)
         const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
         const isThisBoxHidden = Boolean(overlay?.extendData?.hideVolumeOverlay);
 
@@ -363,225 +363,8 @@ function registerCustomOverlays() {
           const m = computeRectangleVolumeMetrics(overlay, dataList);
 
           if (m && m.totalVol > 0) {
-            // 1. In-Box Empirical Metrics HUD Card (Top-Left corner)
-            const deltaSign = m.netDelta > 0 ? '+' : '';
-            const deltaColor = m.netDelta > 0 ? '#00e676' : (m.netDelta < 0 ? '#ff334b' : '#38bdf8');
-            const volStr = formatVolNumber(m.totalVol);
-            const deltaStr = `${deltaSign}${formatVolNumber(m.netDelta)}`;
-            const deltaPctStr = `${m.netDeltaPct > 0 ? '+' : ''}${m.netDeltaPct}%`;
-            const dirIcon = m.d === 1 ? '↗' : '↘';
-
-            if (boxW >= 155 && boxH >= 65) {
-              // Full 5-line structured card
-              const line1 = `📦 BOX #${m.boxNum} • ${dirIcon} ${m.directionName}`;
-              const line2 = `H: $${m.H_b.toFixed(2)}  L: $${m.L_b.toFixed(2)}  R: ${m.R_b.toFixed(2)}`;
-              const line3 = `Fav: +${m.favMove.toFixed(1)}  Adv: -${m.advMove.toFixed(1)}  Net: ${m.netMove >= 0 ? '+' : ''}${m.netMove.toFixed(1)}`;
-              const line4 = `Vol: ${volStr} | Δ: ${deltaStr} (${deltaPctStr})`;
-              const line5 = `Absorb: ${m.absorbPct}% (${m.absorbLevel}) • ${m.resultText}`;
-
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 6,
-                  y: minY + 6,
-                  text: line1,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: m.d === 1 ? '#10b981' : '#f43f5e',
-                  size: 9.5,
-                  weight: '800',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.92)',
-                  borderColor: 'rgba(0, 229, 255, 0.35)',
-                  borderSize: 1,
-                  paddingLeft: 5,
-                  paddingRight: 5,
-                  paddingTop: 2,
-                  paddingBottom: 2,
-                  borderRadius: 3
-                }
-              });
-
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 6,
-                  y: minY + 21,
-                  text: line2,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#94a3b8',
-                  size: 8.5,
-                  weight: '600',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                  paddingLeft: 4,
-                  paddingRight: 4,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 6,
-                  y: minY + 34,
-                  text: line3,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#00e5ff',
-                  size: 8.5,
-                  weight: '700',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                  paddingLeft: 4,
-                  paddingRight: 4,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 6,
-                  y: minY + 47,
-                  text: line4,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: deltaColor,
-                  size: 8.5,
-                  weight: '700',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                  paddingLeft: 4,
-                  paddingRight: 4,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-
-              if (boxH >= 82) {
-                figures.push({
-                  type: 'text',
-                  attrs: {
-                    x: minX + 6,
-                    y: minY + 60,
-                    text: line5,
-                    align: 'left',
-                    baseline: 'top'
-                  },
-                  ignoreEvent: true,
-                  styles: {
-                    color: m.resultColor,
-                    size: 8,
-                    weight: '800',
-                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
-                    paddingLeft: 4,
-                    paddingRight: 4,
-                    paddingTop: 1,
-                    paddingBottom: 1,
-                    borderRadius: 2
-                  }
-                });
-              }
-            } else if (boxW >= 115 && boxH >= 38) {
-              // Compact 2-line badge
-              const line1 = `BOX #${m.boxNum} ${dirIcon} | +${m.favMove.toFixed(1)} / -${m.advMove.toFixed(1)}`;
-              const line2 = `Vol: ${volStr} | Δ: ${deltaStr} (${deltaPctStr})`;
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 5,
-                  y: minY + 4,
-                  text: line1,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#00e5ff',
-                  size: 9,
-                  weight: '700',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.90)',
-                  paddingLeft: 4,
-                  paddingRight: 4,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 5,
-                  y: minY + 18,
-                  text: line2,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: deltaColor,
-                  size: 8.5,
-                  weight: '600',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                  paddingLeft: 3,
-                  paddingRight: 3,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-            } else if (boxW >= 60 && boxH >= 18) {
-              // Micro 1-line tag
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 4,
-                  y: minY + 3,
-                  text: `#${m.boxNum} +${m.favMove.toFixed(1)} | ${volStr}`,
-                  align: 'left',
-                  baseline: 'top'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#00e5ff',
-                  size: 8.5,
-                  weight: '700',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.88)',
-                  paddingLeft: 3,
-                  paddingRight: 3,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-            }
-
-            // 2. Visual In-Box Annotations: Red ✕ Anchor, Cyan Excursion Arrow & Badges
             const isArrowsHidden = Boolean(overlay?.extendData?.hideArrows);
-            if (!isArrowsHidden && boxW >= 40 && boxH >= 24) {
+            if (!isArrowsHidden && boxW >= 16 && boxH >= 10) {
               const clampX = (x) => Math.max(minX + 4, Math.min(maxX - 4, x));
               const clampY = (y) => Math.max(minY + 4, Math.min(maxY - 4, y));
 
@@ -605,7 +388,6 @@ function registerCustomOverlays() {
               const ptTrough = { x: clampX(xTrough), y: clampY(yTrough) };
 
               const ptFav = (m.d === 1) ? ptPeak : ptTrough;
-              const ptAdv = (m.d === 1) ? ptTrough : ptPeak;
 
               // Red ✕ Start Anchor at (t0, P0)
               figures.push({
@@ -626,8 +408,8 @@ function registerCustomOverlays() {
                 }
               });
 
-              // Cyan Diagonal Favourable Excursion Arrow from ptStart to ptFav
-              if (Math.hypot(ptFav.x - ptStart.x, ptFav.y - ptStart.y) >= 12) {
+              // Cyan / Blue Diagonal Favourable Excursion Arrow from ptStart to ptFav (Trend Vector)
+              if (Math.hypot(ptFav.x - ptStart.x, ptFav.y - ptStart.y) >= 8) {
                 figures.push({
                   type: 'line',
                   attrs: {
@@ -661,64 +443,6 @@ function registerCustomOverlays() {
                   styles: {
                     color: '#00e5ff',
                     size: 1.8
-                  }
-                });
-              }
-
-              // Cyan Favourable Pill Badge at ptFav
-              const favBadgeY = (m.d === 1) ? Math.max(minY + 9, ptFav.y - 12) : Math.min(maxY - 9, ptFav.y + 12);
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: ptFav.x,
-                  y: favBadgeY,
-                  text: `+${m.favMove.toFixed(1)}`,
-                  align: 'center',
-                  baseline: 'middle'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#00e5ff',
-                  size: 9.5,
-                  weight: '800',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.92)',
-                  borderColor: 'rgba(0, 229, 255, 0.65)',
-                  borderSize: 1,
-                  paddingLeft: 5,
-                  paddingRight: 5,
-                  paddingTop: 1.5,
-                  paddingBottom: 1.5,
-                  borderRadius: 3
-                }
-              });
-
-              // Crimson Adverse Pill Badge at ptAdv
-              if (m.advMove > 0.05) {
-                const advBadgeY = (m.d === 1) ? Math.min(maxY - 9, ptAdv.y + 12) : Math.max(minY + 9, ptAdv.y - 12);
-                figures.push({
-                  type: 'text',
-                  attrs: {
-                    x: ptAdv.x,
-                    y: advBadgeY,
-                    text: `-${m.advMove.toFixed(1)}`,
-                    align: 'center',
-                    baseline: 'middle'
-                  },
-                  ignoreEvent: true,
-                  styles: {
-                    color: '#f43f5e',
-                    size: 9,
-                    weight: '800',
-                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                    backgroundColor: 'rgba(13, 17, 26, 0.92)',
-                    borderColor: 'rgba(244, 63, 94, 0.65)',
-                    borderSize: 1,
-                    paddingLeft: 4,
-                    paddingRight: 4,
-                    paddingTop: 1.5,
-                    paddingBottom: 1.5,
-                    borderRadius: 3
                   }
                 });
               }
@@ -2234,95 +1958,6 @@ export function patchOverlayViews(chartRef) {
       ovView.drawImp = function (ctx) {
         origDrawImp(ctx);
 
-        // Draw Golden Connecting Arcs between adjacent boxes on the chart canvas
-        if (!window.__hideExtensionRibbon && !window.__hideAllRectVolumeOverlays) {
-          try {
-            const allOverlays = chartRef?.getOverlays?.() || [];
-            const rects = allOverlays.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
-            if (rects.length >= 2) {
-              const dataList = chartRef?.getDataList?.() || [];
-              const sortedRects = rects.map(r => {
-                const validPts = (r.points || []).filter(p => p && typeof p.value === 'number');
-                const times = validPts.map(p => p.timestamp).filter(t => typeof t === 'number' && t > 0);
-                const t0 = times.length > 0 ? Math.min(...times) : 0;
-                const metrics = computeRectangleVolumeMetrics(r, dataList, rects);
-                return { overlay: r, t0, metrics };
-              }).sort((a, b) => a.t0 - b.t0);
-
-              for (let k = 0; k < sortedRects.length - 1; k++) {
-                const rA = sortedRects[k].overlay;
-                const rB = sortedRects[k + 1].overlay;
-                const mB = sortedRects[k + 1].metrics;
-
-                if (typeof chartRef.convertToPixel !== 'function') continue;
-                const coordsA = chartRef.convertToPixel(rA.points);
-                const coordsB = chartRef.convertToPixel(rB.points);
-                if (!coordsA || coordsA.length < 2 || !coordsB || coordsB.length < 2) continue;
-
-                const xsA = coordsA.map(c => c.x);
-                const ysA = coordsA.map(c => c.y);
-                const minXA = Math.min(...xsA);
-                const maxXA = Math.max(...xsA);
-                const minYA = Math.min(...ysA);
-
-                const xsB = coordsB.map(c => c.x);
-                const ysB = coordsB.map(c => c.y);
-                const minXB = Math.min(...xsB);
-                const maxXB = Math.max(...xsB);
-                const minYB = Math.min(...ysB);
-
-                const startX = (minXA + maxXA) / 2;
-                const startY = minYA;
-                const endX = (minXB + maxXB) / 2;
-                const endY = minYB;
-
-                // Draw golden curved arc (quadratic bezier)
-                ctx.save();
-                ctx.strokeStyle = '#f59e0b';
-                ctx.lineWidth = 1.8;
-                ctx.setLineDash([4, 3]);
-                ctx.beginPath();
-                ctx.moveTo(startX, startY);
-                const midX = (startX + endX) / 2;
-                const midY = Math.min(startY, endY) - 32;
-                ctx.quadraticCurveTo(midX, midY, endX, endY);
-                ctx.stroke();
-
-                // Draw golden pill badge at apex (midX, midY)
-                const pillVal = `+${(mB ? mB.favMove : 0).toFixed(1)}`;
-                ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
-                const textW = ctx.measureText(pillVal).width;
-                const pillW = textW + 12;
-                const pillH = 17;
-                const pillX = midX - pillW / 2;
-                const pillY = midY - pillH / 2;
-
-                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-                ctx.beginPath();
-                if (typeof ctx.roundRect === 'function') {
-                  ctx.roundRect(pillX, pillY, pillW, pillH, 4);
-                } else {
-                  ctx.rect(pillX, pillY, pillW, pillH);
-                }
-                ctx.fill();
-                ctx.strokeStyle = '#f59e0b';
-                ctx.lineWidth = 1;
-                ctx.setLineDash([]);
-                ctx.stroke();
-
-                ctx.fillStyle = '#fbbf24';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(pillVal, midX, midY);
-
-                ctx.restore();
-              }
-            }
-          } catch (arcErr) {
-            console.warn('[TV Engine] Arc draw error:', arcErr);
-          }
-        }
-
         // Prioritize resize handles: keep all point handle circles at the END of _children
         // so that hit-testing tests point handles BEFORE any polygon body!
         if (Array.isArray(this._children) && this._children.length > 1) {
@@ -2407,11 +2042,371 @@ export function updateExtensionSeriesRibbon(chart) {
     else nextTarget = Math.ceil((lastFav + 25) / 50) * 50;
   }
   pillsHtml += `<span class="tv-ext-pill target">[Next: ${nextTarget} (Watch Zone)]</span>`;
+  pillsHtml += `<span class="tv-ext-pill dossier-btn" id="tvTriggerDossierPill" title="Open Structural Sample Network Dossier">🌐 Deep Dossier ↗</span>`;
 
   trackEl.innerHTML = pillsHtml;
   ribbonEl.style.display = 'flex';
 }
 window.__updateExtensionSeriesRibbon = updateExtensionSeriesRibbon;
+
+/**
+ * Computes deep multi-sample empirical network dossier across all connected rectangles.
+ * Audits:
+ * 1. Who is playing out (Aggressor vs. Passive Absorption, Cumulative Delta divergence)
+ * 2. Effort vs. Result (Fuel Burn Engine: EVR = V / R, friction shift)
+ * 3. Strongest Structural Inflection Nodes (Anchors, Peak Volume Shelves, Mid-Structure Eq)
+ * 4. Structural Runway & Liquidity Vacuum (Distance to historical ceilings/floors, Invalidation Tripwires)
+ */
+export function computeNetworkDossier(customRects = null, customDataList = null) {
+  const c = chartInstance;
+  const allOverlays = customRects || (c?.getOverlays?.() || []).filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+  const dataList = customDataList || (c?.getDataList?.() || []);
+
+  if (!allOverlays || allOverlays.length === 0) {
+    return null;
+  }
+
+  // Sort boxes chronologically by start timestamp t0
+  const samples = allOverlays.map(r => {
+    const validPts = (r.points || []).filter(p => p && typeof p.value === 'number');
+    const times = validPts.map(p => p.timestamp).filter(t => typeof t === 'number' && t > 0);
+    const t0 = times.length > 0 ? Math.min(...times) : 0;
+    const m = computeRectangleVolumeMetrics(r, dataList, allOverlays);
+    return { overlay: r, t0, metrics: m };
+  }).filter(s => s.metrics && s.metrics.totalVol > 0).sort((a, b) => a.t0 - b.t0);
+
+  if (samples.length === 0) {
+    return null;
+  }
+
+  const N = samples.length;
+  let totalNetDelta = 0;
+  let totalVolume = 0;
+  let maxHigh = -Infinity;
+  let minLow = Infinity;
+  let highestEvrSample = null;
+  let highestEvrVal = -1;
+  let highestVolSample = null;
+  let highestVolVal = -1;
+
+  const sampleAudits = samples.map((s, idx) => {
+    const m = s.metrics;
+    totalNetDelta += m.netDelta;
+    totalVolume += m.totalVol;
+    if (m.H_b > maxHigh) maxHigh = m.H_b;
+    if (m.L_b < minLow) minLow = m.L_b;
+
+    // Effort vs Result (EVR): Volume per 1.0 point of price range
+    const evr = Math.round(m.totalVol / Math.max(0.1, m.R_b));
+    let frictionTag = 'CLEAN FLOW ⚡';
+    let frictionCls = 'bull';
+    if (evr >= 2400) {
+      frictionTag = 'EXTREME BURN 🔥';
+      frictionCls = 'bear';
+    } else if (evr >= 1200) {
+      frictionTag = 'HIGH FRICTION ⚠️';
+      frictionCls = 'warn';
+    }
+
+    if (evr > highestEvrVal) {
+      highestEvrVal = evr;
+      highestEvrSample = { idx: idx + 1, metrics: m, evr };
+    }
+    if (m.totalVol > highestVolVal) {
+      highestVolVal = m.totalVol;
+      highestVolSample = { idx: idx + 1, metrics: m, vol: m.totalVol };
+    }
+
+    return {
+      boxNum: idx + 1,
+      direction: m.d === 1 ? 'UP' : 'DOWN',
+      d: m.d,
+      favMove: m.favMove,
+      advMove: m.advMove,
+      netMove: m.netMove,
+      H_b: m.H_b,
+      L_b: m.L_b,
+      R_b: m.R_b,
+      P_0: m.P_0,
+      P_1: m.P_1,
+      totalVol: m.totalVol,
+      netDelta: m.netDelta,
+      netDeltaPct: m.netDeltaPct,
+      absorbPct: m.absorbPct,
+      absorbLevel: m.absorbLevel,
+      evr,
+      frictionTag,
+      frictionCls
+    };
+  });
+
+  const firstSample = sampleAudits[0];
+  const lastSample = sampleAudits[N - 1];
+
+  // Effort vs Result Shift across sequence
+  const deltaEvr = Math.round(((lastSample.evr - firstSample.evr) / Math.max(1, firstSample.evr)) * 100);
+  let evrNarrative = '';
+  let evrStatusBadge = 'BALANCED FLOW';
+  if (deltaEvr > 40) {
+    evrStatusBadge = 'FRICTION SPIKE 🔥';
+    evrNarrative = `Friction escalated by +${deltaEvr}% across the sequence. Each subsequent point of extension required drastically more volume (${lastSample.evr.toLocaleString()} vol/pt vs ${firstSample.evr.toLocaleString()} initial). This reflects institutional limit absorption and aggressive exhaustion into the boundary.`;
+  } else if (deltaEvr < -30) {
+    evrStatusBadge = 'VACUUM ACCELERATION ⚡';
+    evrNarrative = `Friction collapsed by ${deltaEvr}% across the sequence. Price traversed range with decreasing volume resistance (${lastSample.evr.toLocaleString()} vol/pt vs ${firstSample.evr.toLocaleString()} initial), signalling a liquidity vacuum / rapid slip through thin order books.`;
+  } else {
+    evrStatusBadge = 'SUSTAINED FLOW ⚖️';
+    evrNarrative = `Effort-to-result ratio remained stable (${deltaEvr >= 0 ? '+' : ''}${deltaEvr}% shift). Volume participation scaled proportionally with price excursion without structural clogging.`;
+  }
+
+  // Who is actually playing out
+  const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+  const livePrice = lastBar ? lastBar.close : lastSample.P_1;
+
+  const netDeltaPct = totalVolume > 0 ? Math.round((totalNetDelta / totalVolume) * 100) : 0;
+  let whoBadge = 'PASSIVE ABSORPTION';
+  let whoNarrative = '';
+  const networkRange = Math.max(0.1, maxHigh - minLow);
+  const nearCeiling = (livePrice >= maxHigh - 0.25 * networkRange);
+  const nearFloor = (livePrice <= minLow + 0.25 * networkRange);
+
+  if (nearCeiling && (lastSample.absorbPct >= 60 || totalNetDelta < 0 || lastSample.netDeltaPct < -5)) {
+    whoBadge = 'PASSIVE CEILING DEFENSE (LIMIT SELLER)';
+    whoNarrative = `Passive institutional limit sellers are dominating at the ceiling ($${maxHigh.toFixed(2)}). Despite upward attempts, aggressive buyers are being absorbed without displacement, leaving cumulative delta negative or fading (${netDeltaPct}% net delta).`;
+  } else if (nearFloor && (lastSample.absorbPct >= 60 || totalNetDelta > 0 || lastSample.netDeltaPct > 5)) {
+    whoBadge = 'PASSIVE FLOOR DEFENSE (LIMIT BUYER)';
+    whoNarrative = `Passive institutional limit buyers are absorbing sell-side market orders at the floor ($${minLow.toFixed(2)}). Downside excursion is meeting heavy bid-side resting liquidity with high absorption (${lastSample.absorbPct}%).`;
+  } else if (lastSample.d === 1 && totalNetDelta > 0) {
+    whoBadge = 'AGGRESSIVE BUYER INITIATIVE';
+    whoNarrative = `Aggressive buyers are active, driving price upward via market orders (+${netDeltaPct}% net network delta). Resting liquidity is yielding rather than absorbing.`;
+  } else if (lastSample.d === -1 && totalNetDelta < 0) {
+    whoBadge = 'AGGRESSIVE SELLER INITIATIVE';
+    whoNarrative = `Aggressive sellers are dominating, driving down-moves through bids (-${Math.abs(netDeltaPct)}% net network delta).`;
+  } else {
+    whoBadge = 'ROTATIONAL INVENTORY EXCHANGE';
+    whoNarrative = `Order flow is evenly matched with balanced market orders and resting two-sided depth. Neither side has established structural dominance.`;
+  }
+
+  // Strongest Structural Inflection Nodes
+  const primaryAnchor = highestVolSample ? highestVolSample.metrics.P_0 : (maxHigh + minLow) / 2;
+  const eqShelf = (maxHigh + minLow) / 2;
+
+  // Runway & Vacuum
+  const distCeiling = Math.max(0, maxHigh - livePrice);
+  const distFloor = Math.max(0, livePrice - minLow);
+  const invalidationTripwire = lastSample.d === 1 ? minLow : maxHigh;
+
+  return {
+    symbol: window.__currentSymbol || 'XAUUSD',
+    sampleCount: N,
+    samples: sampleAudits,
+    totalVolume,
+    totalNetDelta,
+    netDeltaPct,
+    maxHigh,
+    minLow,
+    networkRange,
+    livePrice,
+    firstSample,
+    lastSample,
+    deltaEvr,
+    evrStatusBadge,
+    evrNarrative,
+    whoBadge,
+    whoNarrative,
+    primaryAnchor,
+    highestVolSample,
+    highestEvrSample,
+    eqShelf,
+    distCeiling,
+    distFloor,
+    invalidationTripwire
+  };
+}
+window.__computeNetworkDossier = computeNetworkDossier;
+
+export function openExtensionNetworkModal(chart) {
+  const modal = document.getElementById('tvExtensionNetworkModal');
+  if (!modal) return;
+
+  const c = chart || chartInstance;
+  const dossier = computeNetworkDossier(null, c?.getDataList?.());
+  const symbol = dossier?.symbol || window.__currentSymbol || 'XAUUSD';
+
+  const subtitleEl = document.getElementById('tvNetworkModalSubtitle');
+  if (subtitleEl) {
+    subtitleEl.textContent = `EMPIRICAL MULTI-BOX ORDER-FLOW & STRUCTURAL FRICTION AUDIT — ${symbol}`;
+  }
+
+  const badgeEl = document.getElementById('tvNetworkSampleCountBadge');
+  const trackEl = document.getElementById('tvNetworkTimelineTrack');
+  const whoContent = document.getElementById('tvAuditWhoPlaying');
+  const whoBadge = document.getElementById('tvAuditWhoBadge');
+  const fuelContent = document.getElementById('tvAuditFuelBurn');
+  const fuelBadge = document.getElementById('tvAuditFuelBadge');
+  const nodesContent = document.getElementById('tvAuditStructuralNodes');
+  const nodesBadge = document.getElementById('tvAuditNodesBadge');
+  const runwayContent = document.getElementById('tvAuditRunwayVacuum');
+  const runwayBadge = document.getElementById('tvAuditRunwayBadge');
+
+  if (!dossier || dossier.sampleCount === 0) {
+    if (badgeEl) badgeEl.textContent = '0 SAMPLES';
+    if (trackEl) {
+      trackEl.innerHTML = `
+        <div style="padding: 16px; color: #94a3b8; font-size: 12px; text-align: center; width: 100%;">
+          No rectangle sample boxes detected on chart canvas. Draw 1 or more boxes (Shortcut 'R') to audit structural order-flow.
+        </div>
+      `;
+    }
+    if (whoContent) whoContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to audit aggressor vs. passive absorption.</div>`;
+    if (fuelContent) fuelContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to measure fuel burn and friction shift.</div>`;
+    if (nodesContent) nodesContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to identify structural anchors and shelves.</div>`;
+    if (runwayContent) runwayContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to calculate manual trade runway.</div>`;
+    modal.style.display = 'flex';
+    return;
+  }
+
+  // Update sample count badge
+  if (badgeEl) badgeEl.textContent = `${dossier.sampleCount} SAMPLE${dossier.sampleCount > 1 ? 'S' : ''} CONNECTED`;
+
+  // Render Connected Sample Timeline Cards
+  if (trackEl) {
+    let cardsHtml = '';
+    dossier.samples.forEach((s, idx) => {
+      const isLast = (idx === dossier.samples.length - 1);
+      const activeCls = isLast ? 'active' : '';
+      const dirCls = s.d === 1 ? 'bull' : 'bear';
+      const dirIcon = s.d === 1 ? '↗ UP' : '↘ DOWN';
+      const deltaCls = s.netDelta > 0 ? 'bull' : (s.netDelta < 0 ? 'bear' : '');
+      const deltaSign = s.netDelta > 0 ? '+' : '';
+
+      cardsHtml += `
+        <div class="tv-network-sample-card ${activeCls}">
+          <div class="tv-network-sample-header">
+            <span class="tv-network-sample-title">SAMPLE #${s.boxNum}${isLast ? ' (LATEST)' : ''}</span>
+            <span class="tv-network-sample-dir ${dirCls}">${dirIcon} +${s.favMove.toFixed(1)}</span>
+          </div>
+          <div class="tv-network-stat-row">
+            <span class="tv-network-stat-label">Price Range</span>
+            <span class="tv-network-stat-val">$${s.H_b.toFixed(2)} - $${s.L_b.toFixed(2)} (${s.R_b.toFixed(2)})</span>
+          </div>
+          <div class="tv-network-stat-row">
+            <span class="tv-network-stat-label">Total Volume</span>
+            <span class="tv-network-stat-val highlight">${formatVolNumber(s.totalVol)}</span>
+          </div>
+          <div class="tv-network-stat-row">
+            <span class="tv-network-stat-label">Net Delta</span>
+            <span class="tv-network-stat-val ${deltaCls}">${deltaSign}${formatVolNumber(s.netDelta)} (${s.netDeltaPct}%)</span>
+          </div>
+          <div class="tv-network-stat-row">
+            <span class="tv-network-stat-label">EVR (Fuel Burn)</span>
+            <span class="tv-network-stat-val ${s.frictionCls}">${s.evr.toLocaleString()} v/pt</span>
+          </div>
+          <div class="tv-network-stat-row">
+            <span class="tv-network-stat-label">Absorption Rate</span>
+            <span class="tv-network-stat-val ${s.absorbPct >= 60 ? 'warn' : 'highlight'}">${s.absorbPct}% (${s.absorbLevel})</span>
+          </div>
+        </div>
+      `;
+    });
+    trackEl.innerHTML = cardsHtml;
+  }
+
+  // Card 1: WHO IS ACTUALLY PLAYING OUT
+  if (whoBadge) whoBadge.textContent = dossier.whoBadge;
+  if (whoContent) {
+    const totalDeltaSign = dossier.totalNetDelta > 0 ? '+' : '';
+    const totalDeltaCls = dossier.totalNetDelta > 0 ? 'bull' : (dossier.totalNetDelta < 0 ? 'bear' : '');
+    whoContent.innerHTML = `
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Cumulative Network Delta</span>
+        <span class="tv-network-stat-val ${totalDeltaCls}">${totalDeltaSign}${formatVolNumber(dossier.totalNetDelta)} (${dossier.netDeltaPct}%)</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Latest Box Absorption</span>
+        <span class="tv-network-stat-val highlight">${dossier.lastSample.absorbPct}% (${dossier.lastSample.absorbLevel})</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Aggressor vs Passive State</span>
+        <span class="tv-network-stat-val warn">${dossier.whoBadge}</span>
+      </div>
+      <div class="tv-network-narrative">${dossier.whoNarrative}</div>
+    `;
+  }
+
+  // Card 2: EFFORT VS RESULT (FUEL BURN ENGINE)
+  if (fuelBadge) fuelBadge.textContent = dossier.evrStatusBadge;
+  if (fuelContent) {
+    const evrDeltaSign = dossier.deltaEvr >= 0 ? '+' : '';
+    const evrCls = dossier.deltaEvr > 40 ? 'bear' : (dossier.deltaEvr < -30 ? 'bull' : 'warn');
+    fuelContent.innerHTML = `
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Initial vs Current Fuel Burn</span>
+        <span class="tv-network-stat-val">${dossier.firstSample.evr.toLocaleString()} → ${dossier.lastSample.evr.toLocaleString()} v/pt</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Sequence Friction Shift</span>
+        <span class="tv-network-stat-val ${evrCls}">${evrDeltaSign}${dossier.deltaEvr}%</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Peak Friction Sample</span>
+        <span class="tv-network-stat-val warn">Sample #${dossier.highestEvrSample ? dossier.highestEvrSample.idx : 1} (${dossier.highestEvrSample ? dossier.highestEvrSample.evr.toLocaleString() : 0} v/pt)</span>
+      </div>
+      <div class="tv-network-narrative">${dossier.evrNarrative}</div>
+    `;
+  }
+
+  // Card 3: STRONGEST STRUCTURAL INFLECTION NODES
+  if (nodesBadge) nodesBadge.textContent = 'CRITICAL SHELVES';
+  if (nodesContent) {
+    const live = dossier.livePrice;
+    nodesContent.innerHTML = `
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Network Apex (Resistance Ceiling)</span>
+        <span class="tv-network-stat-val bear">$${dossier.maxHigh.toFixed(2)} (${(dossier.maxHigh - live >= 0 ? '+' : '') + (dossier.maxHigh - live).toFixed(1)} pts)</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Network Floor (Support Base)</span>
+        <span class="tv-network-stat-val bull">$${dossier.minLow.toFixed(2)} (${(dossier.minLow - live <= 0 ? '' : '+') + (dossier.minLow - live).toFixed(1)} pts)</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Peak Volume Anchor Shelf</span>
+        <span class="tv-network-stat-val highlight">$${dossier.primaryAnchor.toFixed(2)} (Sample #${dossier.highestVolSample ? dossier.highestVolSample.idx : 1})</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Mid-Structure Equilibrium Shelf</span>
+        <span class="tv-network-stat-val warn">$${dossier.eqShelf.toFixed(2)}</span>
+      </div>
+      <div class="tv-network-narrative">Strongest volume defense anchor sits at <strong>$${dossier.primaryAnchor.toFixed(2)}</strong>. This is the institutional shelf where maximum contracts changed hands across the network.</div>
+    `;
+  }
+
+  // Card 4: STRUCTURAL RUNWAY & LIQUIDITY VACUUM
+  if (runwayBadge) runwayBadge.textContent = 'MANUAL PLANNING RUNWAY';
+  if (runwayContent) {
+    runwayContent.innerHTML = `
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Live Reference Price</span>
+        <span class="tv-network-stat-val highlight">$${dossier.livePrice.toFixed(2)}</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Upper Clearance to Ceiling</span>
+        <span class="tv-network-stat-val bear">${dossier.distCeiling.toFixed(1)} pts runway</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Lower Clearance to Floor</span>
+        <span class="tv-network-stat-val bull">${dossier.distFloor.toFixed(1)} pts runway</span>
+      </div>
+      <div class="tv-network-stat-row">
+        <span class="tv-network-stat-label">Critical Structural Invalidation</span>
+        <span class="tv-network-stat-val warn">$${dossier.invalidationTripwire.toFixed(2)}</span>
+      </div>
+      <div class="tv-network-narrative">Manual Planning Note: Structure gives <strong>${dossier.distCeiling.toFixed(1)} pts</strong> upward clearance vs <strong>${dossier.distFloor.toFixed(1)} pts</strong> downward runway. Invalidation of this structural sequence occurs on a clean close beyond <strong>$${dossier.invalidationTripwire.toFixed(2)}</strong>.</div>
+    `;
+  }
+
+  modal.style.display = 'flex';
+}
+window.__openExtensionNetworkModal = openExtensionNetworkModal;
 
 export function startCandleCountdown(timeframeMinutes = 5) {
   const el = document.getElementById('tvCountdownTimer');

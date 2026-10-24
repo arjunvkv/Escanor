@@ -3211,7 +3211,15 @@ input[type="number"] {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
   pointer-events: auto;
   user-select: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   animation: tvExtFadeIn 0.2s ease-out;
+}
+
+.tv-extension-ribbon:hover {
+  border: 1.5px solid #00e5ff;
+  box-shadow: 0 10px 32px rgba(0, 229, 255, 0.28);
+  transform: translateX(-50%) translateY(-1px);
 }
 
 @keyframes tvExtFadeIn {
@@ -3284,4 +3292,219 @@ input[type="number"] {
 
 .tv-dir-btn.active {
   box-shadow: 0 0 0 1px #3b82f6, 0 2px 8px rgba(59, 130, 246, 0.25);
+}
+
+.tv-ext-pill.dossier-btn {
+  background: rgba(0, 229, 255, 0.16);
+  border: 1px solid #00e5ff;
+  color: #38bdf8;
+  cursor: pointer;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.25);
+  font-weight: 800;
+  transition: all 0.15s ease;
+}
+
+.tv-ext-pill.dossier-btn:hover {
+  background: #00e5ff;
+  color: #0b0f19;
+  box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+}
+
+/* ========================================================================= */
+/* 🌐 STRUCTURAL SAMPLE NETWORK DOSSIER MODAL STYLES                         */
+/* ========================================================================= */
+.tv-network-modal-card {
+  max-width: 920px;
+  width: 95vw;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  background: #0d111a;
+  border: 1px solid rgba(0, 229, 255, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.85), 0 0 30px rgba(0, 229, 255, 0.15);
+}
+
+.tv-modal-header-subtitle {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-top: 2px;
+}
+
+.tv-network-modal-body {
+  overflow-y: auto;
+  max-height: calc(88vh - 120px);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tv-network-section {
+  background: rgba(18, 24, 38, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.45);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.tv-badge-highlight {
+  background: rgba(0, 229, 255, 0.16);
+  color: #00e5ff;
+  border: 1px solid rgba(0, 229, 255, 0.4);
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.tv-network-timeline-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-top: 8px;
+}
+
+.tv-network-timeline-track::-webkit-scrollbar {
+  height: 6px;
+}
+
+.tv-network-timeline-track::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 3px;
+}
+
+.tv-network-timeline-track::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 3px;
+}
+
+.tv-network-sample-card {
+  min-width: 190px;
+  max-width: 210px;
+  flex-shrink: 0;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tv-network-sample-card.active {
+  border-color: #00e5ff;
+  box-shadow: 0 0 14px rgba(0, 229, 255, 0.35);
+  background: rgba(15, 28, 48, 0.98);
+}
+
+.tv-network-sample-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding-bottom: 4px;
+}
+
+.tv-network-sample-title {
+  font-size: 11px;
+  font-weight: 800;
+  color: #f8fafc;
+}
+
+.tv-network-sample-dir {
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.tv-network-sample-dir.bull { color: #10b981; }
+.tv-network-sample-dir.bear { color: #f43f5e; }
+
+.tv-network-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 768px) {
+  .tv-network-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.tv-network-card {
+  background: rgba(18, 24, 38, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.45);
+  border-radius: 8px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tv-network-tag-pill {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+.tv-network-content {
+  font-size: 12px;
+  color: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.tv-network-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11.5px;
+  padding: 3px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+}
+
+.tv-network-stat-label {
+  color: #94a3b8;
+  font-weight: 600;
+}
+
+.tv-network-stat-val {
+  color: #f1f5f9;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  font-weight: 700;
+}
+
+.tv-network-stat-val.bull { color: #34d399; }
+.tv-network-stat-val.bear { color: #f87171; }
+.tv-network-stat-val.highlight { color: #00e5ff; }
+.tv-network-stat-val.warn { color: #fbbf24; }
+
+.tv-network-narrative {
+  background: rgba(13, 17, 26, 0.7);
+  border-left: 3px solid #00e5ff;
+  padding: 8px 10px;
+  border-radius: 0 4px 4px 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: #e2e8f0;
+  margin-top: 4px;
+}
+
+.tv-network-footer-note {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
