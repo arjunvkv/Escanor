@@ -832,43 +832,16 @@
             </div>
           </div>
 
-          <!-- Top Row: Trajectory (Left) + Pipeline Load (Right) -->
+          <!-- Top Row: Pipeline Load (Volume Profile) + Structural Runway -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            
-            <!-- Trajectory Card -->
-            <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
-              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase; margin-bottom: 4px;">
-                <span>TRAJECTORY</span>
-                <span id="tvNexusTrajDelta" style="font-size: 10px; font-family: monospace; color: #94a3b8;">+0.0 PTS TO TARGET</span>
-              </div>
-              <div style="position: relative; width: 100%; height: 110px;">
-                <svg id="tvNexusTrajSvg" viewBox="0 0 240 120" style="width: 100%; height: 100%; overflow: visible;">
-                  <line x1="0" y1="20" x2="240" y2="20" stroke="#172238" stroke-dasharray="3,3" stroke-width="1" />
-                  <line x1="0" y1="60" x2="240" y2="60" stroke="#172238" stroke-dasharray="3,3" stroke-width="1" />
-                  <line x1="0" y1="100" x2="240" y2="100" stroke="#172238" stroke-dasharray="3,3" stroke-width="1" />
-                  <path id="tvNexusTrajLine" d="M 15 95 L 45 90 L 80 75 L 115 80 L 145 60 L 175 75 L 205 35 L 228 20" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(0,245,212,0.7));" />
-                  <circle id="tvNexusNodeFloor" cx="15" cy="95" r="3.5" fill="#00f5d4" />
-                  <circle id="tvNexusNodePoc" cx="80" cy="75" r="3.5" fill="#00f5d4" />
-                  <circle id="tvNexusNodeMid" cx="145" cy="60" r="3.5" fill="#00f5d4" />
-                  <circle id="tvNexusNodeLiveGlow" cx="205" cy="35" r="6" fill="#00f5d4" opacity="0.4" class="tv-pulsing-node" />
-                  <circle id="tvNexusNodeLive" cx="205" cy="35" r="4" fill="#ffffff" stroke="#00f5d4" stroke-width="1.5" />
-                  <circle id="tvNexusNodeTarget" cx="228" cy="20" r="3.5" fill="#8b5cf6" />
-                </svg>
-              </div>
-              <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; color: #64748b; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);">
-                <span>BASE: <strong id="tvNexusCoordBase" style="color: #00f5d4;">$0.00</strong></span>
-                <span>POC: <strong id="tvNexusCoordPoc" style="color: #ffffff;">$0.00</strong></span>
-                <span>LIVE: <strong id="tvNexusCoordLive" style="color: #00f5d4;">$0.00</strong></span>
-              </div>
-            </div>
 
             <!-- Pipeline Load Card -->
             <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
               <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #8b5cf6; text-transform: uppercase; margin-bottom: 4px;">
-                <span>PIPELINE LOAD</span>
+                <span>PIPELINE LOAD // EFFORT PROFILE</span>
                 <span id="tvNexusLoadVal" style="font-size: 10px; font-family: monospace; color: #00f5d4;">0 v/pt</span>
               </div>
-              <div id="tvNexusLoadBarsContainer" style="width: 100%; height: 110px; display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; padding: 0 4px;">
+              <div id="tvNexusLoadBarsContainer" style="width: 100%; height: 95px; display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; padding: 0 4px;">
                 <!-- 8 vertical 3D cylinder bars generated dynamically -->
               </div>
               <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; color: #64748b; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);">
@@ -877,23 +850,118 @@
               </div>
             </div>
 
+            <!-- Structural Depth & Runway Card -->
+            <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase; margin-bottom: 4px;">
+                <span>STRUCTURAL RUNWAY</span>
+                <span id="tvNexusRunwayGapBadge" style="font-size: 10px; font-family: monospace; color: #00f5d4; font-weight: 800;">+0.0 PTS VACUUM</span>
+              </div>
+              
+              <!-- Micro Depth Shelf -->
+              <div style="display: flex; flex-direction: column; gap: 3px; margin: auto 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; background: rgba(244,63,94,0.12); border: 1px solid rgba(244,63,94,0.3);">
+                  <span style="color: #f43f5e; font-weight: 700;">🔴 CEILING</span>
+                  <span id="tvNexusShelfCeiling" style="color: #ffffff; font-weight: 700;">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; background: rgba(0,245,212,0.12); border: 1px solid rgba(0,245,212,0.5); box-shadow: 0 0 8px rgba(0,245,212,0.2);">
+                  <span style="color: #00f5d4; font-weight: 800; display: flex; align-items: center; gap: 4px;">
+                    <span style="width: 5px; height: 5px; border-radius: 50%; background: #00f5d4; display: inline-block;"></span>
+                    LIVE PRICE
+                  </span>
+                  <span id="tvNexusShelfLive" style="color: #00f5d4; font-weight: 800;">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-family: monospace; padding: 2px 6px; border-radius: 4px; background: #101728; border: 1px solid #1e293b;">
+                  <span style="color: #64748b;">⚓ POC ANCHOR</span>
+                  <span id="tvNexusShelfPoc" style="color: #ffffff;">$0.00</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; padding: 2px 6px; border-radius: 4px; background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.3);">
+                  <span style="color: #10b981; font-weight: 700;">🟢 FLOOR BASE</span>
+                  <span id="tvNexusShelfFloor" style="color: #ffffff; font-weight: 700;">$0.00</span>
+                </div>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; color: #64748b; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <span>INVALIDATION:</span>
+                <span id="tvNexusShelfStop" style="color: #f43f5e; font-weight: 700;">&lt; $0.00</span>
+              </div>
+            </div>
+
           </div>
 
-          <!-- Middle Row: Command Oscillation (CVD Delta Wave) -->
-          <div class="tv-nexus-card" style="padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase; margin-bottom: 4px;">
-              <span>COMMAND OSCILLATION // DELTA HARMONIC</span>
+          <!-- Middle Row: Expanded Overlapping Multi-Box Harmonic Oscillator -->
+          <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span>COMMAND OSCILLATION // MULTI-BOX DELTA HARMONIC</span>
+                <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; font-family: monospace;">
+                  <span style="display: flex; align-items: center; gap: 4px; color: #8b5cf6;">
+                    <span style="width: 8px; height: 2px; background: #8b5cf6; display: inline-block;"></span> BOX 1
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 4px; color: #00f5d4;">
+                    <span style="width: 8px; height: 2px; background: #00f5d4; display: inline-block;"></span> BOX 2
+                  </span>
+                </div>
+              </div>
               <span id="tvNexusOscMeta" style="font-size: 10px; font-family: monospace; color: #e2e8f0;">
                 ABSORPTION: <strong style="color: #00f5d4;">0%</strong> • DELTA: <strong style="color: #f43f5e;">0</strong>
               </span>
             </div>
-            <div style="position: relative; width: 100%; height: 50px;">
-              <svg viewBox="0 0 540 60" style="width: 100%; height: 100%; overflow: visible;">
-                <line x1="0" y1="30" x2="540" y2="30" stroke="#172238" stroke-width="1.5" />
-                <path id="tvNexusOscWave" d="M 0 32 Q 25 18, 50 28 T 100 26 T 150 48 T 200 18 T 250 42 T 300 25 T 350 48 T 400 16 T 450 38 T 500 24 T 540 30" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.6));" />
+
+            <!-- Overlapping Vector Harmonic Oscilloscope SVG -->
+            <div style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
+              <svg viewBox="0 0 620 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusOscSvg">
+                <defs>
+                  <linearGradient id="tvNexusVacuumGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25" />
+                    <stop offset="50%" stop-color="#00f5d4" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="#00f5d4" stop-opacity="0.15" />
+                  </linearGradient>
+                </defs>
+
+                <!-- Gridlines -->
+                <line x1="0" y1="30" x2="620" y2="30" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
+                <line x1="0" y1="60" x2="620" y2="60" stroke="#1c2842" stroke-width="1.5" />
+                <line x1="0" y1="90" x2="620" y2="90" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
+
+                <!-- Zero & Delta Labels -->
+                <text x="6" y="63" fill="#475569" font-size="8.5" font-family="monospace">0Δ</text>
+                <text x="6" y="33" fill="#00f5d4" font-size="8" font-family="monospace">+Δ</text>
+                <text x="6" y="93" fill="#f43f5e" font-size="8" font-family="monospace">-Δ</text>
+
+                <!-- Shaded Overlapping Area -->
+                <path id="tvNexusShadedArea" d="M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z" fill="url(#tvNexusVacuumGrad)" class="tv-nexus-path-smooth" />
+
+                <!-- Box 1 Overlapping Line: Purple -->
+                <path id="tvNexusOscLineBox1" d="M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.5));" />
+
+                <!-- Box 2 Overlapping Line: Cyan -->
+                <path id="tvNexusOscLineBox2" d="M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.8));" />
+
+                <!-- Interactive Callout Chips explaining the areas -->
+                <g id="tvNexusCalloutAbsorb" transform="translate(100, 75)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#8b5cf6" stroke-width="1" opacity="0.95"/>
+                  <text x="0" y="2" fill="#c4b5fd" font-size="8.5" font-family="monospace" font-weight="bold">🛡️ ABSORPTION WALL</text>
+                </g>
+
+                <g id="tvNexusCalloutVacuum" transform="translate(300, 15)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke="#00f5d4" stroke-width="1.2" opacity="0.95"/>
+                  <text x="0" y="2" fill="#00f5d4" font-size="8.5" font-family="monospace" font-weight="bold">⚡ -51% VACUUM POCKET</text>
+                </g>
+
+                <g id="tvNexusCalloutRunway" transform="translate(470, 38)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="95" height="16" rx="3" fill="#091020" stroke="#f43f5e" stroke-width="1" opacity="0.95"/>
+                  <text x="0" y="2" fill="#fca5a5" font-size="8.5" font-family="monospace" font-weight="bold">🎯 CEILING GAP</text>
+                </g>
               </svg>
             </div>
+
+            <!-- Readout Subline explaining the active area -->
+            <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #64748b; padding-top: 2px;">
+              <span>HOVER OVER SHADED POCKETS TO READ AUCTION EFFORT SHIFT</span>
+              <span id="tvNexusOscAreaNote" style="color: #00f5d4; font-weight: 700;">AREA REVEALS: -51% FRICTION COLLAPSE + TRAPPED SHORTS</span>
+            </div>
           </div>
+
 
           <!-- Bottom Row: 24-Channel LED Status Matrix -->
           <div class="tv-nexus-card" style="padding: 10px;">

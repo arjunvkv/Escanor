@@ -21,14 +21,20 @@ assert.ok(engineCode.includes("text: `+${m.favMove.toFixed(1)}`"), 'Blue line mu
 // Ensure narrative text paragraphs are eliminated in favor of rich widgets
 assert.ok(!engineCode.includes('tv-network-narrative'), 'Text narrative paragraphs must be removed in favor of rich visual widgets');
 
-// Ensure rich interactive tactical HUD elements exist in openExtensionNetworkModal
+// Ensure Trajectory section is removed completely
+assert.ok(!engineCode.includes('tvNexusTrajLine'), 'Price trajectory line must be removed completely');
+
+// Ensure rich interactive tactical HUD elements & overlapping multi-box harmonic lines exist in openExtensionNetworkModal
 assert.ok(engineCode.includes('tv-nexus-tab-btn'), 'Dynamic tab buttons must be present');
-assert.ok(engineCode.includes('tvNexusTrajLine'), 'Trajectory line element must be present');
+assert.ok(engineCode.includes('tvNexusOscLineBox1'), 'Box 1 harmonic line must be present');
+assert.ok(engineCode.includes('tvNexusOscLineBox2'), 'Box 2 harmonic line must be present');
+assert.ok(engineCode.includes('tvNexusShadedArea'), 'Overlapping shaded area must be present');
+assert.ok(engineCode.includes('tvNexusCalloutVacuum'), 'Vacuum callout badge must be present');
 assert.ok(engineCode.includes('tvNexusLoadBarsContainer'), 'Pipeline load cylinder container must be present');
-assert.ok(engineCode.includes('tvNexusOscWave'), 'Command oscillation harmonic wave must be present');
 assert.ok(engineCode.includes('tvNexusLedGrid'), '24-channel LED matrix grid must be present');
 assert.ok(engineCode.includes('tv-nexus-cylinder-bar'), '3D cylindrical load bar class must be present');
 assert.ok(engineCode.includes('tv-led-pill'), 'LED status matrix pill class must be present');
+
 
 
 // Ensure red anchor and cyan trend arrow remain

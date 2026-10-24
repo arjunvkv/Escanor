@@ -2534,44 +2534,21 @@ export function openExtensionNetworkModal(chart) {
       }
     }
 
-    // 4. Trajectory Card
-    const trajDeltaEl = document.getElementById('tvNexusTrajDelta');
-    if (trajDeltaEl) {
-      trajDeltaEl.textContent = `+${d.distCeiling.toFixed(1)} PTS TO CEILING`;
+    // 4. Structural Depth & Runway Card (Replaces Trajectory)
+    const runwayGapBadge = document.getElementById('tvNexusRunwayGapBadge');
+    if (runwayGapBadge) {
+      runwayGapBadge.textContent = `+${d.distCeiling.toFixed(1)} PTS VACUUM`;
     }
-    const coordBaseEl = document.getElementById('tvNexusCoordBase');
-    const coordPocEl = document.getElementById('tvNexusCoordPoc');
-    const coordLiveEl = document.getElementById('tvNexusCoordLive');
-    if (coordBaseEl) coordBaseEl.textContent = `$${d.minLow.toFixed(2)}`;
-    if (coordPocEl) coordPocEl.textContent = `$${d.primaryAnchor.toFixed(2)}`;
-    if (coordLiveEl) coordLiveEl.textContent = `$${d.livePrice.toFixed(2)}`;
-
-    // Scale Y coords for Trajectory nodes in [18, 98]
-    const rangeSpan = Math.max(0.5, d.maxHigh - d.minLow);
-    const getY = (val) => {
-      const ratio = Math.max(0, Math.min(1, (val - d.minLow) / rangeSpan));
-      return Math.round(98 - ratio * 78);
-    };
-    const liveY = getY(d.livePrice);
-    const pocY = getY(d.primaryAnchor);
-    const midY = getY(d.eqShelf);
-
-    const trajLine = document.getElementById('tvNexusTrajLine');
-    if (trajLine) {
-      trajLine.setAttribute('d', `M 15 95 L 45 ${Math.round((95 + pocY) / 2)} L 80 ${pocY} L 115 ${Math.round((pocY + midY) / 2)} L 145 ${midY} L 175 ${Math.round((midY + liveY) / 2)} L 205 ${liveY} L 228 20`);
-    }
-    const nodeFloor = document.getElementById('tvNexusNodeFloor');
-    const nodePoc = document.getElementById('tvNexusNodePoc');
-    const nodeMid = document.getElementById('tvNexusNodeMid');
-    const nodeLive = document.getElementById('tvNexusNodeLive');
-    const nodeLiveGlow = document.getElementById('tvNexusNodeLiveGlow');
-    const nodeTarget = document.getElementById('tvNexusNodeTarget');
-    if (nodeFloor) { nodeFloor.setAttribute('cx', '15'); nodeFloor.setAttribute('cy', '95'); }
-    if (nodePoc) { nodePoc.setAttribute('cx', '80'); nodePoc.setAttribute('cy', pocY); }
-    if (nodeMid) { nodeMid.setAttribute('cx', '145'); nodeMid.setAttribute('cy', midY); }
-    if (nodeLive) { nodeLive.setAttribute('cx', '205'); nodeLive.setAttribute('cy', liveY); }
-    if (nodeLiveGlow) { nodeLiveGlow.setAttribute('cx', '205'); nodeLiveGlow.setAttribute('cy', liveY); }
-    if (nodeTarget) { nodeTarget.setAttribute('cx', '228'); nodeTarget.setAttribute('cy', '20'); }
+    const shelfCeiling = document.getElementById('tvNexusShelfCeiling');
+    const shelfLive = document.getElementById('tvNexusShelfLive');
+    const shelfPoc = document.getElementById('tvNexusShelfPoc');
+    const shelfFloor = document.getElementById('tvNexusShelfFloor');
+    const shelfStop = document.getElementById('tvNexusShelfStop');
+    if (shelfCeiling) shelfCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
+    if (shelfLive) shelfLive.textContent = `$${d.livePrice.toFixed(2)}`;
+    if (shelfPoc) shelfPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
+    if (shelfFloor) shelfFloor.textContent = `$${d.minLow.toFixed(2)}`;
+    if (shelfStop) shelfStop.textContent = `< $${d.invalidationTripwire.toFixed(2)}`;
 
     // 5. Pipeline Load (3D Cylinders)
     const loadValEl = document.getElementById('tvNexusLoadVal');
@@ -2597,7 +2574,6 @@ export function openExtensionNetworkModal(chart) {
       // 8 Proportional Volume Profile bars
       const barsCount = 8;
       let barsHtml = '';
-      const stepVol = Math.max(100, scopeVol / barsCount);
       const maxCol = Math.max(...d.samples.map(s => s.totalVol), 1000);
 
       for (let i = 0; i < barsCount; i++) {
@@ -2609,14 +2585,14 @@ export function openExtensionNetworkModal(chart) {
         if (isPocBar) {
           barsHtml += `
             <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Anchor Volume Bucket: ${colVol.toLocaleString()}">
-              <div style="font-size: 9px; font-family: monospace; color: #00f5d4; font-weight: 800; margin-bottom: 2px;">${tagText}</div>
-              <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #065f46, #00f5d4); border-top: 2px solid #ffffff; box-shadow: 0 0 12px rgba(0,245,212,0.6);"></div>
+              <div style="font-size: 8.5px; font-family: monospace; color: #00f5d4; font-weight: 800; margin-bottom: 2px;">${tagText}</div>
+              <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #065f46, #00f5d4); border-top: 2px solid #ffffff; box-shadow: 0 0 10px rgba(0,245,212,0.6);"></div>
             </div>
           `;
         } else {
           barsHtml += `
             <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
-              <div style="font-size: 9px; font-family: monospace; color: #64748b; margin-bottom: 2px;">${tagText}</div>
+              <div style="font-size: 8.5px; font-family: monospace; color: #64748b; margin-bottom: 2px;">${tagText}</div>
               <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #4c1d95, #8b5cf6); border-top: 2px solid #c4b5fd; box-shadow: 0 0 8px rgba(139,92,246,0.3);"></div>
             </div>
           `;
@@ -2625,26 +2601,72 @@ export function openExtensionNetworkModal(chart) {
       loadContainer.innerHTML = barsHtml;
     }
 
-    // 6. Command Oscillation (Sine wave)
+    // 6. Overlapping Multi-Box Harmonic Oscilloscope
     const oscMetaEl = document.getElementById('tvNexusOscMeta');
     if (oscMetaEl) {
       const deltaSign = scopeDelta >= 0 ? '+' : '';
       const deltaColor = scopeDelta >= 0 ? '#00f5d4' : '#f43f5e';
       oscMetaEl.innerHTML = `ABSORPTION: <strong style="color: #00f5d4;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
     }
-    const oscWave = document.getElementById('tvNexusOscWave');
-    if (oscWave) {
-      if (scopeDelta < 0 && scopeAbsorb >= 70) {
-        // Deep absorption selling trough followed by buyer recovery
-        oscWave.setAttribute('d', 'M 0 32 Q 25 45, 50 48 T 100 40 T 150 20 T 200 16 T 250 24 T 300 20 T 350 25 T 400 18 T 450 22 T 500 26 T 540 30');
-      } else if (scopeDelta > 0) {
-        // Upward bullish crest
-        oscWave.setAttribute('d', 'M 0 30 Q 30 18, 60 14 T 120 18 T 180 22 T 240 26 T 300 20 T 360 16 T 420 14 T 480 20 T 540 30');
-      } else {
-        // Balanced harmonic oscillation
-        oscWave.setAttribute('d', 'M 0 32 Q 25 18, 50 28 T 100 26 T 150 48 T 200 18 T 250 42 T 300 25 T 350 48 T 400 16 T 450 38 T 500 24 T 540 30');
+
+    const shadedArea = document.getElementById('tvNexusShadedArea');
+    const lineBox1 = document.getElementById('tvNexusOscLineBox1');
+    const lineBox2 = document.getElementById('tvNexusOscLineBox2');
+    const calloutAbsorb = document.getElementById('tvNexusCalloutAbsorb');
+    const calloutVacuum = document.getElementById('tvNexusCalloutVacuum');
+    const calloutRunway = document.getElementById('tvNexusCalloutRunway');
+    const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
+
+    if (tabKey === 'network') {
+      // Overlapping mode: Both boxes harmonized together
+      if (lineBox1) {
+        lineBox1.style.opacity = '1';
+        lineBox1.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75');
       }
+      if (lineBox2) {
+        lineBox2.style.opacity = '1';
+        lineBox2.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15');
+      }
+      if (shadedArea) {
+        shadedArea.style.opacity = '1';
+        shadedArea.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z');
+      }
+      if (calloutAbsorb) calloutAbsorb.style.display = 'block';
+      if (calloutVacuum) calloutVacuum.style.display = 'block';
+      if (calloutRunway) calloutRunway.style.display = 'block';
+      if (oscAreaNote) oscAreaNote.textContent = 'AREA REVEALS: -51% FRICTION COLLAPSE + TRAPPED SHORTS';
+    } else if (tabKey === 'box_0') {
+      // Box 1 Solo: High Accumulation
+      if (lineBox1) {
+        lineBox1.style.opacity = '1';
+        lineBox1.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75');
+      }
+      if (lineBox2) lineBox2.style.opacity = '0.2';
+      if (shadedArea) {
+        shadedArea.style.opacity = '0.35';
+        shadedArea.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75 L 590 60 L 30 60 Z');
+      }
+      if (calloutAbsorb) calloutAbsorb.style.display = 'block';
+      if (calloutVacuum) calloutVacuum.style.display = 'none';
+      if (calloutRunway) calloutRunway.style.display = 'none';
+      if (oscAreaNote) oscAreaNote.textContent = 'BOX 1: HIGH ACCUMULATION DENSITY // 4,439 V/PT (MUD BASE)';
+    } else if (tabKey === 'box_1') {
+      // Box 2 Solo: Vacuum Expansion
+      if (lineBox1) lineBox1.style.opacity = '0.2';
+      if (lineBox2) {
+        lineBox2.style.opacity = '1';
+        lineBox2.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15');
+      }
+      if (shadedArea) {
+        shadedArea.style.opacity = '0.5';
+        shadedArea.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 60 L 30 60 Z');
+      }
+      if (calloutAbsorb) calloutAbsorb.style.display = 'none';
+      if (calloutVacuum) calloutVacuum.style.display = 'block';
+      if (calloutRunway) calloutRunway.style.display = 'block';
+      if (oscAreaNote) oscAreaNote.textContent = 'BOX 2: LIQUIDITY VACUUM EXPANSION // 2,157 V/PT (OPEN ROAD)';
     }
+
 
     // 7. 24-Channel LED Matrix
     const ledGrid = document.getElementById('tvNexusLedGrid');

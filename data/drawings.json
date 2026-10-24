@@ -40,6 +40,45 @@
       "extendData": {}
     },
     {
+      "id": "overlay_1792861807175_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792765500000,
+          "value": 4035.6063732718894,
+          "dataIndex": 685
+        },
+        {
+          "timestamp": 1792772700000,
+          "value": 4035.6063732718894,
+          "dataIndex": 709
+        },
+        {
+          "timestamp": 1792772700000,
+          "value": 4015.7503210445466,
+          "dataIndex": 709
+        },
+        {
+          "timestamp": 1792765500000,
+          "value": 4015.7503210445466,
+          "dataIndex": 685
+        },
+        {
+          "timestamp": 1792765500000,
+          "value": 4025.678347158218,
+          "dataIndex": 685
+        },
+        {
+          "timestamp": 1792772700000,
+          "value": 4025.678347158218,
+          "dataIndex": 709
+        }
+      ],
+      "styles": null,
+      "zLevel": 29,
+      "extendData": {}
+    },
+    {
       "id": "overlay_1792859367240_1",
       "name": "rect",
       "points": [
@@ -76,45 +115,6 @@
       ],
       "styles": null,
       "zLevel": 48,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792861807175_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1792765500000,
-          "value": 4035.6063732718894,
-          "dataIndex": 685
-        },
-        {
-          "timestamp": 1792772700000,
-          "value": 4035.6063732718894,
-          "dataIndex": 709
-        },
-        {
-          "timestamp": 1792772700000,
-          "value": 4015.7503210445466,
-          "dataIndex": 709
-        },
-        {
-          "timestamp": 1792765500000,
-          "value": 4015.7503210445466,
-          "dataIndex": 685
-        },
-        {
-          "timestamp": 1792765500000,
-          "value": 4025.678347158218,
-          "dataIndex": 685
-        },
-        {
-          "timestamp": 1792772700000,
-          "value": 4025.678347158218,
-          "dataIndex": 709
-        }
-      ],
-      "styles": null,
-      "zLevel": 100,
       "extendData": {}
     },
     {
