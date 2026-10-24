@@ -975,51 +975,52 @@
                 <svg viewBox="0 0 540 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusOscSvg">
                   <defs>
                     <linearGradient id="tvNexusVacuumGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25" />
-                      <stop offset="50%" stop-color="#00f5d4" stop-opacity="0.4" />
-                      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.2" />
+                      <stop offset="0%" stop-color="#fca5a5" stop-opacity="0.15" />
+                      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.30" />
+                      <stop offset="100%" stop-color="#dc2626" stop-opacity="0.40" />
                     </linearGradient>
                   </defs>
 
                   <!-- Gridlines -->
                   <line x1="0" y1="30" x2="540" y2="30" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
-                  <line x1="0" y1="60" x2="540" y2="60" stroke="#1c2842" stroke-width="1.5" />
+                  <!-- Yellow Equilibrium Midline -->
+                  <line x1="0" y1="60" x2="540" y2="60" stroke="#facc15" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.65" />
                   <line x1="0" y1="90" x2="540" y2="90" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
 
                   <!-- Zero & Delta Labels -->
-                  <text x="5" y="63" fill="#475569" font-size="8.5" font-family="monospace">0Δ</text>
-                  <text x="5" y="33" fill="#00f5d4" font-size="8" font-family="monospace">+Δ</text>
-                  <text x="5" y="93" fill="#f43f5e" font-size="8" font-family="monospace">-Δ</text>
+                  <text x="5" y="63" fill="#facc15" font-size="8.5" font-family="monospace">0Δ EQ</text>
+                  <text x="5" y="33" fill="#64748b" font-size="8" font-family="monospace">+Δ</text>
+                  <text x="5" y="93" fill="#64748b" font-size="8" font-family="monospace">-Δ</text>
 
                   <!-- Shaded Overlapping Area -->
                   <path id="tvNexusShadedArea" d="M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10 L 515 75 C 440 85, 370 75, 300 58 C 230 45, 160 75, 90 95 Z" fill="url(#tvNexusVacuumGrad)" class="tv-nexus-path-smooth" />
 
                   <!-- Dynamic Delta Lines Group -->
                   <g id="tvNexusDeltaLinesGroup">
-                    <!-- Box 1 Overlapping Line: Purple (Building Base) -->
-                    <path id="tvNexusOscLineBox1" d="M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.5));" />
+                    <!-- Box 1 Overlapping Line: Soft Rose (Building Base) -->
+                    <path id="tvNexusOscLineBox1" d="M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75" fill="none" stroke="#fca5a5" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" />
 
-                    <!-- Box 2 Overlapping Line: Cyan (Break Sequence) -->
-                    <path id="tvNexusOscLineBox2" d="M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.8));" />
+                    <!-- Box 2 Overlapping Line: Vivid Red (Break Sequence) -->
+                    <path id="tvNexusOscLineBox2" d="M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15" fill="none" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" class="tv-nexus-path-smooth" />
 
-                    <!-- Box 3 Overlapping Line: Warm Amber / Gold (Runway Extension) -->
-                    <path id="tvNexusOscLineBox3" d="M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 7px rgba(251,191,36,0.7)); opacity: 1;" />
+                    <!-- Box 3 Overlapping Line: Deep Crimson (Runway Extension) -->
+                    <path id="tvNexusOscLineBox3" d="M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10" fill="none" stroke="#dc2626" stroke-width="2.8" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(220,38,38,0.7)); opacity: 1;" />
                   </g>
 
                   <!-- Interactive Callout Chips explaining the areas -->
                   <g id="tvNexusCalloutAbsorb" transform="translate(65, 75)" style="cursor: pointer;">
-                    <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#8b5cf6" stroke-width="1" opacity="0.95"/>
-                    <text x="0" y="2" fill="#c4b5fd" font-size="8.5" font-family="monospace" font-weight="bold">🛡️ BEAR BUILDING</text>
+                    <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#f87171" stroke-width="1.2" opacity="0.95"/>
+                    <text x="0" y="2" fill="#fca5a5" font-size="8.5" font-family="monospace" font-weight="bold">🛡️ BEAR BUILDING</text>
                   </g>
 
                   <g id="tvNexusCalloutVacuum" transform="translate(225, 18)" style="cursor: pointer;">
-                    <rect x="-4" y="-10" width="120" height="16" rx="3" fill="#091020" stroke="#00f5d4" stroke-width="1.2" opacity="0.95"/>
-                    <text x="0" y="2" fill="#00f5d4" font-size="8.5" font-family="monospace" font-weight="bold">⚡ BEAR BREAK</text>
+                    <rect x="-4" y="-10" width="105" height="16" rx="3" fill="#091020" stroke="#ef4444" stroke-width="1.4" opacity="0.95"/>
+                    <text x="0" y="2" fill="#fee2e2" font-size="8.5" font-family="monospace" font-weight="bold">⚡ BEAR BREAK</text>
                   </g>
 
                   <g id="tvNexusCalloutRunway" transform="translate(390, 15)" style="cursor: pointer;">
-                    <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#fbbf24" stroke-width="1" opacity="0.95"/>
-                    <text x="0" y="2" fill="#fde68a" font-size="8.5" font-family="monospace" font-weight="bold">🎯 BEAR RUNWAY</text>
+                    <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#dc2626" stroke-width="1.5" opacity="0.95"/>
+                    <text x="0" y="2" fill="#ffffff" font-size="8.5" font-family="monospace" font-weight="bold">🎯 BEAR RUNWAY</text>
                   </g>
                 </svg>
               </div>
@@ -1027,7 +1028,7 @@
               <!-- Readout Subline explaining the active area -->
               <div style="display: flex; justify-content: space-between; font-size: 9px; font-family: monospace; color: #64748b; padding-top: 1px;">
                 <span>HARMONIZED DELTA & ABSORPTION</span>
-                <span id="tvNexusOscAreaNote" style="color: #00f5d4; font-weight: 700;">ALL 3 BOXES: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)</span>
+                <span id="tvNexusOscAreaNote" style="color: #fca5a5; font-weight: 700;">ALL 3 BOXES: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)</span>
               </div>
             </div>
 
@@ -1058,51 +1059,52 @@
                 <svg viewBox="0 0 540 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusEvrOscSvg">
                   <defs>
                     <linearGradient id="tvNexusEvrGrad" x1="0" y1="0" x2="1" y2="0">
-                      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.30" />
-                      <stop offset="50%" stop-color="#00f5d4" stop-opacity="0.35" />
-                      <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.25" />
+                      <stop offset="0%" stop-color="#fca5a5" stop-opacity="0.15" />
+                      <stop offset="50%" stop-color="#ef4444" stop-opacity="0.30" />
+                      <stop offset="100%" stop-color="#dc2626" stop-opacity="0.40" />
                     </linearGradient>
                   </defs>
 
                   <!-- Gridlines -->
                   <line x1="0" y1="30" x2="540" y2="30" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
-                  <line x1="0" y1="60" x2="540" y2="60" stroke="#1c2842" stroke-width="1.5" />
+                  <!-- Yellow Equilibrium Midline -->
+                  <line x1="0" y1="60" x2="540" y2="60" stroke="#facc15" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.65" />
                   <line x1="0" y1="90" x2="540" y2="90" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
 
                   <!-- Labels: Runway (top), Equilibrium (mid), Building (bottom) -->
-                  <text x="5" y="33" fill="#00f5d4" font-size="8" font-family="monospace">⚡ RUNWAY</text>
-                  <text x="5" y="63" fill="#475569" font-size="8.5" font-family="monospace">0 EQ</text>
-                  <text x="5" y="93" fill="#8b5cf6" font-size="8" font-family="monospace">🛡️ BUILDING</text>
+                  <text x="5" y="33" fill="#64748b" font-size="8" font-family="monospace">🚀 RUNWAY</text>
+                  <text x="5" y="63" fill="#facc15" font-size="8.5" font-family="monospace">⚡ 0 EQ</text>
+                  <text x="5" y="93" fill="#64748b" font-size="8" font-family="monospace">🛡️ BUILDING</text>
 
                   <!-- Shaded EVR Collapse Area -->
                   <path id="tvNexusEvrShadedArea" d="M 25 88 C 100 92, 180 86, 250 40 C 320 25, 410 20, 515 18 L 515 60 C 410 60, 320 60, 250 60 C 180 60, 100 60, 25 60 Z" fill="url(#tvNexusEvrGrad)" class="tv-nexus-path-smooth" />
 
                   <!-- Dynamic EVR Lines Group -->
                   <g id="tvNexusEvrLinesGroup">
-                    <!-- EVR Box 1 Line: Purple (Building Base) -->
-                    <path id="tvNexusEvrLineBox1" d="M 25 88 C 90 92, 160 86, 230 84 C 300 85, 370 84, 440 85 L 515 85" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.5));" />
+                    <!-- EVR Box 1 Line: Soft Rose (Building Base) -->
+                    <path id="tvNexusEvrLineBox1" d="M 25 88 C 90 92, 160 86, 230 84 C 300 85, 370 84, 440 85 L 515 85" fill="none" stroke="#fca5a5" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" />
 
-                    <!-- EVR Box 2 Line: Cyan (Friction Collapsing into Vacuum) -->
-                    <path id="tvNexusEvrLineBox2" d="M 25 82 C 100 75, 170 50, 240 34 C 310 28, 380 25, 450 22 L 515 20" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.8));" />
+                    <!-- EVR Box 2 Line: Vivid Red (Friction Collapsing into Vacuum) -->
+                    <path id="tvNexusEvrLineBox2" d="M 25 82 C 100 75, 170 50, 240 34 C 310 28, 380 25, 450 22 L 515 20" fill="none" stroke="#ef4444" stroke-width="2.6" stroke-linecap="round" class="tv-nexus-path-smooth" />
 
-                    <!-- EVR Box 3 Line: Warm Amber (Open Runway Acceleration) -->
-                    <path id="tvNexusEvrLineBox3" d="M 25 40 C 100 28, 190 22, 280 18 C 370 15, 450 14, 515 12" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 7px rgba(251,191,36,0.7)); opacity: 1;" />
+                    <!-- EVR Box 3 Line: Deep Crimson (Open Runway Acceleration) -->
+                    <path id="tvNexusEvrLineBox3" d="M 25 40 C 100 28, 190 22, 280 18 C 370 15, 450 14, 515 12" fill="none" stroke="#dc2626" stroke-width="2.8" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(220,38,38,0.7)); opacity: 1;" />
                   </g>
 
                   <!-- Interactive Callout Chips for EVR -->
                   <g id="tvNexusEvrCalloutMud" transform="translate(60, 82)" style="cursor: pointer;">
-                    <rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke="#8b5cf6" stroke-width="1" opacity="0.95"/>
-                    <text x="0" y="2" fill="#c4b5fd" font-size="8.5" font-family="monospace" font-weight="bold">🔥 BEAR BUILDING (4,439 V/PT)</text>
+                    <rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke="#f87171" stroke-width="1.2" opacity="0.95"/>
+                    <text x="0" y="2" fill="#fca5a5" font-size="8.5" font-family="monospace" font-weight="bold">🔥 BEAR BUILDING (4,439 V/PT)</text>
                   </g>
 
                   <g id="tvNexusEvrCalloutShift" transform="translate(230, 25)" style="cursor: pointer;">
-                    <rect x="-4" y="-10" width="135" height="16" rx="3" fill="#091020" stroke="#00f5d4" stroke-width="1.2" opacity="0.95"/>
-                    <text x="0" y="2" fill="#00f5d4" font-size="8.5" font-family="monospace" font-weight="bold">⚡ -51% FRICTION SHIFT</text>
+                    <rect x="-4" y="-10" width="135" height="16" rx="3" fill="#091020" stroke="#ef4444" stroke-width="1.4" opacity="0.95"/>
+                    <text x="0" y="2" fill="#fee2e2" font-size="8.5" font-family="monospace" font-weight="bold">⚡ -51% FRICTION SHIFT</text>
                   </g>
 
                   <g id="tvNexusEvrCalloutRunway" transform="translate(390, 15)" style="cursor: pointer;">
-                    <rect x="-4" y="-10" width="125" height="16" rx="3" fill="#091020" stroke="#fbbf24" stroke-width="1" opacity="0.95"/>
-                    <text x="0" y="2" fill="#fde68a" font-size="8.5" font-family="monospace" font-weight="bold">🚀 OPEN BEAR RUNWAY</text>
+                    <rect x="-4" y="-10" width="125" height="16" rx="3" fill="#091020" stroke="#dc2626" stroke-width="1.5" opacity="0.95"/>
+                    <text x="0" y="2" fill="#ffffff" font-size="8.5" font-family="monospace" font-weight="bold">🚀 OPEN BEAR RUNWAY</text>
                   </g>
                 </svg>
               </div>
@@ -1110,7 +1112,7 @@
               <!-- Readout Subline explaining EVR -->
               <div style="display: flex; justify-content: space-between; font-size: 9px; font-family: monospace; color: #64748b; padding-top: 1px;">
                 <span>AUCTION EFFORT/RESULT: VOLUME PER 1.0 PT</span>
-                <span id="tvNexusEvrAreaNote" style="color: #fbbf24; font-weight: 700;">EFFORT SHIFT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)</span>
+                <span id="tvNexusEvrAreaNote" style="color: #fca5a5; font-weight: 700;">EFFORT SHIFT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)</span>
               </div>
             </div>
 

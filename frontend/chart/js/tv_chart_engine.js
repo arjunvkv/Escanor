@@ -2805,12 +2805,51 @@ export function openExtensionNetworkModal(chart) {
       oscMetaEl.innerHTML = `ABSORB: <strong style="color: #facc15;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
     }
 
+    // Pure Regime Line Chart Palette (Option 1)
+    const linePalette = d.isBear
+      ? {
+          b1: '#fca5a5',         // Soft Rose Red (Base/Building)
+          b1Border: '#f87171',
+          b1Text: '#fca5a5',
+          b2: '#ef4444',         // Vivid Alert Red (Break)
+          b2Border: '#ef4444',
+          b2Text: '#fee2e2',
+          b3: '#dc2626',         // Deep Neon Crimson (Runway)
+          b3Border: '#dc2626',
+          b3Text: '#ffffff',
+          grad0: '#fca5a5',
+          grad0Op: '0.15',
+          grad1: '#ef4444',
+          grad1Op: '0.30',
+          grad2: '#dc2626',
+          grad2Op: '0.40',
+          glow: 'rgba(220, 38, 38, 0.7)'
+        }
+      : {
+          b1: '#86efac',         // Soft Mint Green (Base/Building)
+          b1Border: '#4ade80',
+          b1Text: '#86efac',
+          b2: '#22c55e',         // Vivid Crisp Green (Break)
+          b2Border: '#22c55e',
+          b2Text: '#dcfce7',
+          b3: '#16a34a',         // Deep Neon Emerald (Runway)
+          b3Border: '#16a34a',
+          b3Text: '#ffffff',
+          grad0: '#86efac',
+          grad0Op: '0.15',
+          grad1: '#22c55e',
+          grad1Op: '0.30',
+          grad2: '#16a34a',
+          grad2Op: '0.40',
+          glow: 'rgba(34, 197, 94, 0.7)'
+        };
+
     const deltaLegend = document.getElementById('tvNexusDeltaOscLegend');
     if (deltaLegend && d.samples) {
-      const boxPalette = ['#22c55e', '#facc15', '#ef4444', '#38bdf8', '#a855f7', '#ec4899'];
+      const boxShades = [linePalette.b1, linePalette.b2, linePalette.b3, '#94a3b8', '#64748b'];
       let legHtml = '';
       d.samples.forEach((s, idx) => {
-        const col = boxPalette[idx % boxPalette.length];
+        const col = boxShades[idx % boxShades.length];
         legHtml += `
           <span style="display: flex; align-items: center; gap: 3px; color: ${col};">
             <span style="width: 7px; height: 2px; background: ${col}; display: inline-block;"></span> B${s.boxNum}
@@ -2829,23 +2868,63 @@ export function openExtensionNetworkModal(chart) {
     const calloutRunway = document.getElementById('tvNexusCalloutRunway');
     const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
 
+    // Dynamic stroke colors & widths for Delta lines
+    if (lineBox1) {
+      lineBox1.setAttribute('stroke', linePalette.b1);
+      lineBox1.setAttribute('stroke-width', '2.2');
+    }
+    if (lineBox2) {
+      lineBox2.setAttribute('stroke', linePalette.b2);
+      lineBox2.setAttribute('stroke-width', '2.6');
+    }
+    if (lineBox3) {
+      lineBox3.setAttribute('stroke', linePalette.b3);
+      lineBox3.setAttribute('stroke-width', '2.8');
+      lineBox3.style.filter = `drop-shadow(0 0 6px ${linePalette.glow})`;
+    }
+
+    // Dynamic gradient for Delta area
+    const gradDelta = document.getElementById('tvNexusVacuumGrad');
+    if (gradDelta) {
+      gradDelta.innerHTML = `
+        <stop offset="0%" stop-color="${linePalette.grad0}" stop-opacity="${linePalette.grad0Op}" />
+        <stop offset="50%" stop-color="${linePalette.grad1}" stop-opacity="${linePalette.grad1Op}" />
+        <stop offset="100%" stop-color="${linePalette.grad2}" stop-opacity="${linePalette.grad2Op}" />
+      `;
+    }
+
     const hasBox3 = d.samples.length >= 3;
     if (lineBox3) {
       lineBox3.style.display = hasBox3 ? 'block' : 'none';
     }
 
-    // Update callout labels to simple terms
+    // Update callout labels & styles to simple terms with matching borders & text
     if (calloutAbsorb) {
+      const r = calloutAbsorb.querySelector('rect');
+      if (r) { r.setAttribute('stroke', linePalette.b1Border); r.setAttribute('fill', '#091020'); }
       const txt = calloutAbsorb.querySelector('text');
-      if (txt) txt.textContent = d.isBear ? '🛡️ BEAR BUILDING' : '🛡️ BULL BUILDING';
+      if (txt) {
+        txt.setAttribute('fill', linePalette.b1Text);
+        txt.textContent = d.isBear ? '🛡️ BEAR BUILDING' : '🛡️ BULL BUILDING';
+      }
     }
     if (calloutVacuum) {
+      const r = calloutVacuum.querySelector('rect');
+      if (r) { r.setAttribute('stroke', linePalette.b2Border); r.setAttribute('fill', '#091020'); }
       const txt = calloutVacuum.querySelector('text');
-      if (txt) txt.textContent = d.isBear ? '⚡ BEAR BREAK' : '⚡ BULL BREAK';
+      if (txt) {
+        txt.setAttribute('fill', linePalette.b2Text);
+        txt.textContent = d.isBear ? '⚡ BEAR BREAK' : '⚡ BULL BREAK';
+      }
     }
     if (calloutRunway) {
+      const r = calloutRunway.querySelector('rect');
+      if (r) { r.setAttribute('stroke', linePalette.b3Border); r.setAttribute('fill', '#091020'); }
       const txt = calloutRunway.querySelector('text');
-      if (txt) txt.textContent = d.isBear ? '🎯 BEAR RUNWAY' : '🎯 BULL RUNWAY';
+      if (txt) {
+        txt.setAttribute('fill', linePalette.b3Text);
+        txt.textContent = d.isBear ? '🎯 BEAR RUNWAY' : '🎯 BULL RUNWAY';
+      }
     }
 
     if (tabKey === 'network') {
@@ -2949,10 +3028,10 @@ export function openExtensionNetworkModal(chart) {
 
     const evrLegend = document.getElementById('tvNexusEvrOscLegend');
     if (evrLegend && d.samples) {
-      const boxPalette = ['#22c55e', '#facc15', '#ef4444', '#38bdf8', '#a855f7', '#ec4899'];
+      const boxShades = [linePalette.b1, linePalette.b2, linePalette.b3, '#94a3b8', '#64748b'];
       let evrLegHtml = '';
       d.samples.forEach((s, idx) => {
-        const col = boxPalette[idx % boxPalette.length];
+        const col = boxShades[idx % boxShades.length];
         evrLegHtml += `
           <span style="display: flex; align-items: center; gap: 3px; color: ${col};">
             <span style="width: 7px; height: 2px; background: ${col}; display: inline-block;"></span> B${s.boxNum}
@@ -2971,22 +3050,62 @@ export function openExtensionNetworkModal(chart) {
     const evrCalloutShift = document.getElementById('tvNexusEvrCalloutShift');
     const evrCalloutRunway = document.getElementById('tvNexusEvrCalloutRunway');
 
+    // Dynamic stroke colors & widths for EVR lines
+    if (evrLineBox1) {
+      evrLineBox1.setAttribute('stroke', linePalette.b1);
+      evrLineBox1.setAttribute('stroke-width', '2.2');
+    }
+    if (evrLineBox2) {
+      evrLineBox2.setAttribute('stroke', linePalette.b2);
+      evrLineBox2.setAttribute('stroke-width', '2.6');
+    }
+    if (evrLineBox3) {
+      evrLineBox3.setAttribute('stroke', linePalette.b3);
+      evrLineBox3.setAttribute('stroke-width', '2.8');
+      evrLineBox3.style.filter = `drop-shadow(0 0 6px ${linePalette.glow})`;
+    }
+
+    // Dynamic gradient for EVR area
+    const gradEvr = document.getElementById('tvNexusEvrGrad');
+    if (gradEvr) {
+      gradEvr.innerHTML = `
+        <stop offset="0%" stop-color="${linePalette.grad0}" stop-opacity="${linePalette.grad0Op}" />
+        <stop offset="50%" stop-color="${linePalette.grad1}" stop-opacity="${linePalette.grad1Op}" />
+        <stop offset="100%" stop-color="${linePalette.grad2}" stop-opacity="${linePalette.grad2Op}" />
+      `;
+    }
+
     if (evrLineBox3) {
       evrLineBox3.style.display = hasBox3 ? 'block' : 'none';
     }
 
-    // Update EVR callout labels to simple terms
+    // Update EVR callout labels & styles to simple terms with matching borders & text
     if (evrCalloutMud) {
+      const r = evrCalloutMud.querySelector('rect');
+      if (r) { r.setAttribute('stroke', linePalette.b1Border); r.setAttribute('fill', '#091020'); }
       const txt = evrCalloutMud.querySelector('text');
-      if (txt) txt.textContent = d.isBear ? `🔥 BEAR BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)` : `🔥 BULL BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)`;
+      if (txt) {
+        txt.setAttribute('fill', linePalette.b1Text);
+        txt.textContent = d.isBear ? `🔥 BEAR BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)` : `🔥 BULL BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)`;
+      }
     }
     if (evrCalloutShift) {
+      const r = evrCalloutShift.querySelector('rect');
+      if (r) { r.setAttribute('stroke', linePalette.b2Border); r.setAttribute('fill', '#091020'); }
       const txt = evrCalloutShift.querySelector('text');
-      if (txt) txt.textContent = '⚡ -51% FRICTION SHIFT';
+      if (txt) {
+        txt.setAttribute('fill', linePalette.b2Text);
+        txt.textContent = '⚡ -51% FRICTION SHIFT';
+      }
     }
     if (evrCalloutRunway) {
+      const r = evrCalloutRunway.querySelector('rect');
+      if (r) { r.setAttribute('stroke', linePalette.b3Border); r.setAttribute('fill', '#091020'); }
       const txt = evrCalloutRunway.querySelector('text');
-      if (txt) txt.textContent = d.isBear ? '🚀 OPEN BEAR RUNWAY' : '🚀 OPEN BULL RUNWAY';
+      if (txt) {
+        txt.setAttribute('fill', linePalette.b3Text);
+        txt.textContent = d.isBear ? '🚀 OPEN BEAR RUNWAY' : '🚀 OPEN BULL RUNWAY';
+      }
     }
 
     if (tabKey === 'network') {
