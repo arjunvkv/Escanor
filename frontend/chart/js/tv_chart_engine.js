@@ -2354,18 +2354,67 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     ? (minLow + (peakNetBinIdx + 0.5) * netBinStep)
     : (highestVolSample && highestVolSample.metrics.pocPrice ? highestVolSample.metrics.pocPrice : (maxHigh + minLow) / 2);
 
-  const networkVwap = netTotalVolCount > 0 ? (netWeightedPrice / netTotalVolCount) : (maxHigh + minLow) / 2;
+  // Reliable network VWAP calculation: compute from detailed bars or sample weighted averages
+  let networkVwap = 0;
+  if (netTotalVolCount > 0) {
+    networkVwap = netWeightedPrice / netTotalVolCount;
+  } else if (totalVolume > 0) {
+    const sumVwap = sampleAudits.reduce((acc, s) => {
+      const p = s.metrics.vwap || s.metrics.pocPrice || ((s.H_b + s.L_b) / 2);
+      return acc + (p * s.totalVol);
+    }, 0);
+    networkVwap = sumVwap / totalVolume;
+  } else {
+    networkVwap = (maxHigh + minLow) / 2;
+  }
 
   // The Peak Volume Anchor is the empirical Volume POC shelf
   const primaryAnchor = networkPoc;
   const eqShelf = (maxHigh + minLow) / 2;
+
+  // Direction detection: Check sample directions, delta, and price relation to range
+  const isBear = (lastSample.d === -1) || 
+                 (livePrice < minLow) || 
+                 (lastSample.P_poc < firstSample.P_poc) || 
+                 (totalNetDelta < 0 && livePrice < eqShelf);
+
+  let runwayGapPts = 0;
+  let runwayGapText = '';
+  let runwayHeaderColor = '#00f5d4';
+
+  if (isBear) {
+    runwayHeaderColor = '#f43f5e';
+    if (livePrice < minLow) {
+      // Breakdown past floor into open runway
+      runwayGapPts = -(minLow - livePrice);
+      runwayGapText = `${runwayGapPts.toFixed(1)} PTS BEAR RUNWAY`;
+    } else {
+      // In-range drop towards floor
+      runwayGapPts = -(livePrice - minLow);
+      runwayGapText = `${runwayGapPts.toFixed(1)} PTS BEAR BREAK`;
+    }
+  } else {
+    runwayHeaderColor = '#00f5d4';
+    if (livePrice > maxHigh) {
+      // Breakout past ceiling into open runway
+      runwayGapPts = +(livePrice - maxHigh);
+      runwayGapText = `+${runwayGapPts.toFixed(1)} PTS OPEN BULL RUNWAY`;
+    } else {
+      // In-range climb towards ceiling
+      runwayGapPts = +(maxHigh - livePrice);
+      runwayGapText = `+${runwayGapPts.toFixed(1)} PTS BULL RUNWAY`;
+    }
+  }
+
+  const invalidationTripwire = isBear ? maxHigh : minLow;
+  const invalidationSign = isBear ? '>' : '<';
+  const invalidationText = `${invalidationSign} $${invalidationTripwire.toFixed(2)} (${isBear ? 'BEAR INVAL' : 'BULL INVAL'})`;
 
   // Runway & Vacuum
   const distCeiling = Math.max(0, maxHigh - livePrice);
   const distFloor = Math.max(0, livePrice - minLow);
   const distEq = Math.abs(livePrice - eqShelf);
   const distAnchor = Math.abs(livePrice - primaryAnchor);
-  const invalidationTripwire = lastSample.d === 1 ? minLow : maxHigh;
 
   const pricePinPct = Math.max(2, Math.min(98, Math.round(((livePrice - minLow) / networkRange) * 100)));
   const upperRunwayPct = Math.max(5, Math.min(95, Math.round((distCeiling / networkRange) * 100)));
@@ -2397,6 +2446,12 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     highestVolSample,
     highestEvrSample,
     eqShelf,
+    isBear,
+    runwayGapPts,
+    runwayGapText,
+    runwayHeaderColor,
+    invalidationTripwire,
+    invalidationText,
     distCeiling,
     distFloor,
     distEq,
@@ -2405,8 +2460,7 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     upperRunwayPct,
     lowerRunwayPct,
     maxEvr,
-    maxFav,
-    invalidationTripwire
+    maxFav
   };
 }
 window.__computeNetworkDossier = computeNetworkDossier;
@@ -2508,38 +2562,24 @@ export function openExtensionNetworkModal(chart) {
     // 3. Status Pill
     const pill = document.getElementById('tvNexusStatusPill');
     if (pill) {
-      if (tabKey === 'ceiling' || d.distCeiling <= 0.8) {
-        pill.textContent = 'CEILING WALL';
+      if (d.isBear) {
+        pill.textContent = 'BEAR ACCELERATION';
         pill.style.background = '#f43f5e';
         pill.style.color = '#ffffff';
         pill.style.boxShadow = '0 0 16px rgba(244,63,94,0.8)';
-      } else if (scopeDeltaEvr <= -30) {
-        pill.textContent = 'ACCELERATING';
+      } else {
+        pill.textContent = 'BULL ACCELERATION';
         pill.style.background = '#00f5d4';
         pill.style.color = '#050811';
         pill.style.boxShadow = '0 0 16px rgba(0,245,212,0.8)';
-      } else if (scopeAbsorb >= 75) {
-        pill.textContent = 'ABSORPTION SHIELD';
-        pill.style.background = '#8b5cf6';
-        pill.style.color = '#ffffff';
-        pill.style.boxShadow = '0 0 16px rgba(139,92,246,0.8)';
-      } else if (scopeDeltaEvr > 40) {
-        pill.textContent = 'FRICTION SPIKE';
-        pill.style.background = '#fbbf24';
-        pill.style.color = '#050811';
-        pill.style.boxShadow = '0 0 16px rgba(251,191,36,0.8)';
-      } else {
-        pill.textContent = 'PROPORTIONAL FLOW';
-        pill.style.background = '#38bdf8';
-        pill.style.color = '#050811';
-        pill.style.boxShadow = '0 0 16px rgba(56,189,248,0.8)';
       }
     }
 
-    // 4. Structural Depth & Runway Card (Replaces Trajectory)
+    // 4. Structural Depth & Runway Card
     const runwayGapBadge = document.getElementById('tvNexusRunwayGapBadge');
     if (runwayGapBadge) {
-      runwayGapBadge.textContent = `+${d.distCeiling.toFixed(1)} PTS VACUUM`;
+      runwayGapBadge.textContent = d.runwayGapText;
+      runwayGapBadge.style.color = d.runwayHeaderColor;
     }
     const shelfCeiling = document.getElementById('tvNexusShelfCeiling');
     const shelfLive = document.getElementById('tvNexusShelfLive');
@@ -2549,22 +2589,22 @@ export function openExtensionNetworkModal(chart) {
     const shelfStop = document.getElementById('tvNexusShelfStop');
     if (shelfCeiling) shelfCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
     if (shelfLive) shelfLive.textContent = `$${d.livePrice.toFixed(2)}`;
-    if (shelfVwap && d.networkVwap) shelfVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
+    if (shelfVwap) shelfVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
     if (shelfPoc) shelfPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
     if (shelfFloor) shelfFloor.textContent = `$${d.minLow.toFixed(2)}`;
-    if (shelfStop) shelfStop.textContent = `< $${d.invalidationTripwire.toFixed(2)}`;
+    if (shelfStop) {
+      shelfStop.textContent = d.invalidationText;
+      shelfStop.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
+    }
 
-    // 4B. Order Flow Squeeze Fuel & Tape Velocity Telemetry (Gems 3 & 4)
-    // Card 2A: Trapped Volume Quantum // Squeeze Fuel Tank
+    // 4B. Order Flow Squeeze Fuel & Tape Velocity Telemetry
+    // Card 2A: Trapped Volume Quantum
     let trappedShorts = (scopeDelta < 0) ? Math.abs(scopeDelta) : Math.round(scopeVol * 0.24);
     if (trappedShorts === 0) trappedShorts = 500;
     const fuelMillions = Math.max(0.6, (trappedShorts * 0.0032 + scopeVol * 0.00005)).toFixed(1);
     const squeezePressurePct = Math.max(20, Math.min(96, Math.round(scopeAbsorb * 0.85 + (scopeDelta < 0 ? 25 : 10))));
 
-    const triggerPrice = (tabKey.startsWith('box_')) 
-      ? (d.samples[parseInt(tabKey.replace('box_', ''), 10)]?.H_b || d.maxHigh)
-      : d.maxHigh;
-
+    const trappedTitle = document.getElementById('tvNexusTrappedTitle');
     const trappedDeltaEl = document.getElementById('tvNexusTrappedDeltaVal');
     const squeezeFuelBadge = document.getElementById('tvNexusSqueezeFuelBadge');
     const squeezeFuelBar = document.getElementById('tvNexusSqueezeFuelBar');
@@ -2572,9 +2612,13 @@ export function openExtensionNetworkModal(chart) {
     const squeezePressureVal = document.getElementById('tvNexusSqueezePressureVal');
     const squeezeStatusVal = document.getElementById('tvNexusSqueezeStatusVal');
 
+    if (trappedTitle) {
+      trappedTitle.textContent = d.isBear ? '⚡ TRAPPED BUYERS' : '⚡ TRAPPED SELLERS';
+    }
     if (trappedDeltaEl) {
       const deltaSign = scopeDelta < 0 ? '-' : '+';
-      trappedDeltaEl.textContent = `${deltaSign}${formatVolNumber(Math.abs(scopeDelta))} Δ (${scopeAbsorb >= 60 ? 'ABSORBED' : 'NET FLOW'})`;
+      const pressureLabel = d.isBear ? 'BEAR PRESSURE' : 'BULL PRESSURE';
+      trappedDeltaEl.textContent = `${deltaSign}${formatVolNumber(Math.abs(scopeDelta))} Δ (${pressureLabel})`;
     }
     if (squeezeFuelBadge) {
       squeezeFuelBadge.textContent = `$${fuelMillions}M FUEL`;
@@ -2583,25 +2627,20 @@ export function openExtensionNetworkModal(chart) {
       squeezeFuelBar.style.width = `${squeezePressurePct}%`;
     }
     if (squeezeTriggerVal) {
-      squeezeTriggerVal.textContent = `TRIGGER: > $${triggerPrice.toFixed(2)} (SWEEP)`;
+      const trigSign = d.isBear ? '<' : '>';
+      const trigLabel = d.isBear ? '(BREAKDOWN)' : '(BREAKOUT)';
+      const trigPrice = d.isBear ? d.minLow : d.maxHigh;
+      squeezeTriggerVal.textContent = `TRIGGER: ${trigSign} $${trigPrice.toFixed(2)} ${trigLabel}`;
     }
     if (squeezePressureVal) {
-      squeezePressureVal.textContent = `${squeezePressurePct}% SQUEEZE COILED`;
+      squeezePressureVal.textContent = `${squeezePressurePct}% ${d.isBear ? 'BEAR COIL' : 'BULL COIL'}`;
     }
     if (squeezeStatusVal) {
-      if (squeezePressurePct >= 75) {
-        squeezeStatusVal.textContent = 'CASCADING COVER ON BREAK';
-        squeezeStatusVal.style.color = '#00f5d4';
-      } else if (squeezePressurePct >= 50) {
-        squeezeStatusVal.textContent = 'ACCELERATING INTO VACUUM';
-        squeezeStatusVal.style.color = '#fbbf24';
-      } else {
-        squeezeStatusVal.textContent = 'ABSORPTION BASE FORMING';
-        squeezeStatusVal.style.color = '#38bdf8';
-      }
+      squeezeStatusVal.textContent = d.isBear ? 'ACTIVE BEAR BREAK' : 'ACTIVE BULL BREAK';
+      squeezeStatusVal.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
     }
 
-    // Card 2B: Tape Velocity // Burn Rate Accelerometer
+    // Card 2B: Tape Velocity & Burn Rate Accelerometer
     const baseMudSpeed = 184; // Standard base speed (s/pt)
     const firstEvr = Math.max(100, d.firstSample?.evr || 4000);
     const speedRatio = Math.max(0.5, (firstEvr / Math.max(100, scopeEvr)));
@@ -2618,52 +2657,37 @@ export function openExtensionNetworkModal(chart) {
     const tapeStatusVal = document.getElementById('tvNexusTapeStatusVal');
 
     if (tapeSurgeBadge) {
-      tapeSurgeBadge.textContent = `⚡ ${surgeMultiplier}x SPEED`;
+      tapeSurgeBadge.textContent = `⚡ ${surgeMultiplier}x ${d.isBear ? 'BEAR SPEED' : 'BULL SPEED'}`;
     }
     if (tapeSpeedVal) {
-      tapeSpeedVal.textContent = `${vacuumSpeed}s / PT`;
+      tapeSpeedVal.textContent = `${vacuumSpeed}s / PT (FAST)`;
     }
     if (tapeSpeedBar) {
       tapeSpeedBar.style.width = `${tapeBarWidth}%`;
     }
     if (tapeBaseSpeedVal) {
-      tapeBaseSpeedVal.textContent = `BASE: ${baseMudSpeed}s/PT (MUD)`;
+      tapeBaseSpeedVal.textContent = `BASE: ${baseMudSpeed}s/PT (${d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING'})`;
     }
     if (tapeSurgePct) {
       const surgeSign = surgePct >= 0 ? '+' : '';
-      tapeSurgePct.textContent = `${surgeSign}${surgePct}% VELOCITY SURGE`;
+      tapeSurgePct.textContent = `${surgeSign}${surgePct}% SPEED SURGE`;
     }
     if (tapeStatusVal) {
-      if (parseFloat(surgeMultiplier) >= 3.0) {
-        tapeStatusVal.textContent = 'FRICTIONLESS TAKEOFF';
-        tapeStatusVal.style.color = '#00f5d4';
-      } else if (parseFloat(surgeMultiplier) >= 1.5) {
-        tapeStatusVal.textContent = 'VACUUM ACCELERATION';
-        tapeStatusVal.style.color = '#38bdf8';
-      } else {
-        tapeStatusVal.textContent = 'HIGH RESISTANCE COMPRESSION';
-        tapeStatusVal.style.color = '#8b5cf6';
-      }
+      tapeStatusVal.textContent = d.isBear ? 'CLEAN BEAR FLOW' : 'CLEAN BULL FLOW';
+      tapeStatusVal.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
     }
 
     // 5. Pipeline Load (3D Cylinders)
     const loadValEl = document.getElementById('tvNexusLoadVal');
     if (loadValEl) {
-      if (d.deltaEvr <= -30) {
-        loadValEl.textContent = `${d.deltaEvr}% VACUUM SPEED`;
-        loadValEl.style.color = '#00f5d4';
-      } else if (d.deltaEvr > 40) {
-        loadValEl.textContent = `+${d.deltaEvr}% CLOGGING`;
-        loadValEl.style.color = '#f43f5e';
-      } else {
-        loadValEl.textContent = `${scopeEvr.toLocaleString()} v/pt`;
-        loadValEl.style.color = '#8b5cf6';
-      }
+      const loadText = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
+      loadValEl.textContent = `${scopeEvr.toLocaleString()} v/pt (${loadText})`;
+      loadValEl.style.color = d.isBear ? '#f43f5e' : '#00f5d4';
     }
     const box1Lbl = document.getElementById('tvNexusLoadBox1Lbl');
     const box2Lbl = document.getElementById('tvNexusLoadBox2Lbl');
-    if (box1Lbl) box1Lbl.textContent = `BOX 1: ${d.firstSample.evr.toLocaleString()} v/pt`;
-    if (box2Lbl) box2Lbl.innerHTML = `BOX ${d.sampleCount}: <strong style="color: #00f5d4;">${d.lastSample.evr.toLocaleString()} v/pt</strong>`;
+    if (box1Lbl) box1Lbl.textContent = `B1: ${d.firstSample.evr.toLocaleString()} v/pt`;
+    if (box2Lbl) box2Lbl.innerHTML = `B${d.sampleCount}: <strong style="color: #00f5d4;">${d.lastSample.evr.toLocaleString()} v/pt</strong>`;
 
     const loadContainer = document.getElementById('tvNexusLoadBarsContainer');
     if (loadContainer) {
@@ -2680,15 +2704,15 @@ export function openExtensionNetworkModal(chart) {
         
         if (isPocBar) {
           barsHtml += `
-            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Anchor Volume Bucket: ${colVol.toLocaleString()}">
-              <div style="font-size: 8.5px; font-family: monospace; color: #00f5d4; font-weight: 800; margin-bottom: 2px;">${tagText}</div>
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
+              <div style="font-size: 8px; font-family: monospace; color: #00f5d4; font-weight: 800; margin-bottom: 1px;">${tagText}</div>
               <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #065f46, #00f5d4); border-top: 2px solid #ffffff; box-shadow: 0 0 10px rgba(0,245,212,0.6);"></div>
             </div>
           `;
         } else {
           barsHtml += `
             <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
-              <div style="font-size: 8.5px; font-family: monospace; color: #64748b; margin-bottom: 2px;">${tagText}</div>
+              <div style="font-size: 8px; font-family: monospace; color: #64748b; margin-bottom: 1px;">${tagText}</div>
               <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #4c1d95, #8b5cf6); border-top: 2px solid #c4b5fd; box-shadow: 0 0 8px rgba(139,92,246,0.3);"></div>
             </div>
           `;
@@ -2702,7 +2726,7 @@ export function openExtensionNetworkModal(chart) {
     if (oscMetaEl) {
       const deltaSign = scopeDelta >= 0 ? '+' : '';
       const deltaColor = scopeDelta >= 0 ? '#00f5d4' : '#f43f5e';
-      oscMetaEl.innerHTML = `ABSORPTION: <strong style="color: #00f5d4;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
+      oscMetaEl.innerHTML = `ABSORB: <strong style="color: #00f5d4;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
     }
 
     const deltaLegend = document.getElementById('tvNexusDeltaOscLegend');
@@ -2712,8 +2736,8 @@ export function openExtensionNetworkModal(chart) {
       d.samples.forEach((s, idx) => {
         const col = boxPalette[idx % boxPalette.length];
         legHtml += `
-          <span style="display: flex; align-items: center; gap: 4px; color: ${col};">
-            <span style="width: 8px; height: 2px; background: ${col}; display: inline-block;"></span> BOX ${s.boxNum}
+          <span style="display: flex; align-items: center; gap: 3px; color: ${col};">
+            <span style="width: 7px; height: 2px; background: ${col}; display: inline-block;"></span> B${s.boxNum}
           </span>
         `;
       });
@@ -2734,86 +2758,105 @@ export function openExtensionNetworkModal(chart) {
       lineBox3.style.display = hasBox3 ? 'block' : 'none';
     }
 
+    // Update callout labels to simple terms
+    if (calloutAbsorb) {
+      const txt = calloutAbsorb.querySelector('text');
+      if (txt) txt.textContent = d.isBear ? '🛡️ BEAR BUILDING' : '🛡️ BULL BUILDING';
+    }
+    if (calloutVacuum) {
+      const txt = calloutVacuum.querySelector('text');
+      if (txt) txt.textContent = d.isBear ? '⚡ BEAR BREAK' : '⚡ BULL BREAK';
+    }
+    if (calloutRunway) {
+      const txt = calloutRunway.querySelector('text');
+      if (txt) txt.textContent = d.isBear ? '🎯 BEAR RUNWAY' : '🎯 BULL RUNWAY';
+    }
+
     if (tabKey === 'network') {
-      // Overlapping mode: All boxes harmonized together
+      // Overlapping mode: All boxes harmonized together (540 width SVG paths)
       if (lineBox1) {
         lineBox1.style.opacity = '1';
-        lineBox1.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75');
+        lineBox1.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75');
       }
       if (lineBox2) {
         lineBox2.style.opacity = '1';
-        lineBox2.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15');
+        lineBox2.setAttribute('d', 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15');
       }
       if (lineBox3 && hasBox3) {
         lineBox3.style.opacity = '1';
-        lineBox3.setAttribute('d', 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10');
+        lineBox3.setAttribute('d', 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10');
       }
       if (shadedArea) {
         shadedArea.style.opacity = '1';
         shadedArea.setAttribute('d', hasBox3
-          ? 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z'
-          : 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z');
+          ? 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10 L 515 75 C 440 85, 370 75, 300 58 C 230 45, 160 75, 90 95 Z'
+          : 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15 L 515 75 C 440 85, 370 75, 300 58 C 230 45, 160 75, 90 95 Z');
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'block';
       if (calloutVacuum) calloutVacuum.style.display = 'block';
-      if (calloutRunway) {
-        calloutRunway.style.display = 'block';
-        const txt = calloutRunway.querySelector('text');
-        if (txt) txt.textContent = hasBox3 ? '🎯 BOX 3 CEILING' : '🎯 CEILING GAP';
-      }
+      if (calloutRunway) calloutRunway.style.display = 'block';
       if (oscAreaNote) {
-        oscAreaNote.textContent = hasBox3
-          ? 'ALL 3 BOXES HARMONIZED: BASE (B1) → VACUUM (B2) → CEILING RUNWAY (B3)'
-          : 'AREA REVEALS: -51% FRICTION COLLAPSE + TRAPPED SHORTS';
+        oscAreaNote.textContent = d.isBear
+          ? 'ALL 3 BOXES: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
+          : 'ALL 3 BOXES: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
       }
     } else if (tabKey === 'box_0') {
-      // Box 1 Solo: High Accumulation Mud Base
+      // Box 1 Solo: Building Base
       if (lineBox1) {
         lineBox1.style.opacity = '1';
-        lineBox1.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75');
+        lineBox1.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75');
       }
       if (lineBox2) lineBox2.style.opacity = '0.15';
       if (lineBox3) lineBox3.style.opacity = '0.15';
       if (shadedArea) {
         shadedArea.style.opacity = '0.35';
-        shadedArea.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75 L 590 60 L 30 60 Z');
+        shadedArea.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75 L 515 60 L 25 60 Z');
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'block';
       if (calloutVacuum) calloutVacuum.style.display = 'none';
       if (calloutRunway) calloutRunway.style.display = 'none';
-      if (oscAreaNote) oscAreaNote.textContent = `BOX 1: HIGH ACCUMULATION DENSITY // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT (MUD BASE)`;
+      if (oscAreaNote) {
+        const term = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
+        oscAreaNote.textContent = `BOX 1: ${term} // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT`;
+      }
     } else if (tabKey === 'box_1') {
-      // Box 2 Solo: Vacuum Expansion
+      // Box 2 Solo: Break Sequence
       if (lineBox1) lineBox1.style.opacity = '0.15';
       if (lineBox2) {
         lineBox2.style.opacity = '1';
-        lineBox2.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15');
+        lineBox2.setAttribute('d', 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15');
       }
       if (lineBox3) lineBox3.style.opacity = '0.15';
       if (shadedArea) {
         shadedArea.style.opacity = '0.5';
-        shadedArea.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 60 L 30 60 Z');
+        shadedArea.setAttribute('d', 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15 L 515 60 L 25 60 Z');
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'none';
       if (calloutVacuum) calloutVacuum.style.display = 'block';
       if (calloutRunway) calloutRunway.style.display = 'none';
-      if (oscAreaNote) oscAreaNote.textContent = `BOX 2: LIQUIDITY VACUUM EXPANSION // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (-51% FRICTION)`;
+      if (oscAreaNote) {
+        const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
+        oscAreaNote.textContent = `BOX 2: ${term} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (-51% FRICTION)`;
+      }
     } else if (tabKey === 'box_2') {
-      // Box 3 Solo: Ceiling Test & Continuation
+      // Box 3 Solo: Runway Extension
       if (lineBox1) lineBox1.style.opacity = '0.15';
       if (lineBox2) lineBox2.style.opacity = '0.15';
       if (lineBox3) {
         lineBox3.style.opacity = '1';
-        lineBox3.setAttribute('d', 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10');
+        lineBox3.setAttribute('d', 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10');
       }
       if (shadedArea) {
         shadedArea.style.opacity = '0.5';
-        shadedArea.setAttribute('d', 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10 L 590 60 L 30 60 Z');
+        shadedArea.setAttribute('d', 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10 L 515 60 L 25 60 Z');
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'none';
       if (calloutVacuum) calloutVacuum.style.display = 'none';
       if (calloutRunway) calloutRunway.style.display = 'block';
-      if (oscAreaNote) oscAreaNote.textContent = `BOX 3: CEILING RUNWAY CONTINUATION // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT (PEAK EXCURSION)`;
+      if (oscAreaNote) {
+        const term = d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY';
+        oscAreaNote.textContent = `BOX 3: ${term} // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT`;
+      }
     }
 
     // 7. Second Command Oscillation Line Chart (EVR & Effort vs Result Friction Harmonic)
@@ -2821,7 +2864,7 @@ export function openExtensionNetworkModal(chart) {
     if (evrMetaEl) {
       const evrTag = d.lastSample.frictionTag || 'CLEAN FLOW ⚡';
       const evrSign = d.deltaEvr >= 0 ? '+' : '';
-      evrMetaEl.innerHTML = `FRICTION: <strong style="color: #00f5d4;">${evrTag}</strong> • SEQUENCE SHIFT: <strong style="color: #00f5d4;">${evrSign}${d.deltaEvr}%</strong>`;
+      evrMetaEl.innerHTML = `EFFORT: <strong style="color: #00f5d4;">${evrTag}</strong> • SHIFT: <strong style="color: #00f5d4;">${evrSign}${d.deltaEvr}%</strong>`;
     }
 
     const evrLegend = document.getElementById('tvNexusEvrOscLegend');
@@ -2831,8 +2874,8 @@ export function openExtensionNetworkModal(chart) {
       d.samples.forEach((s, idx) => {
         const col = boxPalette[idx % boxPalette.length];
         evrLegHtml += `
-          <span style="display: flex; align-items: center; gap: 4px; color: ${col};">
-            <span style="width: 8px; height: 2px; background: ${col}; display: inline-block;"></span> BOX ${s.boxNum}
+          <span style="display: flex; align-items: center; gap: 3px; color: ${col};">
+            <span style="width: 7px; height: 2px; background: ${col}; display: inline-block;"></span> B${s.boxNum}
           </span>
         `;
       });
@@ -2852,21 +2895,35 @@ export function openExtensionNetworkModal(chart) {
       evrLineBox3.style.display = hasBox3 ? 'block' : 'none';
     }
 
+    // Update EVR callout labels to simple terms
+    if (evrCalloutMud) {
+      const txt = evrCalloutMud.querySelector('text');
+      if (txt) txt.textContent = d.isBear ? `🔥 BEAR BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)` : `🔥 BULL BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)`;
+    }
+    if (evrCalloutShift) {
+      const txt = evrCalloutShift.querySelector('text');
+      if (txt) txt.textContent = '⚡ -51% FRICTION SHIFT';
+    }
+    if (evrCalloutRunway) {
+      const txt = evrCalloutRunway.querySelector('text');
+      if (txt) txt.textContent = d.isBear ? '🚀 OPEN BEAR RUNWAY' : '🚀 OPEN BULL RUNWAY';
+    }
+
     if (tabKey === 'network') {
       if (evrLineBox1) evrLineBox1.style.opacity = '1';
       if (evrLineBox2) evrLineBox2.style.opacity = '1';
       if (evrLineBox3 && hasBox3) evrLineBox3.style.opacity = '1';
       if (evrShadedArea) {
         evrShadedArea.style.opacity = '1';
-        evrShadedArea.setAttribute('d', 'M 30 88 C 120 92, 200 86, 280 40 C 360 25, 460 20, 590 18 L 590 60 C 460 60, 360 60, 280 60 C 200 60, 120 60, 30 60 Z');
+        evrShadedArea.setAttribute('d', 'M 25 88 C 100 92, 180 86, 250 40 C 320 25, 410 20, 515 18 L 515 60 C 410 60, 320 60, 250 60 C 180 60, 100 60, 25 60 Z');
       }
       if (evrCalloutMud) evrCalloutMud.style.display = 'block';
       if (evrCalloutShift) evrCalloutShift.style.display = 'block';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
       if (evrAreaNote) {
-        evrAreaNote.textContent = hasBox3
-          ? 'EFFORT SHIFT: BOX 1 (MUD BASE) → BOX 2 (VACUUM BREAKOUT) → BOX 3 (OPEN RUNWAY)'
-          : 'EFFORT SHIFT: BOX 1 (4,439 V/PT MUD) → BOX 2 (2,157 V/PT VACUUM)';
+        evrAreaNote.textContent = d.isBear
+          ? 'EFFORT SHIFT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
+          : 'EFFORT SHIFT: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
       }
     } else if (tabKey === 'box_0') {
       if (evrLineBox1) evrLineBox1.style.opacity = '1';
@@ -2874,36 +2931,45 @@ export function openExtensionNetworkModal(chart) {
       if (evrLineBox3) evrLineBox3.style.opacity = '0.15';
       if (evrShadedArea) {
         evrShadedArea.style.opacity = '0.4';
-        evrShadedArea.setAttribute('d', 'M 30 88 C 100 92, 180 86, 260 84 C 340 85, 420 84, 500 85 L 590 85 L 590 60 L 30 60 Z');
+        evrShadedArea.setAttribute('d', 'M 25 88 C 90 92, 160 86, 230 84 C 300 85, 370 84, 440 85 L 515 85 L 515 60 L 25 60 Z');
       }
       if (evrCalloutMud) evrCalloutMud.style.display = 'block';
       if (evrCalloutShift) evrCalloutShift.style.display = 'none';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
-      if (evrAreaNote) evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // HIGH RESISTANCE MUD BASE`;
+      if (evrAreaNote) {
+        const term = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
+        evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // ${term}`;
+      }
     } else if (tabKey === 'box_1') {
       if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
       if (evrLineBox2) evrLineBox2.style.opacity = '1';
       if (evrLineBox3) evrLineBox3.style.opacity = '0.15';
       if (evrShadedArea) {
         evrShadedArea.style.opacity = '0.5';
-        evrShadedArea.setAttribute('d', 'M 30 82 C 110 75, 190 50, 270 34 C 350 28, 430 25, 510 22 L 590 20 L 590 60 L 30 60 Z');
+        evrShadedArea.setAttribute('d', 'M 25 82 C 100 75, 170 50, 240 34 C 310 28, 380 25, 450 22 L 515 20 L 515 60 L 25 60 Z');
       }
       if (evrCalloutMud) evrCalloutMud.style.display = 'none';
       if (evrCalloutShift) evrCalloutShift.style.display = 'block';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
-      if (evrAreaNote) evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // -51% FRICTION VACUUM COLLAPSE`;
+      if (evrAreaNote) {
+        const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
+        evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${term} (-51% FRICTION)`;
+      }
     } else if (tabKey === 'box_2') {
       if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
       if (evrLineBox2) evrLineBox2.style.opacity = '0.15';
       if (evrLineBox3) evrLineBox3.style.opacity = '1';
       if (evrShadedArea) {
         evrShadedArea.style.opacity = '0.5';
-        evrShadedArea.setAttribute('d', 'M 30 40 C 120 28, 220 22, 320 18 C 420 15, 510 14, 590 12 L 590 60 L 30 60 Z');
+        evrShadedArea.setAttribute('d', 'M 25 40 C 100 28, 190 22, 280 18 C 370 15, 450 14, 515 12 L 515 60 L 25 60 Z');
       }
       if (evrCalloutMud) evrCalloutMud.style.display = 'none';
       if (evrCalloutShift) evrCalloutShift.style.display = 'none';
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
-      if (evrAreaNote) evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // UNHINDERED ACCELERATION RUNWAY`;
+      if (evrAreaNote) {
+        const term = d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY';
+        evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // ${term}`;
+      }
     }
 
     // 8. Footer Reference Levels
@@ -2914,7 +2980,7 @@ export function openExtensionNetworkModal(chart) {
     const footFloor = document.getElementById('tvNexusFootFloor');
     if (footCeiling) footCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
     if (footMid) footMid.textContent = `$${d.eqShelf.toFixed(2)}`;
-    if (footVwap && d.networkVwap) footVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
+    if (footVwap) footVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
     if (footPoc) footPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
     if (footFloor) footFloor.textContent = `$${d.minLow.toFixed(2)}`;
   };

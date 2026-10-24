@@ -3471,10 +3471,10 @@ input[type="number"] {
   position: relative;
   background: #070c18 !important;
   border: none !important;
-  box-shadow: 0 0 45px rgba(0, 245, 212, 0.18), 0 25px 60px rgba(0, 0, 0, 0.9) !important;
-  max-width: 680px !important;
+  box-shadow: 0 0 50px rgba(0, 245, 212, 0.22), 0 25px 60px rgba(0, 0, 0, 0.95) !important;
+  max-width: 1160px !important;
   width: 95vw !important;
-  padding: 22px 24px !important;
+  padding: 16px 20px !important;
 }
 
 .tv-nexus-neon-border {
