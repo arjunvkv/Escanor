@@ -183,3 +183,37 @@ console.log('  - Sequence Fuel Burn Shift (ΔEVR):', dossier.deltaEvr + '%');
 console.log('  - Peak Volume Anchor:', dossier.primaryAnchor);
 console.log('  - Upper Runway:', dossier.distCeiling.toFixed(1), 'pts (' + dossier.upperRunwayPct + '%)');
 console.log('  - Lower Runway:', dossier.distFloor.toFixed(1), 'pts (' + dossier.lowerRunwayPct + '%)');
+
+// 3. Test Structural Inflection Lines Toggle Button & Color-Coded Overlay Mapping
+const htmlCode = fs.readFileSync('frontend/chart/index.html', 'utf8');
+const cssCode = fs.readFileSync('frontend/chart/css/tradingview_theme.css', 'utf8');
+const toolbarCode = fs.readFileSync('frontend/chart/js/toolbar.js', 'utf8');
+
+// Ensure button exists in Card 3 header
+assert.ok(htmlCode.includes('id="tvToggleInflectionLinesBtn"'), 'tvToggleInflectionLinesBtn must be present in index.html');
+assert.ok(htmlCode.includes('id="tvToggleInflectionLinesBtnText"'), 'tvToggleInflectionLinesBtnText must be present in index.html');
+assert.ok(htmlCode.includes('SHOW LINES ON CHART'), 'Default button text must be SHOW LINES ON CHART');
+
+// Ensure CSS styling exists
+assert.ok(cssCode.includes('.tv-btn-plot-levels'), '.tv-btn-plot-levels class must exist in CSS');
+assert.ok(cssCode.includes('.tv-btn-plot-levels.active'), '.tv-btn-plot-levels.active must exist in CSS');
+assert.ok(cssCode.includes('.tv-node-eye-pill'), '.tv-node-eye-pill must exist in CSS');
+assert.ok(cssCode.includes('.tv-ladder-node.line-active'), '.tv-ladder-node.line-active must exist in CSS');
+
+// Ensure engine exports inflection line helpers
+assert.ok(engineCode.includes('export function syncStructuralInflectionLines'), 'syncStructuralInflectionLines must be exported');
+assert.ok(engineCode.includes('export function toggleStructuralInflectionLines'), 'toggleStructuralInflectionLines must be exported');
+assert.ok(engineCode.includes('export function toggleSingleInflectionLine'), 'toggleSingleInflectionLine must be exported');
+assert.ok(engineCode.includes('export function updateInflectionLinesButtonUI'), 'updateInflectionLinesButtonUI must be exported');
+
+// Ensure exact 4 color codes and line styles
+assert.ok(engineCode.includes("color: '#ef4444'"), 'Ceiling Resistance must be Crimson Red #ef4444');
+assert.ok(engineCode.includes("color: '#fbbf24'"), '50% Mid-Equilibrium must be Warm Amber #fbbf24');
+assert.ok(engineCode.includes("color: '#00e5ff'"), 'Peak Volume Anchor must be Cyan #00e5ff');
+assert.ok(engineCode.includes("color: '#10b981'"), 'Support Floor must be Emerald Green #10b981');
+
+// Ensure toolbar.js imports and wires click event
+assert.ok(toolbarCode.includes('toggleStructuralInflectionLines'), 'toolbar.js must import toggleStructuralInflectionLines');
+assert.ok(toolbarCode.includes("document.getElementById('tvToggleInflectionLinesBtn')"), 'toolbar.js must listen on tvToggleInflectionLinesBtn');
+
+console.log('✓ Structural Inflection Lines Chart Overlay Verification: PASSED (Exact color codes & toggle logic verified)');

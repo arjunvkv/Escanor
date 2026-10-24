@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202610241430';
 import { registerLivingFootprintIndicator } from './living_candle_engine.js?v=202610140655';
 
 // Global reference for chart instance
@@ -18,6 +18,23 @@ window.__disableAllRectFill = (typeof localStorage !== 'undefined' && localStora
 
 // Global preference: Hide Top Extension Ribbon (Favourable Move Series)
 window.__hideExtensionRibbon = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_hide_extension_ribbon') === 'true');
+
+// State tracking for Structural Inflection Reference Lines plotted on the chart canvas
+if (typeof window !== 'undefined') {
+  window.__inflectionLinesState = window.__inflectionLinesState || {
+    ceiling: false,
+    mid: false,
+    anchor: false,
+    floor: false
+  };
+}
+
+export const INFLECTION_LEVEL_KEYS = [
+  { key: 'ceiling', id: 'lvl_node_ceiling', prop: 'maxHigh', title: 'CEILING RESISTANCE', color: '#ef4444', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 },
+  { key: 'mid', id: 'lvl_node_mid', prop: 'eqShelf', title: '50% MID-EQUILIBRIUM', color: '#fbbf24', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 },
+  { key: 'anchor', id: 'lvl_node_anchor', prop: 'primaryAnchor', title: 'PEAK VOLUME ANCHOR', color: '#00e5ff', lineStyle: 'solid', lineSize: 2.0, opacity: 0.90 },
+  { key: 'floor', id: 'lvl_node_floor', prop: 'minLow', title: 'SUPPORT FLOOR', color: '#10b981', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 }
+];
 
 export function getChartInstance() {
   return chartInstance;
@@ -2040,6 +2057,9 @@ export function updateExtensionSeriesRibbon(chart) {
   const rects = all.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
   if (rects.length === 0) {
     ribbonEl.style.display = 'none';
+    if (typeof syncStructuralInflectionLines === 'function') {
+      syncStructuralInflectionLines(c);
+    }
     return;
   }
 
@@ -2080,6 +2100,10 @@ export function updateExtensionSeriesRibbon(chart) {
 
   trackEl.innerHTML = pillsHtml;
   ribbonEl.style.display = 'flex';
+
+  if (typeof syncStructuralInflectionLines === 'function') {
+    syncStructuralInflectionLines(c);
+  }
 }
 window.__updateExtensionSeriesRibbon = updateExtensionSeriesRibbon;
 
@@ -2491,16 +2515,28 @@ export function openExtensionNetworkModal(chart) {
   // Card 3: STRONGEST STRUCTURAL INFLECTION NODES (Vertical Depth Ladder)
   if (nodesBadge) nodesBadge.textContent = 'CRITICAL SHELVES';
   if (nodesContent) {
+    const s = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+      ceiling: false,
+      mid: false,
+      anchor: false,
+      floor: false
+    };
     nodesContent.innerHTML = `
       <div class="tv-depth-ladder">
-        <div class="tv-ladder-node ceiling">
-          <span class="tv-node-badge bear">🔴 CEILING RESISTANCE</span>
+        <div class="tv-ladder-node ceiling ${s.ceiling ? 'line-active' : ''}" data-level-key="ceiling" title="Click to show/hide Ceiling Resistance on chart">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.ceiling ? '👁️' : '👁️‍🗨️'}</span>
+            <span class="tv-node-badge bear">🔴 CEILING RESISTANCE</span>
+          </div>
           <span class="tv-node-price">$${dossier.maxHigh.toFixed(2)}</span>
           <span class="tv-node-dist">+${dossier.distCeiling.toFixed(1)} pts</span>
         </div>
 
-        <div class="tv-ladder-node mid">
-          <span class="tv-node-badge warn">⚡ 50% MID-EQUILIBRIUM</span>
+        <div class="tv-ladder-node mid ${s.mid ? 'line-active' : ''}" data-level-key="mid" title="Click to show/hide 50% Mid-Equilibrium on chart">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.mid ? '👁️' : '👁️‍🗨️'}</span>
+            <span class="tv-node-badge warn">⚡ 50% MID-EQUILIBRIUM</span>
+          </div>
           <span class="tv-node-price">$${dossier.eqShelf.toFixed(2)}</span>
           <span class="tv-node-dist">${dossier.livePrice >= dossier.eqShelf ? '-' : '+'}${dossier.distEq.toFixed(1)} pts</span>
         </div>
@@ -2510,20 +2546,38 @@ export function openExtensionNetworkModal(chart) {
           <span class="tv-node-price" style="color: #00e5ff;">$${dossier.livePrice.toFixed(2)}</span>
         </div>
 
-        <div class="tv-ladder-node anchor">
-          <span class="tv-node-badge highlight">⚓ PEAK VOLUME ANCHOR</span>
+        <div class="tv-ladder-node anchor ${s.anchor ? 'line-active' : ''}" data-level-key="anchor" title="Click to show/hide Peak Volume Anchor on chart">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.anchor ? '👁️' : '👁️‍🗨️'}</span>
+            <span class="tv-node-badge highlight">⚓ PEAK VOLUME ANCHOR</span>
+          </div>
           <span class="tv-node-price">$${dossier.primaryAnchor.toFixed(2)}</span>
           <span class="tv-node-dist">${dossier.livePrice >= dossier.primaryAnchor ? '-' : '+'}${dossier.distAnchor.toFixed(1)} pts</span>
         </div>
 
-        <div class="tv-ladder-node floor">
-          <span class="tv-node-badge bull">🟢 SUPPORT FLOOR</span>
+        <div class="tv-ladder-node floor ${s.floor ? 'line-active' : ''}" data-level-key="floor" title="Click to show/hide Support Floor on chart">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.floor ? '👁️' : '👁️‍🗨️'}</span>
+            <span class="tv-node-badge bull">🟢 SUPPORT FLOOR</span>
+          </div>
           <span class="tv-node-price">$${dossier.minLow.toFixed(2)}</span>
           <span class="tv-node-dist">-${dossier.distFloor.toFixed(1)} pts</span>
         </div>
       </div>
     `;
+
+    // Attach click listeners to individual depth ladder nodes
+    nodesContent.querySelectorAll('.tv-ladder-node[data-level-key]').forEach(nodeEl => {
+      nodeEl.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const key = nodeEl.getAttribute('data-level-key');
+        toggleSingleInflectionLine(key, c);
+      });
+    });
   }
+
+  // Synchronize button in header
+  updateInflectionLinesButtonUI();
 
   // Card 4: STRUCTURAL RUNWAY & LIQUIDITY VACUUM (Runway Meters, Hazard Box, Vacuum Dial)
   if (runwayBadge) runwayBadge.textContent = 'MANUAL PLANNING RUNWAY';
@@ -2574,6 +2628,198 @@ export function openExtensionNetworkModal(chart) {
   modal.style.display = 'flex';
 }
 window.__openExtensionNetworkModal = openExtensionNetworkModal;
+
+/**
+ * Synchronizes structural inflection reference lines directly onto the chart canvas.
+ * Lines are plotted using the 'structuralLevel' overlay:
+ * - Ceiling Resistance (#ef4444 Crimson Red, dashed)
+ * - 50% Mid-Equilibrium (#fbbf24 Warm Yellow, dashed)
+ * - Peak Volume Anchor (#00e5ff Cyan, solid)
+ * - Support Floor (#10b981 Emerald Green, dashed)
+ */
+export function syncStructuralInflectionLines(chart) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  if (!c || typeof c.getOverlays !== 'function') return;
+
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+    ceiling: false,
+    mid: false,
+    anchor: false,
+    floor: false
+  };
+  const isAnyActive = Object.values(state).some(Boolean);
+
+  if (!isAnyActive) {
+    for (const lvl of INFLECTION_LEVEL_KEYS) {
+      try { c.removeOverlay({ id: lvl.id }); } catch (_) {}
+    }
+    return;
+  }
+
+  const dossier = computeNetworkDossier(null, c.getDataList?.());
+  if (!dossier) {
+    for (const lvl of INFLECTION_LEVEL_KEYS) {
+      try { c.removeOverlay({ id: lvl.id }); } catch (_) {}
+    }
+    return;
+  }
+
+  const existingOverlays = c.getOverlays() || [];
+
+  const shortNames = {
+    ceiling: 'CEILING',
+    mid: '50% EQ',
+    anchor: 'ANCHOR',
+    floor: 'FLOOR'
+  };
+
+  for (const lvl of INFLECTION_LEVEL_KEYS) {
+    const isActive = !!state[lvl.key];
+    const price = dossier[lvl.prop];
+
+    if (!isActive || price === undefined || price === null || isNaN(price)) {
+      try { c.removeOverlay({ id: lvl.id }); } catch (_) {}
+      continue;
+    }
+
+    const options = {
+      id: lvl.id,
+      name: 'structuralLevel',
+      points: [{ value: price }],
+      lock: true,
+      extendData: {
+        key: lvl.id,
+        title: lvl.title,
+        yLabel: `${shortNames[lvl.key] || 'LEVEL'} $${price.toFixed(2)}`,
+        color: lvl.color,
+        lineStyle: lvl.lineStyle,
+        lineSize: lvl.lineSize,
+        opacity: lvl.opacity
+      }
+    };
+
+    const exists = existingOverlays.some(o => o.id === lvl.id);
+    if (exists) {
+      try {
+        c.overrideOverlay(options);
+      } catch (_) {
+        try { c.removeOverlay({ id: lvl.id }); } catch (e) {}
+        try { c.createOverlay(options); } catch (e) {}
+      }
+    } else {
+      try {
+        c.createOverlay(options);
+      } catch (err) {
+        console.warn(`[syncStructuralInflectionLines] Error creating ${lvl.id}:`, err);
+      }
+    }
+  }
+}
+window.__syncStructuralInflectionLines = syncStructuralInflectionLines;
+
+/**
+ * Updates UI state of Card 3 master toggle button and individual depth ladder nodes.
+ */
+export function updateInflectionLinesButtonUI() {
+  const btn = document.getElementById('tvToggleInflectionLinesBtn');
+  const btnText = document.getElementById('tvToggleInflectionLinesBtnText');
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+    ceiling: false,
+    mid: false,
+    anchor: false,
+    floor: false
+  };
+  const anyActive = Object.values(state).some(Boolean);
+
+  if (btn) {
+    if (anyActive) {
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+  }
+
+  if (btnText) {
+    btnText.textContent = anyActive ? 'HIDE LINES ON CHART' : 'SHOW LINES ON CHART';
+  }
+
+  // Update individual depth ladder rows in the modal if currently open
+  const nodes = document.querySelectorAll('.tv-ladder-node[data-level-key]');
+  nodes.forEach(el => {
+    const k = el.getAttribute('data-level-key');
+    const isAct = !!state[k];
+    if (isAct) {
+      el.classList.add('line-active');
+    } else {
+      el.classList.remove('line-active');
+    }
+    const eye = el.querySelector('.tv-node-eye-pill');
+    if (eye) {
+      eye.textContent = isAct ? '👁️' : '👁️‍🗨️';
+      eye.title = isAct ? 'Line plotted on chart (click to hide)' : 'Line hidden (click to plot on chart)';
+    }
+  });
+}
+window.__updateInflectionLinesButtonUI = updateInflectionLinesButtonUI;
+
+/**
+ * Toggles all 4 structural inflection reference lines simultaneously.
+ */
+export function toggleStructuralInflectionLines(chart, forceState = null) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+    ceiling: false,
+    mid: false,
+    anchor: false,
+    floor: false
+  };
+  const anyActive = Object.values(state).some(Boolean);
+
+  const targetState = (forceState !== null) ? forceState : !anyActive;
+  state.ceiling = targetState;
+  state.mid = targetState;
+  state.anchor = targetState;
+  state.floor = targetState;
+
+  syncStructuralInflectionLines(c);
+  updateInflectionLinesButtonUI();
+
+  if (typeof showChartToast === 'function') {
+    showChartToast(targetState ? '👁️ Reference Lines Plotted on Chart' : '👁️ Reference Lines Hidden');
+  }
+}
+window.__toggleStructuralInflectionLines = toggleStructuralInflectionLines;
+
+/**
+ * Toggles a single inflection reference line on/off.
+ */
+export function toggleSingleInflectionLine(key, chart) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  const state = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
+    ceiling: false,
+    mid: false,
+    anchor: false,
+    floor: false
+  };
+  if (!state || !(key in state)) return;
+
+  state[key] = !state[key];
+  syncStructuralInflectionLines(c);
+  updateInflectionLinesButtonUI();
+
+  const labels = {
+    ceiling: 'Ceiling Resistance',
+    mid: '50% Mid-Equilibrium',
+    anchor: 'Peak Volume Anchor',
+    floor: 'Support Floor'
+  };
+
+  if (typeof showChartToast === 'function') {
+    const name = labels[key] || key;
+    showChartToast(state[key] ? `👁️ Plotted ${name} on chart` : `👁️ Hidden ${name}`);
+  }
+}
+window.__toggleSingleInflectionLine = toggleSingleInflectionLine;
 
 export function startCandleCountdown(timeframeMinutes = 5) {
   const el = document.getElementById('tvCountdownTimer');

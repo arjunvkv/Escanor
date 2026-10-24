@@ -10,7 +10,7 @@
  */
 
 import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
-import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal } from './tv_chart_engine.js?v=202610241430';
+import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal, toggleStructuralInflectionLines, syncStructuralInflectionLines } from './tv_chart_engine.js?v=202610241430';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -1187,6 +1187,14 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   if (extRibbon) {
     extRibbon.addEventListener('click', () => {
       openExtensionNetworkModal(chart);
+    });
+  }
+
+  const toggleLinesBtn = document.getElementById('tvToggleInflectionLinesBtn');
+  if (toggleLinesBtn) {
+    toggleLinesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleStructuralInflectionLines(chart);
     });
   }
 

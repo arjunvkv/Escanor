@@ -833,9 +833,15 @@
 
             <!-- Card 3: STRONGEST STRUCTURAL INFLECTION NODES -->
             <div class="tv-section-card tv-network-card">
-              <div class="tv-section-title">
-                <span>⚓ STRONGEST STRUCTURAL INFLECTION NODES</span>
-                <span id="tvAuditNodesBadge" class="tv-network-tag-pill">CRITICAL SHELVES</span>
+              <div class="tv-section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span>⚓ STRONGEST STRUCTURAL INFLECTION NODES</span>
+                  <span id="tvAuditNodesBadge" class="tv-network-tag-pill">CRITICAL SHELVES</span>
+                </div>
+                <button type="button" id="tvToggleInflectionLinesBtn" class="tv-btn-plot-levels" title="Toggle horizontal reference lines for these points on the chart canvas">
+                  <span class="tv-plot-icon">👁️</span>
+                  <span id="tvToggleInflectionLinesBtnText">SHOW LINES ON CHART</span>
+                </button>
               </div>
               <div id="tvAuditStructuralNodes" class="tv-network-content">
                 <!-- Dynamically filled with exact price nodes -->
