@@ -21,14 +21,15 @@ assert.ok(engineCode.includes("text: `+${m.favMove.toFixed(1)}`"), 'Blue line mu
 // Ensure narrative text paragraphs are eliminated in favor of rich widgets
 assert.ok(!engineCode.includes('tv-network-narrative'), 'Text narrative paragraphs must be removed in favor of rich visual widgets');
 
-// Ensure rich interactive widgets exist in openExtensionNetworkModal
-assert.ok(engineCode.includes('tv-tow-container'), 'Tug-of-war container must be present');
-assert.ok(engineCode.includes('tv-shield-gauge-wrap'), 'Shield gauge meter must be present');
-assert.ok(engineCode.includes('tv-speedo-box'), 'Speedometer gauge must be present');
-assert.ok(engineCode.includes('tv-depth-ladder'), 'Depth ladder must be present');
-assert.ok(engineCode.includes('tv-runway-box'), 'Runway progress meters must be present');
-assert.ok(engineCode.includes('tv-hazard-box'), 'Hazard tripwire box must be present');
-assert.ok(engineCode.includes('tv-vacuum-dial'), 'Vacuum dial must be present');
+// Ensure rich interactive tactical HUD elements exist in openExtensionNetworkModal
+assert.ok(engineCode.includes('tv-nexus-tab-btn'), 'Dynamic tab buttons must be present');
+assert.ok(engineCode.includes('tvNexusTrajLine'), 'Trajectory line element must be present');
+assert.ok(engineCode.includes('tvNexusLoadBarsContainer'), 'Pipeline load cylinder container must be present');
+assert.ok(engineCode.includes('tvNexusOscWave'), 'Command oscillation harmonic wave must be present');
+assert.ok(engineCode.includes('tvNexusLedGrid'), '24-channel LED matrix grid must be present');
+assert.ok(engineCode.includes('tv-nexus-cylinder-bar'), '3D cylindrical load bar class must be present');
+assert.ok(engineCode.includes('tv-led-pill'), 'LED status matrix pill class must be present');
+
 
 // Ensure red anchor and cyan trend arrow remain
 assert.ok(engineCode.includes("text: '✕'"), "Red ✕ start anchor must remain");

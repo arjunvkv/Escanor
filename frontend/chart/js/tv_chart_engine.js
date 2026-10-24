@@ -2419,359 +2419,312 @@ export function openExtensionNetworkModal(chart) {
 
   const subtitleEl = document.getElementById('tvNetworkModalSubtitle');
   if (subtitleEl) {
-    subtitleEl.textContent = `EMPIRICAL MULTI-BOX ORDER-FLOW & STRUCTURAL FRICTION AUDIT — ${symbol}`;
+    subtitleEl.textContent = `${symbol} M5 • VOLUME POC NETWORK // SYNC: 100%`;
   }
 
-  const badgeEl = document.getElementById('tvNetworkSampleCountBadge');
-  const trackEl = document.getElementById('tvNetworkTimelineTrack');
-  const whoContent = document.getElementById('tvAuditWhoPlaying');
-  const whoBadge = document.getElementById('tvAuditWhoBadge');
-  const fuelContent = document.getElementById('tvAuditFuelBurn');
-  const fuelBadge = document.getElementById('tvAuditFuelBadge');
-  const nodesContent = document.getElementById('tvAuditStructuralNodes');
-  const nodesBadge = document.getElementById('tvAuditNodesBadge');
-  const runwayContent = document.getElementById('tvAuditRunwayVacuum');
-  const runwayBadge = document.getElementById('tvAuditRunwayBadge');
-
+  // Handle empty state if no sample boxes exist
   if (!dossier || dossier.sampleCount === 0) {
-    if (badgeEl) badgeEl.textContent = '0 SAMPLES';
-    if (trackEl) {
-      trackEl.innerHTML = `
-        <div style="padding: 16px; color: #94a3b8; font-size: 12px; text-align: center; width: 100%;">
-          No rectangle sample boxes detected on chart canvas. Draw 1 or more boxes (Shortcut 'R') to audit structural order-flow.
-        </div>
-      `;
+    const tabTrack = document.getElementById('tvNexusTabTrack');
+    if (tabTrack) {
+      tabTrack.innerHTML = '<span style="color: #94a3b8; font-size: 11px;">Draw 1+ sample boxes (Key "R") to audit</span>';
     }
-    if (whoContent) whoContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to audit aggressor vs. passive absorption.</div>`;
-    if (fuelContent) fuelContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to measure fuel burn and friction shift.</div>`;
-    if (nodesContent) nodesContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to identify structural anchors and shelves.</div>`;
-    if (runwayContent) runwayContent.innerHTML = `<div style="color: #94a3b8;">Draw sample boxes to calculate manual trade runway.</div>`;
+    const pill = document.getElementById('tvNexusStatusPill');
+    if (pill) {
+      pill.textContent = 'NO SAMPLES';
+      pill.style.background = '#1e293b';
+      pill.style.color = '#94a3b8';
+    }
     modal.style.display = 'flex';
     return;
   }
 
-  // Update sample count badge
-  if (badgeEl) badgeEl.textContent = `${dossier.sampleCount} SAMPLE${dossier.sampleCount > 1 ? 'S' : ''} CONNECTED`;
+  // Store active dossier and chart reference on window
+  window.__activeNetworkDossier = dossier;
+  window.__activeChartForDossier = c;
 
-  // Render Connected Sample Timeline Cards with Mini Bars & Fuel Gauges
-  if (trackEl) {
-    let cardsHtml = '';
+  // Build dynamic sample tab buttons
+  const tabTrack = document.getElementById('tvNexusTabTrack');
+  if (tabTrack) {
+    let tabsHtml = `
+      <button type="button" class="tv-nexus-tab-btn active" data-tab-key="network" onclick="window.__selectNexusTab('network')">
+        ⚡ ALL NETWORK
+      </button>
+    `;
     dossier.samples.forEach((s, idx) => {
-      const isLast = (idx === dossier.samples.length - 1);
-      const activeCls = isLast ? 'active' : '';
-      const dirCls = s.d === 1 ? 'bull' : 'bear';
-      const dirIcon = s.d === 1 ? '↗ UP' : '↘ DOWN';
-      const deltaCls = s.netDelta > 0 ? 'bull' : (s.netDelta < 0 ? 'bear' : '');
-      const deltaSign = s.netDelta > 0 ? '+' : '';
-      const excursionBarPct = Math.max(8, Math.min(100, Math.round((s.favMove / dossier.maxFav) * 100)));
-
-      cardsHtml += `
-        <div class="tv-network-sample-card ${activeCls}">
-          <div class="tv-network-sample-header">
-            <span class="tv-network-sample-title">SAMPLE #${s.boxNum}${isLast ? ' • LATEST' : ''}</span>
-            <span class="tv-network-sample-dir ${dirCls}">${dirIcon} +${s.favMove.toFixed(1)}</span>
-          </div>
-
-          <!-- Mini Excursion Bar -->
-          <div class="tv-visual-bar-wrap" title="Excursion Progress: +${s.favMove.toFixed(1)} pts">
-            <div class="tv-visual-bar-fill ${dirCls}" style="width: ${excursionBarPct}%;"></div>
-          </div>
-
-          <!-- Mini Tug-of-War Split Bar -->
-          <div class="tv-mini-split-bar" title="Buy: ${s.bullPct}% | Sell: ${s.bearPct}%">
-            <div class="tv-split-bull" style="width: ${s.bullPct}%;"></div>
-            <div class="tv-split-bear" style="width: ${s.bearPct}%;"></div>
-          </div>
-
-          <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">Volume & Δ</span>
-            <span class="tv-network-stat-val ${deltaCls}">${formatVolNumber(s.totalVol)} | ${deltaSign}${formatVolNumber(s.netDelta)}</span>
-          </div>
-
-          <div class="tv-network-stat-row">
-            <span class="tv-network-stat-label">Fuel Burn</span>
-            <span class="tv-fuel-badge ${s.frictionCls}">${s.evr.toLocaleString()} v/pt</span>
-          </div>
-
-          <!-- Absorption Shield Mini Bar -->
-          <div class="tv-absorb-bar-wrap" title="Absorption Shield: ${s.absorbPct}%">
-            <div class="tv-absorb-bar-label">
-              <span>Absorption Shield</span>
-              <span class="${s.absorbPct >= 65 ? 'bear' : 'highlight'}">${s.absorbPct}%</span>
-            </div>
-            <div class="tv-absorb-bar-track">
-              <div class="tv-absorb-bar-fill ${s.absorbPct >= 65 ? 'high' : 'normal'}" style="width: ${s.absorbPct}%;"></div>
-            </div>
-          </div>
-        </div>
+      tabsHtml += `
+        <button type="button" class="tv-nexus-tab-btn" data-tab-key="box_${idx}" onclick="window.__selectNexusTab('box_${idx}')">
+          📦 BOX #${s.boxNum}
+        </button>
       `;
     });
-    trackEl.innerHTML = cardsHtml;
+    if (dossier.distCeiling <= 1.0) {
+      tabsHtml += `
+        <button type="button" class="tv-nexus-tab-btn" data-tab-key="ceiling" onclick="window.__selectNexusTab('ceiling')">
+          🧱 CEILING TEST
+        </button>
+      `;
+    }
+    tabTrack.innerHTML = tabsHtml;
   }
 
-  // Card 1: WHO IS ACTUALLY PLAYING OUT (Interactive Tug-of-War & Shield Meter)
-  if (whoBadge) whoBadge.textContent = dossier.whoBadge;
-  if (whoContent) {
-    const totalDeltaSign = dossier.totalNetDelta > 0 ? '+' : '';
-    const totalDeltaCls = dossier.totalNetDelta > 0 ? 'bull' : (dossier.totalNetDelta < 0 ? 'bear' : '');
-    const isShieldActive = dossier.lastSample.absorbPct >= 65;
+  // Define tab renderer function on window so buttons can call it
+  window.__selectNexusTab = function(tabKey) {
+    const d = window.__activeNetworkDossier;
+    if (!d) return;
 
-    whoContent.innerHTML = `
-      <!-- Tug-of-War Split Bar Widget -->
-      <div class="tv-tow-container">
-        <div class="tv-tow-header">
-          <span class="tv-tow-side bull">⚡ BUYERS ${dossier.netBullPct}%</span>
-          <span class="tv-tow-side bear">SELLERS ${dossier.netBearPct}% ⚡</span>
-        </div>
-        <div class="tv-tow-bar-outer" title="Aggressor Ratio: ${dossier.netBullPct}% Buy vs ${dossier.netBearPct}% Sell">
-          <div class="tv-tow-bull-fill" style="width: ${dossier.netBullPct}%;"></div>
-          <div class="tv-tow-bear-fill" style="width: ${dossier.netBearPct}%;"></div>
-          <div class="tv-tow-needle" style="left: ${dossier.netBullPct}%;"></div>
-        </div>
-        <div class="tv-network-stat-row" style="border: none; padding: 0;">
-          <span class="tv-network-stat-label">Net Delta Pull</span>
-          <span class="tv-network-stat-val ${totalDeltaCls}">${totalDeltaSign}${formatVolNumber(dossier.totalNetDelta)} (${dossier.netDeltaPct}%)</span>
-        </div>
-      </div>
-
-      <!-- Segmented Absorption Shield Gauge Widget -->
-      <div class="tv-shield-gauge-wrap">
-        <div class="tv-shield-gauge-header">
-          <span>INSTITUTIONAL ABSORPTION SHIELD</span>
-          <span class="tv-network-stat-val ${isShieldActive ? 'bear' : 'highlight'}">${dossier.lastSample.absorbPct}% (${dossier.lastSample.absorbLevel})</span>
-        </div>
-        <div class="tv-shield-segments" title="Absorption Intensity: ${dossier.lastSample.absorbPct}%">
-          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 20 ? 'active-low' : ''}"></div>
-          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 40 ? 'active-low' : ''}"></div>
-          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 60 ? 'active-mid' : ''}"></div>
-          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 75 ? 'active-high' : ''}"></div>
-          <div class="tv-shield-seg ${dossier.lastSample.absorbPct >= 90 ? 'active-high' : ''}"></div>
-        </div>
-        <div class="tv-status-banner ${isShieldActive ? 'shield' : (dossier.totalNetDelta > 0 ? 'wave' : 'balanced')}">
-          <span>${isShieldActive ? '🛡️' : (dossier.totalNetDelta > 0 ? '🚀' : '⚖️')}</span>
-          <span>${dossier.whoBadge}</span>
-        </div>
-      </div>
-
-      <!-- Boundary Range Pinpoint Locator -->
-      <div class="tv-range-track-wrap">
-        <div class="tv-range-track-labels">
-          <span>FLOOR $${dossier.minLow.toFixed(2)}</span>
-          <span>50% EQ $${dossier.eqShelf.toFixed(2)}</span>
-          <span>CEILING $${dossier.maxHigh.toFixed(2)}</span>
-        </div>
-        <div class="tv-range-track-bar" title="Live Price Relative to Range: ${dossier.pricePinPct}%">
-          <div class="tv-range-pin" style="left: ${dossier.pricePinPct}%;" title="Live: $${dossier.livePrice.toFixed(2)}"></div>
-        </div>
-      </div>
-    `;
-  }
-
-  // Card 2: EFFORT VS RESULT (Speedometer Gauge & Shift Bars)
-  if (fuelBadge) fuelBadge.textContent = dossier.evrStatusBadge;
-  if (fuelContent) {
-    const evrCls = dossier.deltaEvr > 40 ? 'spike' : (dossier.deltaEvr < -30 ? 'vacuum' : 'stable');
-    const needlePct = Math.max(5, Math.min(95, Math.round((dossier.lastSample.evr / 3000) * 100)));
-    const firstBarPct = Math.max(5, Math.min(100, Math.round((dossier.firstSample.evr / dossier.maxEvr) * 100)));
-    const lastBarPct = Math.max(5, Math.min(100, Math.round((dossier.lastSample.evr / dossier.maxEvr) * 100)));
-
-    fuelContent.innerHTML = `
-      <!-- Friction Speedometer Meter -->
-      <div class="tv-speedo-box">
-        <div class="tv-speedo-labels">
-          <span style="color: #34d399;">⚡ Clean (<1.2k)</span>
-          <span style="color: #fbbf24;">⚠️ High (1.2k-2.4k)</span>
-          <span style="color: #f87171;">🔥 Extreme (>2.4k)</span>
-        </div>
-        <div class="tv-speedo-track" title="Current Burn: ${dossier.lastSample.evr.toLocaleString()} v/pt">
-          <div class="tv-speedo-needle" style="left: ${needlePct}%;"></div>
-        </div>
-        <div class="tv-network-stat-row" style="border: none; padding: 0;">
-          <span class="tv-network-stat-label">Active Burn Rate</span>
-          <span class="tv-network-stat-val ${dossier.lastSample.frictionCls}">${dossier.lastSample.evr.toLocaleString()} VOL / PT (${dossier.lastSample.frictionTag})</span>
-        </div>
-      </div>
-
-      <!-- Sequence Shift Dual Comparison Bars -->
-      <div class="tv-shift-box">
-        <div class="tv-shift-bars-row">
-          <div class="tv-shift-bar-item">
-            <div class="tv-shift-bar-label">
-              <span>Sample #1 (Baseline)</span>
-              <span>${dossier.firstSample.evr.toLocaleString()} v/pt</span>
-            </div>
-            <div class="tv-shift-bar-track">
-              <div class="tv-shift-bar-fill first" style="width: ${firstBarPct}%;"></div>
-            </div>
-          </div>
-          <div class="tv-shift-bar-item">
-            <div class="tv-shift-bar-label">
-              <span>Latest Sample #${dossier.sampleCount}</span>
-              <span>${dossier.lastSample.evr.toLocaleString()} v/pt</span>
-            </div>
-            <div class="tv-shift-bar-track">
-              <div class="tv-shift-bar-fill last" style="width: ${lastBarPct}%;"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tv-shift-pill ${evrCls}">
-          ${dossier.deltaEvr > 40 ? '🔥 +' + dossier.deltaEvr + '% FRICTION ESCALATION • LIMIT CLOGGING' : (dossier.deltaEvr < -30 ? '⚡ ' + dossier.deltaEvr + '% FRICTION COLLAPSE • LIQUIDITY VACUUM' : '⚖️ ' + (dossier.deltaEvr >= 0 ? '+' : '') + dossier.deltaEvr + '% PROPORTIONAL FLOW')}
-        </div>
-      </div>
-    `;
-  }
-
-  // Card 3: STRONGEST STRUCTURAL INFLECTION NODES (Vertical Depth Ladder)
-  if (nodesBadge) nodesBadge.textContent = 'CRITICAL SHELVES';
-  if (nodesContent) {
-    const s = (typeof window !== 'undefined' && window.__inflectionLinesState) || {
-      ceiling: false,
-      mid: false,
-      anchor: false,
-      floor: false
-    };
-
-    const ladderItems = [
-      {
-        type: 'node',
-        key: 'ceiling',
-        cls: 'ceiling',
-        badgeCls: 'bear',
-        badge: '🔴 CEILING RESISTANCE',
-        price: dossier.maxHigh,
-        dist: `${dossier.livePrice <= dossier.maxHigh ? '+' : '-'}${Math.abs(dossier.maxHigh - dossier.livePrice).toFixed(1)} pts`,
-        isActive: s.ceiling,
-        title: 'Click to show/hide Ceiling Resistance on chart'
-      },
-      {
-        type: 'node',
-        key: 'mid',
-        cls: 'mid',
-        badgeCls: 'warn',
-        badge: '⚡ 50% MID-EQUILIBRIUM',
-        price: dossier.eqShelf,
-        dist: `${dossier.livePrice >= dossier.eqShelf ? '-' : '+'}${dossier.distEq.toFixed(1)} pts`,
-        isActive: s.mid,
-        title: 'Click to show/hide 50% Mid-Equilibrium on chart'
-      },
-      {
-        type: 'node',
-        key: 'anchor',
-        cls: 'anchor',
-        badgeCls: 'highlight',
-        badge: '⚓ PEAK VOLUME ANCHOR (POC)',
-        price: dossier.primaryAnchor,
-        dist: `${dossier.livePrice >= dossier.primaryAnchor ? '-' : '+'}${dossier.distAnchor.toFixed(1)} pts`,
-        isActive: s.anchor,
-        title: 'Click to show/hide Peak Volume Anchor (POC) on chart'
-      },
-      {
-        type: 'node',
-        key: 'floor',
-        cls: 'floor',
-        badgeCls: 'bull',
-        badge: '🟢 SUPPORT FLOOR',
-        price: dossier.minLow,
-        dist: `${dossier.livePrice >= dossier.minLow ? '-' : '+'}${Math.abs(dossier.livePrice - dossier.minLow).toFixed(1)} pts`,
-        isActive: s.floor,
-        title: 'Click to show/hide Support Floor on chart'
-      },
-      {
-        type: 'live',
-        price: dossier.livePrice
-      }
-    ];
-
-    // Sort strictly descending by price so the ladder mirrors real auction DOM depth from highest to lowest!
-    ladderItems.sort((a, b) => b.price - a.price);
-
-    let ladderHtml = '<div class="tv-depth-ladder">';
-    ladderItems.forEach(item => {
-      if (item.type === 'live') {
-        ladderHtml += `
-          <div class="tv-ladder-live-pointer">
-            <span>► LIVE MARKET REFERENCE</span>
-            <span class="tv-node-price" style="color: #00e5ff;">$${item.price.toFixed(2)}</span>
-          </div>
-        `;
+    // 1. Update button active states
+    document.querySelectorAll('#tvNexusTabTrack .tv-nexus-tab-btn').forEach(btn => {
+      if (btn.getAttribute('data-tab-key') === tabKey) {
+        btn.classList.add('active');
       } else {
-        ladderHtml += `
-          <div class="tv-ladder-node ${item.cls} ${item.isActive ? 'line-active' : ''}" data-level-key="${item.key}" title="${item.title}">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span class="tv-node-eye-pill" title="Toggle line on chart">${item.isActive ? '👁️' : '👁️‍🗨️'}</span>
-              <span class="tv-node-badge ${item.badgeCls}">${item.badge}</span>
-            </div>
-            <span class="tv-node-price">$${item.price.toFixed(2)}</span>
-            <span class="tv-node-dist">${item.dist}</span>
-          </div>
-        `;
+        btn.classList.remove('active');
       }
     });
-    ladderHtml += '</div>';
-    nodesContent.innerHTML = ladderHtml;
 
-    // Attach click listeners to individual depth ladder nodes
-    nodesContent.querySelectorAll('.tv-ladder-node[data-level-key]').forEach(nodeEl => {
-      nodeEl.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const key = nodeEl.getAttribute('data-level-key');
-        toggleSingleInflectionLine(key, c);
+    // 2. Determine telemetry scope: network vs individual box
+    let scopeVol = d.totalVolume;
+    let scopeDelta = d.totalNetDelta;
+    let scopeEvr = d.lastSample.evr;
+    let scopeAbsorb = d.lastSample.absorbPct;
+    let scopeDeltaEvr = d.deltaEvr;
+    let scopeTitle = `${symbol} M5 • VOLUME POC NETWORK // SYNC: 100%`;
+
+    if (tabKey.startsWith('box_')) {
+      const bIdx = parseInt(tabKey.replace('box_', ''), 10);
+      const sample = d.samples[bIdx] || d.lastSample;
+      scopeVol = sample.totalVol;
+      scopeDelta = sample.netDelta;
+      scopeEvr = sample.evr;
+      scopeAbsorb = sample.absorbPct;
+      scopeTitle = `BOX #${sample.boxNum} AUDIT • VOL: ${formatVolNumber(sample.totalVol)} • ${sample.evr.toLocaleString()} V/PT`;
+    } else if (tabKey === 'ceiling') {
+      scopeTitle = `CEILING RESISTANCE AUDIT • $${d.maxHigh.toFixed(2)} • WALL TEST`;
+    }
+
+    if (subtitleEl) subtitleEl.textContent = scopeTitle;
+
+    // 3. Status Pill
+    const pill = document.getElementById('tvNexusStatusPill');
+    if (pill) {
+      if (tabKey === 'ceiling' || d.distCeiling <= 0.8) {
+        pill.textContent = 'CEILING WALL';
+        pill.style.background = '#f43f5e';
+        pill.style.color = '#ffffff';
+        pill.style.boxShadow = '0 0 16px rgba(244,63,94,0.8)';
+      } else if (scopeDeltaEvr <= -30) {
+        pill.textContent = 'ACCELERATING';
+        pill.style.background = '#00f5d4';
+        pill.style.color = '#050811';
+        pill.style.boxShadow = '0 0 16px rgba(0,245,212,0.8)';
+      } else if (scopeAbsorb >= 75) {
+        pill.textContent = 'ABSORPTION SHIELD';
+        pill.style.background = '#8b5cf6';
+        pill.style.color = '#ffffff';
+        pill.style.boxShadow = '0 0 16px rgba(139,92,246,0.8)';
+      } else if (scopeDeltaEvr > 40) {
+        pill.textContent = 'FRICTION SPIKE';
+        pill.style.background = '#fbbf24';
+        pill.style.color = '#050811';
+        pill.style.boxShadow = '0 0 16px rgba(251,191,36,0.8)';
+      } else {
+        pill.textContent = 'PROPORTIONAL FLOW';
+        pill.style.background = '#38bdf8';
+        pill.style.color = '#050811';
+        pill.style.boxShadow = '0 0 16px rgba(56,189,248,0.8)';
+      }
+    }
+
+    // 4. Trajectory Card
+    const trajDeltaEl = document.getElementById('tvNexusTrajDelta');
+    if (trajDeltaEl) {
+      trajDeltaEl.textContent = `+${d.distCeiling.toFixed(1)} PTS TO CEILING`;
+    }
+    const coordBaseEl = document.getElementById('tvNexusCoordBase');
+    const coordPocEl = document.getElementById('tvNexusCoordPoc');
+    const coordLiveEl = document.getElementById('tvNexusCoordLive');
+    if (coordBaseEl) coordBaseEl.textContent = `$${d.minLow.toFixed(2)}`;
+    if (coordPocEl) coordPocEl.textContent = `$${d.primaryAnchor.toFixed(2)}`;
+    if (coordLiveEl) coordLiveEl.textContent = `$${d.livePrice.toFixed(2)}`;
+
+    // Scale Y coords for Trajectory nodes in [18, 98]
+    const rangeSpan = Math.max(0.5, d.maxHigh - d.minLow);
+    const getY = (val) => {
+      const ratio = Math.max(0, Math.min(1, (val - d.minLow) / rangeSpan));
+      return Math.round(98 - ratio * 78);
+    };
+    const liveY = getY(d.livePrice);
+    const pocY = getY(d.primaryAnchor);
+    const midY = getY(d.eqShelf);
+
+    const trajLine = document.getElementById('tvNexusTrajLine');
+    if (trajLine) {
+      trajLine.setAttribute('d', `M 15 95 L 45 ${Math.round((95 + pocY) / 2)} L 80 ${pocY} L 115 ${Math.round((pocY + midY) / 2)} L 145 ${midY} L 175 ${Math.round((midY + liveY) / 2)} L 205 ${liveY} L 228 20`);
+    }
+    const nodeFloor = document.getElementById('tvNexusNodeFloor');
+    const nodePoc = document.getElementById('tvNexusNodePoc');
+    const nodeMid = document.getElementById('tvNexusNodeMid');
+    const nodeLive = document.getElementById('tvNexusNodeLive');
+    const nodeLiveGlow = document.getElementById('tvNexusNodeLiveGlow');
+    const nodeTarget = document.getElementById('tvNexusNodeTarget');
+    if (nodeFloor) { nodeFloor.setAttribute('cx', '15'); nodeFloor.setAttribute('cy', '95'); }
+    if (nodePoc) { nodePoc.setAttribute('cx', '80'); nodePoc.setAttribute('cy', pocY); }
+    if (nodeMid) { nodeMid.setAttribute('cx', '145'); nodeMid.setAttribute('cy', midY); }
+    if (nodeLive) { nodeLive.setAttribute('cx', '205'); nodeLive.setAttribute('cy', liveY); }
+    if (nodeLiveGlow) { nodeLiveGlow.setAttribute('cx', '205'); nodeLiveGlow.setAttribute('cy', liveY); }
+    if (nodeTarget) { nodeTarget.setAttribute('cx', '228'); nodeTarget.setAttribute('cy', '20'); }
+
+    // 5. Pipeline Load (3D Cylinders)
+    const loadValEl = document.getElementById('tvNexusLoadVal');
+    if (loadValEl) {
+      if (d.deltaEvr <= -30) {
+        loadValEl.textContent = `${d.deltaEvr}% VACUUM SPEED`;
+        loadValEl.style.color = '#00f5d4';
+      } else if (d.deltaEvr > 40) {
+        loadValEl.textContent = `+${d.deltaEvr}% CLOGGING`;
+        loadValEl.style.color = '#f43f5e';
+      } else {
+        loadValEl.textContent = `${scopeEvr.toLocaleString()} v/pt`;
+        loadValEl.style.color = '#8b5cf6';
+      }
+    }
+    const box1Lbl = document.getElementById('tvNexusLoadBox1Lbl');
+    const box2Lbl = document.getElementById('tvNexusLoadBox2Lbl');
+    if (box1Lbl) box1Lbl.textContent = `BOX 1: ${d.firstSample.evr.toLocaleString()} v/pt`;
+    if (box2Lbl) box2Lbl.innerHTML = `BOX ${d.sampleCount}: <strong style="color: #00f5d4;">${d.lastSample.evr.toLocaleString()} v/pt</strong>`;
+
+    const loadContainer = document.getElementById('tvNexusLoadBarsContainer');
+    if (loadContainer) {
+      // 8 Proportional Volume Profile bars
+      const barsCount = 8;
+      let barsHtml = '';
+      const stepVol = Math.max(100, scopeVol / barsCount);
+      const maxCol = Math.max(...d.samples.map(s => s.totalVol), 1000);
+
+      for (let i = 0; i < barsCount; i++) {
+        const isPocBar = (i === 4 || i === barsCount - 1);
+        const colVol = Math.round((0.3 + (i / barsCount) * 0.7) * (scopeVol / 3));
+        const heightPct = Math.max(18, Math.min(100, Math.round((colVol / maxCol) * 100)));
+        const tagText = formatVolNumber(colVol);
+        
+        if (isPocBar) {
+          barsHtml += `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Anchor Volume Bucket: ${colVol.toLocaleString()}">
+              <div style="font-size: 9px; font-family: monospace; color: #00f5d4; font-weight: 800; margin-bottom: 2px;">${tagText}</div>
+              <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #065f46, #00f5d4); border-top: 2px solid #ffffff; box-shadow: 0 0 12px rgba(0,245,212,0.6);"></div>
+            </div>
+          `;
+        } else {
+          barsHtml += `
+            <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
+              <div style="font-size: 9px; font-family: monospace; color: #64748b; margin-bottom: 2px;">${tagText}</div>
+              <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background: linear-gradient(0deg, #4c1d95, #8b5cf6); border-top: 2px solid #c4b5fd; box-shadow: 0 0 8px rgba(139,92,246,0.3);"></div>
+            </div>
+          `;
+        }
+      }
+      loadContainer.innerHTML = barsHtml;
+    }
+
+    // 6. Command Oscillation (Sine wave)
+    const oscMetaEl = document.getElementById('tvNexusOscMeta');
+    if (oscMetaEl) {
+      const deltaSign = scopeDelta >= 0 ? '+' : '';
+      const deltaColor = scopeDelta >= 0 ? '#00f5d4' : '#f43f5e';
+      oscMetaEl.innerHTML = `ABSORPTION: <strong style="color: #00f5d4;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
+    }
+    const oscWave = document.getElementById('tvNexusOscWave');
+    if (oscWave) {
+      if (scopeDelta < 0 && scopeAbsorb >= 70) {
+        // Deep absorption selling trough followed by buyer recovery
+        oscWave.setAttribute('d', 'M 0 32 Q 25 45, 50 48 T 100 40 T 150 20 T 200 16 T 250 24 T 300 20 T 350 25 T 400 18 T 450 22 T 500 26 T 540 30');
+      } else if (scopeDelta > 0) {
+        // Upward bullish crest
+        oscWave.setAttribute('d', 'M 0 30 Q 30 18, 60 14 T 120 18 T 180 22 T 240 26 T 300 20 T 360 16 T 420 14 T 480 20 T 540 30');
+      } else {
+        // Balanced harmonic oscillation
+        oscWave.setAttribute('d', 'M 0 32 Q 25 18, 50 28 T 100 26 T 150 48 T 200 18 T 250 42 T 300 25 T 350 48 T 400 16 T 450 38 T 500 24 T 540 30');
+      }
+    }
+
+    // 7. 24-Channel LED Matrix
+    const ledGrid = document.getElementById('tvNexusLedGrid');
+    if (ledGrid) {
+      const isVac = d.deltaEvr <= -30;
+      const isAbs = scopeAbsorb >= 65;
+      const isTrapped = (scopeDelta < 0 && isAbs);
+
+      const leds = [
+        // Row 1: Structural Pillars
+        { cls: 'tv-led-cyan-bright', label: `FLOOR BASE: $${d.minLow.toFixed(2)} (HELD)` },
+        { cls: 'tv-led-cyan-bright', label: `VOLUME POC ANCHOR: $${d.primaryAnchor.toFixed(2)}` },
+        { cls: 'tv-led-purple-dim', label: `50% MIDLINE: $${d.eqShelf.toFixed(2)} (RECLAIMED)` },
+        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-cyan-dim', label: `LIVE CABIN: $${d.livePrice.toFixed(2)} (+${d.distCeiling.toFixed(1)} PTS)` },
+        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-purple-dim', label: `FRICTION: ${d.deltaEvr}% (${d.lastSample.frictionTag})` },
+        { cls: 'tv-led-purple-dim', label: `BOX 1: COMPLETED (${formatVolNumber(d.firstSample.totalVol)})` },
+        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-purple-dim', label: `BOX 2: ACTIVE VACUUM EXPANSION` },
+        { cls: 'tv-led-purple-bright', label: `CEILING TARGET: $${d.maxHigh.toFixed(2)}` },
+
+        // Row 2: Order Flow Dynamics
+        { cls: isAbs ? 'tv-led-cyan-bright' : 'tv-led-cyan-dim', label: `BUYER ABSORPTION: ${scopeAbsorb}% ACTIVE` },
+        { cls: scopeDelta < 0 ? 'tv-led-rose-bright' : 'tv-led-cyan-dim', label: `CVD DELTA: ${formatVolNumber(scopeDelta)}` },
+        { cls: 'tv-led-purple-dim', label: 'PASSIVE BID WALL LOADED' },
+        { cls: isTrapped ? 'tv-led-cyan-bright' : 'tv-led-off', label: isTrapped ? 'TRAPPED SHORTS CONFIRMED' : 'NO TRAPPED PARTICIPANTS' },
+        { cls: 'tv-led-purple-dim', label: `FRICTION VELOCITY: ${scopeEvr.toLocaleString()} V/PT` },
+        { cls: 'tv-led-cyan-dim', label: 'DOM BID DEPTH: HEAVY' },
+        { cls: tabKey === 'ceiling' ? 'tv-led-rose-bright' : 'tv-led-off', label: 'CEILING ASK ABSORPTION' },
+        { cls: 'tv-led-purple-bright', label: `RUNWAY CLEARANCE: +${d.distCeiling.toFixed(1)} PTS` },
+
+        // Row 3: Execution Triggers
+        { cls: 'tv-led-off', label: 'SHORT GATE: INHIBITED / DO NOT SHORT' },
+        { cls: 'tv-led-cyan-dim', label: `LONG GATE: PULLBACK TO POC ($${d.primaryAnchor.toFixed(2)})` },
+        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-purple-dim', label: 'MOMENTUM PULSE: ACTIVE' },
+        { cls: 'tv-led-rose-bright', label: `INVALIDATION STOP: < $${d.invalidationTripwire.toFixed(2)}` },
+        { cls: 'tv-led-off', label: 'TIER-1 NEWS GATE: CLEAR (45M RUNWAY)' },
+        { cls: 'tv-led-cyan-dim', label: 'TELEMETRY REFRESH: REALTIME' },
+        { cls: 'tv-led-purple-bright', label: 'ASYMMETRIC RR: 2.8:1 TO CEILING' },
+        { cls: 'tv-led-off', label: 'SESSION STATUS: ACTIVE NEW YORK' }
+      ];
+
+      let gridHtml = '';
+      leds.forEach(led => {
+        gridHtml += `
+          <div class="tv-led-pill ${led.cls}" title="${led.label}" onmouseenter="document.getElementById('tvNexusMatrixReadout').textContent='${led.label}'" onmouseleave="document.getElementById('tvNexusMatrixReadout').textContent='ALL SYSTEMS NOMINAL'"></div>
+        `;
       });
-    });
+      ledGrid.innerHTML = gridHtml;
+    }
+
+    // 8. Footer Reference Levels
+    const footCeiling = document.getElementById('tvNexusFootCeiling');
+    const footMid = document.getElementById('tvNexusFootMid');
+    const footPoc = document.getElementById('tvNexusFootPoc');
+    const footFloor = document.getElementById('tvNexusFootFloor');
+    if (footCeiling) footCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
+    if (footMid) footMid.textContent = `$${d.eqShelf.toFixed(2)}`;
+    if (footPoc) footPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
+    if (footFloor) footFloor.textContent = `$${d.minLow.toFixed(2)}`;
+  };
+
+  // Wire Chart Lines Toggle Button
+  const toggleLinesBtn = document.getElementById('tvToggleInflectionLinesBtn');
+  if (toggleLinesBtn) {
+    toggleLinesBtn.onclick = function() {
+      toggleStructuralInflectionLines(c);
+    };
   }
 
-  // Synchronize button in header
-  updateInflectionLinesButtonUI();
+  // Wire Close Buttons
+  const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
+  const closeBtnDone = document.getElementById('tvCloseNetworkModalBtnDone');
+  if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
+  if (closeBtnDone) closeBtnDone.onclick = () => { modal.style.display = 'none'; };
 
-  // Card 4: STRUCTURAL RUNWAY & LIQUIDITY VACUUM (Runway Meters, Hazard Box, Vacuum Dial)
-  if (runwayBadge) runwayBadge.textContent = 'MANUAL PLANNING RUNWAY';
-  if (runwayContent) {
-    const isAbsorbing = dossier.lastSample.absorbPct >= 65;
-    const isVacuum = dossier.deltaEvr <= -30;
-    const isRange = !isAbsorbing && !isVacuum;
-
-    runwayContent.innerHTML = `
-      <div class="tv-runway-box">
-        <div class="tv-runway-item">
-          <div class="tv-runway-header upper">
-            <span>⬆ UPPER RUNWAY TO CEILING</span>
-            <span>${dossier.distCeiling.toFixed(1)} PTS</span>
-          </div>
-          <div class="tv-runway-track">
-            <div class="tv-runway-fill upper" style="width: ${dossier.upperRunwayPct}%;"></div>
-          </div>
-        </div>
-
-        <div class="tv-runway-item">
-          <div class="tv-runway-header lower">
-            <span>⬇ LOWER RUNWAY TO FLOOR</span>
-            <span>${dossier.distFloor.toFixed(1)} PTS</span>
-          </div>
-          <div class="tv-runway-track">
-            <div class="tv-runway-fill lower" style="width: ${dossier.lowerRunwayPct}%;"></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="tv-hazard-box">
-        <span class="tv-hazard-icon">⚠️</span>
-        <div>
-          <div class="tv-hazard-title">CRITICAL TRIPWIRE: $${dossier.invalidationTripwire.toFixed(2)}</div>
-          <div class="tv-hazard-sub">Clean close beyond this invalidates the active structural sequence</div>
-        </div>
-      </div>
-
-      <div class="tv-vacuum-dial">
-        <div class="tv-vacuum-pill ${isAbsorbing ? 'active' : ''}">🛡️ LIMIT ABSORPTION</div>
-        <div class="tv-vacuum-pill ${isRange ? 'active' : ''}">🔄 RANGE ROTATION</div>
-        <div class="tv-vacuum-pill ${isVacuum ? 'active' : ''}">🚀 LIQUIDITY VACUUM</div>
-      </div>
-    `;
-  }
+  // Render initial Network tab on open
+  window.__selectNexusTab('network');
 
   modal.style.display = 'flex';
 }
+
 window.__openExtensionNetworkModal = openExtensionNetworkModal;
 
 /**

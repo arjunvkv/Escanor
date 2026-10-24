@@ -780,95 +780,155 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- 🌐 STRUCTURAL SAMPLE NETWORK DOSSIER MODAL                                -->
+    <!-- 🌐 DATA NEXUS // VOLUME NETWORK DOSSIER MODAL                             -->
     <!-- ========================================================================= -->
     <div id="tvExtensionNetworkModal" class="tv-modal-backdrop" style="display: none;">
-      <div class="tv-modal-card tv-network-modal-card">
-        <div class="tv-modal-header">
-          <div class="tv-modal-header-left">
-            <span class="tv-modal-header-icon">🌐</span>
+      <div class="tv-modal-card tv-nexus-chamfer-frame">
+        
+        <!-- Glowing Chamfered Vector Frame Overlay -->
+        <svg class="tv-nexus-neon-border" viewBox="0 0 680 620" preserveAspectRatio="none">
+          <polygon 
+            points="20,2 660,2 678,20 678,600 660,618 20,618 2,600 2,20" 
+            fill="none" 
+            stroke="#00f5d4" 
+            stroke-width="2.5" 
+            stroke-opacity="0.85"
+          />
+          <polyline points="28,2 20,2 2,20 2,28" fill="none" stroke="#ffffff" stroke-width="3" />
+          <polyline points="652,2 660,2 678,20 678,28" fill="none" stroke="#ffffff" stroke-width="3" />
+          <polyline points="678,592 678,600 660,618 652,618" fill="none" stroke="#ffffff" stroke-width="3" />
+          <polyline points="28,618 20,618 2,600 2,592" fill="none" stroke="#ffffff" stroke-width="3" />
+        </svg>
+
+        <!-- Main Modal Content -->
+        <div style="position: relative; z-index: 10; display: flex; flex-direction: column; gap: 12px;">
+          
+          <!-- Header -->
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(0, 245, 212, 0.15); padding-bottom: 8px;">
             <div>
-              <div class="tv-modal-header-title">STRUCTURAL SAMPLE NETWORK DOSSIER</div>
-              <div class="tv-modal-header-subtitle" id="tvNetworkModalSubtitle">EMPIRICAL MULTI-BOX ORDER-FLOW & STRUCTURAL FRICTION AUDIT</div>
+              <div style="font-size: 13px; font-weight: 800; letter-spacing: 0.18em; color: #f8fafc; text-transform: uppercase;">
+                DATA NEXUS // ANALYTICS STRIP
+              </div>
+              <div id="tvNetworkModalSubtitle" style="font-size: 10px; font-family: monospace; color: #00f5d4; letter-spacing: 0.08em; text-transform: uppercase;">
+                XAUUSD M5 • VOLUME POC NETWORK // SYNC: 100%
+              </div>
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div id="tvNexusStatusPill" class="tv-nexus-pill" style="padding: 4px 14px; border-radius: 9999px; font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: #00f5d4; color: #050811; box-shadow: 0 0 16px rgba(0,245,212,0.7);">
+                ACCELERATING
+              </div>
+              <button type="button" id="tvCloseNetworkModalBtn" class="tv-modal-close" style="color: #94a3b8; font-size: 16px; cursor: pointer; background: transparent; border: none;" title="Close Dossier">✕</button>
             </div>
           </div>
-          <button type="button" id="tvCloseNetworkModalBtn" class="tv-modal-close" title="Close Dossier">✕</button>
+
+          <!-- Dynamic Sample Tabs Switcher Track -->
+          <div style="display: flex; align-items: center; justify-content: space-between; background: #0a1122; border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 8px; padding: 6px 10px;">
+            <div style="font-size: 10.5px; font-family: monospace; color: #64748b; font-weight: 700; text-transform: uppercase; display: flex; align-items: center; gap: 6px;">
+              <span style="width: 7px; height: 7px; border-radius: 50%; background: #00f5d4; display: inline-block;"></span>
+              <span style="color: #00f5d4;">SAMPLE TABS:</span>
+            </div>
+            <div id="tvNexusTabTrack" style="display: flex; gap: 6px; overflow-x: auto;">
+              <!-- Dynamically populated sample tabs -->
+            </div>
+          </div>
+
+          <!-- Top Row: Trajectory (Left) + Pipeline Load (Right) -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            
+            <!-- Trajectory Card -->
+            <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase; margin-bottom: 4px;">
+                <span>TRAJECTORY</span>
+                <span id="tvNexusTrajDelta" style="font-size: 10px; font-family: monospace; color: #94a3b8;">+0.0 PTS TO TARGET</span>
+              </div>
+              <div style="position: relative; width: 100%; height: 110px;">
+                <svg id="tvNexusTrajSvg" viewBox="0 0 240 120" style="width: 100%; height: 100%; overflow: visible;">
+                  <line x1="0" y1="20" x2="240" y2="20" stroke="#172238" stroke-dasharray="3,3" stroke-width="1" />
+                  <line x1="0" y1="60" x2="240" y2="60" stroke="#172238" stroke-dasharray="3,3" stroke-width="1" />
+                  <line x1="0" y1="100" x2="240" y2="100" stroke="#172238" stroke-dasharray="3,3" stroke-width="1" />
+                  <path id="tvNexusTrajLine" d="M 15 95 L 45 90 L 80 75 L 115 80 L 145 60 L 175 75 L 205 35 L 228 20" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(0,245,212,0.7));" />
+                  <circle id="tvNexusNodeFloor" cx="15" cy="95" r="3.5" fill="#00f5d4" />
+                  <circle id="tvNexusNodePoc" cx="80" cy="75" r="3.5" fill="#00f5d4" />
+                  <circle id="tvNexusNodeMid" cx="145" cy="60" r="3.5" fill="#00f5d4" />
+                  <circle id="tvNexusNodeLiveGlow" cx="205" cy="35" r="6" fill="#00f5d4" opacity="0.4" class="tv-pulsing-node" />
+                  <circle id="tvNexusNodeLive" cx="205" cy="35" r="4" fill="#ffffff" stroke="#00f5d4" stroke-width="1.5" />
+                  <circle id="tvNexusNodeTarget" cx="228" cy="20" r="3.5" fill="#8b5cf6" />
+                </svg>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; color: #64748b; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <span>BASE: <strong id="tvNexusCoordBase" style="color: #00f5d4;">$0.00</strong></span>
+                <span>POC: <strong id="tvNexusCoordPoc" style="color: #ffffff;">$0.00</strong></span>
+                <span>LIVE: <strong id="tvNexusCoordLive" style="color: #00f5d4;">$0.00</strong></span>
+              </div>
+            </div>
+
+            <!-- Pipeline Load Card -->
+            <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; justify-content: space-between;">
+              <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #8b5cf6; text-transform: uppercase; margin-bottom: 4px;">
+                <span>PIPELINE LOAD</span>
+                <span id="tvNexusLoadVal" style="font-size: 10px; font-family: monospace; color: #00f5d4;">0 v/pt</span>
+              </div>
+              <div id="tvNexusLoadBarsContainer" style="width: 100%; height: 110px; display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; padding: 0 4px;">
+                <!-- 8 vertical 3D cylinder bars generated dynamically -->
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 10px; font-family: monospace; color: #64748b; padding-top: 4px; border-top: 1px solid rgba(255,255,255,0.05);">
+                <span id="tvNexusLoadBox1Lbl">BOX 1: 0 v/pt</span>
+                <span id="tvNexusLoadBox2Lbl">BOX 2: <strong style="color: #00f5d4;">0 v/pt</strong></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Middle Row: Command Oscillation (CVD Delta Wave) -->
+          <div class="tv-nexus-card" style="padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase; margin-bottom: 4px;">
+              <span>COMMAND OSCILLATION // DELTA HARMONIC</span>
+              <span id="tvNexusOscMeta" style="font-size: 10px; font-family: monospace; color: #e2e8f0;">
+                ABSORPTION: <strong style="color: #00f5d4;">0%</strong> • DELTA: <strong style="color: #f43f5e;">0</strong>
+              </span>
+            </div>
+            <div style="position: relative; width: 100%; height: 50px;">
+              <svg viewBox="0 0 540 60" style="width: 100%; height: 100%; overflow: visible;">
+                <line x1="0" y1="30" x2="540" y2="30" stroke="#172238" stroke-width="1.5" />
+                <path id="tvNexusOscWave" d="M 0 32 Q 25 18, 50 28 T 100 26 T 150 48 T 200 18 T 250 42 T 300 25 T 350 48 T 400 16 T 450 38 T 500 24 T 540 30" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.6));" />
+              </svg>
+            </div>
+          </div>
+
+          <!-- Bottom Row: 24-Channel LED Status Matrix -->
+          <div class="tv-nexus-card" style="padding: 10px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-family: monospace; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">
+              <span>STATUS TELEMETRY MATRIX // 24-CHANNELS</span>
+              <span id="tvNexusMatrixReadout" style="color: #00f5d4; font-weight: 700;">ALL SYSTEMS NOMINAL</span>
+            </div>
+            <div id="tvNexusLedGrid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;">
+              <!-- 24 glowing pill LEDs dynamically generated -->
+            </div>
+          </div>
+
+          <!-- Footer Bar: Levels Summary & Chart Overlay Toggle -->
+          <div style="display: flex; justify-content: space-between; align-items: center; background: #0a1122; border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 8px; padding: 8px 12px; font-family: monospace; font-size: 11px;">
+            <div style="display: flex; align-items: center; gap: 10px; color: #94a3b8;">
+              <span>LEVELS:</span>
+              <span>🔴 <strong id="tvNexusFootCeiling" style="color: #ffffff;">$0.00</strong></span>
+              <span>⚡ <strong id="tvNexusFootMid" style="color: #fbbf24;">$0.00</strong></span>
+              <span>⚓ <strong id="tvNexusFootPoc" style="color: #00f5d4;">$0.00</strong></span>
+              <span>🟢 <strong id="tvNexusFootFloor" style="color: #ffffff;">$0.00</strong></span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" id="tvToggleInflectionLinesBtn" class="tv-btn-plot-levels" style="background: rgba(0,245,212,0.12); border: 1px solid #00f5d4; color: #00f5d4; padding: 4px 10px; border-radius: 6px; font-size: 10.5px; font-weight: 800; cursor: pointer;" title="Toggle reference lines on chart">
+                <span class="tv-plot-icon">👁️</span>
+                <span id="tvToggleInflectionLinesBtnText">SHOW LINES ON CHART</span>
+              </button>
+              <button type="button" id="tvCloseNetworkModalBtnDone" class="tv-btn-modal-arm" style="background: #1e293b; color: #ffffff; border: 1px solid #334155; padding: 4px 12px; border-radius: 6px; font-size: 10.5px; font-weight: 700; cursor: pointer;">Close</button>
+            </div>
+          </div>
+
         </div>
 
-        <div class="tv-modal-body tv-network-modal-body">
-          <!-- Timeline Track: Connected Sample Progression -->
-          <div class="tv-section-card tv-network-section">
-            <div class="tv-section-title">
-              <span>📈 CONNECTED SAMPLE PROGRESSION</span>
-              <span id="tvNetworkSampleCountBadge" class="tv-badge-highlight">0 SAMPLES</span>
-            </div>
-            <div id="tvNetworkTimelineTrack" class="tv-network-timeline-track">
-              <!-- Dynamically populated cards for each sample box -->
-            </div>
-          </div>
-
-          <!-- 4 Empirical Structural Cards Grid -->
-          <div class="tv-network-grid">
-            <!-- Card 1: WHO IS ACTUALLY PLAYING OUT -->
-            <div class="tv-section-card tv-network-card">
-              <div class="tv-section-title">
-                <span>⚔️ WHO IS ACTUALLY PLAYING OUT</span>
-                <span id="tvAuditWhoBadge" class="tv-network-tag-pill">PASSIVE ABSORPTION</span>
-              </div>
-              <div id="tvAuditWhoPlaying" class="tv-network-content">
-                <!-- Dynamically filled with orderflow reality -->
-              </div>
-            </div>
-
-            <!-- Card 2: EFFORT VS RESULT (FUEL BURN ENGINE) -->
-            <div class="tv-section-card tv-network-card">
-              <div class="tv-section-title">
-                <span>🔥 EFFORT VS RESULT (FUEL BURN ENGINE)</span>
-                <span id="tvAuditFuelBadge" class="tv-network-tag-pill">FRICTION SHIFT</span>
-              </div>
-              <div id="tvAuditFuelBurn" class="tv-network-content">
-                <!-- Dynamically filled with EVR data -->
-              </div>
-            </div>
-
-            <!-- Card 3: STRONGEST STRUCTURAL INFLECTION NODES -->
-            <div class="tv-section-card tv-network-card">
-              <div class="tv-section-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                <div style="display: flex; align-items: center; gap: 8px;">
-                  <span>⚓ STRONGEST STRUCTURAL INFLECTION NODES</span>
-                  <span id="tvAuditNodesBadge" class="tv-network-tag-pill">CRITICAL SHELVES</span>
-                </div>
-                <button type="button" id="tvToggleInflectionLinesBtn" class="tv-btn-plot-levels" title="Toggle horizontal reference lines for these points on the chart canvas">
-                  <span class="tv-plot-icon">👁️</span>
-                  <span id="tvToggleInflectionLinesBtnText">SHOW LINES ON CHART</span>
-                </button>
-              </div>
-              <div id="tvAuditStructuralNodes" class="tv-network-content">
-                <!-- Dynamically filled with exact price nodes -->
-              </div>
-            </div>
-
-            <!-- Card 4: STRUCTURAL RUNWAY & LIQUIDITY VACUUM -->
-            <div class="tv-section-card tv-network-card">
-              <div class="tv-section-title">
-                <span>🎯 STRUCTURAL RUNWAY & LIQUIDITY VACUUM</span>
-                <span id="tvAuditRunwayBadge" class="tv-network-tag-pill">MANUAL TRADE RUNWAY</span>
-              </div>
-              <div id="tvAuditRunwayVacuum" class="tv-network-content">
-                <!-- Dynamically filled with runway clearance & tripwires -->
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tv-modal-footer">
-          <div class="tv-network-footer-note">
-            <span>💡 <em>Empirical physics derived strictly from live volume & tick mechanics. Zero automated signal bias.</em></span>
-          </div>
-          <button type="button" id="tvCloseNetworkModalBtnDone" class="tv-btn-modal-arm">Close Dossier</button>
-        </div>
       </div>
     </div>
+
 
     <!-- Redesigned Bottom-Left Floating Armed Lines HUD -->
     <div id="tvLineTradingHud" class="tv-bottom-hud" style="display: none;"></div>
