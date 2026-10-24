@@ -888,17 +888,20 @@
 
           </div>
 
-          <!-- Middle Row: Expanded Overlapping Multi-Box Harmonic Oscillator -->
+          <!-- Middle Row: Expanded Overlapping Multi-Box Harmonic Oscillator (Delta & Absorption) -->
           <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; gap: 6px;">
             <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #00f5d4; text-transform: uppercase;">
               <div style="display: flex; align-items: center; gap: 10px;">
                 <span>COMMAND OSCILLATION // MULTI-BOX DELTA HARMONIC</span>
-                <div style="display: flex; align-items: center; gap: 8px; font-size: 10px; font-family: monospace;">
+                <div id="tvNexusDeltaOscLegend" style="display: flex; align-items: center; gap: 8px; font-size: 10px; font-family: monospace;">
                   <span style="display: flex; align-items: center; gap: 4px; color: #8b5cf6;">
                     <span style="width: 8px; height: 2px; background: #8b5cf6; display: inline-block;"></span> BOX 1
                   </span>
                   <span style="display: flex; align-items: center; gap: 4px; color: #00f5d4;">
                     <span style="width: 8px; height: 2px; background: #00f5d4; display: inline-block;"></span> BOX 2
+                  </span>
+                  <span id="tvNexusLegendBox3" style="display: flex; align-items: center; gap: 4px; color: #fbbf24;">
+                    <span style="width: 8px; height: 2px; background: #fbbf24; display: inline-block;"></span> BOX 3
                   </span>
                 </div>
               </div>
@@ -914,7 +917,7 @@
                   <linearGradient id="tvNexusVacuumGrad" x1="0" y1="0" x2="1" y2="0">
                     <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.25" />
                     <stop offset="50%" stop-color="#00f5d4" stop-opacity="0.4" />
-                    <stop offset="100%" stop-color="#00f5d4" stop-opacity="0.15" />
+                    <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.2" />
                   </linearGradient>
                 </defs>
 
@@ -931,11 +934,17 @@
                 <!-- Shaded Overlapping Area -->
                 <path id="tvNexusShadedArea" d="M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z" fill="url(#tvNexusVacuumGrad)" class="tv-nexus-path-smooth" />
 
-                <!-- Box 1 Overlapping Line: Purple -->
-                <path id="tvNexusOscLineBox1" d="M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.5));" />
+                <!-- Dynamic Delta Lines Group -->
+                <g id="tvNexusDeltaLinesGroup">
+                  <!-- Box 1 Overlapping Line: Purple -->
+                  <path id="tvNexusOscLineBox1" d="M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.5));" />
 
-                <!-- Box 2 Overlapping Line: Cyan -->
-                <path id="tvNexusOscLineBox2" d="M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.8));" />
+                  <!-- Box 2 Overlapping Line: Cyan -->
+                  <path id="tvNexusOscLineBox2" d="M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.8));" />
+
+                  <!-- Box 3 Overlapping Line: Warm Amber / Gold -->
+                  <path id="tvNexusOscLineBox3" d="M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 7px rgba(251,191,36,0.7)); opacity: 1;" />
+                </g>
 
                 <!-- Interactive Callout Chips explaining the areas -->
                 <g id="tvNexusCalloutAbsorb" transform="translate(100, 75)" style="cursor: pointer;">
@@ -943,14 +952,14 @@
                   <text x="0" y="2" fill="#c4b5fd" font-size="8.5" font-family="monospace" font-weight="bold">🛡️ ABSORPTION WALL</text>
                 </g>
 
-                <g id="tvNexusCalloutVacuum" transform="translate(300, 15)" style="cursor: pointer;">
+                <g id="tvNexusCalloutVacuum" transform="translate(290, 15)" style="cursor: pointer;">
                   <rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke="#00f5d4" stroke-width="1.2" opacity="0.95"/>
                   <text x="0" y="2" fill="#00f5d4" font-size="8.5" font-family="monospace" font-weight="bold">⚡ -51% VACUUM POCKET</text>
                 </g>
 
-                <g id="tvNexusCalloutRunway" transform="translate(470, 38)" style="cursor: pointer;">
-                  <rect x="-4" y="-10" width="95" height="16" rx="3" fill="#091020" stroke="#f43f5e" stroke-width="1" opacity="0.95"/>
-                  <text x="0" y="2" fill="#fca5a5" font-size="8.5" font-family="monospace" font-weight="bold">🎯 CEILING GAP</text>
+                <g id="tvNexusCalloutRunway" transform="translate(470, 20)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#fbbf24" stroke-width="1" opacity="0.95"/>
+                  <text x="0" y="2" fill="#fde68a" font-size="8.5" font-family="monospace" font-weight="bold">🎯 BOX 3 CEILING</text>
                 </g>
               </svg>
             </div>
@@ -963,14 +972,86 @@
           </div>
 
 
-          <!-- Bottom Row: 24-Channel LED Status Matrix -->
-          <div class="tv-nexus-card" style="padding: 10px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-family: monospace; color: #64748b; text-transform: uppercase; margin-bottom: 6px;">
-              <span>STATUS TELEMETRY MATRIX // 24-CHANNELS</span>
-              <span id="tvNexusMatrixReadout" style="color: #00f5d4; font-weight: 700;">ALL SYSTEMS NOMINAL</span>
+          <!-- Bottom Row: Replaced Status Matrix with Second Command Oscillation Line Chart (EVR & Friction Harmonic) -->
+          <div class="tv-nexus-card" style="padding: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 11px; font-weight: 800; color: #fbbf24; text-transform: uppercase;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <span>COMMAND OSCILLATION // EFFORT VS RESULT FRICTION HARMONIC</span>
+                <div id="tvNexusEvrOscLegend" style="display: flex; align-items: center; gap: 8px; font-size: 10px; font-family: monospace;">
+                  <span style="display: flex; align-items: center; gap: 4px; color: #8b5cf6;">
+                    <span style="width: 8px; height: 2px; background: #8b5cf6; display: inline-block;"></span> BOX 1
+                  </span>
+                  <span style="display: flex; align-items: center; gap: 4px; color: #00f5d4;">
+                    <span style="width: 8px; height: 2px; background: #00f5d4; display: inline-block;"></span> BOX 2
+                  </span>
+                  <span id="tvNexusEvrLegendBox3" style="display: flex; align-items: center; gap: 4px; color: #fbbf24;">
+                    <span style="width: 8px; height: 2px; background: #fbbf24; display: inline-block;"></span> BOX 3
+                  </span>
+                </div>
+              </div>
+              <span id="tvNexusEvrOscMeta" style="font-size: 10px; font-family: monospace; color: #e2e8f0;">
+                FRICTION: <strong style="color: #00f5d4;">CLEAN FLOW ⚡</strong> • SEQUENCE SHIFT: <strong style="color: #00f5d4;">-51%</strong>
+              </span>
             </div>
-            <div id="tvNexusLedGrid" style="display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px;">
-              <!-- 24 glowing pill LEDs dynamically generated -->
+
+            <!-- Overlapping Vector EVR Harmonic Oscilloscope SVG -->
+            <div style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
+              <svg viewBox="0 0 620 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusEvrOscSvg">
+                <defs>
+                  <linearGradient id="tvNexusEvrGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.30" />
+                    <stop offset="50%" stop-color="#00f5d4" stop-opacity="0.35" />
+                    <stop offset="100%" stop-color="#fbbf24" stop-opacity="0.25" />
+                  </linearGradient>
+                </defs>
+
+                <!-- Gridlines -->
+                <line x1="0" y1="30" x2="620" y2="30" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
+                <line x1="0" y1="60" x2="620" y2="60" stroke="#1c2842" stroke-width="1.5" />
+                <line x1="0" y1="90" x2="620" y2="90" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
+
+                <!-- Labels: Vacuum (top), Equilibrium (mid), Mud (bottom) -->
+                <text x="6" y="33" fill="#00f5d4" font-size="8.5" font-family="monospace">⚡ AIR</text>
+                <text x="6" y="63" fill="#475569" font-size="8.5" font-family="monospace">0 EQ</text>
+                <text x="6" y="93" fill="#8b5cf6" font-size="8.5" font-family="monospace">🔥 MUD</text>
+
+                <!-- Shaded EVR Collapse Area -->
+                <path id="tvNexusEvrShadedArea" d="M 30 88 C 120 92, 200 86, 280 40 C 360 25, 460 20, 590 18 L 590 60 C 460 60, 360 60, 280 60 C 200 60, 120 60, 30 60 Z" fill="url(#tvNexusEvrGrad)" class="tv-nexus-path-smooth" />
+
+                <!-- Dynamic EVR Lines Group -->
+                <g id="tvNexusEvrLinesGroup">
+                  <!-- EVR Box 1 Line: Purple (High Friction Mud Base) -->
+                  <path id="tvNexusEvrLineBox1" d="M 30 88 C 100 92, 180 86, 260 84 C 340 85, 420 84, 500 85 L 590 85" fill="none" stroke="#8b5cf6" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(139,92,246,0.5));" />
+
+                  <!-- EVR Box 2 Line: Cyan (Friction Collapsing into Vacuum) -->
+                  <path id="tvNexusEvrLineBox2" d="M 30 82 C 110 75, 190 50, 270 34 C 350 28, 430 25, 510 22 L 590 20" fill="none" stroke="#00f5d4" stroke-width="2.5" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 8px rgba(0,245,212,0.8));" />
+
+                  <!-- EVR Box 3 Line: Warm Amber (Open Runway Acceleration) -->
+                  <path id="tvNexusEvrLineBox3" d="M 30 40 C 120 28, 220 22, 320 18 C 420 15, 510 14, 590 12" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 7px rgba(251,191,36,0.7)); opacity: 1;" />
+                </g>
+
+                <!-- Interactive Callout Chips for EVR -->
+                <g id="tvNexusEvrCalloutMud" transform="translate(90, 84)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="135" height="16" rx="3" fill="#091020" stroke="#8b5cf6" stroke-width="1" opacity="0.95"/>
+                  <text x="0" y="2" fill="#c4b5fd" font-size="8.5" font-family="monospace" font-weight="bold">🔥 MUD BASE (4,439 V/PT)</text>
+                </g>
+
+                <g id="tvNexusEvrCalloutShift" transform="translate(290, 25)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke="#00f5d4" stroke-width="1.2" opacity="0.95"/>
+                  <text x="0" y="2" fill="#00f5d4" font-size="8.5" font-family="monospace" font-weight="bold">⚡ -51% FRICTION SHIFT</text>
+                </g>
+
+                <g id="tvNexusEvrCalloutRunway" transform="translate(470, 16)" style="cursor: pointer;">
+                  <rect x="-4" y="-10" width="115" height="16" rx="3" fill="#091020" stroke="#fbbf24" stroke-width="1" opacity="0.95"/>
+                  <text x="0" y="2" fill="#fde68a" font-size="8.5" font-family="monospace" font-weight="bold">🚀 OPEN RUNWAY</text>
+                </g>
+              </svg>
+            </div>
+
+            <!-- Readout Subline explaining EVR -->
+            <div style="display: flex; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #64748b; padding-top: 2px;">
+              <span>AUCTION EFFORT/RESULT: VOLUME SPENT PER 1.0 PT OF EXCURSION</span>
+              <span id="tvNexusEvrAreaNote" style="color: #fbbf24; font-weight: 700;">EFFORT SHIFT: BOX 1 (MUD) → BOX 2 (VACUUM) → BOX 3 (ACTIVE RUNWAY)</span>
             </div>
           </div>
 

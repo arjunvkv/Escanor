@@ -2601,7 +2601,7 @@ export function openExtensionNetworkModal(chart) {
       loadContainer.innerHTML = barsHtml;
     }
 
-    // 6. Overlapping Multi-Box Harmonic Oscilloscope
+    // 6. Overlapping Multi-Box Harmonic Oscilloscope (Delta & Absorption)
     const oscMetaEl = document.getElementById('tvNexusOscMeta');
     if (oscMetaEl) {
       const deltaSign = scopeDelta >= 0 ? '+' : '';
@@ -2609,16 +2609,37 @@ export function openExtensionNetworkModal(chart) {
       oscMetaEl.innerHTML = `ABSORPTION: <strong style="color: #00f5d4;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${deltaColor};">${deltaSign}${formatVolNumber(scopeDelta)}</strong>`;
     }
 
+    const deltaLegend = document.getElementById('tvNexusDeltaOscLegend');
+    if (deltaLegend && d.samples) {
+      const boxPalette = ['#8b5cf6', '#00f5d4', '#fbbf24', '#f43f5e', '#38bdf8', '#10b981'];
+      let legHtml = '';
+      d.samples.forEach((s, idx) => {
+        const col = boxPalette[idx % boxPalette.length];
+        legHtml += `
+          <span style="display: flex; align-items: center; gap: 4px; color: ${col};">
+            <span style="width: 8px; height: 2px; background: ${col}; display: inline-block;"></span> BOX ${s.boxNum}
+          </span>
+        `;
+      });
+      deltaLegend.innerHTML = legHtml;
+    }
+
     const shadedArea = document.getElementById('tvNexusShadedArea');
     const lineBox1 = document.getElementById('tvNexusOscLineBox1');
     const lineBox2 = document.getElementById('tvNexusOscLineBox2');
+    const lineBox3 = document.getElementById('tvNexusOscLineBox3');
     const calloutAbsorb = document.getElementById('tvNexusCalloutAbsorb');
     const calloutVacuum = document.getElementById('tvNexusCalloutVacuum');
     const calloutRunway = document.getElementById('tvNexusCalloutRunway');
     const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
 
+    const hasBox3 = d.samples.length >= 3;
+    if (lineBox3) {
+      lineBox3.style.display = hasBox3 ? 'block' : 'none';
+    }
+
     if (tabKey === 'network') {
-      // Overlapping mode: Both boxes harmonized together
+      // Overlapping mode: All boxes harmonized together
       if (lineBox1) {
         lineBox1.style.opacity = '1';
         lineBox1.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75');
@@ -2627,21 +2648,36 @@ export function openExtensionNetworkModal(chart) {
         lineBox2.style.opacity = '1';
         lineBox2.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15');
       }
+      if (lineBox3 && hasBox3) {
+        lineBox3.style.opacity = '1';
+        lineBox3.setAttribute('d', 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10');
+      }
       if (shadedArea) {
         shadedArea.style.opacity = '1';
-        shadedArea.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z');
+        shadedArea.setAttribute('d', hasBox3
+          ? 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z'
+          : 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 75 C 500 85, 420 75, 340 58 C 260 45, 180 75, 100 95 Z');
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'block';
       if (calloutVacuum) calloutVacuum.style.display = 'block';
-      if (calloutRunway) calloutRunway.style.display = 'block';
-      if (oscAreaNote) oscAreaNote.textContent = 'AREA REVEALS: -51% FRICTION COLLAPSE + TRAPPED SHORTS';
+      if (calloutRunway) {
+        calloutRunway.style.display = 'block';
+        const txt = calloutRunway.querySelector('text');
+        if (txt) txt.textContent = hasBox3 ? '🎯 BOX 3 CEILING' : '🎯 CEILING GAP';
+      }
+      if (oscAreaNote) {
+        oscAreaNote.textContent = hasBox3
+          ? 'ALL 3 BOXES HARMONIZED: BASE (B1) → VACUUM (B2) → CEILING RUNWAY (B3)'
+          : 'AREA REVEALS: -51% FRICTION COLLAPSE + TRAPPED SHORTS';
+      }
     } else if (tabKey === 'box_0') {
-      // Box 1 Solo: High Accumulation
+      // Box 1 Solo: High Accumulation Mud Base
       if (lineBox1) {
         lineBox1.style.opacity = '1';
         lineBox1.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75');
       }
-      if (lineBox2) lineBox2.style.opacity = '0.2';
+      if (lineBox2) lineBox2.style.opacity = '0.15';
+      if (lineBox3) lineBox3.style.opacity = '0.15';
       if (shadedArea) {
         shadedArea.style.opacity = '0.35';
         shadedArea.setAttribute('d', 'M 30 85 C 100 95, 180 75, 260 45 C 340 58, 420 75, 500 85 L 590 75 L 590 60 L 30 60 Z');
@@ -2649,71 +2685,129 @@ export function openExtensionNetworkModal(chart) {
       if (calloutAbsorb) calloutAbsorb.style.display = 'block';
       if (calloutVacuum) calloutVacuum.style.display = 'none';
       if (calloutRunway) calloutRunway.style.display = 'none';
-      if (oscAreaNote) oscAreaNote.textContent = 'BOX 1: HIGH ACCUMULATION DENSITY // 4,439 V/PT (MUD BASE)';
+      if (oscAreaNote) oscAreaNote.textContent = `BOX 1: HIGH ACCUMULATION DENSITY // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT (MUD BASE)`;
     } else if (tabKey === 'box_1') {
       // Box 2 Solo: Vacuum Expansion
-      if (lineBox1) lineBox1.style.opacity = '0.2';
+      if (lineBox1) lineBox1.style.opacity = '0.15';
       if (lineBox2) {
         lineBox2.style.opacity = '1';
         lineBox2.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15');
       }
+      if (lineBox3) lineBox3.style.opacity = '0.15';
       if (shadedArea) {
         shadedArea.style.opacity = '0.5';
         shadedArea.setAttribute('d', 'M 30 65 C 90 35, 160 25, 240 28 C 320 30, 400 22, 480 15 L 590 15 L 590 60 L 30 60 Z');
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'none';
       if (calloutVacuum) calloutVacuum.style.display = 'block';
+      if (calloutRunway) calloutRunway.style.display = 'none';
+      if (oscAreaNote) oscAreaNote.textContent = `BOX 2: LIQUIDITY VACUUM EXPANSION // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (-51% FRICTION)`;
+    } else if (tabKey === 'box_2') {
+      // Box 3 Solo: Ceiling Test & Continuation
+      if (lineBox1) lineBox1.style.opacity = '0.15';
+      if (lineBox2) lineBox2.style.opacity = '0.15';
+      if (lineBox3) {
+        lineBox3.style.opacity = '1';
+        lineBox3.setAttribute('d', 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10');
+      }
+      if (shadedArea) {
+        shadedArea.style.opacity = '0.5';
+        shadedArea.setAttribute('d', 'M 30 45 C 120 22, 220 16, 320 14 C 420 12, 500 12, 590 10 L 590 60 L 30 60 Z');
+      }
+      if (calloutAbsorb) calloutAbsorb.style.display = 'none';
+      if (calloutVacuum) calloutVacuum.style.display = 'none';
       if (calloutRunway) calloutRunway.style.display = 'block';
-      if (oscAreaNote) oscAreaNote.textContent = 'BOX 2: LIQUIDITY VACUUM EXPANSION // 2,157 V/PT (OPEN ROAD)';
+      if (oscAreaNote) oscAreaNote.textContent = `BOX 3: CEILING RUNWAY CONTINUATION // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT (PEAK EXCURSION)`;
     }
 
+    // 7. Second Command Oscillation Line Chart (EVR & Effort vs Result Friction Harmonic)
+    const evrMetaEl = document.getElementById('tvNexusEvrOscMeta');
+    if (evrMetaEl) {
+      const evrTag = d.lastSample.frictionTag || 'CLEAN FLOW ⚡';
+      const evrSign = d.deltaEvr >= 0 ? '+' : '';
+      evrMetaEl.innerHTML = `FRICTION: <strong style="color: #00f5d4;">${evrTag}</strong> • SEQUENCE SHIFT: <strong style="color: #00f5d4;">${evrSign}${d.deltaEvr}%</strong>`;
+    }
 
-    // 7. 24-Channel LED Matrix
-    const ledGrid = document.getElementById('tvNexusLedGrid');
-    if (ledGrid) {
-      const isVac = d.deltaEvr <= -30;
-      const isAbs = scopeAbsorb >= 65;
-      const isTrapped = (scopeDelta < 0 && isAbs);
-
-      const leds = [
-        // Row 1: Structural Pillars
-        { cls: 'tv-led-cyan-bright', label: `FLOOR BASE: $${d.minLow.toFixed(2)} (HELD)` },
-        { cls: 'tv-led-cyan-bright', label: `VOLUME POC ANCHOR: $${d.primaryAnchor.toFixed(2)}` },
-        { cls: 'tv-led-purple-dim', label: `50% MIDLINE: $${d.eqShelf.toFixed(2)} (RECLAIMED)` },
-        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-cyan-dim', label: `LIVE CABIN: $${d.livePrice.toFixed(2)} (+${d.distCeiling.toFixed(1)} PTS)` },
-        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-purple-dim', label: `FRICTION: ${d.deltaEvr}% (${d.lastSample.frictionTag})` },
-        { cls: 'tv-led-purple-dim', label: `BOX 1: COMPLETED (${formatVolNumber(d.firstSample.totalVol)})` },
-        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-purple-dim', label: `BOX 2: ACTIVE VACUUM EXPANSION` },
-        { cls: 'tv-led-purple-bright', label: `CEILING TARGET: $${d.maxHigh.toFixed(2)}` },
-
-        // Row 2: Order Flow Dynamics
-        { cls: isAbs ? 'tv-led-cyan-bright' : 'tv-led-cyan-dim', label: `BUYER ABSORPTION: ${scopeAbsorb}% ACTIVE` },
-        { cls: scopeDelta < 0 ? 'tv-led-rose-bright' : 'tv-led-cyan-dim', label: `CVD DELTA: ${formatVolNumber(scopeDelta)}` },
-        { cls: 'tv-led-purple-dim', label: 'PASSIVE BID WALL LOADED' },
-        { cls: isTrapped ? 'tv-led-cyan-bright' : 'tv-led-off', label: isTrapped ? 'TRAPPED SHORTS CONFIRMED' : 'NO TRAPPED PARTICIPANTS' },
-        { cls: 'tv-led-purple-dim', label: `FRICTION VELOCITY: ${scopeEvr.toLocaleString()} V/PT` },
-        { cls: 'tv-led-cyan-dim', label: 'DOM BID DEPTH: HEAVY' },
-        { cls: tabKey === 'ceiling' ? 'tv-led-rose-bright' : 'tv-led-off', label: 'CEILING ASK ABSORPTION' },
-        { cls: 'tv-led-purple-bright', label: `RUNWAY CLEARANCE: +${d.distCeiling.toFixed(1)} PTS` },
-
-        // Row 3: Execution Triggers
-        { cls: 'tv-led-off', label: 'SHORT GATE: INHIBITED / DO NOT SHORT' },
-        { cls: 'tv-led-cyan-dim', label: `LONG GATE: PULLBACK TO POC ($${d.primaryAnchor.toFixed(2)})` },
-        { cls: isVac ? 'tv-led-cyan-bright' : 'tv-led-purple-dim', label: 'MOMENTUM PULSE: ACTIVE' },
-        { cls: 'tv-led-rose-bright', label: `INVALIDATION STOP: < $${d.invalidationTripwire.toFixed(2)}` },
-        { cls: 'tv-led-off', label: 'TIER-1 NEWS GATE: CLEAR (45M RUNWAY)' },
-        { cls: 'tv-led-cyan-dim', label: 'TELEMETRY REFRESH: REALTIME' },
-        { cls: 'tv-led-purple-bright', label: 'ASYMMETRIC RR: 2.8:1 TO CEILING' },
-        { cls: 'tv-led-off', label: 'SESSION STATUS: ACTIVE NEW YORK' }
-      ];
-
-      let gridHtml = '';
-      leds.forEach(led => {
-        gridHtml += `
-          <div class="tv-led-pill ${led.cls}" title="${led.label}" onmouseenter="document.getElementById('tvNexusMatrixReadout').textContent='${led.label}'" onmouseleave="document.getElementById('tvNexusMatrixReadout').textContent='ALL SYSTEMS NOMINAL'"></div>
+    const evrLegend = document.getElementById('tvNexusEvrOscLegend');
+    if (evrLegend && d.samples) {
+      const boxPalette = ['#8b5cf6', '#00f5d4', '#fbbf24', '#f43f5e', '#38bdf8', '#10b981'];
+      let evrLegHtml = '';
+      d.samples.forEach((s, idx) => {
+        const col = boxPalette[idx % boxPalette.length];
+        evrLegHtml += `
+          <span style="display: flex; align-items: center; gap: 4px; color: ${col};">
+            <span style="width: 8px; height: 2px; background: ${col}; display: inline-block;"></span> BOX ${s.boxNum}
+          </span>
         `;
       });
-      ledGrid.innerHTML = gridHtml;
+      evrLegend.innerHTML = evrLegHtml;
+    }
+
+    const evrLineBox1 = document.getElementById('tvNexusEvrLineBox1');
+    const evrLineBox2 = document.getElementById('tvNexusEvrLineBox2');
+    const evrLineBox3 = document.getElementById('tvNexusEvrLineBox3');
+    const evrShadedArea = document.getElementById('tvNexusEvrShadedArea');
+    const evrAreaNote = document.getElementById('tvNexusEvrAreaNote');
+    const evrCalloutMud = document.getElementById('tvNexusEvrCalloutMud');
+    const evrCalloutShift = document.getElementById('tvNexusEvrCalloutShift');
+    const evrCalloutRunway = document.getElementById('tvNexusEvrCalloutRunway');
+
+    if (evrLineBox3) {
+      evrLineBox3.style.display = hasBox3 ? 'block' : 'none';
+    }
+
+    if (tabKey === 'network') {
+      if (evrLineBox1) evrLineBox1.style.opacity = '1';
+      if (evrLineBox2) evrLineBox2.style.opacity = '1';
+      if (evrLineBox3 && hasBox3) evrLineBox3.style.opacity = '1';
+      if (evrShadedArea) {
+        evrShadedArea.style.opacity = '1';
+        evrShadedArea.setAttribute('d', 'M 30 88 C 120 92, 200 86, 280 40 C 360 25, 460 20, 590 18 L 590 60 C 460 60, 360 60, 280 60 C 200 60, 120 60, 30 60 Z');
+      }
+      if (evrCalloutMud) evrCalloutMud.style.display = 'block';
+      if (evrCalloutShift) evrCalloutShift.style.display = 'block';
+      if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
+      if (evrAreaNote) {
+        evrAreaNote.textContent = hasBox3
+          ? 'EFFORT SHIFT: BOX 1 (MUD BASE) → BOX 2 (VACUUM BREAKOUT) → BOX 3 (OPEN RUNWAY)'
+          : 'EFFORT SHIFT: BOX 1 (4,439 V/PT MUD) → BOX 2 (2,157 V/PT VACUUM)';
+      }
+    } else if (tabKey === 'box_0') {
+      if (evrLineBox1) evrLineBox1.style.opacity = '1';
+      if (evrLineBox2) evrLineBox2.style.opacity = '0.15';
+      if (evrLineBox3) evrLineBox3.style.opacity = '0.15';
+      if (evrShadedArea) {
+        evrShadedArea.style.opacity = '0.4';
+        evrShadedArea.setAttribute('d', 'M 30 88 C 100 92, 180 86, 260 84 C 340 85, 420 84, 500 85 L 590 85 L 590 60 L 30 60 Z');
+      }
+      if (evrCalloutMud) evrCalloutMud.style.display = 'block';
+      if (evrCalloutShift) evrCalloutShift.style.display = 'none';
+      if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
+      if (evrAreaNote) evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // HIGH RESISTANCE MUD BASE`;
+    } else if (tabKey === 'box_1') {
+      if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
+      if (evrLineBox2) evrLineBox2.style.opacity = '1';
+      if (evrLineBox3) evrLineBox3.style.opacity = '0.15';
+      if (evrShadedArea) {
+        evrShadedArea.style.opacity = '0.5';
+        evrShadedArea.setAttribute('d', 'M 30 82 C 110 75, 190 50, 270 34 C 350 28, 430 25, 510 22 L 590 20 L 590 60 L 30 60 Z');
+      }
+      if (evrCalloutMud) evrCalloutMud.style.display = 'none';
+      if (evrCalloutShift) evrCalloutShift.style.display = 'block';
+      if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
+      if (evrAreaNote) evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // -51% FRICTION VACUUM COLLAPSE`;
+    } else if (tabKey === 'box_2') {
+      if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
+      if (evrLineBox2) evrLineBox2.style.opacity = '0.15';
+      if (evrLineBox3) evrLineBox3.style.opacity = '1';
+      if (evrShadedArea) {
+        evrShadedArea.style.opacity = '0.5';
+        evrShadedArea.setAttribute('d', 'M 30 40 C 120 28, 220 22, 320 18 C 420 15, 510 14, 590 12 L 590 60 L 30 60 Z');
+      }
+      if (evrCalloutMud) evrCalloutMud.style.display = 'none';
+      if (evrCalloutShift) evrCalloutShift.style.display = 'none';
+      if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
+      if (evrAreaNote) evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // UNHINDERED ACCELERATION RUNWAY`;
     }
 
     // 8. Footer Reference Levels

@@ -44,38 +44,77 @@
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792765500000,
-          "value": 4033.036766513057,
-          "dataIndex": 685
+          "timestamp": 1792768200000,
+          "value": 4032.919966205837,
+          "dataIndex": 694
         },
         {
-          "timestamp": 1792770300000,
-          "value": 4033.036766513057,
-          "dataIndex": 701
+          "timestamp": 1792774500000,
+          "value": 4032.919966205837,
+          "dataIndex": 715
         },
         {
-          "timestamp": 1792770300000,
-          "value": 4016.9183241167434,
-          "dataIndex": 701
+          "timestamp": 1792774500000,
+          "value": 4016.8015238095236,
+          "dataIndex": 715
         },
         {
-          "timestamp": 1792765500000,
-          "value": 4016.9183241167434,
-          "dataIndex": 685
+          "timestamp": 1792768200000,
+          "value": 4016.8015238095236,
+          "dataIndex": 694
         },
         {
-          "timestamp": 1792765500000,
-          "value": 4024.9775453149005,
-          "dataIndex": 685
+          "timestamp": 1792768200000,
+          "value": 4024.8607450076806,
+          "dataIndex": 694
         },
         {
-          "timestamp": 1792770300000,
-          "value": 4024.9775453149005,
-          "dataIndex": 701
+          "timestamp": 1792774500000,
+          "value": 4024.8607450076806,
+          "dataIndex": 715
         }
       ],
       "styles": null,
-      "zLevel": 100,
+      "zLevel": 29,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792864267246_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792765500000,
+          "value": 4032.569565284178,
+          "dataIndex": 685
+        },
+        {
+          "timestamp": 1792767900000,
+          "value": 4032.569565284178,
+          "dataIndex": 693
+        },
+        {
+          "timestamp": 1792767900000,
+          "value": 4019.2543302611366,
+          "dataIndex": 693
+        },
+        {
+          "timestamp": 1792765500000,
+          "value": 4019.2543302611366,
+          "dataIndex": 685
+        },
+        {
+          "timestamp": 1792765500000,
+          "value": 4025.911947772657,
+          "dataIndex": 685
+        },
+        {
+          "timestamp": 1792767900000,
+          "value": 4025.911947772657,
+          "dataIndex": 693
+        }
+      ],
+      "styles": null,
+      "zLevel": 48,
       "extendData": {}
     }
   ]

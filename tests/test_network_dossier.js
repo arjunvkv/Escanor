@@ -28,12 +28,14 @@ assert.ok(!engineCode.includes('tvNexusTrajLine'), 'Price trajectory line must b
 assert.ok(engineCode.includes('tv-nexus-tab-btn'), 'Dynamic tab buttons must be present');
 assert.ok(engineCode.includes('tvNexusOscLineBox1'), 'Box 1 harmonic line must be present');
 assert.ok(engineCode.includes('tvNexusOscLineBox2'), 'Box 2 harmonic line must be present');
+assert.ok(engineCode.includes('tvNexusOscLineBox3'), 'Box 3 harmonic line must be present');
 assert.ok(engineCode.includes('tvNexusShadedArea'), 'Overlapping shaded area must be present');
 assert.ok(engineCode.includes('tvNexusCalloutVacuum'), 'Vacuum callout badge must be present');
 assert.ok(engineCode.includes('tvNexusLoadBarsContainer'), 'Pipeline load cylinder container must be present');
-assert.ok(engineCode.includes('tvNexusLedGrid'), '24-channel LED matrix grid must be present');
-assert.ok(engineCode.includes('tv-nexus-cylinder-bar'), '3D cylindrical load bar class must be present');
-assert.ok(engineCode.includes('tv-led-pill'), 'LED status matrix pill class must be present');
+assert.ok(engineCode.includes('tvNexusEvrLineBox1'), 'EVR Box 1 line must be present');
+assert.ok(engineCode.includes('tvNexusEvrLineBox2'), 'EVR Box 2 line must be present');
+assert.ok(engineCode.includes('tvNexusEvrLineBox3'), 'EVR Box 3 line must be present');
+assert.ok(engineCode.includes('tvNexusEvrShadedArea'), 'EVR shaded area must be present');
 
 
 
