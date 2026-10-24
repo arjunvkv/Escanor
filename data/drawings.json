@@ -1,42 +1,120 @@
 {
   "XAUUSD": [
     {
+      "id": "overlay_1792821517271_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792035900000,
+          "value": 4188.641069317326,
+          "dataIndex": 701
+        },
+        {
+          "timestamp": 1792105200000,
+          "value": 4188.641069317326,
+          "dataIndex": 932
+        },
+        {
+          "timestamp": 1792105200000,
+          "value": 4101.216174548949,
+          "dataIndex": 932
+        },
+        {
+          "timestamp": 1792035900000,
+          "value": 4101.216174548949,
+          "dataIndex": 701
+        },
+        {
+          "timestamp": 1792035900000,
+          "value": 4144.928621933137,
+          "dataIndex": 701
+        },
+        {
+          "timestamp": 1792105200000,
+          "value": 4144.928621933137,
+          "dataIndex": 932
+        }
+      ],
+      "styles": null,
+      "zLevel": 10,
+      "extendData": {}
+    },
+    {
       "id": "overlay_1792779466296_1",
       "name": "rect",
       "points": [
         {
           "timestamp": 1792501800000,
           "value": 4153.736847993903,
-          "dataIndex": 758
+          "dataIndex": 1642
         },
         {
           "timestamp": 1792564500000,
           "value": 4153.736847993903,
-          "dataIndex": 955
+          "dataIndex": 1839
         },
         {
           "timestamp": 1792564500000,
           "value": 4094.2787472942637,
-          "dataIndex": 955
+          "dataIndex": 1839
         },
         {
           "timestamp": 1792501800000,
           "value": 4094.2787472942637,
-          "dataIndex": 758
+          "dataIndex": 1642
         },
         {
           "timestamp": 1792501800000,
           "value": 4124.007797644083,
-          "dataIndex": 758
+          "dataIndex": 1642
         },
         {
           "timestamp": 1792564500000,
           "value": 4124.007797644083,
-          "dataIndex": 955
+          "dataIndex": 1839
         }
       ],
       "styles": null,
-      "zLevel": 10,
+      "zLevel": 14,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792826931389_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792044000000,
+          "value": 4194.348332477279,
+          "dataIndex": 728
+        },
+        {
+          "timestamp": 1792074600000,
+          "value": 4194.348332477279,
+          "dataIndex": 830
+        },
+        {
+          "timestamp": 1792074600000,
+          "value": 4091.8770166508434,
+          "dataIndex": 830
+        },
+        {
+          "timestamp": 1792044000000,
+          "value": 4091.8770166508434,
+          "dataIndex": 728
+        },
+        {
+          "timestamp": 1792044000000,
+          "value": 4143.112674564061,
+          "dataIndex": 728
+        },
+        {
+          "timestamp": 1792074600000,
+          "value": 4143.112674564061,
+          "dataIndex": 830
+        }
+      ],
+      "styles": null,
+      "zLevel": 18,
       "extendData": {}
     },
     {
@@ -46,36 +124,114 @@
         {
           "timestamp": 1792501800000,
           "value": 4164.09817921502,
-          "dataIndex": 758
+          "dataIndex": 1642
         },
         {
           "timestamp": 1792537500000,
           "value": 4164.09817921502,
-          "dataIndex": 877
+          "dataIndex": 1761
         },
         {
           "timestamp": 1792537500000,
           "value": 4093.800532007134,
-          "dataIndex": 877
+          "dataIndex": 1761
         },
         {
           "timestamp": 1792501800000,
           "value": 4093.800532007134,
-          "dataIndex": 758
+          "dataIndex": 1642
         },
         {
           "timestamp": 1792501800000,
           "value": 4128.9493556110765,
-          "dataIndex": 758
+          "dataIndex": 1642
         },
         {
           "timestamp": 1792537500000,
           "value": 4128.9493556110765,
-          "dataIndex": 877
+          "dataIndex": 1761
         }
       ],
       "styles": null,
-      "zLevel": 23,
+      "zLevel": 21,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792826977720_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792091400000,
+          "value": 4194.607753530005,
+          "dataIndex": 886
+        },
+        {
+          "timestamp": 1792112700000,
+          "value": 4194.607753530005,
+          "dataIndex": 945
+        },
+        {
+          "timestamp": 1792112700000,
+          "value": 4094.9900692835454,
+          "dataIndex": 945
+        },
+        {
+          "timestamp": 1792091400000,
+          "value": 4094.9900692835454,
+          "dataIndex": 886
+        },
+        {
+          "timestamp": 1792091400000,
+          "value": 4144.798911406775,
+          "dataIndex": 886
+        },
+        {
+          "timestamp": 1792112700000,
+          "value": 4144.798911406775,
+          "dataIndex": 945
+        }
+      ],
+      "styles": null,
+      "zLevel": 29,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792821338942_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792772100000,
+          "value": 4034.2377548572,
+          "dataIndex": 2507
+        },
+        {
+          "timestamp": 1792799700000,
+          "value": 4034.2377548572,
+          "dataIndex": 2599
+        },
+        {
+          "timestamp": 1792799700000,
+          "value": 3975.3628296282072,
+          "dataIndex": 2599
+        },
+        {
+          "timestamp": 1792772100000,
+          "value": 3975.3628296282072,
+          "dataIndex": 2507
+        },
+        {
+          "timestamp": 1792772100000,
+          "value": 4004.8002922427036,
+          "dataIndex": 2507
+        },
+        {
+          "timestamp": 1792799700000,
+          "value": 4004.8002922427036,
+          "dataIndex": 2599
+        }
+      ],
+      "styles": null,
+      "zLevel": 33,
       "extendData": {}
     },
     {
@@ -85,36 +241,114 @@
         {
           "timestamp": 1792526700000,
           "value": 4158.837811056606,
-          "dataIndex": 841
+          "dataIndex": 1725
         },
         {
           "timestamp": 1792545900000,
           "value": 4158.837811056606,
-          "dataIndex": 893
+          "dataIndex": 1777
         },
         {
           "timestamp": 1792545900000,
           "value": 4078.975858106153,
-          "dataIndex": 893
+          "dataIndex": 1777
         },
         {
           "timestamp": 1792526700000,
           "value": 4078.975858106153,
-          "dataIndex": 841
+          "dataIndex": 1725
         },
         {
           "timestamp": 1792526700000,
           "value": 4118.906834581379,
-          "dataIndex": 841
+          "dataIndex": 1725
         },
         {
           "timestamp": 1792545900000,
           "value": 4118.906834581379,
-          "dataIndex": 893
+          "dataIndex": 1777
         }
       ],
       "styles": null,
-      "zLevel": 35,
+      "zLevel": 37,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792821396283_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792780500000,
+          "value": 4037.6238822822443,
+          "dataIndex": 2535
+        },
+        {
+          "timestamp": 1792799700000,
+          "value": 4037.6238822822443,
+          "dataIndex": 2599
+        },
+        {
+          "timestamp": 1792799700000,
+          "value": 3973.615150957217,
+          "dataIndex": 2599
+        },
+        {
+          "timestamp": 1792780500000,
+          "value": 3973.615150957217,
+          "dataIndex": 2535
+        },
+        {
+          "timestamp": 1792780500000,
+          "value": 4005.6195166197303,
+          "dataIndex": 2535
+        },
+        {
+          "timestamp": 1792799700000,
+          "value": 4005.6195166197303,
+          "dataIndex": 2599
+        }
+      ],
+      "styles": null,
+      "zLevel": 40,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792826798256_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792063500000,
+          "value": 4180.858437735571,
+          "dataIndex": 793
+        },
+        {
+          "timestamp": 1792074600000,
+          "value": 4180.858437735571,
+          "dataIndex": 830
+        },
+        {
+          "timestamp": 1792074600000,
+          "value": 4110.036490341604,
+          "dataIndex": 830
+        },
+        {
+          "timestamp": 1792063500000,
+          "value": 4110.036490341604,
+          "dataIndex": 793
+        },
+        {
+          "timestamp": 1792063500000,
+          "value": 4145.447464038587,
+          "dataIndex": 793
+        },
+        {
+          "timestamp": 1792074600000,
+          "value": 4145.447464038587,
+          "dataIndex": 830
+        }
+      ],
+      "styles": null,
+      "zLevel": 44,
       "extendData": {}
     },
     {
@@ -122,38 +356,77 @@
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792546500000,
-          "value": 4162.66031998988,
-          "dataIndex": 895
+          "timestamp": 1792611600000,
+          "value": 4162.969791361963,
+          "dataIndex": 1996
         },
         {
-          "timestamp": 1792554600000,
-          "value": 4162.66031998988,
-          "dataIndex": 922
+          "timestamp": 1792618500000,
+          "value": 4162.969791361963,
+          "dataIndex": 2019
         },
         {
-          "timestamp": 1792554600000,
-          "value": 4078.4944294552706,
-          "dataIndex": 922
+          "timestamp": 1792618500000,
+          "value": 4078.8039008273536,
+          "dataIndex": 2019
         },
         {
-          "timestamp": 1792546500000,
-          "value": 4078.4944294552706,
-          "dataIndex": 895
+          "timestamp": 1792611600000,
+          "value": 4078.8039008273536,
+          "dataIndex": 1996
         },
         {
-          "timestamp": 1792546500000,
-          "value": 4120.577374722576,
-          "dataIndex": 895
+          "timestamp": 1792611600000,
+          "value": 4120.886846094658,
+          "dataIndex": 1996
         },
         {
-          "timestamp": 1792554600000,
-          "value": 4120.577374722576,
-          "dataIndex": 922
+          "timestamp": 1792618500000,
+          "value": 4120.886846094658,
+          "dataIndex": 2019
         }
       ],
       "styles": null,
       "zLevel": 48,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792821564409_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792086000000,
+          "value": 4187.603385106425,
+          "dataIndex": 868
+        },
+        {
+          "timestamp": 1792112700000,
+          "value": 4187.603385106425,
+          "dataIndex": 945
+        },
+        {
+          "timestamp": 1792112700000,
+          "value": 4105.366911392552,
+          "dataIndex": 945
+        },
+        {
+          "timestamp": 1792086000000,
+          "value": 4105.366911392552,
+          "dataIndex": 868
+        },
+        {
+          "timestamp": 1792086000000,
+          "value": 4146.485148249489,
+          "dataIndex": 868
+        },
+        {
+          "timestamp": 1792112700000,
+          "value": 4146.485148249489,
+          "dataIndex": 945
+        }
+      ],
+      "styles": null,
+      "zLevel": 100,
       "extendData": {}
     },
     {
@@ -257,6 +530,96 @@
         {
           "value": 4128.710247967513,
           "timestamp": 1792545900000
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#94a3b8",
+          "size": 1.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#94a3b8",
+          "borderColor": "#94a3b8",
+          "activeColor": "#ffffff",
+          "activeBorderColor": "#ffffff",
+          "radius": 4
+        }
+      },
+      "zLevel": 200,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792821460341_1",
+      "name": "segment",
+      "points": [
+        {
+          "value": 3988.68887949451,
+          "timestamp": 1792776300000
+        },
+        {
+          "value": 3993.6042257566705,
+          "timestamp": 1792807200000
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#94a3b8",
+          "size": 1.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#94a3b8",
+          "borderColor": "#94a3b8",
+          "activeColor": "#ffffff",
+          "activeBorderColor": "#ffffff",
+          "radius": 4
+        }
+      },
+      "zLevel": 200,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792821656108_1",
+      "name": "segment",
+      "points": [
+        {
+          "value": 4160.883016675734,
+          "timestamp": 1792042200000
+        },
+        {
+          "value": 4175.410595628342,
+          "timestamp": 1792125300000
+        }
+      ],
+      "styles": {
+        "line": {
+          "color": "#94a3b8",
+          "size": 1.5,
+          "style": "solid"
+        },
+        "point": {
+          "color": "#94a3b8",
+          "borderColor": "#94a3b8",
+          "activeColor": "#ffffff",
+          "activeBorderColor": "#ffffff",
+          "radius": 4
+        }
+      },
+      "zLevel": 200,
+      "extendData": {}
+    },
+    {
+      "id": "overlay_1792821780904_1",
+      "name": "segment",
+      "points": [
+        {
+          "value": 4131.568437717792,
+          "timestamp": 1792054500000
+        },
+        {
+          "value": 4151.025016672178,
+          "timestamp": 1792138800000
         }
       ],
       "styles": {

@@ -9,8 +9,8 @@
  * - In-app confirmation dialog (Zero browser alert/confirm popups)
  */
 
-import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610240110';
-import { computeRectangleVolumeMetrics, patchOverlayViews } from './tv_chart_engine.js?v=202610240110';
+import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
+import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon } from './tv_chart_engine.js?v=202610241430';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -192,6 +192,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       const rectModal = document.getElementById('tvRectSettingsModal');
       if (rectModal) rectModal.style.display = 'none';
 
+      updateExtensionSeriesRibbon(chart);
       syncDrawingsToServer(currentSymbolRef, chart, false, true);
       hideFloatingBar();
       showChartToast(`Cleared all ${userDrawings.length} drawing(s)`);
@@ -247,6 +248,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
               chart.overrideOverlay({ id: overlay.id, points: sixPoints });
             }
             recalculateRectZLevels(chart);
+            updateExtensionSeriesRibbon(chart);
           }
           if ((overlayName === 'longPosition' || overlayName === 'shortPosition') && overlay) {
             if (overlay.points && overlay.points.length === 1) {
@@ -445,6 +447,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         if (ovName === 'rect' && args?.overlay?.points) {
           const sixPoints = normalizeRectPoints(args.overlay.points, chart.getDataList());
           chart.overrideOverlay({ id: args.overlay.id, points: sixPoints });
+          updateExtensionSeriesRibbon(chart);
         }
         syncDrawingsToServer(currentSymbolRef, chart);
       },
@@ -649,6 +652,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         window.__lineTradingManager.removeLineOverlay(id);
       }
       recalculateRectZLevels(chart);
+      updateExtensionSeriesRibbon(chart);
       selectedOverlay = null;
       hideFloatingBar();
       syncDrawingsToServer(currentSymbolRef, chart, false, true);
@@ -858,32 +862,11 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         if (topEl) topEl.textContent = `$${topPrice.toFixed(2)}`;
         if (botEl) botEl.textContent = `$${bottomPrice.toFixed(2)}`;
 
-        // Populate Volume Consumption & Delta Metrics
-        const chartData = chart?.getDataList?.() || [];
-        const volMetrics = computeRectangleVolumeMetrics(selectedOverlay, chartData);
-        if (volMetrics) {
-          const totalVolEl = document.getElementById('tvRectTotalVol');
-          const netDeltaEl = document.getElementById('tvRectNetDelta');
-          const deltaRatioEl = document.getElementById('tvRectDeltaRatio');
-          const pocPriceEl = document.getElementById('tvRectPocPrice');
-          const verdictEl = document.getElementById('tvRectVerdictText');
+        // Populate Empirical Structural & Order Flow Metrics
+        populateRectMetricsUI(selectedOverlay);
 
-          if (totalVolEl) totalVolEl.textContent = `${volMetrics.totalVol.toLocaleString()} ticks`;
-          if (netDeltaEl) {
-            const sign = volMetrics.netDelta > 0 ? '+' : '';
-            const pctSign = volMetrics.netDeltaPct > 0 ? '+' : '';
-            netDeltaEl.innerHTML = `${sign}${volMetrics.netDelta.toLocaleString()} <span style="font-size:11px; color:#94a3b8; font-weight:600;">(${pctSign}${volMetrics.netDeltaPct}%)</span>`;
-            netDeltaEl.style.color = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
-          }
-          if (deltaRatioEl) {
-            deltaRatioEl.innerHTML = `<span style="color:#00e676; font-weight:700;">${volMetrics.bullPct}% 🟢</span> / <span style="color:#ff334b; font-weight:700;">${volMetrics.bearPct}% 🔴</span>`;
-          }
-          if (pocPriceEl) pocPriceEl.textContent = `$${volMetrics.pocPrice.toFixed(2)}`;
-          if (verdictEl) {
-            verdictEl.textContent = volMetrics.verdict;
-            verdictEl.style.color = volMetrics.verdictColor;
-          }
-        }
+        const curDir = selectedOverlay.extendData?.direction || 'AUTO';
+        updateRectDirectionButtonsUI(curDir);
 
         const curMode = selectedOverlay.extendData?.alarmMode || 'OFF';
         updateRectAlarmButtonsUI(curMode);
@@ -901,6 +884,16 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         const allOverlaysCheck = document.getElementById('tvRectHideAllOverlaysCheck');
         if (allOverlaysCheck) {
           allOverlaysCheck.checked = Boolean(window.__hideAllRectVolumeOverlays);
+        }
+
+        const thisArrowsCheck = document.getElementById('tvRectHideArrowsCheck');
+        if (thisArrowsCheck) {
+          thisArrowsCheck.checked = Boolean(selectedOverlay.extendData?.hideArrows);
+        }
+
+        const allRibbonCheck = document.getElementById('tvRectHideRibbonCheck');
+        if (allRibbonCheck) {
+          allRibbonCheck.checked = Boolean(window.__hideExtensionRibbon);
         }
 
         const thisFillCheck = document.getElementById('tvRectDisableThisFillCheck');
@@ -939,6 +932,71 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     OUTSIDE: '🚀 Alerts when live spot price breaks out / leaves this box.',
     BOTH: '⚡ Alerts on BOTH entering and leaving this box.'
   };
+
+  function updateRectDirectionButtonsUI(dir) {
+    document.querySelectorAll('.tv-dir-btn').forEach(btn => {
+      const isActive = btn.getAttribute('data-dir') === dir;
+      btn.classList.toggle('active', isActive);
+      btn.style.borderColor = isActive ? '#3b82f6' : '#334155';
+      btn.style.background = isActive ? '#1e3a8a' : '#1e293b';
+    });
+  }
+
+  function populateRectMetricsUI(overlay) {
+    if (!overlay) return;
+    const chartData = chart?.getDataList?.() || [];
+    const volMetrics = computeRectangleVolumeMetrics(overlay, chartData);
+    if (!volMetrics) return;
+
+    const favMoveEl = document.getElementById('tvRectFavMove');
+    const advMoveEl = document.getElementById('tvRectAdvMove');
+    const rangeEl = document.getElementById('tvRectRange');
+    const totalVolEl = document.getElementById('tvRectTotalVol');
+    const netDeltaEl = document.getElementById('tvRectNetDelta');
+    const absorptionEl = document.getElementById('tvRectAbsorption');
+    const resultEl = document.getElementById('tvRectResultText');
+
+    if (favMoveEl) favMoveEl.textContent = `+${volMetrics.favMove.toFixed(1)} pts`;
+    if (advMoveEl) advMoveEl.textContent = `-${volMetrics.advMove.toFixed(1)} pts`;
+    if (rangeEl) rangeEl.textContent = `${volMetrics.R_b.toFixed(2)} pts`;
+    if (totalVolEl) totalVolEl.textContent = `${volMetrics.totalVol.toLocaleString()} ticks`;
+    if (netDeltaEl) {
+      const sign = volMetrics.netDelta > 0 ? '+' : '';
+      const pctSign = volMetrics.netDeltaPct > 0 ? '+' : '';
+      netDeltaEl.innerHTML = `${sign}${volMetrics.netDelta.toLocaleString()} <span style="font-size:11px; color:#94a3b8; font-weight:600;">(ΔCVD ${sign}${volMetrics.cvdChg})</span>`;
+      netDeltaEl.style.color = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
+    }
+    if (absorptionEl) {
+      absorptionEl.innerHTML = `${volMetrics.absorbPct}% <span style="font-size:10px; color:#94a3b8;">(${volMetrics.absorbLevel})</span>`;
+    }
+    if (resultEl) {
+      resultEl.textContent = volMetrics.resultText;
+      resultEl.style.color = volMetrics.resultColor;
+    }
+  }
+
+  // Direction Buttons Click Listeners
+  document.querySelectorAll('.tv-dir-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dir = btn.getAttribute('data-dir') || 'AUTO';
+      updateRectDirectionButtonsUI(dir);
+      if (selectedOverlay && selectedOverlay.name === 'rect') {
+        selectedOverlay.extendData = selectedOverlay.extendData || {};
+        selectedOverlay.extendData.direction = dir;
+        populateRectMetricsUI(selectedOverlay);
+
+        chart.overrideOverlay({
+          id: selectedOverlay.id,
+          extendData: selectedOverlay.extendData
+        });
+
+        if (typeof chart.updatePane === 'function') chart.updatePane(1);
+        updateExtensionSeriesRibbon(chart);
+        syncDrawingsToServer(currentSymbolRef, chart, false, true);
+        showChartToast(`Direction: ${dir}`);
+      }
+    });
+  });
 
   function updateRectAlarmButtonsUI(mode) {
     document.querySelectorAll('.tv-alarm-btn').forEach(btn => {
@@ -1026,6 +1084,35 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       });
     }
     showChartToast(isHidden ? 'Volume overlay hidden on ALL boxes' : 'Volume overlay visible on all boxes');
+  });
+
+  // Excursion Arrows & Badges Visibility Checkbox
+  const thisArrowsCheck = document.getElementById('tvRectHideArrowsCheck');
+  thisArrowsCheck?.addEventListener('change', (e) => {
+    if (selectedOverlay && selectedOverlay.name === 'rect') {
+      selectedOverlay.extendData = selectedOverlay.extendData || {};
+      selectedOverlay.extendData.hideArrows = e.target.checked;
+      chart.overrideOverlay({
+        id: selectedOverlay.id,
+        extendData: selectedOverlay.extendData
+      });
+      syncDrawingsToServer(currentSymbolRef, chart, false, true);
+      if (typeof chart.updatePane === 'function') chart.updatePane(1);
+      showChartToast(e.target.checked ? 'Arrows & badges hidden on this box' : 'Arrows & badges visible on this box');
+    }
+  });
+
+  // Top Extension Ribbon Visibility Checkbox
+  const allRibbonCheck = document.getElementById('tvRectHideRibbonCheck');
+  allRibbonCheck?.addEventListener('change', (e) => {
+    const isHidden = e.target.checked;
+    window.__hideExtensionRibbon = isHidden;
+    try {
+      localStorage.setItem('escanor_hide_extension_ribbon', isHidden ? 'true' : 'false');
+    } catch (_) {}
+    updateExtensionSeriesRibbon(chart);
+    if (typeof chart.updatePane === 'function') chart.updatePane(1);
+    showChartToast(isHidden ? 'Extension ribbon hidden' : 'Extension ribbon visible');
   });
 
   // Box Fill Visibility Checkboxes (This Box Only / All Boxes)

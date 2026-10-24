@@ -366,6 +366,9 @@ export function restoreDrawings(chart, drawingsList) {
 
     // Enforce higher zLevel for smaller boxes among restored drawings
     recalculateRectZLevels(chart);
+    if (typeof window.__updateExtensionSeriesRibbon === 'function') {
+      window.__updateExtensionSeriesRibbon(chart);
+    }
   } finally {
     window.__isRestoringDrawings = false;
   }

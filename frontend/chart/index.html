@@ -268,6 +268,17 @@
           --:--
         </div>
 
+        <!-- 🚀 EXTENSION SERIES (Favourable Move) Progression Ribbon -->
+        <div id="tvExtensionSeriesRibbon" class="tv-extension-ribbon" style="display: none;">
+          <div class="tv-ext-title">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor">
+              <path d="M16 6l2.29 2.29-4.88 4.88-4-4L2 16.59 3.41 18l6-6 4 4 6.3-6.29L22 12V6z"/>
+            </svg>
+            <span>EXTENSION SERIES (Favourable Move)</span>
+          </div>
+          <div id="tvExtensionTrack" class="tv-ext-track"></div>
+        </div>
+
         <!-- Floating Round Pill Close All Button in Bottom Right Corner of Chart -->
         <button type="button" id="tvFloatingCloseAllBtn" class="tv-round-close-pill" style="display: none;" title="Close All Active Trades immediately (Alt + End)">
           <span class="tv-rc-icon">✕</span>
@@ -593,59 +604,101 @@
             </div>
           </div>
 
-          <!-- Volume Consumption & Delta Metrics -->
-          <div class="tv-section-card" id="tvRectVolumeCard">
-            <div class="tv-section-title">📊 VOLUME CONSUMPTION & DELTA</div>
-            <div class="tv-rect-vol-grid">
-              <div class="tv-rect-vol-stat">
-                <span class="tv-vol-label">TOTAL VOLUME</span>
-                <span id="tvRectTotalVol" class="tv-vol-val text-cyan">--</span>
-              </div>
-              <div class="tv-rect-vol-stat">
-                <span class="tv-vol-label">NET DELTA</span>
-                <span id="tvRectNetDelta" class="tv-vol-val">--</span>
-              </div>
-              <div class="tv-rect-vol-stat">
-                <span class="tv-vol-label">BULL / BEAR</span>
-                <span id="tvRectDeltaRatio" class="tv-vol-val">--</span>
-              </div>
-              <div class="tv-rect-vol-stat">
-                <span class="tv-vol-label">VOLUME POC</span>
-                <span id="tvRectPocPrice" class="tv-vol-val text-amber">--</span>
-              </div>
-            </div>
-            <div class="tv-rect-verdict-box" id="tvRectVerdictBox">
-              <span class="tv-verdict-label">AUCTION VERDICT:</span>
-              <span id="tvRectVerdictText" class="tv-verdict-text">--</span>
+          <!-- Expected Direction Selector -->
+          <div class="tv-section-card">
+            <div class="tv-section-title">🧭 EXPECTED DIRECTION</div>
+            <div style="display: flex; gap: 6px;">
+              <button type="button" id="tvRectDirAutoBtn" class="tv-dir-btn active" data-dir="AUTO" style="flex: 1; padding: 6px; background: #1e293b; border: 1px solid #3b82f6; border-radius: 6px; color: #60a5fa; font-size: 11px; font-weight: 700; cursor: pointer;">🔄 Auto</button>
+              <button type="button" id="tvRectDirBullBtn" class="tv-dir-btn" data-dir="BULLISH" style="flex: 1; padding: 6px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #10b981; font-size: 11px; font-weight: 700; cursor: pointer;">↗ Bullish</button>
+              <button type="button" id="tvRectDirBearBtn" class="tv-dir-btn" data-dir="BEARISH" style="flex: 1; padding: 6px; background: #1e293b; border: 1px solid #334155; border-radius: 6px; color: #f43f5e; font-size: 11px; font-weight: 700; cursor: pointer;">↘ Bearish</button>
             </div>
           </div>
 
-          <!-- Volume Overlay Display Toggles -->
+          <!-- Empirical Structural & Order Flow Metrics -->
+          <div class="tv-section-card" id="tvRectStructuralCard">
+            <div class="tv-section-title">📐 STRUCTURAL EXCURSION & FLOW</div>
+            <div class="tv-rect-vol-grid" style="grid-template-columns: repeat(3, 1fr); gap: 6px;">
+              <div class="tv-rect-vol-stat">
+                <span class="tv-vol-label">FAV MOVE (MFE)</span>
+                <span id="tvRectFavMove" class="tv-vol-val text-cyan" style="color: #00e5ff;">--</span>
+              </div>
+              <div class="tv-rect-vol-stat">
+                <span class="tv-vol-label">ADV MOVE (MAE)</span>
+                <span id="tvRectAdvMove" class="tv-vol-val text-rose" style="color: #f43f5e;">--</span>
+              </div>
+              <div class="tv-rect-vol-stat">
+                <span class="tv-vol-label">RANGE</span>
+                <span id="tvRectRange" class="tv-vol-val">--</span>
+              </div>
+              <div class="tv-rect-vol-stat">
+                <span class="tv-vol-label">VOLUME</span>
+                <span id="tvRectTotalVol" class="tv-vol-val">--</span>
+              </div>
+              <div class="tv-rect-vol-stat">
+                <span class="tv-vol-label">DELTA / CVD</span>
+                <span id="tvRectNetDelta" class="tv-vol-val">--</span>
+              </div>
+              <div class="tv-rect-vol-stat">
+                <span class="tv-vol-label">ABSORPTION</span>
+                <span id="tvRectAbsorption" class="tv-vol-val text-amber">--</span>
+              </div>
+            </div>
+            <div class="tv-rect-verdict-box" id="tvRectVerdictBox" style="margin-top: 8px;">
+              <span class="tv-verdict-label">SUBSEQUENT RESULT:</span>
+              <span id="tvRectResultText" class="tv-verdict-text" style="color: #38bdf8;">--</span>
+            </div>
+          </div>
+
+          <!-- Overlay Display & Extension Toggles -->
           <div class="tv-section-card" id="tvRectOverlayToggleCard">
-            <div class="tv-section-title">👁️ VOLUME OVERLAY VISIBILITY</div>
+            <div class="tv-section-title">👁️ METRICS & EXTENSION VISIBILITY</div>
             
-            <!-- Toggle 1: Current Box -->
+            <!-- Toggle 1: Current Box Metrics -->
             <div class="tv-rect-telegram-row" style="margin-bottom: 6px;">
               <label class="tv-rect-telegram-left" for="tvRectHideThisOverlayCheck">
                 <input type="checkbox" id="tvRectHideThisOverlayCheck" class="tv-rect-telegram-checkbox">
                 <span class="tv-rect-telegram-label">
                   <span>📦</span>
-                  <span>Hide Overlay on THIS Box Only</span>
+                  <span>Hide Metrics Card on THIS Box</span>
                 </span>
               </label>
-              <span class="tv-rect-telegram-subtext">Box lines only</span>
+              <span class="tv-rect-telegram-subtext">Clean box</span>
             </div>
 
-            <!-- Toggle 2: All Boxes -->
-            <div class="tv-rect-telegram-row">
+            <!-- Toggle 2: All Boxes Metrics -->
+            <div class="tv-rect-telegram-row" style="margin-bottom: 6px;">
               <label class="tv-rect-telegram-left" for="tvRectHideAllOverlaysCheck">
                 <input type="checkbox" id="tvRectHideAllOverlaysCheck" class="tv-rect-telegram-checkbox">
                 <span class="tv-rect-telegram-label">
                   <span>🌐</span>
-                  <span>Hide Overlay on ALL Boxes</span>
+                  <span>Hide Metrics Card on ALL Boxes</span>
                 </span>
               </label>
-              <span class="tv-rect-telegram-subtext">Global lines only</span>
+              <span class="tv-rect-telegram-subtext">Global clean</span>
+            </div>
+
+            <!-- Toggle 3: Excursion Arrows on this box -->
+            <div class="tv-rect-telegram-row" style="margin-bottom: 6px;">
+              <label class="tv-rect-telegram-left" for="tvRectHideArrowsCheck">
+                <input type="checkbox" id="tvRectHideArrowsCheck" class="tv-rect-telegram-checkbox">
+                <span class="tv-rect-telegram-label">
+                  <span>🏹</span>
+                  <span>Hide Excursion Arrows & Badges</span>
+                </span>
+              </label>
+              <span class="tv-rect-telegram-subtext">No arrows</span>
+            </div>
+
+            <!-- Toggle 4: Top Extension Series Ribbon -->
+            <div class="tv-rect-telegram-row">
+              <label class="tv-rect-telegram-left" for="tvRectHideRibbonCheck">
+                <input type="checkbox" id="tvRectHideRibbonCheck" class="tv-rect-telegram-checkbox">
+                <span class="tv-rect-telegram-label">
+                  <span>🚀</span>
+                  <span>Hide Top Extension Ribbon (Global)</span>
+                </span>
+              </label>
+              <span class="tv-rect-telegram-subtext">Top bar</span>
             </div>
           </div>
 
@@ -949,6 +1002,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610240110"></script>
+  <script type="module" src="/chart/js/app.js?v=202610241430"></script>
 </body>
 </html>

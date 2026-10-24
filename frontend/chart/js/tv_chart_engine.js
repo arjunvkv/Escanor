@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610232220';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
 import { registerLivingFootprintIndicator } from './living_candle_engine.js?v=202610140655';
 
 // Global reference for chart instance
@@ -15,6 +15,9 @@ window.__hideAllRectVolumeOverlays = (typeof localStorage !== 'undefined' && loc
 
 // Global preference: Disable transparent fill on all boxes (outline only)
 window.__disableAllRectFill = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_disable_all_rect_fill') === 'true');
+
+// Global preference: Hide Top Extension Ribbon (Favourable Move Series)
+window.__hideExtensionRibbon = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_hide_extension_ribbon') === 'true');
 
 export function getChartInstance() {
   return chartInstance;
@@ -29,11 +32,15 @@ function formatVolNumber(v) {
 }
 
 /**
- * Computes true volume consumption, aggressive bull vs bear delta,
- * Point of Control (POC), and Wyckoff auction verdict inside the spatial
- * bounds of any rectangle overlay.
+ * Computes empirical structural excursion and orderflow metrics for any rectangle overlay:
+ * - Observed High (Hb), Observed Low (Lb), Range (Rb)
+ * - Reference start price (P0) at t0, Reference end price (P1) at t1, Net movement (Nb)
+ * - Favourable Move (Fb, MFE) & Adverse Move (Ab, MAE) based on expected direction (Bullish/Bearish)
+ * - Real tick volume (Vb), Net Delta (Δb), CVD Change (ΔCVDb)
+ * - Absorption Evidence (Eb) and Subsequent Result (Yb)
+ * - Completely excludes POC as requested.
  */
-export function computeRectangleVolumeMetrics(overlay, dataList) {
+export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
   if (!overlay || !overlay.points || overlay.points.length < 2 || !dataList || dataList.length === 0) {
     return null;
   }
@@ -45,7 +52,7 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
   const topPrice = Math.max(...values);
   const bottomPrice = Math.min(...values);
   const priceRange = topPrice - bottomPrice;
-  if (priceRange <= 0.001) return null;
+  if (priceRange <= 0.0001) return null;
 
   const timestamps = validPoints
     .map(p => p.timestamp)
@@ -76,21 +83,23 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
     rightTime = leftTime + 5 * 60 * 1000;
   }
 
-  const tfMins = window.__currentTimeframeMinutes || 5;
+  const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
   const barMs = tfMins * 60 * 1000;
+
+  // Collect all eligible bars in the time window
+  const barsInBox = [];
+  let firstBarIndex = null;
+  let lastBarIndex = null;
 
   let totalVol = 0;
   let bullVol = 0;
   let bearVol = 0;
   let candleCount = 0;
-  let upperWickSum = 0;
-  let lowerWickSum = 0;
-  let lastClose = null;
 
-  // Discrete price tiers for POC inside the box
-  const numBins = 14;
-  const binStep = priceRange / numBins;
-  const bins = new Array(numBins).fill(0);
+  let observedHigh = -Infinity;
+  let observedLow = Infinity;
+  let peakBarIndex = null;
+  let troughBarIndex = null;
 
   for (let i = 0; i < dataList.length; i++) {
     const bar = dataList[i];
@@ -98,7 +107,19 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
 
     if (bar.timestamp + barMs < leftTime) continue;
     if (bar.timestamp > rightTime + barMs) continue;
-    if (bar.high < bottomPrice || bar.low > topPrice) continue;
+
+    if (firstBarIndex === null) firstBarIndex = i;
+    lastBarIndex = i;
+    barsInBox.push({ bar, index: i });
+
+    if (bar.high > observedHigh) {
+      observedHigh = bar.high;
+      peakBarIndex = i;
+    }
+    if (bar.low < observedLow) {
+      observedLow = bar.low;
+      troughBarIndex = i;
+    }
 
     const barRange = Math.max(0.01, bar.high - bar.low);
     const overlapLow = Math.max(bar.low, bottomPrice);
@@ -107,112 +128,170 @@ export function computeRectangleVolumeMetrics(overlay, dataList) {
     const overlapRatio = Math.min(1.0, overlapRange / barRange);
 
     const vol = Number(bar.volume || bar.tick_volume || 1);
-    const volInBox = vol * overlapRatio;
+    const volInBox = vol * (overlapRatio > 0 ? overlapRatio : 1.0);
 
     totalVol += volInBox;
     candleCount++;
-    lastClose = bar.close;
 
-    const body = Math.abs(bar.close - bar.open);
     const upperWick = bar.high - Math.max(bar.open, bar.close);
     const lowerWick = Math.min(bar.open, bar.close) - bar.low;
 
-    upperWickSum += upperWick * overlapRatio;
-    lowerWickSum += lowerWick * overlapRatio;
-
-    // Sensitive Order Flow & Delta Decomposition:
-    // 1. Directional Displacement: (close - open) / range [-1.0, +1.0]
+    // Order flow & delta decomposition
     const displacement = (bar.close - bar.open) / barRange;
-
-    // 2. Close Location (Money Flow Multiplier): where close settled relative to extremes [-1.0, +1.0]
     const closeLocation = ((bar.close - bar.low) - (bar.high - bar.close)) / barRange;
-
-    // 3. Wick Rejection & Absorption at Box Boundaries:
-    // When price tests the lower boundary (overlapLow near bottomPrice), a lower wick represents active buyer defense (+delta)
-    // When price tests the upper boundary (overlapHigh near topPrice), an upper wick represents active seller defense (-delta)
     const isAtFloor = overlapLow <= bottomPrice + 0.30 * priceRange;
     const isAtCeiling = overlapHigh >= topPrice - 0.30 * priceRange;
     const wickWeight = (isAtFloor || isAtCeiling) ? 1.6 : 1.0;
     const wickDiff = ((lowerWick - upperWick) / barRange) * wickWeight;
 
-    // Composite un-dampened directional score [-1.0, +1.0]
     const deltaScore = Math.max(-1.0, Math.min(1.0, displacement * 0.45 + closeLocation * 0.35 + wickDiff * 0.20));
-
     const bullRatio = (1 + deltaScore) / 2;
-    const barBull = volInBox * bullRatio;
-    const barBear = volInBox * (1 - bullRatio);
 
-    bullVol += barBull;
-    bearVol += barBear;
-
-    const binStart = Math.max(0, Math.min(numBins - 1, Math.floor((overlapLow - bottomPrice) / binStep)));
-    const binEnd = Math.max(0, Math.min(numBins - 1, Math.floor((overlapHigh - bottomPrice) / binStep)));
-    const spannedBins = Math.max(1, binEnd - binStart + 1);
-    const volPerBin = volInBox / spannedBins;
-    for (let b = binStart; b <= binEnd; b++) {
-      bins[b] += volPerBin;
-    }
+    bullVol += volInBox * bullRatio;
+    bearVol += volInBox * (1 - bullRatio);
   }
 
-  if (totalVol <= 0) return null;
+  // Fallbacks if box is drawn in empty future/past space
+  if (observedHigh === -Infinity) observedHigh = topPrice;
+  if (observedLow === Infinity) observedLow = bottomPrice;
+  const H_b = observedHigh;
+  const L_b = observedLow;
+  const R_b = Math.max(0.01, H_b - L_b);
 
-  let maxBinVol = -1;
-  let pocBinIdx = Math.floor(numBins / 2);
-  for (let b = 0; b < numBins; b++) {
-    if (bins[b] > maxBinVol) {
-      maxBinVol = bins[b];
-      pocBinIdx = b;
-    }
+  const firstBar = barsInBox.length > 0 ? barsInBox[0].bar : null;
+  const lastBar = barsInBox.length > 0 ? barsInBox[barsInBox.length - 1].bar : null;
+
+  const P_0 = firstBar ? firstBar.open : bottomPrice;
+  const P_1 = lastBar ? lastBar.close : topPrice;
+  const netMove = P_1 - P_0;
+
+  // Expected Direction
+  const dirSetting = (overlay.extendData && overlay.extendData.direction) || 'AUTO';
+  let d = 1; // +1 Bullish, -1 Bearish
+  if (dirSetting === 'BULLISH') {
+    d = 1;
+  } else if (dirSetting === 'BEARISH') {
+    d = -1;
+  } else {
+    d = (netMove >= 0) ? 1 : -1;
   }
-  const pocPrice = Number((bottomPrice + (pocBinIdx + 0.5) * binStep).toFixed(2));
+  const directionName = (d === 1) ? 'BULLISH' : 'BEARISH';
 
+  // Favourable Move (MFE) & Adverse Move (MAE)
+  let favMove = 0;
+  let advMove = 0;
+  if (d === 1) {
+    favMove = Math.max(0, H_b - P_0);
+    advMove = Math.max(0, P_0 - L_b);
+  } else {
+    favMove = Math.max(0, P_0 - L_b);
+    advMove = Math.max(0, H_b - P_0);
+  }
+
+  // Delta & CVD Change
   const netDelta = Math.round(bullVol - bearVol);
   const netDeltaPct = totalVol > 0 ? Math.round((netDelta / totalVol) * 100) : 0;
-  const rawBullPct = totalVol > 0 ? (bullVol / totalVol) * 100 : 50;
-  const bullPct = Math.min(99, Math.max(1, Math.round(rawBullPct)));
+  const cvdChg = netDelta; // Box interval CVD change
+  const bullPct = totalVol > 0 ? Math.min(99, Math.max(1, Math.round((bullVol / totalVol) * 100))) : 50;
   const bearPct = 100 - bullPct;
 
-  let verdict = 'BALANCED AUCTION';
-  let verdictColor = '#38bdf8';
+  // Empirical Absorption: Eb = 1.0 - (|P1 - P0| / (Rb + 0.001) * 1 / (1 + ln(1 + Vb / (Vavg + 1))))
+  const avgVol = Math.max(10, totalVol / Math.max(1, candleCount));
+  const effortResultRatio = Math.abs(netMove) / (R_b + 0.001);
+  const volDampener = 1.0 / (1.0 + Math.log(1.0 + (totalVol / (avgVol * 2 + 1.0))));
+  let rawAbsorption = 1.0 - (effortResultRatio * volDampener);
+  rawAbsorption = Math.max(0.10, Math.min(0.99, rawAbsorption));
+  const absorbPct = Math.round(rawAbsorption * 100);
 
-  const isNearCeiling = (lastClose !== null && lastClose >= bottomPrice + 0.65 * priceRange);
-  const isNearFloor = (lastClose !== null && lastClose <= bottomPrice + 0.35 * priceRange);
+  let absorbLevel = 'MODERATE';
+  if (absorbPct >= 70) absorbLevel = 'HIGH';
+  else if (absorbPct < 45) absorbLevel = 'LOW';
 
-  if (lowerWickSum > upperWickSum * 1.25 && isNearFloor && (bullPct >= 48.0 || netDeltaPct >= -4.0)) {
-    verdict = 'BULL ABSORPTION / SPRING';
-    verdictColor = '#00f0ff';
-  } else if (upperWickSum > lowerWickSum * 1.25 && isNearCeiling && (bearPct >= 48.0 || netDeltaPct <= 4.0)) {
-    verdict = 'BEAR ABSORPTION / CEILING';
-    verdictColor = '#ffb300';
-  } else if (bullPct >= 62.0 || netDeltaPct >= 24.0) {
-    verdict = 'BULL INITIATIVE';
-    verdictColor = '#00e676';
-  } else if (bearPct >= 62.0 || netDeltaPct <= -24.0) {
-    verdict = 'BEAR INITIATIVE';
-    verdictColor = '#ff334b';
-  } else if (bullPct >= 54.0 || netDeltaPct >= 8.0) {
-    verdict = 'BULL DOMINANT';
-    verdictColor = '#10b981';
-  } else if (bearPct >= 54.0 || netDeltaPct <= -8.0) {
-    verdict = 'BEAR DOMINANT';
-    verdictColor = '#f43f5e';
+  // Subsequent Price Movement & Result
+  let resultText = 'ROTATION / RANGE';
+  let resultColor = '#38bdf8';
+
+  if (d === 1) {
+    if (absorbPct >= 65 && Math.abs(P_0 - L_b) <= R_b * 0.4) {
+      resultText = 'SPRING / REJECTION & EXPANSION';
+      resultColor = '#00f0ff';
+    } else if (bullPct >= 60 || netDeltaPct >= 15) {
+      resultText = 'BULL TREND CONTINUATION';
+      resultColor = '#00e676';
+    } else if (absorbPct >= 65) {
+      resultText = 'CEILING ABSORPTION / REVERSAL RISK';
+      resultColor = '#f59e0b';
+    } else {
+      resultText = 'BULLISH DISPLACEMENT';
+      resultColor = '#38bdf8';
+    }
+  } else {
+    if (absorbPct >= 65 && Math.abs(H_b - P_0) <= R_b * 0.4) {
+      resultText = 'UPTHRUST / CEILING REJECTION';
+      resultColor = '#ffb300';
+    } else if (bearPct >= 60 || netDeltaPct <= -15) {
+      resultText = 'BEAR BREAKDOWN CONTINUATION';
+      resultColor = '#ff334b';
+    } else if (absorbPct >= 65) {
+      resultText = 'FLOOR ABSORPTION / BOUNCE RISK';
+      resultColor = '#f59e0b';
+    } else {
+      resultText = 'BEARISH DISPLACEMENT';
+      resultColor = '#38bdf8';
+    }
+  }
+
+  // Determine chronological Box Number
+  let boxNum = 1;
+  const c = (typeof window !== 'undefined' && window.__chartInstance) || null;
+  const allOverlays = allRectsList || (c?.getOverlays?.() || []);
+  const rects = allOverlays.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+  if (rects.length > 0) {
+    const sorted = rects.map(r => {
+      const times = (r.points || []).map(p => p.timestamp).filter(t => typeof t === 'number' && t > 0);
+      const t = times.length > 0 ? Math.min(...times) : 0;
+      return { id: r.id, t0: t };
+    }).sort((a, b) => a.t0 - b.t0);
+    const foundIdx = sorted.findIndex(s => s.id === overlay.id);
+    if (foundIdx >= 0) {
+      boxNum = foundIdx + 1;
+    }
   }
 
   return {
+    boxNum,
+    topPrice,
+    bottomPrice,
+    priceRange,
+    H_b,
+    L_b,
+    R_b,
+    P_0,
+    P_1,
+    netMove,
+    d,
+    directionName,
+    favMove,
+    advMove,
     totalVol: Math.round(totalVol),
     bullVol: Math.round(bullVol),
     bearVol: Math.round(bearVol),
     netDelta,
     netDeltaPct,
+    cvdChg,
     bullPct,
     bearPct,
-    pocPrice,
+    absorbPct,
+    absorbLevel,
+    resultText,
+    resultColor,
     candleCount,
-    verdict,
-    verdictColor,
-    topPrice,
-    bottomPrice,
-    priceRange
+    leftTime,
+    rightTime,
+    firstBarIndex,
+    lastBarIndex,
+    peakBarIndex,
+    troughBarIndex
   };
 }
 
@@ -231,7 +310,7 @@ function registerCustomOverlays() {
     needDefaultYAxisFigure: true,
     zLevel: 10,
     fixedZLevel: true,
-    createPointFigures: ({ overlay, coordinates, yAxis }) => {
+    createPointFigures: ({ overlay, coordinates, bounding, yAxis, xAxis }) => {
       if (!coordinates || coordinates.length === 0) return [];
       const isArmed = Boolean(overlay?.extendData?.alarmMode && overlay.extendData.alarmMode !== 'OFF');
       const isBoth = (overlay?.extendData?.alarmMode === 'BOTH');
@@ -251,7 +330,6 @@ function registerCustomOverlays() {
 
       if (coordinates.length >= 2) {
         // Enforce 100% geometric rectangle: (minX, minY) to (maxX, maxY)
-        // Guaranteed to NEVER deform into a trapezoid or sloped polygon!
         const xs = coordinates.map(c => c.x);
         const ys = coordinates.map(c => c.y);
         const minX = Math.min(...xs);
@@ -276,154 +354,73 @@ function registerCustomOverlays() {
           }
         ];
 
-        // Dynamic Volume Consumption & Delta Metrics inside Rectangle
-        // Respect settings: hide volume overlay if disabled globally or on this specific box
+        // Empirical Structural Excursion & Flow Metrics inside Rectangle
         const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
         const isThisBoxHidden = Boolean(overlay?.extendData?.hideVolumeOverlay);
 
         if (!isGlobalHidden && !isThisBoxHidden) {
           const dataList = chartInstance?.getDataList?.() || [];
-          const volMetrics = computeRectangleVolumeMetrics(overlay, dataList);
+          const m = computeRectangleVolumeMetrics(overlay, dataList);
 
-          if (volMetrics && volMetrics.totalVol > 0) {
-          // 1. Render Volume POC Line (Point of Control)
-          let pocY = null;
-          if (yAxis && typeof yAxis.convertToPixel === 'function') {
-            pocY = yAxis.convertToPixel(volMetrics.pocPrice);
-          } else if (volMetrics.priceRange > 0) {
-            const ratio = (volMetrics.topPrice - volMetrics.pocPrice) / volMetrics.priceRange;
-            pocY = minY + ratio * boxH;
-          }
+          if (m && m.totalVol > 0) {
+            // 1. In-Box Empirical Metrics HUD Card (Top-Left corner)
+            const deltaSign = m.netDelta > 0 ? '+' : '';
+            const deltaColor = m.netDelta > 0 ? '#00e676' : (m.netDelta < 0 ? '#ff334b' : '#38bdf8');
+            const volStr = formatVolNumber(m.totalVol);
+            const deltaStr = `${deltaSign}${formatVolNumber(m.netDelta)}`;
+            const deltaPctStr = `${m.netDeltaPct > 0 ? '+' : ''}${m.netDeltaPct}%`;
+            const dirIcon = m.d === 1 ? '↗' : '↘';
 
-          if (pocY !== null && pocY >= minY + 2 && pocY <= maxY - 2) {
-            figures.push({
-              type: 'line',
-              attrs: {
-                coordinates: [
-                  { x: minX, y: pocY },
-                  { x: maxX, y: pocY }
-                ]
-              },
-              ignoreEvent: true,
-              styles: {
-                style: 'dashed',
-                color: '#ffb300',
-                size: 1.2,
-                dashedValue: [4, 4]
-              }
-            });
+            if (boxW >= 155 && boxH >= 65) {
+              // Full 5-line structured card
+              const line1 = `📦 BOX #${m.boxNum} • ${dirIcon} ${m.directionName}`;
+              const line2 = `H: $${m.H_b.toFixed(2)}  L: $${m.L_b.toFixed(2)}  R: ${m.R_b.toFixed(2)}`;
+              const line3 = `Fav: +${m.favMove.toFixed(1)}  Adv: -${m.advMove.toFixed(1)}  Net: ${m.netMove >= 0 ? '+' : ''}${m.netMove.toFixed(1)}`;
+              const line4 = `Vol: ${volStr} | Δ: ${deltaStr} (${deltaPctStr})`;
+              const line5 = `Absorb: ${m.absorbPct}% (${m.absorbLevel}) • ${m.resultText}`;
 
-            if (boxW >= 75) {
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: maxX - 4,
-                  y: pocY,
-                  text: `POC $${volMetrics.pocPrice.toFixed(2)}`,
-                  align: 'right',
-                  baseline: 'middle'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#ffb300',
-                  size: 9.5,
-                  weight: '700',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(15, 23, 42, 0.88)',
-                  borderColor: 'rgba(255, 179, 0, 0.35)',
-                  borderSize: 1,
-                  paddingLeft: 4,
-                  paddingRight: 4,
-                  paddingTop: 1,
-                  paddingBottom: 1,
-                  borderRadius: 2
-                }
-              });
-            }
-          }
-
-          // 2. Render HUD Badge inside the rectangle (Top-Left corner)
-          const deltaSign = volMetrics.netDelta > 0 ? '+' : '';
-          const deltaColor = volMetrics.netDelta > 0 ? '#00e676' : (volMetrics.netDelta < 0 ? '#ff334b' : '#38bdf8');
-          const volStr = formatVolNumber(volMetrics.totalVol);
-          const deltaStr = `${deltaSign}${formatVolNumber(volMetrics.netDelta)}`;
-          const deltaPctStr = `${volMetrics.netDeltaPct > 0 ? '+' : ''}${volMetrics.netDeltaPct}%`;
-
-          if (boxW >= 120 && boxH >= 48) {
-            // Full multi-line HUD badge
-            const showDeltaPct = (boxW >= 165);
-            const line1 = showDeltaPct
-              ? `📊 ${volStr} | Δ ${deltaStr} (${deltaPctStr})`
-              : `📊 ${volStr} | Δ ${deltaStr}`;
-            const line2 = `🟢 ${volMetrics.bullPct}%  |  ${volMetrics.bearPct}% 🔴`;
-
-            figures.push({
-              type: 'text',
-              attrs: {
-                x: minX + 6,
-                y: minY + 6,
-                text: line1,
-                align: 'left',
-                baseline: 'top'
-              },
-              ignoreEvent: true,
-              styles: {
-                color: '#00e5ff',
-                size: 10,
-                weight: '700',
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                backgroundColor: 'rgba(13, 17, 26, 0.90)',
-                borderColor: 'rgba(0, 229, 255, 0.25)',
-                borderSize: 1,
-                paddingLeft: 5,
-                paddingRight: 5,
-                paddingTop: 2,
-                paddingBottom: 2,
-                borderRadius: 3
-              }
-            });
-
-            figures.push({
-              type: 'text',
-              attrs: {
-                x: minX + 6,
-                y: minY + 22,
-                text: line2,
-                align: 'left',
-                baseline: 'top'
-              },
-              ignoreEvent: true,
-              styles: {
-                color: '#e2e8f0',
-                size: 9.5,
-                weight: '600',
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                paddingLeft: 4,
-                paddingRight: 4,
-                paddingTop: 1,
-                paddingBottom: 1,
-                borderRadius: 2
-              }
-            });
-
-            if (boxH >= 68 && boxW >= 140) {
               figures.push({
                 type: 'text',
                 attrs: {
                   x: minX + 6,
-                  y: minY + 37,
-                  text: volMetrics.verdict,
+                  y: minY + 6,
+                  text: line1,
                   align: 'left',
                   baseline: 'top'
                 },
                 ignoreEvent: true,
                 styles: {
-                  color: volMetrics.verdictColor,
-                  size: 8.5,
+                  color: m.d === 1 ? '#10b981' : '#f43f5e',
+                  size: 9.5,
                   weight: '800',
                   family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(0, 0, 0, 0.70)',
+                  backgroundColor: 'rgba(13, 17, 26, 0.92)',
+                  borderColor: 'rgba(0, 229, 255, 0.35)',
+                  borderSize: 1,
+                  paddingLeft: 5,
+                  paddingRight: 5,
+                  paddingTop: 2,
+                  paddingBottom: 2,
+                  borderRadius: 3
+                }
+              });
+
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 6,
+                  y: minY + 21,
+                  text: line2,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#94a3b8',
+                  size: 8.5,
+                  weight: '600',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
                   paddingLeft: 4,
                   paddingRight: 4,
                   paddingTop: 1,
@@ -431,84 +428,303 @@ function registerCustomOverlays() {
                   borderRadius: 2
                 }
               });
+
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 6,
+                  y: minY + 34,
+                  text: line3,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#00e5ff',
+                  size: 8.5,
+                  weight: '700',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
+
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 6,
+                  y: minY + 47,
+                  text: line4,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: deltaColor,
+                  size: 8.5,
+                  weight: '700',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
+
+              if (boxH >= 82) {
+                figures.push({
+                  type: 'text',
+                  attrs: {
+                    x: minX + 6,
+                    y: minY + 60,
+                    text: line5,
+                    align: 'left',
+                    baseline: 'top'
+                  },
+                  ignoreEvent: true,
+                  styles: {
+                    color: m.resultColor,
+                    size: 8,
+                    weight: '800',
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                    backgroundColor: 'rgba(0, 0, 0, 0.75)',
+                    paddingLeft: 4,
+                    paddingRight: 4,
+                    paddingTop: 1,
+                    paddingBottom: 1,
+                    borderRadius: 2
+                  }
+                });
+              }
+            } else if (boxW >= 115 && boxH >= 38) {
+              // Compact 2-line badge
+              const line1 = `BOX #${m.boxNum} ${dirIcon} | +${m.favMove.toFixed(1)} / -${m.advMove.toFixed(1)}`;
+              const line2 = `Vol: ${volStr} | Δ: ${deltaStr} (${deltaPctStr})`;
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 5,
+                  y: minY + 4,
+                  text: line1,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#00e5ff',
+                  size: 9,
+                  weight: '700',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.90)',
+                  paddingLeft: 4,
+                  paddingRight: 4,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 5,
+                  y: minY + 18,
+                  text: line2,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: deltaColor,
+                  size: 8.5,
+                  weight: '600',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                  paddingLeft: 3,
+                  paddingRight: 3,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
+            } else if (boxW >= 60 && boxH >= 18) {
+              // Micro 1-line tag
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 4,
+                  y: minY + 3,
+                  text: `#${m.boxNum} +${m.favMove.toFixed(1)} | ${volStr}`,
+                  align: 'left',
+                  baseline: 'top'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#00e5ff',
+                  size: 8.5,
+                  weight: '700',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.88)',
+                  paddingLeft: 3,
+                  paddingRight: 3,
+                  paddingTop: 1,
+                  paddingBottom: 1,
+                  borderRadius: 2
+                }
+              });
             }
-          } else if (boxW >= 85 && boxH >= 28) {
-            // Compact 2-line badge
-            const showCompactPct = (boxW >= 145);
-            figures.push({
-              type: 'text',
-              attrs: {
-                x: minX + 5,
-                y: minY + 4,
-                text: showCompactPct ? `${volStr} (Δ${deltaStr} ${deltaPctStr})` : `${volStr} (Δ${deltaStr})`,
-                align: 'left',
-                baseline: 'top'
-              },
-              ignoreEvent: true,
-              styles: {
-                color: '#00e5ff',
-                size: 9.5,
-                weight: '700',
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                backgroundColor: 'rgba(13, 17, 26, 0.90)',
-                paddingLeft: 4,
-                paddingRight: 4,
-                paddingTop: 1,
-                paddingBottom: 1,
-                borderRadius: 2
+
+            // 2. Visual In-Box Annotations: Red ✕ Anchor, Cyan Excursion Arrow & Badges
+            const isArrowsHidden = Boolean(overlay?.extendData?.hideArrows);
+            if (!isArrowsHidden && boxW >= 40 && boxH >= 24) {
+              const clampX = (x) => Math.max(minX + 4, Math.min(maxX - 4, x));
+              const clampY = (y) => Math.max(minY + 4, Math.min(maxY - 4, y));
+
+              const x0 = (xAxis && typeof xAxis.convertToPixel === 'function' && m.firstBarIndex !== null)
+                ? xAxis.convertToPixel(m.firstBarIndex) : minX + 8;
+              const y0 = (yAxis && typeof yAxis.convertToPixel === 'function')
+                ? yAxis.convertToPixel(m.P_0) : (minY + maxY) / 2;
+
+              const xPeak = (xAxis && typeof xAxis.convertToPixel === 'function' && m.peakBarIndex !== null)
+                ? xAxis.convertToPixel(m.peakBarIndex) : minX + boxW * 0.7;
+              const yPeak = (yAxis && typeof yAxis.convertToPixel === 'function')
+                ? yAxis.convertToPixel(m.H_b) : minY + 4;
+
+              const xTrough = (xAxis && typeof xAxis.convertToPixel === 'function' && m.troughBarIndex !== null)
+                ? xAxis.convertToPixel(m.troughBarIndex) : minX + boxW * 0.3;
+              const yTrough = (yAxis && typeof yAxis.convertToPixel === 'function')
+                ? yAxis.convertToPixel(m.L_b) : maxY - 4;
+
+              const ptStart = { x: clampX(x0), y: clampY(y0) };
+              const ptPeak = { x: clampX(xPeak), y: clampY(yPeak) };
+              const ptTrough = { x: clampX(xTrough), y: clampY(yTrough) };
+
+              const ptFav = (m.d === 1) ? ptPeak : ptTrough;
+              const ptAdv = (m.d === 1) ? ptTrough : ptPeak;
+
+              // Red ✕ Start Anchor at (t0, P0)
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: ptStart.x,
+                  y: ptStart.y,
+                  text: '✕',
+                  align: 'center',
+                  baseline: 'middle'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#ff1744',
+                  size: 13,
+                  weight: '900',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+                }
+              });
+
+              // Cyan Diagonal Favourable Excursion Arrow from ptStart to ptFav
+              if (Math.hypot(ptFav.x - ptStart.x, ptFav.y - ptStart.y) >= 12) {
+                figures.push({
+                  type: 'line',
+                  attrs: {
+                    coordinates: [ptStart, ptFav]
+                  },
+                  ignoreEvent: true,
+                  styles: {
+                    color: '#00e5ff',
+                    size: 1.8
+                  }
+                });
+
+                // Arrowhead fins at ptFav
+                const angle = Math.atan2(ptFav.y - ptStart.y, ptFav.x - ptStart.x);
+                const headLen = 7;
+                const fin1X = ptFav.x - headLen * Math.cos(angle - 0.45);
+                const fin1Y = ptFav.y - headLen * Math.sin(angle - 0.45);
+                const fin2X = ptFav.x - headLen * Math.cos(angle + 0.45);
+                const fin2Y = ptFav.y - headLen * Math.sin(angle + 0.45);
+
+                figures.push({
+                  type: 'line',
+                  attrs: {
+                    coordinates: [
+                      { x: fin1X, y: fin1Y },
+                      { x: ptFav.x, y: ptFav.y },
+                      { x: fin2X, y: fin2Y }
+                    ]
+                  },
+                  ignoreEvent: true,
+                  styles: {
+                    color: '#00e5ff',
+                    size: 1.8
+                  }
+                });
               }
-            });
-            figures.push({
-              type: 'text',
-              attrs: {
-                x: minX + 5,
-                y: minY + 16,
-                text: `${volMetrics.bullPct}%🟢 ${volMetrics.bearPct}%🔴`,
-                align: 'left',
-                baseline: 'top'
-              },
-              ignoreEvent: true,
-              styles: {
-                color: '#cbd5e1',
-                size: 8.5,
-                weight: '600',
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                paddingLeft: 3,
-                paddingRight: 3,
-                paddingTop: 1,
-                paddingBottom: 1,
-                borderRadius: 2
+
+              // Cyan Favourable Pill Badge at ptFav
+              const favBadgeY = (m.d === 1) ? Math.max(minY + 9, ptFav.y - 12) : Math.min(maxY - 9, ptFav.y + 12);
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: ptFav.x,
+                  y: favBadgeY,
+                  text: `+${m.favMove.toFixed(1)}`,
+                  align: 'center',
+                  baseline: 'middle'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#00e5ff',
+                  size: 9.5,
+                  weight: '800',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.92)',
+                  borderColor: 'rgba(0, 229, 255, 0.65)',
+                  borderSize: 1,
+                  paddingLeft: 5,
+                  paddingRight: 5,
+                  paddingTop: 1.5,
+                  paddingBottom: 1.5,
+                  borderRadius: 3
+                }
+              });
+
+              // Crimson Adverse Pill Badge at ptAdv
+              if (m.advMove > 0.05) {
+                const advBadgeY = (m.d === 1) ? Math.min(maxY - 9, ptAdv.y + 12) : Math.max(minY + 9, ptAdv.y - 12);
+                figures.push({
+                  type: 'text',
+                  attrs: {
+                    x: ptAdv.x,
+                    y: advBadgeY,
+                    text: `-${m.advMove.toFixed(1)}`,
+                    align: 'center',
+                    baseline: 'middle'
+                  },
+                  ignoreEvent: true,
+                  styles: {
+                    color: '#f43f5e',
+                    size: 9,
+                    weight: '800',
+                    family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                    backgroundColor: 'rgba(13, 17, 26, 0.92)',
+                    borderColor: 'rgba(244, 63, 94, 0.65)',
+                    borderSize: 1,
+                    paddingLeft: 4,
+                    paddingRight: 4,
+                    paddingTop: 1.5,
+                    paddingBottom: 1.5,
+                    borderRadius: 3
+                  }
+                });
               }
-            });
-          } else if (boxW >= 55 && boxH >= 18) {
-            // Micro 1-line tag for small sub-boxes
-            figures.push({
-              type: 'text',
-              attrs: {
-                x: minX + 4,
-                y: minY + 3,
-                text: `${volStr} Δ${deltaStr}`,
-                align: 'left',
-                baseline: 'top'
-              },
-              ignoreEvent: true,
-              styles: {
-                color: deltaColor,
-                size: 8.5,
-                weight: '700',
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                backgroundColor: 'rgba(13, 17, 26, 0.88)',
-                paddingLeft: 3,
-                paddingRight: 3,
-                paddingTop: 1,
-                paddingBottom: 1,
-                borderRadius: 2
-              }
-            });
+            }
           }
         }
-      }
 
         return figures;
       }
@@ -575,6 +791,7 @@ function registerCustomOverlays() {
         }
       }
       recalculateRectZLevels(chart || chartInstance);
+      updateExtensionSeriesRibbon(chart || chartInstance);
     },
     onPressedMoveEnd: ({ overlay, chart }) => {
       if (overlay?.name === 'rect' && overlay?.points) {
@@ -588,6 +805,7 @@ function registerCustomOverlays() {
         }
       }
       recalculateRectZLevels(chart || chartInstance);
+      updateExtensionSeriesRibbon(chart || chartInstance);
     },
     onClick: (event) => {
       const overlay = event?.overlay;
@@ -1977,8 +2195,9 @@ export function initTradingViewChart(containerId = 'klineChart') {
   // Patch Overlay Views to guarantee that all resize handles ('circle') are prioritized above polygon bodies
   try {
     patchOverlayViews(chart);
+    updateExtensionSeriesRibbon(chart);
   } catch (err) {
-    console.warn('[TV Engine] patchOverlayViews failed:', err);
+    console.warn('[TV Engine] patchOverlayViews / ribbon init failed:', err);
   }
 
   return chart;
@@ -2014,6 +2233,96 @@ export function patchOverlayViews(chartRef) {
       const origDrawImp = ovView.drawImp.bind(ovView);
       ovView.drawImp = function (ctx) {
         origDrawImp(ctx);
+
+        // Draw Golden Connecting Arcs between adjacent boxes on the chart canvas
+        if (!window.__hideExtensionRibbon && !window.__hideAllRectVolumeOverlays) {
+          try {
+            const allOverlays = chartRef?.getOverlays?.() || [];
+            const rects = allOverlays.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+            if (rects.length >= 2) {
+              const dataList = chartRef?.getDataList?.() || [];
+              const sortedRects = rects.map(r => {
+                const validPts = (r.points || []).filter(p => p && typeof p.value === 'number');
+                const times = validPts.map(p => p.timestamp).filter(t => typeof t === 'number' && t > 0);
+                const t0 = times.length > 0 ? Math.min(...times) : 0;
+                const metrics = computeRectangleVolumeMetrics(r, dataList, rects);
+                return { overlay: r, t0, metrics };
+              }).sort((a, b) => a.t0 - b.t0);
+
+              for (let k = 0; k < sortedRects.length - 1; k++) {
+                const rA = sortedRects[k].overlay;
+                const rB = sortedRects[k + 1].overlay;
+                const mB = sortedRects[k + 1].metrics;
+
+                if (typeof chartRef.convertToPixel !== 'function') continue;
+                const coordsA = chartRef.convertToPixel(rA.points);
+                const coordsB = chartRef.convertToPixel(rB.points);
+                if (!coordsA || coordsA.length < 2 || !coordsB || coordsB.length < 2) continue;
+
+                const xsA = coordsA.map(c => c.x);
+                const ysA = coordsA.map(c => c.y);
+                const minXA = Math.min(...xsA);
+                const maxXA = Math.max(...xsA);
+                const minYA = Math.min(...ysA);
+
+                const xsB = coordsB.map(c => c.x);
+                const ysB = coordsB.map(c => c.y);
+                const minXB = Math.min(...xsB);
+                const maxXB = Math.max(...xsB);
+                const minYB = Math.min(...ysB);
+
+                const startX = (minXA + maxXA) / 2;
+                const startY = minYA;
+                const endX = (minXB + maxXB) / 2;
+                const endY = minYB;
+
+                // Draw golden curved arc (quadratic bezier)
+                ctx.save();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1.8;
+                ctx.setLineDash([4, 3]);
+                ctx.beginPath();
+                ctx.moveTo(startX, startY);
+                const midX = (startX + endX) / 2;
+                const midY = Math.min(startY, endY) - 32;
+                ctx.quadraticCurveTo(midX, midY, endX, endY);
+                ctx.stroke();
+
+                // Draw golden pill badge at apex (midX, midY)
+                const pillVal = `+${(mB ? mB.favMove : 0).toFixed(1)}`;
+                ctx.font = 'bold 9.5px -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace';
+                const textW = ctx.measureText(pillVal).width;
+                const pillW = textW + 12;
+                const pillH = 17;
+                const pillX = midX - pillW / 2;
+                const pillY = midY - pillH / 2;
+
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+                ctx.beginPath();
+                if (typeof ctx.roundRect === 'function') {
+                  ctx.roundRect(pillX, pillY, pillW, pillH, 4);
+                } else {
+                  ctx.rect(pillX, pillY, pillW, pillH);
+                }
+                ctx.fill();
+                ctx.strokeStyle = '#f59e0b';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([]);
+                ctx.stroke();
+
+                ctx.fillStyle = '#fbbf24';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(pillVal, midX, midY);
+
+                ctx.restore();
+              }
+            }
+          } catch (arcErr) {
+            console.warn('[TV Engine] Arc draw error:', arcErr);
+          }
+        }
+
         // Prioritize resize handles: keep all point handle circles at the END of _children
         // so that hit-testing tests point handles BEFORE any polygon body!
         if (Array.isArray(this._children) && this._children.length > 1) {
@@ -2040,6 +2349,69 @@ export function patchOverlayViews(chartRef) {
     }
   });
 }
+
+export function updateExtensionSeriesRibbon(chart) {
+  const ribbonEl = document.getElementById('tvExtensionSeriesRibbon');
+  const trackEl = document.getElementById('tvExtensionTrack');
+  if (!ribbonEl || !trackEl) return;
+
+  const isGlobalRibbonHidden = Boolean(window.__hideExtensionRibbon);
+  if (isGlobalRibbonHidden) {
+    ribbonEl.style.display = 'none';
+    return;
+  }
+
+  const c = chart || chartInstance;
+  if (!c || typeof c.getOverlays !== 'function') {
+    ribbonEl.style.display = 'none';
+    return;
+  }
+
+  const all = c.getOverlays() || [];
+  const rects = all.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+  if (rects.length === 0) {
+    ribbonEl.style.display = 'none';
+    return;
+  }
+
+  const dataList = c.getDataList?.() || [];
+
+  // Sort rects chronologically by t0
+  const sortedRects = rects.map(r => {
+    const validPts = (r.points || []).filter(p => p && typeof p.value === 'number');
+    const times = validPts.map(p => p.timestamp).filter(t => typeof t === 'number' && t > 0);
+    const t0 = times.length > 0 ? Math.min(...times) : 0;
+    const metrics = computeRectangleVolumeMetrics(r, dataList, rects);
+    return { overlay: r, t0, metrics };
+  }).sort((a, b) => a.t0 - b.t0);
+
+  let pillsHtml = '';
+  let lastFav = 0;
+  sortedRects.forEach((item, idx) => {
+    const fav = item.metrics ? item.metrics.favMove : 0;
+    lastFav = fav;
+    const isCurrent = (idx === sortedRects.length - 1);
+    const label = isCurrent ? `Current: +${fav.toFixed(1)}` : `+${fav.toFixed(1)}`;
+    const cls = isCurrent ? 'tv-ext-pill active' : 'tv-ext-pill';
+    pillsHtml += `<span class="${cls}">[${label}]</span>`;
+    pillsHtml += `<span class="tv-ext-arrow">→</span>`;
+  });
+
+  // Calculate projected Next Target: round up to nearest structural 50/100 or 1.5x
+  let nextTarget = 200;
+  if (lastFav > 0) {
+    if (lastFav < 50) nextTarget = 50;
+    else if (lastFav < 100) nextTarget = 100;
+    else if (lastFav < 150) nextTarget = 150;
+    else if (lastFav < 200) nextTarget = 200;
+    else nextTarget = Math.ceil((lastFav + 25) / 50) * 50;
+  }
+  pillsHtml += `<span class="tv-ext-pill target">[Next: ${nextTarget} (Watch Zone)]</span>`;
+
+  trackEl.innerHTML = pillsHtml;
+  ribbonEl.style.display = 'flex';
+}
+window.__updateExtensionSeriesRibbon = updateExtensionSeriesRibbon;
 
 export function startCandleCountdown(timeframeMinutes = 5) {
   const el = document.getElementById('tvCountdownTimer');

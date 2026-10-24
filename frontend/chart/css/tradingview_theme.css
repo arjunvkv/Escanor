@@ -3191,3 +3191,97 @@ input[type="number"] {
   background: rgba(239, 68, 68, 0.20);
   color: #ef4444;
 }
+
+/* 🚀 EXTENSION SERIES (FAVOURABLE MOVE) FLOATING RIBBON */
+/* ========================================================================= */
+.tv-extension-ribbon {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  background: rgba(13, 17, 26, 0.94);
+  backdrop-filter: blur(8px);
+  border: 1.5px dashed rgba(245, 158, 11, 0.55);
+  border-radius: 8px;
+  padding: 6px 14px 8px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
+  user-select: none;
+  animation: tvExtFadeIn 0.2s ease-out;
+}
+
+@keyframes tvExtFadeIn {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.tv-ext-title {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  color: #00e5ff;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.tv-ext-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.tv-ext-pill {
+  padding: 3px 9px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  font-weight: 800;
+  white-space: nowrap;
+  letter-spacing: 0.3px;
+  transition: all 0.15s ease;
+}
+
+.tv-ext-pill.completed {
+  background: rgba(16, 185, 129, 0.16);
+  border: 1px solid #10b981;
+  color: #34d399;
+}
+
+.tv-ext-pill.current {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1.5px solid #a855f7;
+  color: #f3e8ff;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.25);
+}
+
+.tv-ext-pill.target {
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px dashed #f59e0b;
+  color: #fbbf24;
+}
+
+.tv-ext-arrow {
+  color: #eab308;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.tv-dir-btn {
+  transition: all 0.15s ease;
+}
+
+.tv-dir-btn:hover {
+  background: #334155 !important;
+}
+
+.tv-dir-btn.active {
+  box-shadow: 0 0 0 1px #3b82f6, 0 2px 8px rgba(59, 130, 246, 0.25);
+}
