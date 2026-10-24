@@ -2133,17 +2133,19 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // 1-to-1 matching shades with COMMAND OSCILLATION // DELTA HARMONIC header legend:
-  // [linePalette.b1, linePalette.b2, linePalette.b3, '#94a3b8', '#64748b']
-  const boxShades = isBear
-    ? ['#fca5a5', '#ef4444', '#dc2626', '#94a3b8', '#64748b']
-    : ['#86efac', '#22c55e', '#16a34a', '#94a3b8', '#64748b'];
-
-  const getBoxTagStyle = (idx, isLast) => {
-    const col = boxShades[idx % boxShades.length];
-    const r = parseInt(col.slice(1, 3), 16);
-    const g = parseInt(col.slice(3, 5), 16);
-    const b = parseInt(col.slice(5, 7), 16);
+  // Color each box tag dynamically according to its empirical net delta polarity:
+  // Positive delta = Green (#22c55e) buyers dominant
+  // Negative delta = Red (#ef4444) sellers dominant
+  const getBoxTagStyle = (boxDelta, isLast) => {
+    let col = '#22c55e';
+    let r = 34, g = 197, b = 94;
+    if (boxDelta < 0) {
+      col = '#ef4444';
+      r = 239; g = 68; b = 68;
+    } else if (boxDelta === 0) {
+      col = '#94a3b8';
+      r = 148; g = 163; b = 184;
+    }
     return {
       color: col,
       bg: `rgba(${r}, ${g}, ${b}, 0.14)`,
@@ -2152,13 +2154,13 @@ export function updateExtensionSeriesRibbon(chart) {
     };
   };
 
-  // 1. Build Sequence Micro-Group with Underlying Modal Spectrum Shades (Showing Box Delta identical to Command Oscillation)
+  // 1. Build Sequence Micro-Group (Showing Box Delta with Empirical Polarity Shades)
   let seqHtml = '<div class="tv-ext-seq-group" title="Box Delta Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const boxDelta = item.metrics ? item.metrics.netDelta : 0;
     const dSign = boxDelta >= 0 ? '+' : '';
     const isLast = (idx === sortedRects.length - 1);
-    const styleObj = getBoxTagStyle(idx, isLast);
+    const styleObj = getBoxTagStyle(boxDelta, isLast);
     const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
     const boxLabel = `B${idx + 1}: ${deltaFormatted}`;
     
