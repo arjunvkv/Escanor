@@ -216,4 +216,8 @@ assert.ok(engineCode.includes("color: '#10b981'"), 'Support Floor must be Emeral
 assert.ok(toolbarCode.includes('toggleStructuralInflectionLines'), 'toolbar.js must import toggleStructuralInflectionLines');
 assert.ok(toolbarCode.includes("document.getElementById('tvToggleInflectionLinesBtn')"), 'toolbar.js must listen on tvToggleInflectionLinesBtn');
 
+// Ensure engine computes network POC for primaryAnchor
+assert.ok(engineCode.includes('networkPoc'), 'Engine must compute network Volume Profile POC');
+assert.ok(engineCode.includes('primaryAnchor = networkPoc'), 'primaryAnchor must use network Volume POC');
+
 console.log('✓ Structural Inflection Lines Chart Overlay Verification: PASSED (Exact color codes & toggle logic verified)');

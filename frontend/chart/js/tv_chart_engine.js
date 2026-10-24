@@ -258,6 +258,45 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     }
   }
 
+  // Calculate Volume Point of Control (POC) and VWAP for this box
+  let weightedPriceSum = 0;
+  let maxBarVol = -1;
+  let maxBarPrice = P_0;
+  const boxBinCount = 30;
+  const boxBinStep = Math.max(0.05, priceRange / boxBinCount);
+  const boxBins = new Float64Array(boxBinCount);
+
+  barsInBox.forEach(item => {
+    const b = item.bar;
+    const vol = Number(b.volume || b.tick_volume || 1);
+    const typPrice = (b.high + b.low + b.close) / 3;
+    weightedPriceSum += typPrice * vol;
+
+    if (vol > maxBarVol) {
+      maxBarVol = vol;
+      maxBarPrice = typPrice;
+    }
+
+    const lowBin = Math.max(0, Math.min(boxBinCount - 1, Math.floor((b.low - bottomPrice) / boxBinStep)));
+    const highBin = Math.max(0, Math.min(boxBinCount - 1, Math.floor((b.high - bottomPrice) / boxBinStep)));
+    const span = Math.max(1, highBin - lowBin + 1);
+    const volPerBin = vol / span;
+    for (let bi = lowBin; bi <= highBin; bi++) {
+      boxBins[bi] += volPerBin;
+    }
+  });
+
+  let maxBinIdx = 0;
+  let maxBinVol = -1;
+  for (let bi = 0; bi < boxBinCount; bi++) {
+    if (boxBins[bi] > maxBinVol) {
+      maxBinVol = boxBins[bi];
+      maxBinIdx = bi;
+    }
+  }
+  const pocPrice = bottomPrice + (maxBinIdx + 0.5) * boxBinStep;
+  const vwapPrice = totalVol > 0 ? (weightedPriceSum / totalVol) : ((topPrice + bottomPrice) / 2);
+
   // Determine chronological Box Number
   let boxNum = 1;
   const c = (typeof window !== 'undefined' && window.__chartInstance) || null;
@@ -285,6 +324,10 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     R_b,
     P_0,
     P_1,
+    pocPrice,
+    vwapPrice,
+    maxBarPrice,
+    barsInBox,
     netMove,
     d,
     directionName,
@@ -2246,8 +2289,56 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     whoBadge = 'ROTATIONAL INVENTORY EXCHANGE';
   }
 
-  // Strongest Structural Inflection Nodes
-  const primaryAnchor = highestVolSample ? highestVolSample.metrics.P_0 : (maxHigh + minLow) / 2;
+  // Strongest Structural Inflection Nodes: True Volume Point of Control (POC)
+  const netBinCount = 50;
+  const netBinStep = Math.max(0.1, networkRange / netBinCount);
+  const netBins = new Float64Array(netBinCount);
+  let netWeightedPrice = 0;
+  let netTotalVolCount = 0;
+  const seenBarTimes = new Set();
+
+  samples.forEach(s => {
+    const m = s.metrics;
+    if (m && Array.isArray(m.barsInBox)) {
+      m.barsInBox.forEach(item => {
+        const b = item.bar;
+        if (!b || seenBarTimes.has(b.timestamp)) return;
+        seenBarTimes.add(b.timestamp);
+
+        const vol = Number(b.volume || b.tick_volume || 1);
+        const typPrice = (b.high + b.low + b.close) / 3;
+        netWeightedPrice += typPrice * vol;
+        netTotalVolCount += vol;
+
+        const lowBin = Math.max(0, Math.min(netBinCount - 1, Math.floor((b.low - minLow) / netBinStep)));
+        const highBin = Math.max(0, Math.min(netBinCount - 1, Math.floor((b.high - minLow) / netBinStep)));
+        const span = Math.max(1, highBin - lowBin + 1);
+        const volPerBin = vol / span;
+        for (let bi = lowBin; bi <= highBin; bi++) {
+          netBins[bi] += volPerBin;
+        }
+      });
+    }
+  });
+
+  let peakNetBinIdx = 0;
+  let peakNetBinVol = -1;
+  for (let bi = 0; bi < netBinCount; bi++) {
+    if (netBins[bi] > peakNetBinVol) {
+      peakNetBinVol = netBins[bi];
+      peakNetBinIdx = bi;
+    }
+  }
+
+  // True Point of Control (POC) of the multi-box network
+  const networkPoc = (peakNetBinVol > 0)
+    ? (minLow + (peakNetBinIdx + 0.5) * netBinStep)
+    : (highestVolSample && highestVolSample.metrics.pocPrice ? highestVolSample.metrics.pocPrice : (maxHigh + minLow) / 2);
+
+  const networkVwap = netTotalVolCount > 0 ? (netWeightedPrice / netTotalVolCount) : (maxHigh + minLow) / 2;
+
+  // The Peak Volume Anchor is the empirical Volume POC shelf
+  const primaryAnchor = networkPoc;
   const eqShelf = (maxHigh + minLow) / 2;
 
   // Runway & Vacuum
@@ -2282,6 +2373,8 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     evrStatusBadge,
     whoBadge,
     primaryAnchor,
+    networkPoc,
+    networkVwap,
     highestVolSample,
     highestEvrSample,
     eqShelf,
@@ -2521,50 +2614,85 @@ export function openExtensionNetworkModal(chart) {
       anchor: false,
       floor: false
     };
-    nodesContent.innerHTML = `
-      <div class="tv-depth-ladder">
-        <div class="tv-ladder-node ceiling ${s.ceiling ? 'line-active' : ''}" data-level-key="ceiling" title="Click to show/hide Ceiling Resistance on chart">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.ceiling ? '👁️' : '👁️‍🗨️'}</span>
-            <span class="tv-node-badge bear">🔴 CEILING RESISTANCE</span>
-          </div>
-          <span class="tv-node-price">$${dossier.maxHigh.toFixed(2)}</span>
-          <span class="tv-node-dist">+${dossier.distCeiling.toFixed(1)} pts</span>
-        </div>
 
-        <div class="tv-ladder-node mid ${s.mid ? 'line-active' : ''}" data-level-key="mid" title="Click to show/hide 50% Mid-Equilibrium on chart">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.mid ? '👁️' : '👁️‍🗨️'}</span>
-            <span class="tv-node-badge warn">⚡ 50% MID-EQUILIBRIUM</span>
-          </div>
-          <span class="tv-node-price">$${dossier.eqShelf.toFixed(2)}</span>
-          <span class="tv-node-dist">${dossier.livePrice >= dossier.eqShelf ? '-' : '+'}${dossier.distEq.toFixed(1)} pts</span>
-        </div>
+    const ladderItems = [
+      {
+        type: 'node',
+        key: 'ceiling',
+        cls: 'ceiling',
+        badgeCls: 'bear',
+        badge: '🔴 CEILING RESISTANCE',
+        price: dossier.maxHigh,
+        dist: `${dossier.livePrice <= dossier.maxHigh ? '+' : '-'}${Math.abs(dossier.maxHigh - dossier.livePrice).toFixed(1)} pts`,
+        isActive: s.ceiling,
+        title: 'Click to show/hide Ceiling Resistance on chart'
+      },
+      {
+        type: 'node',
+        key: 'mid',
+        cls: 'mid',
+        badgeCls: 'warn',
+        badge: '⚡ 50% MID-EQUILIBRIUM',
+        price: dossier.eqShelf,
+        dist: `${dossier.livePrice >= dossier.eqShelf ? '-' : '+'}${dossier.distEq.toFixed(1)} pts`,
+        isActive: s.mid,
+        title: 'Click to show/hide 50% Mid-Equilibrium on chart'
+      },
+      {
+        type: 'node',
+        key: 'anchor',
+        cls: 'anchor',
+        badgeCls: 'highlight',
+        badge: '⚓ PEAK VOLUME ANCHOR (POC)',
+        price: dossier.primaryAnchor,
+        dist: `${dossier.livePrice >= dossier.primaryAnchor ? '-' : '+'}${dossier.distAnchor.toFixed(1)} pts`,
+        isActive: s.anchor,
+        title: 'Click to show/hide Peak Volume Anchor (POC) on chart'
+      },
+      {
+        type: 'node',
+        key: 'floor',
+        cls: 'floor',
+        badgeCls: 'bull',
+        badge: '🟢 SUPPORT FLOOR',
+        price: dossier.minLow,
+        dist: `${dossier.livePrice >= dossier.minLow ? '-' : '+'}${Math.abs(dossier.livePrice - dossier.minLow).toFixed(1)} pts`,
+        isActive: s.floor,
+        title: 'Click to show/hide Support Floor on chart'
+      },
+      {
+        type: 'live',
+        price: dossier.livePrice
+      }
+    ];
 
-        <div class="tv-ladder-live-pointer">
-          <span>► LIVE MARKET REFERENCE</span>
-          <span class="tv-node-price" style="color: #00e5ff;">$${dossier.livePrice.toFixed(2)}</span>
-        </div>
+    // Sort strictly descending by price so the ladder mirrors real auction DOM depth from highest to lowest!
+    ladderItems.sort((a, b) => b.price - a.price);
 
-        <div class="tv-ladder-node anchor ${s.anchor ? 'line-active' : ''}" data-level-key="anchor" title="Click to show/hide Peak Volume Anchor on chart">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.anchor ? '👁️' : '👁️‍🗨️'}</span>
-            <span class="tv-node-badge highlight">⚓ PEAK VOLUME ANCHOR</span>
+    let ladderHtml = '<div class="tv-depth-ladder">';
+    ladderItems.forEach(item => {
+      if (item.type === 'live') {
+        ladderHtml += `
+          <div class="tv-ladder-live-pointer">
+            <span>► LIVE MARKET REFERENCE</span>
+            <span class="tv-node-price" style="color: #00e5ff;">$${item.price.toFixed(2)}</span>
           </div>
-          <span class="tv-node-price">$${dossier.primaryAnchor.toFixed(2)}</span>
-          <span class="tv-node-dist">${dossier.livePrice >= dossier.primaryAnchor ? '-' : '+'}${dossier.distAnchor.toFixed(1)} pts</span>
-        </div>
-
-        <div class="tv-ladder-node floor ${s.floor ? 'line-active' : ''}" data-level-key="floor" title="Click to show/hide Support Floor on chart">
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <span class="tv-node-eye-pill" title="Toggle line on chart">${s.floor ? '👁️' : '👁️‍🗨️'}</span>
-            <span class="tv-node-badge bull">🟢 SUPPORT FLOOR</span>
+        `;
+      } else {
+        ladderHtml += `
+          <div class="tv-ladder-node ${item.cls} ${item.isActive ? 'line-active' : ''}" data-level-key="${item.key}" title="${item.title}">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span class="tv-node-eye-pill" title="Toggle line on chart">${item.isActive ? '👁️' : '👁️‍🗨️'}</span>
+              <span class="tv-node-badge ${item.badgeCls}">${item.badge}</span>
+            </div>
+            <span class="tv-node-price">$${item.price.toFixed(2)}</span>
+            <span class="tv-node-dist">${item.dist}</span>
           </div>
-          <span class="tv-node-price">$${dossier.minLow.toFixed(2)}</span>
-          <span class="tv-node-dist">-${dossier.distFloor.toFixed(1)} pts</span>
-        </div>
-      </div>
-    `;
+        `;
+      }
+    });
+    ladderHtml += '</div>';
+    nodesContent.innerHTML = ladderHtml;
 
     // Attach click listeners to individual depth ladder nodes
     nodesContent.querySelectorAll('.tv-ladder-node[data-level-key]').forEach(nodeEl => {
