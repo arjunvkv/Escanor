@@ -2148,16 +2148,18 @@ export function updateExtensionSeriesRibbon(chart) {
   ];
   const palette = isBear ? bearStyles : bullStyles;
 
-  // 1. Build Sequence Micro-Group with Underlying Modal Spectrum Shades
-  let seqHtml = '<div class="tv-ext-seq-group" title="Box Excursion Sequence (Click to inspect)">';
+  // 1. Build Sequence Micro-Group with Underlying Modal Spectrum Shades (Showing Box Delta identical to Command Oscillation)
+  let seqHtml = '<div class="tv-ext-seq-group" title="Box Delta Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
-    const fav = item.metrics ? item.metrics.favMove : 0;
+    const boxDelta = item.metrics ? item.metrics.netDelta : 0;
+    const dSign = boxDelta >= 0 ? '+' : '';
     const styleObj = palette[Math.min(idx, palette.length - 1)];
     const isLast = (idx === sortedRects.length - 1);
-    const boxLabel = `B${idx + 1}: +${fav.toFixed(1)}pt`;
+    const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
+    const boxLabel = `B${idx + 1}: ${deltaFormatted}`;
     
     seqHtml += `
-      <span class="tv-ext-box-tag" data-box-idx="${idx}" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
+      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1} Net Delta: ${dSign}${boxDelta.toLocaleString()} (Click to inspect)" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
         ${boxLabel}
       </span>
     `;
