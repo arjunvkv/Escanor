@@ -2540,21 +2540,37 @@ export function openExtensionNetworkModal(chart) {
     // 2. Determine telemetry scope: network vs individual box
     let scopeVol = d.totalVolume;
     let scopeDelta = d.totalNetDelta;
-    let scopeEvr = d.lastSample.evr;
+    let scopeEvr = Math.round(d.totalVolume / Math.max(0.1, d.networkRange));
     let scopeAbsorb = d.lastSample.absorbPct;
     let scopeDeltaEvr = d.deltaEvr;
     let scopeTitle = `${symbol} M5 • VOLUME POC NETWORK // SYNC: 100%`;
+    let sample = null;
+
+    let activeBars = [];
+    let scopeLow = d.minLow;
+    let scopeHigh = d.maxHigh;
 
     if (tabKey.startsWith('box_')) {
       const bIdx = parseInt(tabKey.replace('box_', ''), 10);
-      const sample = d.samples[bIdx] || d.lastSample;
+      sample = d.samples[bIdx] || d.lastSample;
       scopeVol = sample.totalVol;
       scopeDelta = sample.netDelta;
       scopeEvr = sample.evr;
       scopeAbsorb = sample.absorbPct;
       scopeTitle = `BOX #${sample.boxNum} AUDIT • VOL: ${formatVolNumber(sample.totalVol)} • ${sample.evr.toLocaleString()} V/PT`;
+      scopeLow = sample.L_b;
+      scopeHigh = sample.H_b;
+      activeBars = sample.metrics?.barsInBox || [];
     } else if (tabKey === 'ceiling') {
       scopeTitle = `CEILING RESISTANCE AUDIT • $${d.maxHigh.toFixed(2)} • WALL TEST`;
+      d.samples.forEach(s => {
+        if (s.metrics?.barsInBox) activeBars.push(...s.metrics.barsInBox);
+      });
+    } else {
+      // Network scope: aggregate bars from all drawn samples
+      d.samples.forEach(s => {
+        if (s.metrics?.barsInBox) activeBars.push(...s.metrics.barsInBox);
+      });
     }
 
     const themeColor = d.isBear ? '#ef4444' : '#22c55e';
@@ -2590,10 +2606,34 @@ export function openExtensionNetworkModal(chart) {
       }
     }
 
-    // 4. Structural Depth & Runway Card
+    // 4. Structural Depth & Runway Card (Empirically grounded to scope)
+    const dispCeiling = tabKey.startsWith('box_') ? scopeHigh : d.maxHigh;
+    const dispFloor = tabKey.startsWith('box_') ? scopeLow : d.minLow;
+    const dispPoc = (tabKey.startsWith('box_') && sample && sample.metrics?.pocPrice) ? sample.metrics.pocPrice : d.primaryAnchor;
+
+    let currentGapPts = 0;
+    let currentGapText = '';
+    if (d.isBear) {
+      if (d.livePrice < dispFloor) {
+        currentGapPts = -(dispFloor - d.livePrice);
+        currentGapText = `${currentGapPts.toFixed(1)} PTS BEAR RUNWAY`;
+      } else {
+        currentGapPts = -(d.livePrice - dispFloor);
+        currentGapText = `${currentGapPts.toFixed(1)} PTS BEAR BREAK`;
+      }
+    } else {
+      if (d.livePrice > dispCeiling) {
+        currentGapPts = +(d.livePrice - dispCeiling);
+        currentGapText = `+${currentGapPts.toFixed(1)} PTS OPEN BULL RUNWAY`;
+      } else {
+        currentGapPts = +(dispCeiling - d.livePrice);
+        currentGapText = `+${currentGapPts.toFixed(1)} PTS BULL RUNWAY`;
+      }
+    }
+
     const runwayGapBadge = document.getElementById('tvNexusRunwayGapBadge');
     if (runwayGapBadge) {
-      runwayGapBadge.textContent = d.runwayGapText;
+      runwayGapBadge.textContent = currentGapText;
       runwayGapBadge.style.color = themeColor;
       runwayGapBadge.style.background = themeBg;
       runwayGapBadge.style.borderColor = themeBorder;
@@ -2641,22 +2681,25 @@ export function openExtensionNetworkModal(chart) {
     const shelfPoc = document.getElementById('tvNexusShelfPoc');
     const shelfFloor = document.getElementById('tvNexusShelfFloor');
     const shelfStop = document.getElementById('tvNexusShelfStop');
-    if (shelfCeiling) shelfCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
+    if (shelfCeiling) shelfCeiling.textContent = `$${dispCeiling.toFixed(2)}`;
     if (shelfLive) shelfLive.textContent = `$${d.livePrice.toFixed(2)}`;
     if (shelfVwap) shelfVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
-    if (shelfPoc) shelfPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
-    if (shelfFloor) shelfFloor.textContent = `$${d.minLow.toFixed(2)}`;
+    if (shelfPoc) shelfPoc.textContent = `$${dispPoc.toFixed(2)}`;
+    if (shelfFloor) shelfFloor.textContent = `$${dispFloor.toFixed(2)}`;
     if (shelfStop) {
-      shelfStop.textContent = d.invalidationText;
+      const currentInval = d.isBear ? dispCeiling : dispFloor;
+      const currentInvalSign = d.isBear ? '>' : '<';
+      shelfStop.textContent = `${currentInvalSign} $${currentInval.toFixed(2)} (${d.isBear ? 'BEAR INVAL' : 'BULL INVAL'})`;
       shelfStop.style.color = '#ef4444'; // Invalidation tripwire is red
     }
 
     // 4B. Order Flow Squeeze Fuel & Tape Velocity Telemetry
-    // Card 2A: Trapped Volume Quantum
-    let trappedShorts = (scopeDelta < 0) ? Math.abs(scopeDelta) : Math.round(scopeVol * 0.24);
-    if (trappedShorts === 0) trappedShorts = 500;
-    const fuelMillions = Math.max(0.6, (trappedShorts * 0.0032 + scopeVol * 0.00005)).toFixed(1);
-    const squeezePressurePct = Math.max(20, Math.min(96, Math.round(scopeAbsorb * 0.85 + (scopeDelta < 0 ? 25 : 10))));
+    // Card 2A: Trapped Volume Quantum (Real Nominal Dollar Value & Absorption Pressure)
+    const trappedContracts = Math.abs(scopeDelta) > 0 ? Math.abs(scopeDelta) : Math.round(scopeVol * 0.25);
+    const liveGoldPrice = d.livePrice > 100 ? d.livePrice : 4000;
+    const fuelMillions = Math.max(0.1, (trappedContracts * liveGoldPrice) / 1000000).toFixed(1);
+    const deltaRatioPct = Math.min(30, Math.round((Math.abs(scopeDelta) / Math.max(1, scopeVol)) * 100));
+    const squeezePressurePct = Math.max(15, Math.min(98, Math.round(scopeAbsorb * 0.70 + deltaRatioPct)));
 
     const trappedTitle = document.getElementById('tvNexusTrappedTitle');
     const trappedDeltaEl = document.getElementById('tvNexusTrappedDeltaVal');
@@ -2690,7 +2733,7 @@ export function openExtensionNetworkModal(chart) {
     if (squeezeTriggerVal) {
       const trigSign = d.isBear ? '<' : '>';
       const trigLabel = d.isBear ? '(BREAKDOWN)' : '(BREAKOUT)';
-      const trigPrice = d.isBear ? d.minLow : d.maxHigh;
+      const trigPrice = d.isBear ? dispFloor : dispCeiling;
       squeezeTriggerVal.textContent = `TRIGGER: ${trigSign} $${trigPrice.toFixed(2)} ${trigLabel}`;
     }
     if (squeezePressureVal) {
@@ -2702,14 +2745,47 @@ export function openExtensionNetworkModal(chart) {
       squeezeStatusVal.style.color = themeColor;
     }
 
-    // Card 2B: Tape Velocity & Burn Rate Accelerometer
-    const baseMudSpeed = 184; // Standard base speed (s/pt)
-    const firstEvr = Math.max(100, d.firstSample?.evr || 4000);
-    const speedRatio = Math.max(0.5, (firstEvr / Math.max(100, scopeEvr)));
-    const vacuumSpeed = Math.max(12, Math.round(baseMudSpeed / speedRatio));
-    const surgeMultiplier = (baseMudSpeed / vacuumSpeed).toFixed(1);
-    const surgePct = Math.round(((baseMudSpeed - vacuumSpeed) / vacuumSpeed) * 100);
-    const tapeBarWidth = Math.max(20, Math.min(95, Math.round((speedRatio / 4) * 85)));
+    // Card 2B: Tape Velocity & Burn Rate Accelerometer (Empirically computed from candle timestamps & price points)
+    const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
+    const barSec = tfMins * 60;
+    const barMs = barSec * 1000;
+    
+    // Base speed: Box 1's duration divided by Box 1's range
+    const b1Bars = d.firstSample.metrics?.barsInBox || [];
+    let b1Sec = barSec;
+    if (b1Bars.length > 0) {
+      const b1Times = b1Bars.map(b => b.bar?.timestamp).filter(t => typeof t === 'number' && t > 0);
+      if (b1Times.length > 1) {
+        b1Sec = Math.max(barSec, Math.round((Math.max(...b1Times) - Math.min(...b1Times) + barMs) / 1000));
+      } else {
+        b1Sec = b1Bars.length * barSec;
+      }
+    } else {
+      b1Sec = 6 * barSec;
+    }
+    const b1Range = Math.max(0.5, d.firstSample.R_b || 1.0);
+    const baseMudSpeed = Math.max(10, Math.round(b1Sec / b1Range));
+
+    // Active speed: Current scope's duration divided by range
+    let scopeSec = barSec;
+    if (activeBars.length > 0) {
+      const scopeTimes = activeBars.map(b => b.bar?.timestamp).filter(t => typeof t === 'number' && t > 0);
+      if (scopeTimes.length > 1) {
+        scopeSec = Math.max(barSec, Math.round((Math.max(...scopeTimes) - Math.min(...scopeTimes) + barMs) / 1000));
+      } else {
+        scopeSec = activeBars.length * barSec;
+      }
+    } else {
+      scopeSec = b1Sec;
+    }
+    const scopeRange = Math.max(0.5, (dispCeiling - dispFloor) || b1Range);
+    const vacuumSpeed = Math.max(10, Math.round(scopeSec / scopeRange));
+
+    // Surge multiplier & percent
+    const speedRatio = Math.max(0.2, (baseMudSpeed / Math.max(1, vacuumSpeed)));
+    const surgeMultiplier = speedRatio.toFixed(1);
+    const surgePct = Math.round(((baseMudSpeed - vacuumSpeed) / Math.max(1, vacuumSpeed)) * 100);
+    const tapeBarWidth = Math.max(15, Math.min(95, Math.round((Math.min(speedRatio, 5) / 5) * 80 + 15)));
 
     const tapeTitle = document.getElementById('tvNexusTapeTitle');
     const tapeSurgeBadge = document.getElementById('tvNexusTapeSurgeBadge');
@@ -2748,7 +2824,7 @@ export function openExtensionNetworkModal(chart) {
       tapeStatusVal.style.color = themeColor;
     }
 
-    // 5. Pipeline Load (3D Cylinders with Pure Solid Single Shades)
+    // 5. Pipeline Load (Real Volume Profile Slices with Pure Solid Single Shades)
     const loadTitle = document.getElementById('tvNexusLoadTitle');
     if (loadTitle) loadTitle.style.color = themeSoft;
     const loadValEl = document.getElementById('tvNexusLoadVal');
@@ -2769,23 +2845,56 @@ export function openExtensionNetworkModal(chart) {
 
     const loadContainer = document.getElementById('tvNexusLoadBarsContainer');
     if (loadContainer) {
-      // 8 Proportional Volume Profile bars with solid single shades
       const barsCount = 8;
+      const bucketStep = Math.max(0.01, (scopeHigh - scopeLow) / barsCount);
+      const bucketVols = new Float64Array(barsCount);
+      const seenTimes = new Set();
+
+      activeBars.forEach(item => {
+        const b = item.bar;
+        if (!b) return;
+        const key = b.timestamp || item.index;
+        if (seenTimes.has(key)) return;
+        seenTimes.add(key);
+
+        const v = item.volInBox > 0 ? item.volInBox : Number(b.volume || b.tick_volume || 1);
+        const bL = Math.max(scopeLow, item.effectiveLow !== undefined ? item.effectiveLow : b.low);
+        const bH = Math.min(scopeHigh, item.effectiveHigh !== undefined ? item.effectiveHigh : b.high);
+        if (bH >= bL && v > 0) {
+          const lowIdx = Math.max(0, Math.min(barsCount - 1, Math.floor((bL - scopeLow) / bucketStep)));
+          const highIdx = Math.max(0, Math.min(barsCount - 1, Math.floor((bH - scopeLow) / bucketStep)));
+          const span = Math.max(1, highIdx - lowIdx + 1);
+          const vPerBin = v / span;
+          for (let bi = lowIdx; bi <= highIdx; bi++) {
+            bucketVols[bi] += vPerBin;
+          }
+        }
+      });
+
+      // If activeBars had no volume data, fallback to proportional distribution of scopeVol
+      let maxBucket = Math.max(...bucketVols);
+      if (maxBucket <= 0) {
+        for (let i = 0; i < barsCount; i++) {
+          bucketVols[i] = Math.round((0.4 + (i / barsCount) * 0.6) * (scopeVol / barsCount));
+        }
+        maxBucket = Math.max(...bucketVols);
+      }
+
       let barsHtml = '';
-      const maxCol = Math.max(...d.samples.map(s => s.totalVol), 1000);
       const cylinderPalette = d.isBear
         ? ['#450a0a', '#7f1d1d', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#ef4444']
         : ['#052e16', '#14532d', '#166534', '#15803d', '#16a34a', '#22c55e', '#4ade80', '#22c55e'];
 
       for (let i = 0; i < barsCount; i++) {
-        const colVol = Math.round((0.3 + (i / barsCount) * 0.7) * (scopeVol / 3));
-        const heightPct = Math.max(18, Math.min(100, Math.round((colVol / maxCol) * 100)));
+        const colVol = Math.round(bucketVols[i]);
+        const heightPct = Math.max(18, Math.min(100, Math.round((colVol / Math.max(1, maxBucket)) * 100)));
         const tagText = formatVolNumber(colVol);
         const barCol = cylinderPalette[i % cylinderPalette.length];
-        const isPeak = (i === barsCount - 1);
-        
+        const isPeak = (colVol === maxBucket && maxBucket > 0);
+        const slicePrice = `$${(scopeLow + i * bucketStep).toFixed(1)} - $${(scopeLow + (i + 1) * bucketStep).toFixed(1)}`;
+
         barsHtml += `
-          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Volume Bucket: ${colVol.toLocaleString()}">
+          <div style="flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end;" title="Price: ${slicePrice} • Volume: ${colVol.toLocaleString()}">
             <div style="font-size: 8px; font-family: monospace; color: ${isPeak ? '#ffffff' : themeSoft}; ${isPeak ? 'background:'+barCol+'; padding:0 3px; border-radius:2px;' : ''} font-weight: 800; margin-bottom: 1px;">${tagText}</div>
             <div class="tv-nexus-cylinder-bar" style="width: 100%; height: ${heightPct}%; background-color: ${barCol}; ${isPeak ? 'box-shadow: 0 0 10px '+barCol+';' : ''}"></div>
           </div>
@@ -2949,12 +3058,16 @@ export function openExtensionNetworkModal(chart) {
       }
       if (calloutAbsorb) calloutAbsorb.style.display = 'block';
       if (calloutVacuum) calloutVacuum.style.display = 'block';
-      if (calloutRunway) calloutRunway.style.display = 'block';
+      if (calloutRunway) calloutRunway.style.display = hasBox3 ? 'block' : 'none';
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
-        oscAreaNote.textContent = d.isBear
-          ? 'SEQUENCE: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
-          : 'SEQUENCE: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
+        const seqParts = d.samples.map(s => {
+          const stage = s.boxNum === 1 ? (d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING')
+                      : s.boxNum === 2 ? (d.isBear ? 'BEAR BREAK' : 'BULL BREAK')
+                      : (d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY');
+          return `${stage} (B${s.boxNum})`;
+        });
+        oscAreaNote.textContent = 'SEQUENCE: ' + seqParts.join(' → ');
       }
     } else if (tabKey === 'box_0') {
       if (lineBox1) {
@@ -2992,7 +3105,9 @@ export function openExtensionNetworkModal(chart) {
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
-        oscAreaNote.textContent = `BOX 2: ${term} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (-51% FRICTION)`;
+        const box2Shift = d.samples.length >= 2 ? Math.round(((d.samples[1].evr - d.samples[0].evr) / Math.max(1, d.samples[0].evr)) * 100) : d.deltaEvr;
+        const shiftSign = box2Shift >= 0 ? '+' : '';
+        oscAreaNote.textContent = `BOX 2: ${term} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (${shiftSign}${box2Shift}% FRICTION)`;
       }
     } else if (tabKey === 'box_2') {
       if (lineBox1) lineBox1.style.opacity = '0.15';
@@ -3095,7 +3210,9 @@ export function openExtensionNetworkModal(chart) {
       const txt = evrCalloutShift.querySelector('text');
       if (txt) {
         txt.setAttribute('fill', linePalette.b2Text);
-        txt.textContent = '⚡ -51% FRICTION SHIFT';
+        const shiftVal = d.deltaEvr;
+        const shiftSign = shiftVal >= 0 ? '+' : '';
+        txt.textContent = `⚡ ${shiftSign}${shiftVal}% FRICTION SHIFT`;
       }
     }
     if (evrCalloutRunway) {
@@ -3104,7 +3221,9 @@ export function openExtensionNetworkModal(chart) {
       const txt = evrCalloutRunway.querySelector('text');
       if (txt) {
         txt.setAttribute('fill', linePalette.b3Text);
-        txt.textContent = d.isBear ? '🚀 OPEN BEAR RUNWAY' : '🚀 OPEN BULL RUNWAY';
+        const runwaySample = d.samples[d.samples.length - 1];
+        const evrSuffix = runwaySample ? ` (${runwaySample.evr.toLocaleString()} V/PT)` : '';
+        txt.textContent = d.isBear ? `🚀 OPEN BEAR RUNWAY${evrSuffix}` : `🚀 OPEN BULL RUNWAY${evrSuffix}`;
       }
     }
 
@@ -3118,12 +3237,16 @@ export function openExtensionNetworkModal(chart) {
       }
       if (evrCalloutMud) evrCalloutMud.style.display = 'block';
       if (evrCalloutShift) evrCalloutShift.style.display = 'block';
-      if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
+      if (evrCalloutRunway) evrCalloutRunway.style.display = hasBox3 ? 'block' : 'none';
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
-        evrAreaNote.textContent = d.isBear
-          ? 'EFFORT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)'
-          : 'EFFORT: BULL BUILDING (B1) → BULL BREAK (B2) → BULL RUNWAY (B3)';
+        const evrParts = d.samples.map(s => {
+          const stage = s.boxNum === 1 ? (d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING')
+                      : s.boxNum === 2 ? (d.isBear ? 'BEAR BREAK' : 'BULL BREAK')
+                      : (d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY');
+          return `${stage} (B${s.boxNum})`;
+        });
+        evrAreaNote.textContent = 'EFFORT: ' + evrParts.join(' → ');
       }
     } else if (tabKey === 'box_0') {
       if (evrLineBox1) evrLineBox1.style.opacity = '1';
@@ -3155,7 +3278,9 @@ export function openExtensionNetworkModal(chart) {
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
         const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
-        evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${term} (-51% FRICTION)`;
+        const box2Shift = d.samples.length >= 2 ? Math.round(((d.samples[1].evr - d.samples[0].evr) / Math.max(1, d.samples[0].evr)) * 100) : d.deltaEvr;
+        const shiftSign = box2Shift >= 0 ? '+' : '';
+        evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${term} (${shiftSign}${box2Shift}% FRICTION)`;
       }
     } else if (tabKey === 'box_2') {
       if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
