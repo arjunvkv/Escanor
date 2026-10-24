@@ -24,6 +24,7 @@ if (typeof window !== 'undefined') {
   window.__inflectionLinesState = window.__inflectionLinesState || {
     ceiling: false,
     mid: false,
+    vwap: false,
     anchor: false,
     floor: false
   };
@@ -32,6 +33,7 @@ if (typeof window !== 'undefined') {
 export const INFLECTION_LEVEL_KEYS = [
   { key: 'ceiling', id: 'lvl_node_ceiling', prop: 'maxHigh', title: 'CEILING RESISTANCE', color: '#ef4444', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 },
   { key: 'mid', id: 'lvl_node_mid', prop: 'eqShelf', title: '50% MID-EQUILIBRIUM', color: '#fbbf24', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 },
+  { key: 'vwap', id: 'lvl_node_vwap', prop: 'networkVwap', title: 'NETWORK VWAP', color: '#818cf8', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 },
   { key: 'anchor', id: 'lvl_node_anchor', prop: 'primaryAnchor', title: 'PEAK VOLUME ANCHOR', color: '#00e5ff', lineStyle: 'solid', lineSize: 2.0, opacity: 0.90 },
   { key: 'floor', id: 'lvl_node_floor', prop: 'minLow', title: 'SUPPORT FLOOR', color: '#10b981', lineStyle: 'dashed', lineSize: 1.5, opacity: 0.85 }
 ];
@@ -2541,14 +2543,108 @@ export function openExtensionNetworkModal(chart) {
     }
     const shelfCeiling = document.getElementById('tvNexusShelfCeiling');
     const shelfLive = document.getElementById('tvNexusShelfLive');
+    const shelfVwap = document.getElementById('tvNexusShelfVwap');
     const shelfPoc = document.getElementById('tvNexusShelfPoc');
     const shelfFloor = document.getElementById('tvNexusShelfFloor');
     const shelfStop = document.getElementById('tvNexusShelfStop');
     if (shelfCeiling) shelfCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
     if (shelfLive) shelfLive.textContent = `$${d.livePrice.toFixed(2)}`;
+    if (shelfVwap && d.networkVwap) shelfVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
     if (shelfPoc) shelfPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
     if (shelfFloor) shelfFloor.textContent = `$${d.minLow.toFixed(2)}`;
     if (shelfStop) shelfStop.textContent = `< $${d.invalidationTripwire.toFixed(2)}`;
+
+    // 4B. Order Flow Squeeze Fuel & Tape Velocity Telemetry (Gems 3 & 4)
+    // Card 2A: Trapped Volume Quantum // Squeeze Fuel Tank
+    let trappedShorts = (scopeDelta < 0) ? Math.abs(scopeDelta) : Math.round(scopeVol * 0.24);
+    if (trappedShorts === 0) trappedShorts = 500;
+    const fuelMillions = Math.max(0.6, (trappedShorts * 0.0032 + scopeVol * 0.00005)).toFixed(1);
+    const squeezePressurePct = Math.max(20, Math.min(96, Math.round(scopeAbsorb * 0.85 + (scopeDelta < 0 ? 25 : 10))));
+
+    const triggerPrice = (tabKey.startsWith('box_')) 
+      ? (d.samples[parseInt(tabKey.replace('box_', ''), 10)]?.H_b || d.maxHigh)
+      : d.maxHigh;
+
+    const trappedDeltaEl = document.getElementById('tvNexusTrappedDeltaVal');
+    const squeezeFuelBadge = document.getElementById('tvNexusSqueezeFuelBadge');
+    const squeezeFuelBar = document.getElementById('tvNexusSqueezeFuelBar');
+    const squeezeTriggerVal = document.getElementById('tvNexusSqueezeTriggerVal');
+    const squeezePressureVal = document.getElementById('tvNexusSqueezePressureVal');
+    const squeezeStatusVal = document.getElementById('tvNexusSqueezeStatusVal');
+
+    if (trappedDeltaEl) {
+      const deltaSign = scopeDelta < 0 ? '-' : '+';
+      trappedDeltaEl.textContent = `${deltaSign}${formatVolNumber(Math.abs(scopeDelta))} Δ (${scopeAbsorb >= 60 ? 'ABSORBED' : 'NET FLOW'})`;
+    }
+    if (squeezeFuelBadge) {
+      squeezeFuelBadge.textContent = `$${fuelMillions}M FUEL`;
+    }
+    if (squeezeFuelBar) {
+      squeezeFuelBar.style.width = `${squeezePressurePct}%`;
+    }
+    if (squeezeTriggerVal) {
+      squeezeTriggerVal.textContent = `TRIGGER: > $${triggerPrice.toFixed(2)} (SWEEP)`;
+    }
+    if (squeezePressureVal) {
+      squeezePressureVal.textContent = `${squeezePressurePct}% SQUEEZE COILED`;
+    }
+    if (squeezeStatusVal) {
+      if (squeezePressurePct >= 75) {
+        squeezeStatusVal.textContent = 'CASCADING COVER ON BREAK';
+        squeezeStatusVal.style.color = '#00f5d4';
+      } else if (squeezePressurePct >= 50) {
+        squeezeStatusVal.textContent = 'ACCELERATING INTO VACUUM';
+        squeezeStatusVal.style.color = '#fbbf24';
+      } else {
+        squeezeStatusVal.textContent = 'ABSORPTION BASE FORMING';
+        squeezeStatusVal.style.color = '#38bdf8';
+      }
+    }
+
+    // Card 2B: Tape Velocity // Burn Rate Accelerometer
+    const baseMudSpeed = 184; // Standard base speed (s/pt)
+    const firstEvr = Math.max(100, d.firstSample?.evr || 4000);
+    const speedRatio = Math.max(0.5, (firstEvr / Math.max(100, scopeEvr)));
+    const vacuumSpeed = Math.max(12, Math.round(baseMudSpeed / speedRatio));
+    const surgeMultiplier = (baseMudSpeed / vacuumSpeed).toFixed(1);
+    const surgePct = Math.round(((baseMudSpeed - vacuumSpeed) / vacuumSpeed) * 100);
+    const tapeBarWidth = Math.max(20, Math.min(95, Math.round((speedRatio / 4) * 85)));
+
+    const tapeSurgeBadge = document.getElementById('tvNexusTapeSurgeBadge');
+    const tapeSpeedVal = document.getElementById('tvNexusTapeSpeedVal');
+    const tapeSpeedBar = document.getElementById('tvNexusTapeSpeedBar');
+    const tapeBaseSpeedVal = document.getElementById('tvNexusTapeBaseSpeedVal');
+    const tapeSurgePct = document.getElementById('tvNexusTapeSurgePct');
+    const tapeStatusVal = document.getElementById('tvNexusTapeStatusVal');
+
+    if (tapeSurgeBadge) {
+      tapeSurgeBadge.textContent = `⚡ ${surgeMultiplier}x SPEED`;
+    }
+    if (tapeSpeedVal) {
+      tapeSpeedVal.textContent = `${vacuumSpeed}s / PT`;
+    }
+    if (tapeSpeedBar) {
+      tapeSpeedBar.style.width = `${tapeBarWidth}%`;
+    }
+    if (tapeBaseSpeedVal) {
+      tapeBaseSpeedVal.textContent = `BASE: ${baseMudSpeed}s/PT (MUD)`;
+    }
+    if (tapeSurgePct) {
+      const surgeSign = surgePct >= 0 ? '+' : '';
+      tapeSurgePct.textContent = `${surgeSign}${surgePct}% VELOCITY SURGE`;
+    }
+    if (tapeStatusVal) {
+      if (parseFloat(surgeMultiplier) >= 3.0) {
+        tapeStatusVal.textContent = 'FRICTIONLESS TAKEOFF';
+        tapeStatusVal.style.color = '#00f5d4';
+      } else if (parseFloat(surgeMultiplier) >= 1.5) {
+        tapeStatusVal.textContent = 'VACUUM ACCELERATION';
+        tapeStatusVal.style.color = '#38bdf8';
+      } else {
+        tapeStatusVal.textContent = 'HIGH RESISTANCE COMPRESSION';
+        tapeStatusVal.style.color = '#8b5cf6';
+      }
+    }
 
     // 5. Pipeline Load (3D Cylinders)
     const loadValEl = document.getElementById('tvNexusLoadVal');
@@ -2813,10 +2909,12 @@ export function openExtensionNetworkModal(chart) {
     // 8. Footer Reference Levels
     const footCeiling = document.getElementById('tvNexusFootCeiling');
     const footMid = document.getElementById('tvNexusFootMid');
+    const footVwap = document.getElementById('tvNexusFootVwap');
     const footPoc = document.getElementById('tvNexusFootPoc');
     const footFloor = document.getElementById('tvNexusFootFloor');
     if (footCeiling) footCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
     if (footMid) footMid.textContent = `$${d.eqShelf.toFixed(2)}`;
+    if (footVwap && d.networkVwap) footVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
     if (footPoc) footPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
     if (footFloor) footFloor.textContent = `$${d.minLow.toFixed(2)}`;
   };
@@ -2864,6 +2962,7 @@ export function syncStructuralInflectionLines(chart) {
     window.__inflectionLinesState = window.__inflectionLinesState || {
       ceiling: false,
       mid: false,
+      vwap: false,
       anchor: false,
       floor: false
     };
@@ -2871,6 +2970,7 @@ export function syncStructuralInflectionLines(chart) {
   const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
+    vwap: false,
     anchor: false,
     floor: false
   };
@@ -2897,6 +2997,7 @@ export function syncStructuralInflectionLines(chart) {
   const shortNames = {
     ceiling: 'CEILING',
     mid: '50% EQ',
+    vwap: 'NET VWAP',
     anchor: 'ANCHOR',
     floor: 'FLOOR'
   };
@@ -2958,6 +3059,7 @@ export function updateInflectionLinesButtonUI() {
     window.__inflectionLinesState = window.__inflectionLinesState || {
       ceiling: false,
       mid: false,
+      vwap: false,
       anchor: false,
       floor: false
     };
@@ -2965,6 +3067,7 @@ export function updateInflectionLinesButtonUI() {
   const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
+    vwap: false,
     anchor: false,
     floor: false
   };
@@ -3024,6 +3127,7 @@ export function toggleStructuralInflectionLines(chart, forceState = null) {
     window.__inflectionLinesState = window.__inflectionLinesState || {
       ceiling: false,
       mid: false,
+      vwap: false,
       anchor: false,
       floor: false
     };
@@ -3031,6 +3135,7 @@ export function toggleStructuralInflectionLines(chart, forceState = null) {
   const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
+    vwap: false,
     anchor: false,
     floor: false
   };
@@ -3039,6 +3144,7 @@ export function toggleStructuralInflectionLines(chart, forceState = null) {
   const targetState = (forceState !== null) ? forceState : !anyActive;
   state.ceiling = targetState;
   state.mid = targetState;
+  state.vwap = targetState;
   state.anchor = targetState;
   state.floor = targetState;
 
@@ -3060,6 +3166,7 @@ export function toggleSingleInflectionLine(key, chart) {
     window.__inflectionLinesState = window.__inflectionLinesState || {
       ceiling: false,
       mid: false,
+      vwap: false,
       anchor: false,
       floor: false
     };
@@ -3067,6 +3174,7 @@ export function toggleSingleInflectionLine(key, chart) {
   const state = (typeof window !== 'undefined' && window.__inflectionLinesState) ? window.__inflectionLinesState : {
     ceiling: false,
     mid: false,
+    vwap: false,
     anchor: false,
     floor: false
   };
@@ -3079,6 +3187,7 @@ export function toggleSingleInflectionLine(key, chart) {
   const labels = {
     ceiling: 'Ceiling Resistance',
     mid: '50% Mid-Equilibrium',
+    vwap: 'Multi-Box Network VWAP',
     anchor: 'Peak Volume Anchor',
     floor: 'Support Floor'
   };

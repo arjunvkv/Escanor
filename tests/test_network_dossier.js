@@ -230,3 +230,38 @@ assert.ok(engineCode.includes('networkPoc'), 'Engine must compute network Volume
 assert.ok(engineCode.includes('primaryAnchor = networkPoc'), 'primaryAnchor must use network Volume POC');
 
 console.log('✓ Structural Inflection Lines Chart Overlay Verification: PASSED (Exact color codes & toggle logic verified)');
+
+// 4. Test Gems 1, 3, and 4 (Network VWAP, Trapped Shorts Quantum, and Tape Velocity Accelerometer)
+// Gem 1: Multi-Box Network VWAP
+assert.ok(htmlCode.includes('id="tvNexusShelfVwap"'), 'tvNexusShelfVwap must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusFootVwap"'), 'tvNexusFootVwap must be present in index.html');
+assert.ok(engineCode.includes("id: 'lvl_node_vwap'"), 'lvl_node_vwap must be present in INFLECTION_LEVEL_KEYS');
+assert.ok(engineCode.includes("prop: 'networkVwap'"), 'networkVwap must be mapped in INFLECTION_LEVEL_KEYS');
+assert.ok(engineCode.includes("color: '#818cf8'"), 'Network VWAP must use Indigo/Violet color #818cf8');
+assert.ok(engineCode.includes('tvNexusShelfVwap'), 'tvNexusShelfVwap must be updated in engine');
+assert.ok(engineCode.includes('tvNexusFootVwap'), 'tvNexusFootVwap must be updated in engine');
+
+// Gem 3: Trapped Volume Quantum // Squeeze Fuel Tank
+assert.ok(htmlCode.includes('id="tvNexusTrappedDeltaVal"'), 'tvNexusTrappedDeltaVal must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusSqueezeFuelBadge"'), 'tvNexusSqueezeFuelBadge must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusSqueezeFuelBar"'), 'tvNexusSqueezeFuelBar must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusSqueezeTriggerVal"'), 'tvNexusSqueezeTriggerVal must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusSqueezePressureVal"'), 'tvNexusSqueezePressureVal must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusSqueezeStatusVal"'), 'tvNexusSqueezeStatusVal must be present in index.html');
+assert.ok(engineCode.includes('tvNexusTrappedDeltaVal'), 'Engine must populate tvNexusTrappedDeltaVal');
+assert.ok(engineCode.includes('tvNexusSqueezeFuelBadge'), 'Engine must populate tvNexusSqueezeFuelBadge');
+assert.ok(engineCode.includes('tvNexusSqueezeFuelBar'), 'Engine must populate tvNexusSqueezeFuelBar');
+
+// Gem 4: Tape Velocity // Burn Rate Accelerometer
+assert.ok(htmlCode.includes('id="tvNexusTapeSurgeBadge"'), 'tvNexusTapeSurgeBadge must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusTapeSpeedVal"'), 'tvNexusTapeSpeedVal must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusTapeSpeedBar"'), 'tvNexusTapeSpeedBar must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusTapeBaseSpeedVal"'), 'tvNexusTapeBaseSpeedVal must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusTapeSurgePct"'), 'tvNexusTapeSurgePct must be present in index.html');
+assert.ok(htmlCode.includes('id="tvNexusTapeStatusVal"'), 'tvNexusTapeStatusVal must be present in index.html');
+assert.ok(engineCode.includes('tvNexusTapeSurgeBadge'), 'Engine must populate tvNexusTapeSurgeBadge');
+assert.ok(engineCode.includes('tvNexusTapeSpeedVal'), 'Engine must populate tvNexusTapeSpeedVal');
+assert.ok(engineCode.includes('tvNexusTapeSpeedBar'), 'Engine must populate tvNexusTapeSpeedBar');
+
+console.log('✓ Gems 1, 3, and 4 Telemetry Verification: PASSED (Network VWAP, Trapped Shorts Quantum & Tape Velocity Accelerometer verified)');
+
