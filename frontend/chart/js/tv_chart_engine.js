@@ -2133,28 +2133,32 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // Pure Regime Spectrum Palette for B1, B2, B3... matching the modal linePalette
-  const bearStyles = [
-    { color: '#fca5a5', bg: 'rgba(252, 165, 165, 0.12)', border: 'rgba(248, 113, 113, 0.35)', shadow: 'none' },
-    { color: '#ef4444', bg: 'rgba(239, 68, 68, 0.16)', border: 'rgba(239, 68, 68, 0.45)', shadow: 'none' },
-    { color: '#fee2e2', bg: '#dc2626', border: '#dc2626', shadow: '0 0 8px rgba(220, 38, 38, 0.6)' },
-    { color: '#ffffff', bg: '#b91c1c', border: '#ef4444', shadow: '0 0 10px rgba(239, 68, 68, 0.7)' }
-  ];
-  const bullStyles = [
-    { color: '#86efac', bg: 'rgba(134, 239, 172, 0.12)', border: 'rgba(74, 222, 128, 0.35)', shadow: 'none' },
-    { color: '#22c55e', bg: 'rgba(34, 197, 94, 0.16)', border: 'rgba(34, 197, 94, 0.45)', shadow: 'none' },
-    { color: '#000000', bg: '#16a34a', border: '#16a34a', shadow: '0 0 8px rgba(22, 163, 74, 0.6)' },
-    { color: '#000000', bg: '#22c55e', border: '#4ade80', shadow: '0 0 10px rgba(34, 197, 94, 0.7)' }
-  ];
-  const palette = isBear ? bearStyles : bullStyles;
+  // 1-to-1 matching shades with COMMAND OSCILLATION // DELTA HARMONIC header legend:
+  // [linePalette.b1, linePalette.b2, linePalette.b3, '#94a3b8', '#64748b']
+  const boxShades = isBear
+    ? ['#fca5a5', '#ef4444', '#dc2626', '#94a3b8', '#64748b']
+    : ['#86efac', '#22c55e', '#16a34a', '#94a3b8', '#64748b'];
+
+  const getBoxTagStyle = (idx, isLast) => {
+    const col = boxShades[idx % boxShades.length];
+    const r = parseInt(col.slice(1, 3), 16);
+    const g = parseInt(col.slice(3, 5), 16);
+    const b = parseInt(col.slice(5, 7), 16);
+    return {
+      color: col,
+      bg: `rgba(${r}, ${g}, ${b}, 0.14)`,
+      border: `rgba(${r}, ${g}, ${b}, 0.40)`,
+      shadow: isLast ? `0 0 8px rgba(${r}, ${g}, ${b}, 0.55)` : 'none'
+    };
+  };
 
   // 1. Build Sequence Micro-Group with Underlying Modal Spectrum Shades (Showing Box Delta identical to Command Oscillation)
   let seqHtml = '<div class="tv-ext-seq-group" title="Box Delta Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const boxDelta = item.metrics ? item.metrics.netDelta : 0;
     const dSign = boxDelta >= 0 ? '+' : '';
-    const styleObj = palette[Math.min(idx, palette.length - 1)];
     const isLast = (idx === sortedRects.length - 1);
+    const styleObj = getBoxTagStyle(idx, isLast);
     const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
     const boxLabel = `B${idx + 1}: ${deltaFormatted}`;
     
