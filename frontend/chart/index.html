@@ -812,12 +812,12 @@
               </div>
 
               <!-- Dynamic Sample Tabs Switcher Track (Inline in Header for Vertical Conservation) -->
-              <div style="display: flex; align-items: center; gap: 6px; background: #0a1122; border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 7px; padding: 4px 8px;">
-                <span style="font-size: 9.5px; font-family: monospace; color: #94a3b8; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 4px;">
+              <div style="display: flex; align-items: center; gap: 6px; background: #0a1122; border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 7px; padding: 4px 8px; max-width: calc(100vw - 420px); overflow: hidden; flex: 1; min-width: 0;">
+                <span style="font-size: 9.5px; font-family: monospace; color: #94a3b8; font-weight: 800; text-transform: uppercase; display: flex; align-items: center; gap: 4px; flex-shrink: 0;">
                   <span id="tvNexusTabDot" style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
                   SAMPLES:
                 </span>
-                <div id="tvNexusTabTrack" style="display: flex; gap: 5px; overflow-x: auto;">
+                <div id="tvNexusTabTrack" style="display: flex; gap: 5px; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: thin;">
                   <!-- Dynamically populated sample tabs -->
                 </div>
               </div>
@@ -1378,6 +1378,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610251945"></script>
+  <script type="module" src="/chart/js/app.js?v=202610252005"></script>
 </body>
 </html>

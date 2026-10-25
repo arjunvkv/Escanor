@@ -2639,6 +2639,17 @@ export function updateExtensionSeriesRibbon(chart) {
   trackEl.innerHTML = `${seqHtml}${frictionHtml}${displacementHtml}${boxToggleHtml}`;
   ribbonEl.style.display = 'flex';
 
+  // Enable horizontal mouse wheel scrolling across the entire ribbon
+  if (!ribbonEl.__hasWheelScroll) {
+    ribbonEl.__hasWheelScroll = true;
+    ribbonEl.addEventListener('wheel', function(e) {
+      if (e.deltaY !== 0) {
+        ribbonEl.scrollLeft += e.deltaY;
+        e.preventDefault();
+      }
+    }, { passive: false });
+  }
+
   // Dedicated click handler on the toggle button with full propagation arrest
   const boxToggleChip = document.getElementById('tvBoxToggleChip');
   if (boxToggleChip) {
@@ -3112,6 +3123,15 @@ export function openExtensionNetworkModal(chart = null) {
       `;
     }
     tabTrack.innerHTML = tabsHtml;
+    if (!tabTrack.__hasWheelScroll) {
+      tabTrack.__hasWheelScroll = true;
+      tabTrack.addEventListener('wheel', function(e) {
+        if (e.deltaY !== 0) {
+          tabTrack.scrollLeft += e.deltaY;
+          e.preventDefault();
+        }
+      }, { passive: false });
+    }
   }
 
   // Define tab renderer function on window so buttons can call it
@@ -3635,7 +3655,7 @@ export function openExtensionNetworkModal(chart = null) {
     const selectedBoxIdx = tabKey.startsWith('box_') ? parseInt(tabKey.replace('box_', ''), 10) : null;
     const isSingleBoxMode = (selectedBoxIdx !== null && !isNaN(selectedBoxIdx) && selectedBoxIdx >= 0 && selectedBoxIdx < sampleCount);
 
-    // 1. Dynamic Interactive Legends for All N Boxes
+    // 1. Dynamic Interactive Legends for All N Boxes with Instant Hover-Isolation
     const deltaLegend = document.getElementById('tvNexusDeltaOscLegend');
     if (deltaLegend && d.samples) {
       let legHtml = '';
@@ -3644,13 +3664,66 @@ export function openExtensionNetworkModal(chart = null) {
         const isCurrent = (selectedBoxIdx === idx);
         const op = isSingleBoxMode ? (isCurrent ? '1' : '0.25') : '1';
         legHtml += `
-          <span style="display: flex; align-items: center; gap: 4px; color: ${pal.stroke}; cursor: pointer; opacity: ${op}; transition: all 0.2s;" onclick="window.__selectNexusTab('box_${idx}')" title="Inspect Box ${s.boxNum}">
+          <span style="display: flex; align-items: center; gap: 4px; color: ${pal.stroke}; cursor: pointer; opacity: ${op}; transition: all 0.2s;" onclick="window.__selectNexusTab('box_${idx}')" onmouseenter="window.__hoverNexusBox(${idx}, true)" onmouseleave="window.__hoverNexusBox(${idx}, false)" title="Inspect Box ${s.boxNum} (Hover to highlight, Click to isolate)">
             <span style="width: 8px; height: 3px; background: ${pal.stroke}; display: inline-block; border-radius: 1px;"></span> B${s.boxNum}
           </span>
         `;
       });
       deltaLegend.innerHTML = legHtml;
     }
+
+    // Helper to safely get POC price from any sample
+    const getPocPrice = (s) => {
+      if (!s) return 0;
+      const val = s.pocPrice ?? s.metrics?.pocPrice ?? s.P_0;
+      return (typeof val === 'number' && !isNaN(val)) ? val : 0;
+    };
+
+    // Global interactive box hover highlighter
+    window.__hoverNexusBox = function(idx, isEntering) {
+      if (idx === null || idx === undefined || idx < 0 || idx >= sampleCount) return;
+      const targetPal = BOX_PALETTE[idx % BOX_PALETTE.length];
+      const targetS = d.samples[idx];
+
+      for (let i = 0; i < sampleCount; i++) {
+        const oscL = document.getElementById(`tvNexusOscLineBox${i + 1}`);
+        const evrL = document.getElementById(`tvNexusEvrLineBox${i + 1}`);
+        if (isEntering) {
+          if (i === idx) {
+            if (oscL) { oscL.style.opacity = '1'; oscL.style.strokeWidth = '3.8'; oscL.style.filter = `drop-shadow(0 0 8px ${targetPal.glow})`; }
+            if (evrL) { evrL.style.opacity = '1'; evrL.style.strokeWidth = '3.8'; evrL.style.filter = `drop-shadow(0 0 8px ${targetPal.glow})`; }
+          } else {
+            if (oscL) { oscL.style.opacity = '0.12'; oscL.style.strokeWidth = '1.6'; oscL.style.filter = 'none'; }
+            if (evrL) { evrL.style.opacity = '0.12'; evrL.style.strokeWidth = '1.6'; evrL.style.filter = 'none'; }
+          }
+        } else {
+          // Restore
+          const isSel = isSingleBoxMode && selectedBoxIdx === i;
+          const baseOp = isSingleBoxMode ? (isSel ? '1' : '0.15') : '0.92';
+          const baseW = isSingleBoxMode ? (isSel ? '3.4' : '1.4') : (i === sampleCount - 1 ? '2.8' : '2.2');
+          if (oscL) { oscL.style.opacity = baseOp; oscL.style.strokeWidth = baseW; oscL.style.filter = isSel ? `drop-shadow(0 0 6px ${targetPal.glow})` : 'none'; }
+          if (evrL) { evrL.style.opacity = isSingleBoxMode ? (isSel ? '1' : '0.18') : '0.95'; evrL.style.strokeWidth = '2.8'; evrL.style.filter = 'none'; }
+        }
+      }
+
+      const noteEl = document.getElementById('tvNexusOscAreaNote');
+      if (noteEl) {
+        if (isEntering && targetS) {
+          const signD = targetS.netDelta >= 0 ? '+' : '';
+          const dispP = targetS.netMove >= 0 ? '+' : '';
+          const pVal = getPocPrice(targetS);
+          noteEl.style.color = targetPal.stroke;
+          noteEl.textContent = `BOX #${targetS.boxNum} FOCUS: CVD ${signD}${targetS.netDelta.toLocaleString()} Δ • ABSORPTION: ${targetS.absorbPct}% • MOVE: ${dispP}${targetS.netMove.toFixed(1)}pt • POC: $${pVal.toFixed(2)}`;
+        } else {
+          // Restore default note
+          if (!isSingleBoxMode) {
+            noteEl.style.color = themeSoft;
+            const seqParts = d.samples.map(s => `B${s.boxNum} (${s.netDelta >= 0 ? '+' : ''}${(s.netDelta / 1000).toFixed(1)}K Δ)`);
+            noteEl.textContent = 'CVD TIMELINE: ' + seqParts.join(' → ') + ' // ' + (scopeIsBear ? 'AGGRESSIVE SELLER INITIATIVE' : 'AGGRESSIVE BUYER INITIATIVE');
+          }
+        }
+      }
+    };
 
     // 2. Render Authentic Bar-by-Bar Cumulative Volume Delta (CVD) Staircase & Absorption Trajectory in Chart 1
     const deltaGroup = document.getElementById('tvNexusDeltaLinesGroup');
@@ -3697,82 +3770,168 @@ export function openExtensionNetworkModal(chart = null) {
     let lowestY = 60;
     let primaryStaircasePoints = [];
 
+    // Chronological layout parameters for Chart 1:
+    // When multiple boxes are active, partition 490px into N distinct columns (one for each box)
+    // This completely eliminates spaghetti and prevents lines from overlapping each other!
+    const numColumns = sampleCount;
+    const colWidth = 490 / Math.max(1, numColumns);
+
     d.samples.forEach((s, idx) => {
       const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
       const isSelected = isSingleBoxMode ? (selectedBoxIdx === idx) : true;
-      const opacity = isSingleBoxMode ? (isSelected ? '1' : '0.12') : '0.95';
+      const opacity = isSingleBoxMode ? (isSelected ? '1' : '0.12') : '0.92';
       const strokeWidth = isSingleBoxMode ? (isSelected ? '3.4' : '1.4') : (idx === sampleCount - 1 ? '2.8' : '2.2');
       const glowFilter = isSelected ? `drop-shadow(0 0 6px ${pal.glow})` : 'none';
 
       const bars = s.metrics?.barsInBox || [];
       let staircaseD = 'M 25 60 L 515 60';
-      let lastX = 515;
-      let lastY = 60;
 
-      if (bars.length > 0) {
-        const barCount = bars.length;
-        const xStep = 490 / Math.max(1, barCount - 1);
-        let pathParts = [`M 25 60`];
-        let prevY = 60;
+      if (!isSingleBoxMode) {
+        // Multi-Box Chronological Sequence Corridor: Box idx lives in its own column from xColStart to xColEnd
+        const xColStart = Math.round(25 + idx * colWidth);
+        const xColEnd = Math.round(25 + (idx + 1) * colWidth);
 
-        bars.forEach((b, bIdx) => {
-          const curX = Math.round(25 + bIdx * xStep);
-          const ratio = Math.max(-1, Math.min(1, (b.cumDelta || 0) / maxCvdAbs));
-          const curY = Math.round(60 - ratio * 44);
+        // Draw subtle vertical column divider
+        if (deltaMarkersGroup && idx > 0) {
+          const divLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          divLine.setAttribute('x1', xColStart);
+          divLine.setAttribute('y1', 12);
+          divLine.setAttribute('x2', xColStart);
+          divLine.setAttribute('y2', 108);
+          divLine.setAttribute('stroke', '#1e293b');
+          divLine.setAttribute('stroke-dasharray', '2,2');
+          divLine.setAttribute('stroke-width', '1');
+          deltaMarkersGroup.appendChild(divLine);
+        }
 
-          if (curY < highestY) highestY = curY;
-          if (curY > lowestY) lowestY = curY;
+        // Column Label Header (e.g. B1, B2, ... B11) at top
+        if (deltaMarkersGroup) {
+          const colLbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+          colLbl.setAttribute('x', Math.round((xColStart + xColEnd) / 2));
+          colLbl.setAttribute('y', 14);
+          colLbl.setAttribute('text-anchor', 'middle');
+          colLbl.setAttribute('fill', pal.stroke);
+          colLbl.setAttribute('font-size', '8');
+          colLbl.setAttribute('font-family', 'monospace');
+          colLbl.setAttribute('font-weight', 'bold');
+          colLbl.setAttribute('opacity', '0.85');
+          colLbl.textContent = `B${s.boxNum}`;
+          deltaMarkersGroup.appendChild(colLbl);
+        }
 
-          if (bIdx === 0) {
-            pathParts.push(`L ${curX} ${curY}`);
-          } else {
-            // True orthogonal staircase: step horizontally to curX with prevY, then vertically to curY
-            pathParts.push(`L ${curX} ${prevY} L ${curX} ${curY}`);
-          }
-          prevY = curY;
-          lastX = curX;
-          lastY = curY;
+        if (bars.length > 0) {
+          const barStep = (xColEnd - xColStart) / Math.max(1, bars.length - 1);
+          let pathParts = [`M ${xColStart} 60`];
+          let prevY = 60;
 
-          // Render absorption and initiative markers on the active / visible lines
-          if (deltaMarkersGroup && (!isSingleBoxMode || isSelected)) {
-            if (b.isAbsorption) {
-              const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-              marker.setAttribute('cx', curX);
-              marker.setAttribute('cy', curY);
-              marker.setAttribute('r', isSingleBoxMode ? '4.2' : '3.2');
-              marker.setAttribute('fill', '#f59e0b');
-              marker.setAttribute('stroke', '#ffffff');
-              marker.setAttribute('stroke-width', '1.2');
-              marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #f59e0b); cursor: pointer;');
-              const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-              titleEl.textContent = `B${s.boxNum} Absorbed Bar: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()} (Vol: ${b.volInBox.toLocaleString()})`;
-              marker.appendChild(titleEl);
-              deltaMarkersGroup.appendChild(marker);
-            } else if (b.isInitiative) {
-              const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-              marker.setAttribute('points', `${curX},${curY - 4.5} ${curX + 4},${curY} ${curX},${curY + 4.5} ${curX - 4},${curY}`);
-              marker.setAttribute('fill', '#00e5ff');
-              marker.setAttribute('stroke', '#ffffff');
-              marker.setAttribute('stroke-width', '1');
-              marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #00e5ff); cursor: pointer;');
-              const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-              titleEl.textContent = `B${s.boxNum} Initiative Break: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
-              marker.appendChild(titleEl);
-              deltaMarkersGroup.appendChild(marker);
+          bars.forEach((b, bIdx) => {
+            const curX = Math.round(xColStart + bIdx * barStep);
+            const ratio = Math.max(-1, Math.min(1, (b.cumDelta || 0) / maxCvdAbs));
+            const curY = Math.round(60 - ratio * 44);
+
+            if (curY < highestY) highestY = curY;
+            if (curY > lowestY) lowestY = curY;
+
+            if (bIdx === 0) {
+              pathParts.push(`L ${curX} ${curY}`);
+            } else {
+              pathParts.push(`L ${curX} ${prevY} L ${curX} ${curY}`);
             }
-          }
-        });
+            prevY = curY;
 
-        staircaseD = pathParts.join(' ');
-        if (isSelected) {
-          primaryStaircasePoints = pathParts;
+            // Render absorption & initiative markers inside this column
+            if (deltaMarkersGroup) {
+              if (b.isAbsorption) {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                marker.setAttribute('cx', curX);
+                marker.setAttribute('cy', curY);
+                marker.setAttribute('r', '2.8');
+                marker.setAttribute('fill', '#f59e0b');
+                marker.setAttribute('stroke', '#ffffff');
+                marker.setAttribute('stroke-width', '1');
+                marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #f59e0b); cursor: pointer;');
+                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                titleEl.textContent = `B${s.boxNum} Absorbed Bar: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
+                marker.appendChild(titleEl);
+                deltaMarkersGroup.appendChild(marker);
+              } else if (b.isInitiative) {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                marker.setAttribute('points', `${curX},${curY - 3.5} ${curX + 3},${curY} ${curX},${curY + 3.5} ${curX - 3},${curY}`);
+                marker.setAttribute('fill', '#00e5ff');
+                marker.setAttribute('stroke', '#ffffff');
+                marker.setAttribute('stroke-width', '0.8');
+                marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #00e5ff); cursor: pointer;');
+                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                titleEl.textContent = `B${s.boxNum} Initiative Break: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
+                marker.appendChild(titleEl);
+                deltaMarkersGroup.appendChild(marker);
+              }
+            }
+          });
+
+          staircaseD = pathParts.join(' ');
+        } else {
+          const deltaRatio = Math.max(-1, Math.min(1, s.netDelta / maxCvdAbs));
+          const yEnd = Math.round(60 - deltaRatio * 44);
+          staircaseD = `M ${xColStart} 60 L ${xColEnd} ${yEnd}`;
         }
       } else {
-        const deltaRatio = Math.max(-1, Math.min(1, s.netDelta / maxCvdAbs));
-        lastY = Math.round(60 - deltaRatio * 44);
-        if (lastY < highestY) highestY = lastY;
-        if (lastY > lowestY) lowestY = lastY;
-        staircaseD = `M 25 60 L 515 ${lastY}`;
+        // Single Box Mode: expand this box to 100% full width (25 to 515) for close inspection
+        if (isSelected && bars.length > 0) {
+          const barCount = bars.length;
+          const xStep = 490 / Math.max(1, barCount - 1);
+          let pathParts = [`M 25 60`];
+          let prevY = 60;
+
+          bars.forEach((b, bIdx) => {
+            const curX = Math.round(25 + bIdx * xStep);
+            const ratio = Math.max(-1, Math.min(1, (b.cumDelta || 0) / maxCvdAbs));
+            const curY = Math.round(60 - ratio * 44);
+
+            if (curY < highestY) highestY = curY;
+            if (curY > lowestY) lowestY = curY;
+
+            if (bIdx === 0) {
+              pathParts.push(`L ${curX} ${curY}`);
+            } else {
+              pathParts.push(`L ${curX} ${prevY} L ${curX} ${curY}`);
+            }
+            prevY = curY;
+
+            if (deltaMarkersGroup) {
+              if (b.isAbsorption) {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                marker.setAttribute('cx', curX);
+                marker.setAttribute('cy', curY);
+                marker.setAttribute('r', '4.2');
+                marker.setAttribute('fill', '#f59e0b');
+                marker.setAttribute('stroke', '#ffffff');
+                marker.setAttribute('stroke-width', '1.2');
+                marker.setAttribute('style', 'filter: drop-shadow(0 0 5px #f59e0b); cursor: pointer;');
+                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                titleEl.textContent = `B${s.boxNum} Absorbed Bar: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
+                marker.appendChild(titleEl);
+                deltaMarkersGroup.appendChild(marker);
+              } else if (b.isInitiative) {
+                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                marker.setAttribute('points', `${curX},${curY - 4.5} ${curX + 4},${curY} ${curX},${curY + 4.5} ${curX - 4},${curY}`);
+                marker.setAttribute('fill', '#00e5ff');
+                marker.setAttribute('stroke', '#ffffff');
+                marker.setAttribute('stroke-width', '1');
+                marker.setAttribute('style', 'filter: drop-shadow(0 0 5px #00e5ff); cursor: pointer;');
+                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+                titleEl.textContent = `B${s.boxNum} Initiative Break: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
+                marker.appendChild(titleEl);
+                deltaMarkersGroup.appendChild(marker);
+              }
+            }
+          });
+
+          staircaseD = pathParts.join(' ');
+          primaryStaircasePoints = pathParts;
+        } else {
+          staircaseD = `M 25 60 L 515 60`;
+        }
       }
 
       let lineEl = document.getElementById(`tvNexusOscLineBox${idx + 1}`);
@@ -3794,7 +3953,8 @@ export function openExtensionNetworkModal(chart = null) {
         lineEl.style.display = 'block';
       }
 
-      // Callout chip positioning & text for each box
+      // Callout chips: in Multi-Box mode, HIDE the 11 colliding giant rectangular badges!
+      // In Single-Box mode, display the isolated box's badge cleanly.
       const calloutId = idx === 0 ? 'tvNexusCalloutAbsorb'
                       : idx === 1 ? 'tvNexusCalloutVacuum'
                       : idx === 2 ? 'tvNexusCalloutRunway'
@@ -3810,26 +3970,25 @@ export function openExtensionNetworkModal(chart = null) {
       }
 
       if (calloutEl) {
-        const xPos = Math.round(35 + (idx / Math.max(1, sampleCount - 1)) * 365);
-        const yPos = (s.netDelta >= 0)
-          ? Math.round(18 + (idx % 2) * 18)
-          : Math.round(76 + (idx % 2) * 18);
-        calloutEl.setAttribute('transform', `translate(${xPos}, ${yPos})`);
-
-        const rect = calloutEl.querySelector('rect');
-        if (rect) {
-          rect.setAttribute('stroke', pal.stroke);
-          rect.setAttribute('fill', '#091020');
+        if (isSingleBoxMode && isSelected) {
+          calloutEl.setAttribute('transform', `translate(360, 20)`);
+          const rect = calloutEl.querySelector('rect');
+          if (rect) {
+            rect.setAttribute('stroke', pal.stroke);
+            rect.setAttribute('fill', '#091020');
+          }
+          const text = calloutEl.querySelector('text');
+          if (text) {
+            text.setAttribute('fill', pal.text);
+            const signD = s.netDelta >= 0 ? '+' : '';
+            const dK = (Math.abs(s.netDelta) / 1000).toFixed(1);
+            text.textContent = `B${s.boxNum}: ${signD}${dK}K Δ (${s.absorbPct}% Abs)`;
+          }
+          calloutEl.style.display = 'block';
+        } else {
+          // Hide persistent overlapping badges in multi-box mode to keep the canvas clean!
+          calloutEl.style.display = 'none';
         }
-        const text = calloutEl.querySelector('text');
-        if (text) {
-          text.setAttribute('fill', pal.text);
-          const signD = s.netDelta >= 0 ? '+' : '';
-          const dK = (Math.abs(s.netDelta) / 1000).toFixed(1);
-          let tagDesc = s.absorbPct >= 65 ? 'ABSORB' : (s.metrics?.yieldAnalysis?.isTrap ? 'TRAP' : (Math.abs(s.netMove) >= 12 ? 'RUNWAY' : 'FLOW'));
-          text.textContent = `B${s.boxNum}: ${signD}${dK}K Δ (${s.absorbPct}% Abs)`;
-        }
-        calloutEl.style.display = (isSingleBoxMode && !isSelected) ? 'none' : 'block';
       }
     });
 
@@ -3843,7 +4002,7 @@ export function openExtensionNetworkModal(chart = null) {
 
     // Dynamic CVD Shaded Envelope Area
     if (shadedArea) {
-      shadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.75';
+      shadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.65';
       if (isSingleBoxMode && primaryStaircasePoints.length > 0) {
         shadedArea.setAttribute('d', `${primaryStaircasePoints.join(' ')} L 515 60 L 25 60 Z`);
       } else {
@@ -3865,7 +4024,7 @@ export function openExtensionNetworkModal(chart = null) {
           const dK = (s.netDelta / 1000).toFixed(1);
           return `B${s.boxNum} (${sign}${dK}K Δ)`;
         });
-        oscAreaNote.textContent = 'CVD TRAJECTORY: ' + seqParts.join(' → ') + ' // ' + (scopeIsBear ? 'AGGRESSIVE SELLER INITIATIVE' : 'AGGRESSIVE BUYER INITIATIVE');
+        oscAreaNote.textContent = 'CVD TIMELINE: ' + seqParts.join(' → ') + ' // ' + (scopeIsBear ? 'AGGRESSIVE SELLER INITIATIVE' : 'AGGRESSIVE BUYER INITIATIVE');
       }
     } else {
       const selS = d.samples[selectedBoxIdx];
@@ -3894,7 +4053,7 @@ export function openExtensionNetworkModal(chart = null) {
         const isSel = isSingleBoxMode && selectedBoxIdx === idx;
         const op = isSingleBoxMode ? (isSel ? '1' : '0.35') : '1';
         evrLegHtml += `
-          <span style="display: flex; align-items: center; gap: 3px; color: ${pal.stroke}; opacity: ${op}; cursor: pointer; transition: opacity 0.2s;" onclick="window.__selectNexusTab('box_${idx}')" title="Click to isolate Box ${s.boxNum}">
+          <span style="display: flex; align-items: center; gap: 3px; color: ${pal.stroke}; opacity: ${op}; cursor: pointer; transition: opacity 0.2s;" onclick="window.__selectNexusTab('box_${idx}')" onmouseenter="window.__hoverNexusBox(${idx}, true)" onmouseleave="window.__hoverNexusBox(${idx}, false)" title="Inspect Box ${s.boxNum} (Hover to highlight, Click to isolate)">
             <span style="width: 7px; height: 2px; background: ${pal.stroke}; display: inline-block;"></span> B${s.boxNum}
           </span>
         `;
@@ -3926,35 +4085,35 @@ export function openExtensionNetworkModal(chart = null) {
 
     if (shelvesGroup) shelvesGroup.innerHTML = '';
 
-    // Price scaling: map dollar price to Y coordinates (Y=18 top price, Y=102 bottom price)
+    // Price scaling: map dollar price to Y coordinates (Y=18 top price, Y=100 bottom price)
     const pMin = d.minLow;
     const pMax = d.maxHigh;
     const pRange = Math.max(1.0, pMax - pMin);
-    const getY = (p) => Math.round(18 + ((pMax - p) / pRange) * 84);
+    const getY = (p) => Math.round(18 + ((pMax - p) / pRange) * 82);
 
     // Compute stage coordinates for all boxes
     const boxStages = d.samples.map((s, idx) => {
-      const x = sampleCount === 1 ? 270 : Math.round(55 + (idx / Math.max(1, sampleCount - 1)) * 410);
+      const x = sampleCount === 1 ? 270 : Math.round(45 + (idx / Math.max(1, sampleCount - 1)) * 450);
       const yHigh = getY(s.H_b);
       const yLow = getY(s.L_b);
-      const poc = s.metrics?.pocPrice || s.pocPrice || s.P_0 || 2740;
+      const poc = getPocPrice(s) || 2740;
       const yPoc = getY(poc);
       const ptPerK = Math.max(0.01, Math.abs(s.netMove) / Math.max(0.1, s.totalVol / 1000));
       return { s, idx, x, yHigh, yLow, poc, yPoc, ptPerK };
     });
 
-    // 7A. Draw Value Range Brackets & Glowing POC Nodes for each box
+    // 7A. Draw Clean Value Range Brackets & Glowing POC Nodes (Zero Giant Badges Clutter)
     if (shelvesGroup) {
       boxStages.forEach(st => {
         const pal = BOX_PALETTE[st.idx % BOX_PALETTE.length];
         const isSel = !isSingleBoxMode || selectedBoxIdx === st.idx;
-        const op = isSel ? '1' : '0.2';
+        const op = isSel ? '1' : '0.18';
 
         // Vertical bracket from High to Low
         const bracket = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        bracket.setAttribute('d', `M ${st.x - 14} ${st.yHigh} L ${st.x + 14} ${st.yHigh} M ${st.x} ${st.yHigh} L ${st.x} ${st.yLow} M ${st.x - 14} ${st.yLow} L ${st.x + 14} ${st.yLow}`);
+        bracket.setAttribute('d', `M ${st.x - 10} ${st.yHigh} L ${st.x + 10} ${st.yHigh} M ${st.x} ${st.yHigh} L ${st.x} ${st.yLow} M ${st.x - 10} ${st.yLow} L ${st.x + 10} ${st.yLow}`);
         bracket.setAttribute('stroke', pal.stroke);
-        bracket.setAttribute('stroke-width', '1.6');
+        bracket.setAttribute('stroke-width', '1.5');
         bracket.setAttribute('opacity', op);
         shelvesGroup.appendChild(bracket);
 
@@ -3962,32 +4121,47 @@ export function openExtensionNetworkModal(chart = null) {
         const pocNode = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         pocNode.setAttribute('cx', st.x);
         pocNode.setAttribute('cy', st.yPoc);
-        pocNode.setAttribute('r', isSel ? '5.5' : '4');
+        pocNode.setAttribute('r', isSel ? '4.8' : '3.6');
         pocNode.setAttribute('fill', pal.stroke);
         pocNode.setAttribute('stroke', '#ffffff');
-        pocNode.setAttribute('stroke-width', '1.5');
-        pocNode.setAttribute('style', `filter: drop-shadow(0 0 6px ${pal.glow}); cursor: pointer;`);
+        pocNode.setAttribute('stroke-width', '1.2');
+        pocNode.setAttribute('style', `filter: drop-shadow(0 0 5px ${pal.glow}); cursor: pointer;`);
         pocNode.onclick = () => window.__selectNexusTab(`box_${st.idx}`);
         const pTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-        pTitle.textContent = `B${st.s.boxNum} POC: $${st.poc.toFixed(2)}`;
+        pTitle.textContent = `B${st.s.boxNum} POC: $${st.poc.toFixed(2)} (Click to isolate)`;
         pocNode.appendChild(pTitle);
         shelvesGroup.appendChild(pocNode);
 
-        // POC Price Label text right next to POC node
+        // Price Label text cleanly placed above or below node to never collide
+        const pocTxtY = st.yPoc > 55 ? (st.yPoc - 8) : (st.yPoc + 14);
         const pocTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-        pocTxt.setAttribute('x', st.x + 8);
-        pocTxt.setAttribute('y', st.yPoc + 3);
-        pocTxt.setAttribute('fill', '#e2e8f0');
-        pocTxt.setAttribute('font-size', '8');
+        pocTxt.setAttribute('x', st.x);
+        pocTxt.setAttribute('y', pocTxtY);
+        pocTxt.setAttribute('text-anchor', 'middle');
+        pocTxt.setAttribute('fill', '#cbd5e1');
+        pocTxt.setAttribute('font-size', '7.8');
         pocTxt.setAttribute('font-family', 'monospace');
         pocTxt.setAttribute('font-weight', 'bold');
         pocTxt.setAttribute('opacity', op);
         pocTxt.textContent = `$${st.poc.toFixed(1)}`;
         shelvesGroup.appendChild(pocTxt);
+
+        // Efficiency micro-tag underneath the floor bracket
+        const effY = Math.min(116, st.yLow + 11);
+        const effTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        effTxt.setAttribute('x', st.x);
+        effTxt.setAttribute('y', effY);
+        effTxt.setAttribute('text-anchor', 'middle');
+        effTxt.setAttribute('fill', '#94a3b8');
+        effTxt.setAttribute('font-size', '7');
+        effTxt.setAttribute('font-family', 'monospace');
+        effTxt.setAttribute('opacity', op);
+        effTxt.textContent = `${st.ptPerK.toFixed(2)} pt/K`;
+        shelvesGroup.appendChild(effTxt);
       });
     }
 
-    // 7B. Illuminated Value Migration Lines connecting POCs
+    // 7B. Illuminated Value Migration Lines connecting POCs with Micro-Delta Badges
     d.samples.forEach((s, idx) => {
       const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
       const isSelected = isSingleBoxMode && selectedBoxIdx === idx;
@@ -4003,10 +4177,24 @@ export function openExtensionNetworkModal(chart = null) {
         pathD = `M ${cur.x} ${cur.yPoc} L ${nxt.x} ${nxt.yPoc}`;
         const shift = nxt.poc - cur.poc;
         strokeColor = shift >= 0.8 ? '#22c55e' : (shift <= -0.8 ? '#ef4444' : '#facc15');
+
+        // Render sleek micro-pill centered on the line segment
+        if (shelvesGroup && !isSingleBoxMode) {
+          const midX = Math.round((cur.x + nxt.x) / 2);
+          const midY = Math.round((cur.yPoc + nxt.yPoc) / 2);
+          const pillG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          pillG.setAttribute('transform', `translate(${midX}, ${midY})`);
+          const sSign = shift >= 0 ? '+' : '';
+          pillG.innerHTML = `
+            <rect x="-18" y="-6" width="36" height="12" rx="3" fill="#091020" stroke="${strokeColor}" stroke-width="1" opacity="0.95" />
+            <text x="0" y="3" text-anchor="middle" fill="${strokeColor}" font-size="7.5" font-family="monospace" font-weight="bold">${sSign}${shift.toFixed(1)}pt</text>
+          `;
+          shelvesGroup.appendChild(pillG);
+        }
       } else {
         // Last box terminal line: horizontal anchor bar
         const lastSt = boxStages[idx];
-        pathD = `M ${lastSt.x - 25} ${lastSt.yPoc} L ${Math.min(515, lastSt.x + 25)} ${lastSt.yPoc}`;
+        pathD = `M ${lastSt.x - 20} ${lastSt.yPoc} L ${Math.min(515, lastSt.x + 20)} ${lastSt.yPoc}`;
       }
 
       let lineEl = null;
@@ -4028,13 +4216,14 @@ export function openExtensionNetworkModal(chart = null) {
       if (lineEl) {
         lineEl.setAttribute('d', pathD);
         lineEl.setAttribute('stroke', strokeColor);
-        lineEl.setAttribute('stroke-width', isSelected ? '3.6' : '2.8');
+        lineEl.setAttribute('stroke-width', isSelected ? '3.6' : '2.6');
         lineEl.style.opacity = (isSingleBoxMode && !isSelected) ? '0.2' : '1';
         lineEl.style.display = 'block';
-        lineEl.style.filter = `drop-shadow(0 0 6px ${strokeColor}aa)`;
+        lineEl.style.filter = `drop-shadow(0 0 5px ${strokeColor}aa)`;
       }
 
-      // Dynamic Value / Efficiency Callout Chip for each box
+      // Dynamic Value / Efficiency Callout Chip: HIDE in multi-box mode to prevent giant overlapping blocks!
+      // In Single-Box mode, display the isolated box's badge cleanly.
       let calloutEl = null;
       if (idx === 0) calloutEl = evrCalloutMud;
       else if (idx === 1) calloutEl = evrCalloutShift;
@@ -4052,31 +4241,25 @@ export function openExtensionNetworkModal(chart = null) {
       }
 
       if (calloutEl) {
-        const curSt = boxStages[idx];
-        const xPos = Math.max(15, Math.min(380, curSt.x - 65));
-        const yPos = curSt.yPoc < 55 ? Math.round(curSt.yPoc + 26) : Math.round(curSt.yPoc - 16);
-        calloutEl.setAttribute('transform', `translate(${xPos}, ${yPos})`);
-
-        const rect = calloutEl.querySelector('rect');
-        if (rect) {
-          rect.setAttribute('stroke', pal.stroke);
-          rect.setAttribute('fill', '#091020');
-        }
-        const text = calloutEl.querySelector('text');
-        if (text) {
-          text.setAttribute('fill', pal.text);
-          const effLabel = curSt.ptPerK < 0.15 ? 'MUD 🔥' : (curSt.ptPerK >= 0.50 ? 'RUNWAY 🚀' : 'FLOW ⚖️');
-          if (idx === 0) {
-            text.textContent = `B1 POC $${curSt.poc.toFixed(1)} (${curSt.ptPerK.toFixed(2)} pt/K ${effLabel})`;
-          } else {
-            const prevSt = boxStages[idx - 1];
-            const pShift = curSt.poc - prevSt.poc;
-            const pSign = pShift >= 0 ? '+' : '';
-            const pEmoji = pShift >= 0.8 ? '🟢' : (pShift <= -0.8 ? '🔴' : '⚖️');
-            text.textContent = `B${s.boxNum}: ${pSign}${pShift.toFixed(1)}pt ${pEmoji} (${curSt.ptPerK.toFixed(2)} pt/K)`;
+        if (isSingleBoxMode && isSelected) {
+          const curSt = boxStages[idx];
+          calloutEl.setAttribute('transform', `translate(340, 20)`);
+          const rect = calloutEl.querySelector('rect');
+          if (rect) {
+            rect.setAttribute('stroke', pal.stroke);
+            rect.setAttribute('fill', '#091020');
           }
+          const text = calloutEl.querySelector('text');
+          if (text) {
+            text.setAttribute('fill', pal.text);
+            const effLabel = curSt.ptPerK < 0.15 ? 'MUD 🔥' : (curSt.ptPerK >= 0.50 ? 'RUNWAY 🚀' : 'FLOW ⚖️');
+            text.textContent = `B${s.boxNum} POC $${curSt.poc.toFixed(1)} (${curSt.ptPerK.toFixed(2)} pt/K ${effLabel})`;
+          }
+          calloutEl.style.display = 'block';
+        } else {
+          // Zero overlapping badges in multi-box mode!
+          calloutEl.style.display = 'none';
         }
-        calloutEl.style.display = (isSingleBoxMode && !isSelected) ? 'none' : 'block';
       }
     });
 
@@ -4090,7 +4273,7 @@ export function openExtensionNetworkModal(chart = null) {
 
     // Dynamic Value Area Envelope Shaded Area
     if (evrShadedArea) {
-      evrShadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.65';
+      evrShadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.55';
       if (sampleCount >= 2) {
         const topPoints = boxStages.map(st => `${st.x} ${st.yHigh}`).join(' L ');
         const btmPoints = boxStages.slice().reverse().map(st => `${st.x} ${st.yLow}`).join(' L ');
@@ -4101,8 +4284,10 @@ export function openExtensionNetworkModal(chart = null) {
       }
     }
 
-    // Chart 2 Meta Header & Area Note
-    const netPocChange = d.lastSample.pocPrice - d.firstSample.pocPrice;
+    // Chart 2 Meta Header & Area Note (Guaranteed safe from NaN)
+    const firstPoc = getPocPrice(d.firstSample);
+    const lastPoc = getPocPrice(d.lastSample);
+    const netPocChange = lastPoc - firstPoc;
     const pocSign = netPocChange >= 0 ? '+' : '';
     const pocColor = netPocChange >= 0.8 ? '#22c55e' : (netPocChange <= -0.8 ? '#ef4444' : '#facc15');
     const netPocTag = netPocChange >= 0.8 ? 'VALUE LIFT 🟢' : (netPocChange <= -0.8 ? 'VALUE DROP 🔴' : 'CHOP ⚖️');
@@ -4116,7 +4301,7 @@ export function openExtensionNetworkModal(chart = null) {
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
         const pocSeq = boxStages.map(st => `B${st.s.boxNum} $${st.poc.toFixed(1)}`).join(' → ');
-        evrAreaNote.textContent = `VALUE MIGRATION: ${pocSeq} // NET ${pocSign}${netPocChange.toFixed(1)} pt SHIFT (${netPocTag}) // AVG EFFICIENCY: ${avgEff} pt/K`;
+        evrAreaNote.textContent = `VALUE LADDER: ${pocSeq} // NET ${pocSign}${netPocChange.toFixed(1)} pt SHIFT (${netPocTag}) // AVG EFFICIENCY: ${avgEff} pt/K`;
       }
     } else {
       const selS = d.samples[selectedBoxIdx];

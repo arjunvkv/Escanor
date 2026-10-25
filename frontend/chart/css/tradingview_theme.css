@@ -3199,6 +3199,11 @@ input[type="number"] {
   top: 10px;
   left: 50%;
   transform: translateX(-50%);
+  max-width: calc(100vw - 120px);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 229, 255, 0.4) transparent;
   z-index: 25;
   background: rgba(10, 17, 34, 0.94);
   backdrop-filter: blur(12px);
@@ -3213,6 +3218,20 @@ input[type="number"] {
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   animation: tvExtFadeIn 0.2s ease-out;
+}
+
+.tv-extension-ribbon::-webkit-scrollbar {
+  height: 4px;
+}
+.tv-extension-ribbon::-webkit-scrollbar-track {
+  background: transparent;
+}
+.tv-extension-ribbon::-webkit-scrollbar-thumb {
+  background: rgba(0, 229, 255, 0.35);
+  border-radius: 2px;
+}
+.tv-extension-ribbon::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 229, 255, 0.65);
 }
 
 .tv-extension-ribbon:hover {
@@ -3231,6 +3250,7 @@ input[type="number"] {
   align-items: center;
   gap: 7px;
   flex-wrap: nowrap;
+  min-width: max-content;
 }
 
 .tv-ext-seq-group {
@@ -3791,6 +3811,20 @@ input[type="number"] {
   align-items: center;
   gap: 5px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+}
+
+#tvNexusTabTrack::-webkit-scrollbar {
+  height: 3px;
+}
+#tvNexusTabTrack::-webkit-scrollbar-track {
+  background: transparent;
+}
+#tvNexusTabTrack::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.4);
+  border-radius: 2px;
+}
+#tvNexusTabTrack::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.7);
 }
 
 .tv-nexus-tab-btn:hover {
