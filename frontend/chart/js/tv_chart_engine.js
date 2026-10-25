@@ -384,6 +384,49 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     }
   }
 
+  // Multi-box Sequence Context (Ceiling & Floor bounds for Exhaustion / No Demand / No Supply detection)
+  let isExhaustion = false;
+  let exhaustionType = '';
+
+  if (rects && rects.length >= 2) {
+    const allBoxHighs = rects.map(r => {
+      const v0 = r.points?.[0]?.value || 0;
+      const v1 = r.points?.[1]?.value || 0;
+      return Math.max(v0, v1);
+    }).filter(v => v > 0);
+    const allBoxLows = rects.map(r => {
+      const v0 = r.points?.[0]?.value || 0;
+      const v1 = r.points?.[1]?.value || 0;
+      return Math.min(v0, v1);
+    }).filter(v => v > 0);
+
+    const seqCeil = allBoxHighs.length > 0 ? Math.max(...allBoxHighs) : topPrice;
+    const seqFlr = allBoxLows.length > 0 ? Math.min(...allBoxLows) : bottomPrice;
+    const seqRng = Math.max(1.0, seqCeil - seqFlr);
+
+    // Is this box testing the ceiling?
+    const isAtCeiling = (H_b >= seqCeil - 0.20 * seqRng || P_1 >= seqCeil - 0.25 * seqRng);
+    // Is this box testing the floor?
+    const isAtFloor = (L_b <= seqFlr + 0.20 * seqRng || P_1 <= seqFlr + 0.25 * seqRng);
+
+    // No Demand at Ceiling: Price pushes into ceiling on low/declining volume or stalls under resistance without breakout
+    if (isAtCeiling && domSide === 'BULL' && P_1 <= seqCeil + 0.5) {
+      if (bullVol < 13000 || absorbPct >= 50 || effBullMove < effBearMove * 1.25) {
+        isExhaustion = true;
+        exhaustionType = 'NO_DEMAND';
+        isThinning = true;
+      }
+    }
+    // No Supply at Floor: Price pushes into floor on low/declining volume or stalls above support without breakdown
+    else if (isAtFloor && domSide === 'BEAR' && P_1 >= seqFlr - 0.5) {
+      if (bearVol < 13000 || absorbPct >= 50 || effBearMove < effBullMove * 1.25) {
+        isExhaustion = true;
+        exhaustionType = 'NO_SUPPLY';
+        isThinning = true;
+      }
+    }
+  }
+
   // Detect Thinning Out / Exhaustion / Absorption Traps
   let isTrap = false;
   let trapType = '';
@@ -420,7 +463,9 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     domRatio,
     isThinning,
     isTrap,
-    trapType
+    trapType,
+    isExhaustion,
+    exhaustionType
   };
 
   return {
@@ -2282,6 +2327,16 @@ export function updateExtensionSeriesRibbon(chart) {
       bg = 'rgba(251, 146, 60, 0.18)';
       border = 'rgba(251, 146, 60, 0.60)';
       shadow = '0 0 10px rgba(251, 146, 60, 0.50)';
+    } else if (y.isExhaustion) {
+      const exhLabel = y.exhaustionType === 'NO_DEMAND' ? 'No Demand (Ceiling Exhaustion)' : 'No Supply (Floor Exhaustion)';
+      const exhVolK = y.exhaustionType === 'NO_DEMAND' ? bullVolK : bearVolK;
+      const exhIcon = y.exhaustionType === 'NO_DEMAND' ? SVG_BULL : SVG_BEAR;
+      shortTag = `⚠️ ${exhIcon} ${exhVolK}K EXH`;
+      domLabel = `${exhLabel} — Price at barrier with low conviction / no follow-through (Reversal Risk)`;
+      color = '#fb923c';
+      bg = 'rgba(251, 146, 60, 0.18)';
+      border = 'rgba(251, 146, 60, 0.60)';
+      shadow = isLast ? '0 0 10px rgba(251, 146, 60, 0.75)' : 'none';
     } else if (domSide === 'BEAR') {
       shortTag = isThinning ? `${SVG_BEAR} ${bearVolK}K ⚠️` : `${SVG_BEAR} ${bearVolK}K`;
       domLabel = isThinning
@@ -2364,6 +2419,31 @@ export function updateExtensionSeriesRibbon(chart) {
     };
   };
 
+  // Inter-box efficiency flip analysis (detect distribution churn / bracket rotation)
+  let flipCount = 0;
+  let prevWinner = null;
+  const transitionWinners = [];
+  for (let i = 0; i < sortedRects.length - 1; i++) {
+    const currY = sortedRects[i].metrics?.yieldAnalysis;
+    const nextY = sortedRects[i + 1].metrics?.yieldAnalysis;
+    if (currY && nextY) {
+      let win = 'NONE';
+      const isBullExh = nextY.isExhaustion && nextY.exhaustionType === 'NO_DEMAND';
+      const isBearExh = nextY.isExhaustion && nextY.exhaustionType === 'NO_SUPPLY';
+      if (!isBullExh && nextY.bullYield > nextY.bearYield * 1.15 && (nextY.bullMovePts || 0) >= 3.0) {
+        win = 'BULL';
+      } else if (!isBearExh && nextY.bearYield > nextY.bullYield * 1.15 && (nextY.bearMovePts || 0) >= 3.0) {
+        win = 'BEAR';
+      }
+      transitionWinners.push(win);
+      if (prevWinner && win !== 'NONE' && win !== prevWinner) {
+        flipCount++;
+      }
+      if (win !== 'NONE') prevWinner = win;
+    }
+  }
+  const isBracketChop = (flipCount >= 2 && transitionWinners.length >= 3);
+
   // 1. Build Sequence Micro-Group (Dynamic Dominant Volume Number & Inter-Box Domination Rate Connector)
   let seqHtml = '<div class="tv-ext-seq-group" title="Dynamic Volume Yield Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
@@ -2396,17 +2476,21 @@ export function updateExtensionSeriesRibbon(chart) {
         const bearBottomText = `${bearSign}${deltaBearEffort}% / ${bearMovePts}pt`;
 
         // Highlight in a boxed badge (Electric Cyan) whichever side took LESS effort to move BIG
+        // Guard: If the move is an exhaustion push (No Demand / No Supply), do NOT award it as an efficiency winner!
         let bullHighlightCls = '';
         let bearHighlightCls = '';
-        if (nextY.bullYield > nextY.bearYield * 1.15 && (nextY.bullMovePts || 0) >= 3.0) {
+        const isBullExh = nextY.isExhaustion && nextY.exhaustionType === 'NO_DEMAND';
+        const isBearExh = nextY.isExhaustion && nextY.exhaustionType === 'NO_SUPPLY';
+
+        if (!isBullExh && nextY.bullYield > nextY.bearYield * 1.15 && (nextY.bullMovePts || 0) >= 3.0) {
           bullHighlightCls = ' conn-highlight-efficient';
-        } else if (nextY.bearYield > nextY.bullYield * 1.15 && (nextY.bearMovePts || 0) >= 3.0) {
+        } else if (!isBearExh && nextY.bearYield > nextY.bullYield * 1.15 && (nextY.bearMovePts || 0) >= 3.0) {
           bearHighlightCls = ' conn-highlight-efficient';
         }
 
         const connTooltip = `Inter-Box Effort vs Movement Shift (B${idx + 1} → B${idx + 2}):
 • Bull Effort Delta: ${bullSign}${deltaBullEffort}% Vol → Upward Movement: ${bullMovePts}pt (${nextY.bullYield} pt/K)
-• Bear Effort Delta: ${bearSign}${deltaBearEffort}% Vol → Downward Movement: ${bearMovePts}pt (${nextY.bearYield} pt/K)${bullHighlightCls ? '\n⚡ Bull took LESS effort to move BIG (Superior Yield)' : ''}${bearHighlightCls ? '\n⚡ Bear took LESS effort to move BIG (Superior Yield)' : ''}`;
+• Bear Effort Delta: ${bearSign}${deltaBearEffort}% Vol → Downward Movement: ${bearMovePts}pt (${nextY.bearYield} pt/K)${bullHighlightCls ? '\n⚡ Bull took LESS effort to move BIG (Superior Yield)' : ''}${bearHighlightCls ? '\n⚡ Bear took LESS effort to move BIG (Superior Yield)' : ''}${isBullExh ? '\n⚠️ WARNING: Bull upward push is an Exhaustion / No Demand retest at ceiling!' : ''}${isBearExh ? '\n⚠️ WARNING: Bear downward push is an Exhaustion / No Supply retest at floor!' : ''}`;
 
         seqHtml += `
           <div class="tv-ext-connector" title="${connTooltip}">
@@ -2429,7 +2513,11 @@ export function updateExtensionSeriesRibbon(chart) {
   let frictionIcon = '⚖️';
   let frictionNote = 'BALANCED';
 
-  if (shiftVal <= -20) {
+  if (isBracketChop) {
+    frictionCls = 'friction-yellow';
+    frictionIcon = '⚖️';
+    frictionNote = `${flipCount}x ROTATION`;
+  } else if (shiftVal <= -20) {
     frictionCls = 'friction-green';
     frictionIcon = '⚡';
     frictionNote = 'VACUUM';
@@ -2440,8 +2528,8 @@ export function updateExtensionSeriesRibbon(chart) {
   }
 
   const frictionHtml = `
-    <div class="tv-ext-chip ${frictionCls}" title="Effort vs Result Friction Shift: ${shiftSign}${shiftVal}% (${frictionNote})">
-      <span>${frictionIcon} ${shiftSign}${shiftVal}% FRICTION</span>
+    <div class="tv-ext-chip ${frictionCls}" title="${isBracketChop ? `⚠️ BRACKET ROTATION: Inter-box efficiency has flipped ${flipCount} times. Market is in two-sided distribution/bracket rotation, not a directional breakout!` : `Effort vs Result Friction Shift: ${shiftSign}${shiftVal}% (${frictionNote})`}">
+      <span>${frictionIcon} ${isBracketChop ? `${flipCount}x ROTATION` : `${shiftSign}${shiftVal}% FRICTION`}</span>
     </div>
   `;
 
@@ -2470,6 +2558,18 @@ export function updateExtensionSeriesRibbon(chart) {
       const trapName = lastYield.trapType === 'CEILING_TRAP' ? 'CEILING TRAP' : 'FLOOR TRAP';
       dispText = `${volNum.toFixed(1)}K ${trapName}`;
       dispTitle = `⚠️ ${trapName}: ${volNum.toFixed(1)}K volume absorbed at barrier with stalled progress (${lastYield.bullYield} vs ${lastYield.bearYield} pt/K) • Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
+    } else if (lastYield.isExhaustion) {
+      dispCls = 'dominant-thinning';
+      dispIcon = '⚠️';
+      const volNum = (lastYield.exhaustionType === 'NO_DEMAND' ? lastYield.bullVol : lastYield.bearVol) / 1000;
+      const exhName = lastYield.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND' : 'NO SUPPLY';
+      dispText = `${volNum.toFixed(1)}K ${exhName}`;
+      dispTitle = `⚠️ ${exhName} AT BARRIER: Low-volume test at boundary without breakout (${volNum.toFixed(1)}K vol) • High Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
+    } else if (isBracketChop) {
+      dispCls = 'dominant-thinning';
+      dispIcon = '⚖️';
+      dispText = `${domVolK} ROTATION`;
+      dispTitle = `⚖️ BRACKET ROTATION: Multi-box distribution churn (${flipCount}x efficiency flips). Neither side has directional runway! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
     } else if (lastYield.isThinning) {
       dispCls = 'dominant-thinning';
       dispIcon = '⚠️';
