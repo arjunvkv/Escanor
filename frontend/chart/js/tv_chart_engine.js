@@ -2803,8 +2803,13 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
   }
 
   // Who is actually playing out
+  const lastSampleTimes = (lastSample.overlay?.points || []).map(p => p.timestamp).filter(t => typeof t === 'number' && t > 0);
+  const maxSampleTime = lastSampleTimes.length > 0 ? Math.max(...lastSampleTimes) : 0;
   const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
-  const livePrice = lastBar ? lastBar.close : lastSample.P_1;
+  const isConcurrent = Boolean(lastBar && maxSampleTime > 0 && Math.abs(lastBar.timestamp - maxSampleTime) <= (120 * 60 * 1000));
+  const livePrice = (isConcurrent && typeof lastBar.close === 'number')
+    ? lastBar.close
+    : (typeof lastSample.P_1 === 'number' ? lastSample.P_1 : (lastBar?.close || 4000));
 
   const netDeltaPct = totalVolume > 0 ? Math.round((totalNetDelta / totalVolume) * 100) : 0;
   const netBullPct = totalVolume > 0 ? Math.max(5, Math.min(95, Math.round((totalBullVol / totalVolume) * 100))) : 50;
@@ -2898,11 +2903,41 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
   const primaryAnchor = networkPoc;
   const eqShelf = (maxHigh + minLow) / 2;
 
-  // Direction detection: Check sample directions, delta, and price relation to range
-  const isBear = (lastSample.d === -1) || 
-                 (livePrice < minLow) || 
-                 (lastSample.P_poc < firstSample.P_poc) || 
-                 (totalNetDelta < 0 && livePrice < eqShelf);
+  // Multi-factor directional evaluation for the whole network
+  const startPrice = firstSample.P_0;
+  const endPrice = livePrice;
+  const netDisplacement = endPrice - startPrice;
+  const lastYield = lastSample.metrics?.yieldAnalysis;
+  const lastDomSide = lastYield?.domSide;
+
+  let bullScore = 0;
+  let bearScore = 0;
+
+  // 1. Net price ground displaced across the network
+  if (netDisplacement >= 1.5) bullScore += 2;
+  else if (netDisplacement <= -1.5) bearScore += 2;
+
+  // 2. Cumulative volume delta across the network
+  if (totalNetDelta > 1000) bullScore += 1.5;
+  else if (totalNetDelta < -1000) bearScore += 1.5;
+
+  // 3. Volume effort share (Bull Vol vs Bear Vol)
+  if (totalBullVol > totalBearVol * 1.08) bullScore += 1;
+  else if (totalBearVol > totalBullVol * 1.08) bearScore += 1;
+
+  // 4. Terminal Box Dominance & Direction
+  if (lastSample.d === 1) bullScore += 1;
+  else if (lastSample.d === -1) bearScore += 1;
+
+  if (lastDomSide === 'BULL') bullScore += 1.5;
+  else if (lastDomSide === 'BEAR') bearScore += 1.5;
+
+  // 5. Breakout vs Breakdown beyond boundary
+  if (livePrice > maxHigh) bullScore += 3;
+  if (livePrice < minLow) bearScore += 3;
+
+  const isBear = (bearScore > bullScore);
+  const isBull = (bullScore > bearScore);
 
   let runwayGapPts = 0;
   let runwayGapText = '';
@@ -2973,6 +3008,8 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     highestEvrSample,
     eqShelf,
     isBear,
+    isBull,
+    netDisplacement,
     runwayGapPts,
     runwayGapText,
     runwayHeaderColor,
@@ -3099,10 +3136,69 @@ export function openExtensionNetworkModal(chart) {
       });
     }
 
-    const themeColor = d.isBear ? '#ef4444' : '#22c55e';
-    const themeSoft = d.isBear ? '#fca5a5' : '#86efac';
-    const themeBg = d.isBear ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)';
-    const themeBorder = d.isBear ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)';
+    // Determine scope-specific direction (Bull vs Bear vs Trap vs Exhaustion vs Neutral)
+    let scopeIsBear = false;
+    let scopeIsBull = false;
+    let scopeIsTrap = false;
+    let scopeTrapName = '';
+    let scopeIsExhaustion = false;
+    let scopeExhName = '';
+
+    if (tabKey.startsWith('box_') && sample) {
+      const y = sample.metrics?.yieldAnalysis;
+      if (y?.isTrap) {
+        scopeIsTrap = true;
+        scopeTrapName = y.trapType === 'CEILING_TRAP' ? 'CEILING TRAP' : 'FLOOR TRAP';
+        scopeIsBear = (y.trapType === 'CEILING_TRAP');
+        scopeIsBull = (y.trapType === 'FLOOR_TRAP');
+      } else if (y?.isExhaustion) {
+        scopeIsExhaustion = true;
+        scopeExhName = y.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND' : 'NO SUPPLY';
+        scopeIsBear = (y.exhaustionType === 'NO_DEMAND');
+        scopeIsBull = (y.exhaustionType === 'NO_SUPPLY');
+      } else if (y?.domSide === 'BULL') {
+        scopeIsBull = true;
+        scopeIsBear = false;
+      } else if (y?.domSide === 'BEAR') {
+        scopeIsBear = true;
+        scopeIsBull = false;
+      } else if (sample.d === 1) {
+        scopeIsBull = true;
+        scopeIsBear = false;
+      } else if (sample.d === -1) {
+        scopeIsBear = true;
+        scopeIsBull = false;
+      } else if (sample.netDelta > 0) {
+        scopeIsBull = true;
+        scopeIsBear = false;
+      } else if (sample.netDelta < 0) {
+        scopeIsBear = true;
+        scopeIsBull = false;
+      } else {
+        scopeIsBull = d.isBull;
+        scopeIsBear = d.isBear;
+      }
+    } else {
+      // All Network scope
+      scopeIsBear = d.isBear;
+      scopeIsBull = d.isBull;
+    }
+
+    const themeColor = scopeIsTrap || scopeIsExhaustion
+      ? '#fbbf24'
+      : (scopeIsBull ? '#22c55e' : (scopeIsBear ? '#ef4444' : '#00e5ff'));
+
+    const themeSoft = scopeIsTrap || scopeIsExhaustion
+      ? '#fde68a'
+      : (scopeIsBull ? '#86efac' : (scopeIsBear ? '#fca5a5' : '#a5f3fc'));
+
+    const themeBg = scopeIsTrap || scopeIsExhaustion
+      ? 'rgba(251, 191, 36, 0.18)'
+      : (scopeIsBull ? 'rgba(34, 197, 94, 0.18)' : (scopeIsBear ? 'rgba(239, 68, 68, 0.18)' : 'rgba(0, 229, 255, 0.18)'));
+
+    const themeBorder = scopeIsTrap || scopeIsExhaustion
+      ? 'rgba(251, 191, 36, 0.45)'
+      : (scopeIsBull ? 'rgba(34, 197, 94, 0.45)' : (scopeIsBear ? 'rgba(239, 68, 68, 0.45)' : 'rgba(0, 229, 255, 0.45)'));
 
     // Update outer frame polygon stroke
     const framePolygon = document.getElementById('tvNexusFramePolygon');
@@ -3119,16 +3215,31 @@ export function openExtensionNetworkModal(chart) {
     // 3. Status Pill
     const pill = document.getElementById('tvNexusStatusPill');
     if (pill) {
-      if (d.isBear) {
-        pill.textContent = 'BEAR ACCELERATION';
+      if (scopeIsTrap) {
+        pill.textContent = `⚠️ ${scopeTrapName}`;
+        pill.style.background = '#f59e0b';
+        pill.style.color = '#000000';
+        pill.style.boxShadow = '0 0 16px rgba(245, 158, 11, 0.8)';
+      } else if (scopeIsExhaustion) {
+        pill.textContent = `⚠️ ${scopeExhName}`;
+        pill.style.background = '#f59e0b';
+        pill.style.color = '#000000';
+        pill.style.boxShadow = '0 0 16px rgba(245, 158, 11, 0.8)';
+      } else if (scopeIsBull) {
+        pill.textContent = tabKey === 'network' ? 'BULL ACCELERATION' : 'BULL DOMINANT';
+        pill.style.background = '#22c55e';
+        pill.style.color = '#000000';
+        pill.style.boxShadow = '0 0 16px rgba(34, 197, 94, 0.8)';
+      } else if (scopeIsBear) {
+        pill.textContent = tabKey === 'network' ? 'BEAR ACCELERATION' : 'BEAR DOMINANT';
         pill.style.background = '#ef4444';
         pill.style.color = '#ffffff';
         pill.style.boxShadow = '0 0 16px rgba(239, 68, 68, 0.8)';
       } else {
-        pill.textContent = 'BULL ACCELERATION';
-        pill.style.background = '#22c55e';
+        pill.textContent = 'BALANCED ROTATION';
+        pill.style.background = '#00e5ff';
         pill.style.color = '#000000';
-        pill.style.boxShadow = '0 0 16px rgba(34, 197, 94, 0.8)';
+        pill.style.boxShadow = '0 0 16px rgba(0, 229, 255, 0.8)';
       }
     }
 
@@ -3139,7 +3250,7 @@ export function openExtensionNetworkModal(chart) {
 
     let currentGapPts = 0;
     let currentGapText = '';
-    if (d.isBear) {
+    if (scopeIsBear) {
       if (d.livePrice < dispFloor) {
         currentGapPts = -(dispFloor - d.livePrice);
         currentGapText = `${currentGapPts.toFixed(1)} PTS BEAR RUNWAY`;
@@ -3172,8 +3283,8 @@ export function openExtensionNetworkModal(chart) {
       shelfCeilingRow.style.background = themeBg;
     }
     if (shelfCeilingLabel) {
-      shelfCeilingLabel.textContent = d.isBear ? '🔴 CEILING' : '🟢 CEILING BREAK';
-      shelfCeilingLabel.style.color = themeColor;
+      shelfCeilingLabel.textContent = scopeIsBull ? '🟢 CEILING BREAK' : '🔴 CEILING';
+      shelfCeilingLabel.style.color = scopeIsBull ? '#22c55e' : '#ef4444';
     }
 
     const shelfLiveRow = document.getElementById('tvNexusShelfLiveRow');
@@ -3197,8 +3308,8 @@ export function openExtensionNetworkModal(chart) {
       shelfFloorRow.style.background = themeBg;
     }
     if (shelfFloorLabel) {
-      shelfFloorLabel.textContent = d.isBear ? '🔴 FLOOR BREAK' : '🟢 FLOOR BASE';
-      shelfFloorLabel.style.color = themeColor;
+      shelfFloorLabel.textContent = scopeIsBear ? '🔴 FLOOR BREAK' : '🟢 FLOOR BASE';
+      shelfFloorLabel.style.color = scopeIsBear ? '#ef4444' : '#22c55e';
     }
 
     const shelfCeiling = document.getElementById('tvNexusShelfCeiling');
@@ -3213,9 +3324,9 @@ export function openExtensionNetworkModal(chart) {
     if (shelfPoc) shelfPoc.textContent = `$${dispPoc.toFixed(2)}`;
     if (shelfFloor) shelfFloor.textContent = `$${dispFloor.toFixed(2)}`;
     if (shelfStop) {
-      const currentInval = d.isBear ? dispCeiling : dispFloor;
-      const currentInvalSign = d.isBear ? '>' : '<';
-      shelfStop.textContent = `${currentInvalSign} $${currentInval.toFixed(2)} (${d.isBear ? 'BEAR INVAL' : 'BULL INVAL'})`;
+      const currentInval = scopeIsBear ? dispCeiling : dispFloor;
+      const currentInvalSign = scopeIsBear ? '>' : '<';
+      shelfStop.textContent = `${currentInvalSign} $${currentInval.toFixed(2)} (${scopeIsBear ? 'BEAR INVAL' : 'BULL INVAL'})`;
       shelfStop.style.color = '#ef4444'; // Invalidation tripwire is red
     }
 
@@ -3236,12 +3347,12 @@ export function openExtensionNetworkModal(chart) {
     const squeezeStatusVal = document.getElementById('tvNexusSqueezeStatusVal');
 
     if (trappedTitle) {
-      trappedTitle.textContent = d.isBear ? '⚡ TRAPPED BUYERS' : '⚡ TRAPPED SELLERS';
+      trappedTitle.textContent = scopeIsBear ? '⚡ TRAPPED BUYERS' : '⚡ TRAPPED SELLERS';
       trappedTitle.style.color = themeColor;
     }
     if (trappedDeltaEl) {
       const deltaSign = scopeDelta < 0 ? '-' : '+';
-      const pressureLabel = d.isBear ? 'BEAR PRESSURE' : 'BULL PRESSURE';
+      const pressureLabel = scopeIsBear ? 'BEAR PRESSURE' : (scopeIsBull ? 'BULL PRESSURE' : 'BALANCED');
       trappedDeltaEl.textContent = `${deltaSign}${formatVolNumber(Math.abs(scopeDelta))} Δ (${pressureLabel})`;
       trappedDeltaEl.style.color = themeColor;
     }
@@ -3257,17 +3368,17 @@ export function openExtensionNetworkModal(chart) {
       squeezeFuelBar.style.boxShadow = `0 0 10px ${themeColor}aa`;
     }
     if (squeezeTriggerVal) {
-      const trigSign = d.isBear ? '<' : '>';
-      const trigLabel = d.isBear ? '(BREAKDOWN)' : '(BREAKOUT)';
-      const trigPrice = d.isBear ? dispFloor : dispCeiling;
+      const trigSign = scopeIsBear ? '<' : '>';
+      const trigLabel = scopeIsBear ? '(BREAKDOWN)' : '(BREAKOUT)';
+      const trigPrice = scopeIsBear ? dispFloor : dispCeiling;
       squeezeTriggerVal.textContent = `TRIGGER: ${trigSign} $${trigPrice.toFixed(2)} ${trigLabel}`;
     }
     if (squeezePressureVal) {
-      squeezePressureVal.textContent = `${squeezePressurePct}% ${d.isBear ? 'BEAR COIL' : 'BULL COIL'}`;
+      squeezePressureVal.textContent = `${squeezePressurePct}% ${scopeIsBear ? 'BEAR COIL' : (scopeIsBull ? 'BULL COIL' : 'PRESSURE')}`;
       squeezePressureVal.style.color = themeColor;
     }
     if (squeezeStatusVal) {
-      squeezeStatusVal.textContent = d.isBear ? 'ACTIVE BEAR BREAK' : 'ACTIVE BULL BREAK';
+      squeezeStatusVal.textContent = scopeIsBear ? 'ACTIVE BEAR BREAK' : (scopeIsBull ? 'ACTIVE BULL BREAK' : 'BALANCED COMPRESSION');
       squeezeStatusVal.style.color = themeColor;
     }
 
@@ -3323,7 +3434,7 @@ export function openExtensionNetworkModal(chart) {
 
     if (tapeTitle) tapeTitle.style.color = themeColor;
     if (tapeSurgeBadge) {
-      tapeSurgeBadge.textContent = `⚡ ${surgeMultiplier}x ${d.isBear ? 'BEAR SPEED' : 'BULL SPEED'}`;
+      tapeSurgeBadge.textContent = `⚡ ${surgeMultiplier}x ${scopeIsBear ? 'BEAR SPEED' : (scopeIsBull ? 'BULL SPEED' : 'ROTATION SPEED')}`;
       tapeSurgeBadge.style.color = themeColor;
       tapeSurgeBadge.style.background = themeBg;
       tapeSurgeBadge.style.borderColor = themeBorder;
@@ -3338,7 +3449,7 @@ export function openExtensionNetworkModal(chart) {
       tapeSpeedBar.style.boxShadow = `0 0 10px ${themeColor}aa`;
     }
     if (tapeBaseSpeedVal) {
-      tapeBaseSpeedVal.textContent = `BASE: ${baseMudSpeed}s/PT (${d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING'})`;
+      tapeBaseSpeedVal.textContent = `BASE: ${baseMudSpeed}s/PT (${scopeIsBear ? 'BEAR BUILDING' : (scopeIsBull ? 'BULL BUILDING' : 'BALANCED')})`;
     }
     if (tapeSurgePct) {
       const surgeSign = surgePct >= 0 ? '+' : '';
@@ -3346,7 +3457,7 @@ export function openExtensionNetworkModal(chart) {
       tapeSurgePct.style.color = themeColor;
     }
     if (tapeStatusVal) {
-      tapeStatusVal.textContent = d.isBear ? 'CLEAN BEAR FLOW' : 'CLEAN BULL FLOW';
+      tapeStatusVal.textContent = scopeIsBear ? 'CLEAN BEAR FLOW' : (scopeIsBull ? 'CLEAN BULL FLOW' : 'BALANCED TAPE');
       tapeStatusVal.style.color = themeColor;
     }
 
@@ -3355,7 +3466,7 @@ export function openExtensionNetworkModal(chart) {
     if (loadTitle) loadTitle.style.color = themeSoft;
     const loadValEl = document.getElementById('tvNexusLoadVal');
     if (loadValEl) {
-      const loadText = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
+      const loadText = scopeIsBear ? 'BEAR BUILDING' : (scopeIsBull ? 'BULL BUILDING' : 'BALANCED');
       loadValEl.textContent = `${scopeEvr.toLocaleString()} v/pt (${loadText})`;
       loadValEl.style.color = themeColor;
     }
@@ -3407,7 +3518,7 @@ export function openExtensionNetworkModal(chart) {
       }
 
       let barsHtml = '';
-      const cylinderPalette = d.isBear
+      const cylinderPalette = scopeIsBear
         ? ['#450a0a', '#7f1d1d', '#991b1b', '#b91c1c', '#dc2626', '#ef4444', '#f87171', '#ef4444']
         : ['#052e16', '#14532d', '#166534', '#15803d', '#16a34a', '#22c55e', '#4ade80', '#22c55e'];
 
@@ -3441,7 +3552,7 @@ export function openExtensionNetworkModal(chart) {
     }
 
     // Pure Regime Line Chart Palette (Option 1)
-    const linePalette = d.isBear
+    const linePalette = scopeIsBear
       ? {
           b1: '#fca5a5',         // Soft Rose Red (Base/Building)
           b1Border: '#f87171',
@@ -3540,7 +3651,7 @@ export function openExtensionNetworkModal(chart) {
       const txt = calloutAbsorb.querySelector('text');
       if (txt) {
         txt.setAttribute('fill', linePalette.b1Text);
-        txt.textContent = d.isBear ? '🛡️ BEAR BUILDING' : '🛡️ BULL BUILDING';
+        txt.textContent = scopeIsBear ? '🛡️ BEAR BUILDING' : '🛡️ BULL BUILDING';
       }
     }
     if (calloutVacuum) {
@@ -3549,7 +3660,7 @@ export function openExtensionNetworkModal(chart) {
       const txt = calloutVacuum.querySelector('text');
       if (txt) {
         txt.setAttribute('fill', linePalette.b2Text);
-        txt.textContent = d.isBear ? '⚡ BEAR BREAK' : '⚡ BULL BREAK';
+        txt.textContent = scopeIsBear ? '⚡ BEAR BREAK' : '⚡ BULL BREAK';
       }
     }
     if (calloutRunway) {
@@ -3558,7 +3669,7 @@ export function openExtensionNetworkModal(chart) {
       const txt = calloutRunway.querySelector('text');
       if (txt) {
         txt.setAttribute('fill', linePalette.b3Text);
-        txt.textContent = d.isBear ? '🎯 BEAR RUNWAY' : '🎯 BULL RUNWAY';
+        txt.textContent = scopeIsBear ? '🎯 BEAR RUNWAY' : '🎯 BULL RUNWAY';
       }
     }
 
@@ -3588,9 +3699,10 @@ export function openExtensionNetworkModal(chart) {
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
         const seqParts = d.samples.map(s => {
-          const stage = s.boxNum === 1 ? (d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING')
-                      : s.boxNum === 2 ? (d.isBear ? 'BEAR BREAK' : 'BULL BREAK')
-                      : (d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY');
+          const y = s.metrics?.yieldAnalysis;
+          let stage = (s.d === 1 || y?.domSide === 'BULL') ? 'BULL' : 'BEAR';
+          if (y?.isTrap) stage = (y.trapType === 'CEILING_TRAP' ? 'BULL TRAP' : 'BEAR TRAP');
+          else if (y?.isExhaustion) stage = (y.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND' : 'NO SUPPLY');
           return `${stage} (B${s.boxNum})`;
         });
         oscAreaNote.textContent = 'SEQUENCE: ' + seqParts.join(' → ');
@@ -3611,8 +3723,8 @@ export function openExtensionNetworkModal(chart) {
       if (calloutRunway) calloutRunway.style.display = 'none';
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
-        const term = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
-        oscAreaNote.textContent = `BOX 1: ${term} // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT`;
+        const b1Dom = (d.samples[0]?.d === 1 || d.samples[0]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL ADVANCE' : 'BEAR ADVANCE';
+        oscAreaNote.textContent = `BOX 1: ${b1Dom} // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT`;
       }
     } else if (tabKey === 'box_1') {
       if (lineBox1) lineBox1.style.opacity = '0.15';
@@ -3630,10 +3742,10 @@ export function openExtensionNetworkModal(chart) {
       if (calloutRunway) calloutRunway.style.display = 'none';
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
-        const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
+        const b2Dom = (d.samples[1]?.d === 1 || d.samples[1]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL ADVANCE' : 'BEAR ADVANCE';
         const box2Shift = d.samples.length >= 2 ? Math.round(((d.samples[1].evr - d.samples[0].evr) / Math.max(1, d.samples[0].evr)) * 100) : d.deltaEvr;
         const shiftSign = box2Shift >= 0 ? '+' : '';
-        oscAreaNote.textContent = `BOX 2: ${term} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (${shiftSign}${box2Shift}% FRICTION)`;
+        oscAreaNote.textContent = `BOX 2: ${b2Dom} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (${shiftSign}${box2Shift}% FRICTION)`;
       }
     } else if (tabKey === 'box_2') {
       if (lineBox1) lineBox1.style.opacity = '0.15';
@@ -3651,8 +3763,8 @@ export function openExtensionNetworkModal(chart) {
       if (calloutRunway) calloutRunway.style.display = 'block';
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
-        const term = d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY';
-        oscAreaNote.textContent = `BOX 3: ${term} // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT`;
+        const b3Dom = (d.samples[2]?.d === 1 || d.samples[2]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL ADVANCE' : 'BEAR ADVANCE';
+        oscAreaNote.textContent = `BOX 3: ${b3Dom} // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT`;
       }
     }
 
@@ -3662,7 +3774,7 @@ export function openExtensionNetworkModal(chart) {
 
     const evrMetaEl = document.getElementById('tvNexusEvrOscMeta');
     if (evrMetaEl) {
-      const evrTag = d.isBear ? 'EXTREME BURN 🔥' : 'STRONG TAKEOFF 🔥';
+      const evrTag = scopeIsBear ? 'EXTREME BURN 🔥' : 'CLEAN EXPANSION ⚡';
       const evrSign = d.deltaEvr >= 0 ? '+' : '';
       evrMetaEl.innerHTML = `EFFORT: <strong style="color: ${themeColor};">${evrTag}</strong> • SHIFT: <strong style="color: #facc15;">${evrSign}${d.deltaEvr}%</strong>`;
     }
@@ -3727,7 +3839,8 @@ export function openExtensionNetworkModal(chart) {
       const txt = evrCalloutMud.querySelector('text');
       if (txt) {
         txt.setAttribute('fill', linePalette.b1Text);
-        txt.textContent = d.isBear ? `🔥 BEAR BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)` : `🔥 BULL BUILDING (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)`;
+        const b1Term = (d.samples[0]?.d === 1 || d.samples[0]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL BASE' : 'BEAR BASE';
+        txt.textContent = `🔥 ${b1Term} (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)`;
       }
     }
     if (evrCalloutShift) {
@@ -3749,7 +3862,8 @@ export function openExtensionNetworkModal(chart) {
         txt.setAttribute('fill', linePalette.b3Text);
         const runwaySample = d.samples[d.samples.length - 1];
         const evrSuffix = runwaySample ? ` (${runwaySample.evr.toLocaleString()} V/PT)` : '';
-        txt.textContent = d.isBear ? `🚀 OPEN BEAR RUNWAY${evrSuffix}` : `🚀 OPEN BULL RUNWAY${evrSuffix}`;
+        const runTerm = (runwaySample?.d === 1 || runwaySample?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'OPEN BULL RUNWAY' : 'OPEN BEAR RUNWAY';
+        txt.textContent = `🚀 ${runTerm}${evrSuffix}`;
       }
     }
 
@@ -3767,10 +3881,10 @@ export function openExtensionNetworkModal(chart) {
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
         const evrParts = d.samples.map(s => {
-          const stage = s.boxNum === 1 ? (d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING')
-                      : s.boxNum === 2 ? (d.isBear ? 'BEAR BREAK' : 'BULL BREAK')
-                      : (d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY');
-          return `${stage} (B${s.boxNum})`;
+          const y = s.metrics?.yieldAnalysis;
+          let label = (s.d === 1 || y?.domSide === 'BULL') ? 'BULL' : 'BEAR';
+          if (y?.isTrap) label = 'TRAP';
+          return `${label} ${s.evr.toLocaleString()} v/pt (B${s.boxNum})`;
         });
         evrAreaNote.textContent = 'EFFORT: ' + evrParts.join(' → ');
       }
@@ -3787,8 +3901,8 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
-        const term = d.isBear ? 'BEAR BUILDING' : 'BULL BUILDING';
-        evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // ${term}`;
+        const b1Dom = (d.samples[0]?.d === 1 || d.samples[0]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL EFFORT' : 'BEAR EFFORT';
+        evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // ${b1Dom}`;
       }
     } else if (tabKey === 'box_1') {
       if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
@@ -3803,10 +3917,10 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
-        const term = d.isBear ? 'BEAR BREAK' : 'BULL BREAK';
+        const b2Dom = (d.samples[1]?.d === 1 || d.samples[1]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL EFFORT' : 'BEAR EFFORT';
         const box2Shift = d.samples.length >= 2 ? Math.round(((d.samples[1].evr - d.samples[0].evr) / Math.max(1, d.samples[0].evr)) * 100) : d.deltaEvr;
         const shiftSign = box2Shift >= 0 ? '+' : '';
-        evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${term} (${shiftSign}${box2Shift}% FRICTION)`;
+        evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${b2Dom} (${shiftSign}${box2Shift}% FRICTION)`;
       }
     } else if (tabKey === 'box_2') {
       if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
@@ -3821,8 +3935,8 @@ export function openExtensionNetworkModal(chart) {
       if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
-        const term = d.isBear ? 'BEAR RUNWAY' : 'BULL RUNWAY';
-        evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // ${term}`;
+        const b3Dom = (d.samples[2]?.d === 1 || d.samples[2]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL EFFORT' : 'BEAR EFFORT';
+        evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // ${b3Dom}`;
       }
     }
 
@@ -3834,23 +3948,23 @@ export function openExtensionNetworkModal(chart) {
     const footFloor = document.getElementById('tvNexusFootFloor');
     if (footCeiling) {
       footCeiling.textContent = `$${d.maxHigh.toFixed(2)}`;
-      footCeiling.style.color = d.isBear ? '#ef4444' : '#22c55e';
+      footCeiling.style.color = '#ef4444'; // Ceiling resistance is always red
     }
     if (footMid) {
       footMid.textContent = `$${d.eqShelf.toFixed(2)}`;
-      footMid.style.color = '#facc15';
+      footMid.style.color = '#facc15'; // Mid eq shelf is yellow
     }
     if (footVwap) {
       footVwap.textContent = `$${d.networkVwap.toFixed(2)}`;
-      footVwap.style.color = '#f59e0b';
+      footVwap.style.color = '#818cf8'; // Network VWAP is indigo
     }
     if (footPoc) {
       footPoc.textContent = `$${d.primaryAnchor.toFixed(2)}`;
-      footPoc.style.color = '#facc15';
+      footPoc.style.color = '#00e5ff'; // Primary POC anchor is cyan
     }
     if (footFloor) {
       footFloor.textContent = `$${d.minLow.toFixed(2)}`;
-      footFloor.style.color = d.isBear ? '#ef4444' : '#22c55e';
+      footFloor.style.color = '#10b981'; // Support floor is green
     }
   };
 

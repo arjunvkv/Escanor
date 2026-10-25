@@ -6,8 +6,7 @@ const engineCode = fs.readFileSync('frontend/chart/js/tv_chart_engine.js', 'utf-
 
 console.log('--- Verifying Structural Runway & Widescreen Engine Updates ---');
 
-// Check that isBear detection exists
-assert(engineCode.includes('const isBear = (lastSample.d === -1)'), 'isBear detection logic missing');
+assert(engineCode.includes('const isBear = (bearScore > bullScore)'), 'isBear detection logic missing');
 assert(engineCode.includes('runwayGapText = `${runwayGapPts.toFixed(1)} PTS BEAR RUNWAY`'), 'Bear runway text calculation missing');
 assert(engineCode.includes('runwayGapText = `${runwayGapPts.toFixed(1)} PTS BEAR BREAK`'), 'Bear break text calculation missing');
 assert(engineCode.includes('invalidationText = `${invalidationSign} $${invalidationTripwire.toFixed(2)} (${isBear ? \'BEAR INVAL\' : \'BULL INVAL\'})`'), 'Invalidation text formatting missing');
