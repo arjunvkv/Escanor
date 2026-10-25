@@ -384,7 +384,30 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     }
   }
 
-  // Detect Thinning Out / Exhaustion (High volume consumed with collapsing yield or stalled progress inside)
+  // Detect Thinning Out / Exhaustion / Absorption Traps
+  let isTrap = false;
+  let trapType = '';
+
+  // Ceiling Trap: Heavy volume buyers pushing into resistance with high absorption or poor yield
+  if (domSide === 'BULL' || bullVol >= 8000) {
+    const isNearCeiling = (H_b >= topPrice - 0.25 * priceRange);
+    if (isNearCeiling && (absorbPct >= 55 || bullYield < 1.0) && bullVol >= 8000) {
+      isTrap = true;
+      trapType = 'CEILING_TRAP';
+      isThinning = true;
+    }
+  }
+
+  // Floor Trap: Heavy volume sellers pushing into support with high absorption or poor yield
+  if (domSide === 'BEAR' || bearVol >= 8000) {
+    const isNearFloor = (L_b <= bottomPrice + 0.25 * priceRange);
+    if (isNearFloor && (absorbPct >= 55 || bearYield < 1.0) && bearVol >= 8000) {
+      isTrap = true;
+      trapType = 'FLOOR_TRAP';
+      isThinning = true;
+    }
+  }
+
   if (domSide === 'BEAR') {
     if (bearVol >= 8000 && (bearYield < 0.70 || (absorbPct >= 65 && effBearMove < 6.0))) {
       isThinning = true;
@@ -404,7 +427,9 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     bearYield: Math.round(bearYield * 100) / 100,
     domSide,
     domRatio,
-    isThinning
+    isThinning,
+    isTrap,
+    trapType
   };
 
   return {
@@ -2220,8 +2245,27 @@ export function updateExtensionSeriesRibbon(chart) {
   const SVG_BEAR = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M12 22 L2 4 L12 9 L22 4 Z"/></svg>`;
   const SVG_BAL = `<svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><rect x="4" y="4" width="16" height="16" transform="rotate(45 12 12)"/></svg>`;
 
+  // Identify the box that took LESS effort to move BIG (Maximum Yield / Ease of Movement)
+  let mostEfficientBoxIdx = -1;
+  let highestEfficiency = 0;
+  if (sortedRects.length >= 2) {
+    sortedRects.forEach((item, idx) => {
+      const y = item.metrics?.yieldAnalysis;
+      if (!y) return;
+      const boxEff = Math.max(y.bullYield, y.bearYield);
+      if (boxEff > highestEfficiency) {
+        highestEfficiency = boxEff;
+        mostEfficientBoxIdx = idx;
+      }
+    });
+    // Require minimum 1.1 pt/K to qualify as truly efficient
+    if (highestEfficiency < 1.1) {
+      mostEfficientBoxIdx = -1;
+    }
+  }
+
   // Dynamic Volume Yield & Dominance Style (e.g. B1: ▼ 10.4K, B2: ▼ 7.1K, B4: ▲ 18.2K)
-  const getBoxTagStyle = (m, isLast) => {
+  const getBoxTagStyle = (m, isLast, isMostEfficient = false) => {
     if (!m || !m.yieldAnalysis) {
       const volNum = m ? ((m.totalVol || 0) / 1000).toFixed(1) : '0';
       return {
@@ -2239,6 +2283,8 @@ export function updateExtensionSeriesRibbon(chart) {
     const domSide = y.domSide;
     const domRatio = y.domRatio;
     const isThinning = y.isThinning;
+    const isTrap = y.isTrap;
+    const trapType = y.trapType;
     const bullVolK = (y.bullVol / 1000).toFixed(1);
     const bearVolK = (y.bearVol / 1000).toFixed(1);
     const bYieldStr = y.bullYield.toFixed(2);
@@ -2255,7 +2301,26 @@ export function updateExtensionSeriesRibbon(chart) {
     let border = 'rgba(148, 163, 184, 0.30)';
     let shadow = 'none';
 
-    if (domSide === 'BEAR') {
+    if (isMostEfficient) {
+      // Highlight the box that took LESS effort to move BIG in Electric Cyan (never green or red)
+      const effSideIcon = domSide === 'BEAR' ? SVG_BEAR : (domSide === 'BULL' ? SVG_BULL : SVG_BAL);
+      const effVolK = domSide === 'BEAR' ? bearVolK : (domSide === 'BULL' ? bullVolK : maxSideVolK);
+      shortTag = `⚡ ${effSideIcon} ${effVolK}K`;
+      domLabel = `Maximum Efficiency (Lowest Effort for Biggest Movement: ${highestEfficiency.toFixed(2)} pt/K)`;
+      color = '#00e5ff';
+      bg = 'rgba(0, 229, 255, 0.18)';
+      border = '#00e5ff';
+      shadow = '0 0 12px rgba(0, 229, 255, 0.55)';
+    } else if (isTrap) {
+      const trapSide = trapType === 'CEILING_TRAP' ? 'Ceiling Absorption (Bull Trap)' : 'Floor Absorption (Bear Trap)';
+      const trapVolK = trapType === 'CEILING_TRAP' ? bullVolK : bearVolK;
+      shortTag = `⚠️ ${trapVolK}K TRAP`;
+      domLabel = `${trapSide} — Heavy Effort Absorbed at Barrier`;
+      color = '#fb923c';
+      bg = 'rgba(251, 146, 60, 0.18)';
+      border = 'rgba(251, 146, 60, 0.60)';
+      shadow = '0 0 10px rgba(251, 146, 60, 0.50)';
+    } else if (domSide === 'BEAR') {
       shortTag = isThinning ? `${SVG_BEAR} ${bearVolK}K ⚠️` : `${SVG_BEAR} ${bearVolK}K`;
       domLabel = isThinning
         ? `Bears Thinning Out (Effort High, Yield Collapsing)`
@@ -2342,12 +2407,15 @@ export function updateExtensionSeriesRibbon(chart) {
   sortedRects.forEach((item, idx) => {
     const m = item.metrics;
     const isLast = (idx === sortedRects.length - 1);
-    const styleObj = getBoxTagStyle(m, isLast);
+    const isMostEfficient = (idx === mostEfficientBoxIdx);
+    const styleObj = getBoxTagStyle(m, isLast, isMostEfficient);
     const boxTagLabel = `B${idx + 1}: ${styleObj.shortTag}`;
     const boxTooltip = `Box ${idx + 1}: ${styleObj.fullTooltip}`;
 
+    const highlightCls = isMostEfficient ? ' efficient-highlight' : '';
+
     seqHtml += `
-      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="${boxTooltip}" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
+      <span class="tv-ext-box-tag${highlightCls}" data-box-idx="${idx}" title="${boxTooltip}" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
         ${boxTagLabel}
       </span>
     `;
@@ -2356,28 +2424,27 @@ export function updateExtensionSeriesRibbon(chart) {
       const nextY = nextM?.yieldAnalysis;
       const currY = m?.yieldAnalysis;
       if (nextY && currY) {
-        // Delta Effort between boxes (% Vol change)
-        const prevVol = Math.max(1, m.totalVol || 1);
-        const nextVol = Math.max(1, nextM.totalVol || 1);
-        const deltaEffortPct = Math.round(((nextVol - prevVol) / prevVol) * 100);
-        const volSign = deltaEffortPct >= 0 ? '+' : '';
+        // Delta Effort between boxes for Bull and Bear (% change)
+        const deltaBullEffort = Math.round(((nextY.bullVol - currY.bullVol) / Math.max(1, currY.bullVol)) * 100);
+        const deltaBearEffort = Math.round(((nextY.bearVol - currY.bearVol) / Math.max(1, currY.bearVol)) * 100);
+        const bullSign = deltaBullEffort >= 0 ? '+' : '';
+        const bearSign = deltaBearEffort >= 0 ? '+' : '';
 
-        // Delta Yield for Bull and Bear
-        const deltaBull = Math.round((nextY.bullYield - currY.bullYield) * 10) / 10;
-        const deltaBear = Math.round((nextY.bearYield - currY.bearYield) * 10) / 10;
-        const bullSign = deltaBull >= 0 ? '+' : '';
-        const bearSign = deltaBear >= 0 ? '+' : '';
+        const bullMovePts = nextY.bullMovePts.toFixed(1);
+        const bearMovePts = nextY.bearMovePts.toFixed(1);
 
-        const connTooltip = `Inter-Box Effort & Efficiency Shift (B${idx + 1} → B${idx + 2}):
-• Delta Effort: ${(prevVol / 1000).toFixed(1)}K → ${(nextVol / 1000).toFixed(1)}K (${volSign}${deltaEffortPct}% Vol)
-• Bull Yield: ${currY.bullYield.toFixed(1)} → ${nextY.bullYield.toFixed(1)} pt/K (${bullSign}${deltaBull.toFixed(1)} shift)
-• Bear Yield: ${currY.bearYield.toFixed(1)} → ${nextY.bearYield.toFixed(1)} pt/K (${bearSign}${deltaBear.toFixed(1)} shift)`;
+        const bullTopText = `${bullSign}${deltaBullEffort}% / ${bullMovePts}pt`;
+        const bearBottomText = `${bearSign}${deltaBearEffort}% / ${bearMovePts}pt`;
+
+        const connTooltip = `Inter-Box Effort vs Movement Shift (B${idx + 1} → B${idx + 2}):
+• Bull Effort Delta: ${bullSign}${deltaBullEffort}% Vol → Upward Movement: ${bullMovePts}pt (${nextY.bullYield} pt/K)
+• Bear Effort Delta: ${bearSign}${deltaBearEffort}% Vol → Downward Movement: ${bearMovePts}pt (${nextY.bearYield} pt/K)`;
 
         seqHtml += `
           <div class="tv-ext-connector" title="${connTooltip}">
-            <span class="tv-ext-conn-bull">${nextY.bullYield.toFixed(1)} pt/K (${bullSign}${deltaBull.toFixed(1)})</span>
-            <span class="tv-ext-conn-arrow">→ ${volSign}${deltaEffortPct}% Vol</span>
-            <span class="tv-ext-conn-bear">${nextY.bearYield.toFixed(1)} pt/K (${bearSign}${deltaBear.toFixed(1)})</span>
+            <span class="tv-ext-conn-bull">${bullTopText}</span>
+            <span class="tv-ext-conn-arrow">→</span>
+            <span class="tv-ext-conn-bear">${bearBottomText}</span>
           </div>
         `;
       } else {
@@ -2428,11 +2495,18 @@ export function updateExtensionSeriesRibbon(chart) {
   let dispTitle = `Net Sequence Price Ground: ${dispSign}${netDisplacement.toFixed(1)} pts (from $${startPrice.toFixed(2)} to $${currentPrice.toFixed(2)}) • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
 
   if (lastYield) {
-    if (lastYield.isThinning) {
+    if (lastYield.isTrap) {
+      dispCls = 'dominant-thinning';
+      dispIcon = '⚠️';
+      const volNum = (lastYield.trapType === 'CEILING_TRAP' ? lastYield.bullVol : lastYield.bearVol) / 1000;
+      const trapName = lastYield.trapType === 'CEILING_TRAP' ? 'CEILING TRAP' : 'FLOOR TRAP';
+      dispText = `${volNum.toFixed(1)}K ${trapName}`;
+      dispTitle = `⚠️ ${trapName}: ${volNum.toFixed(1)}K volume absorbed at barrier with stalled progress (${lastYield.bullYield} vs ${lastYield.bearYield} pt/K) • Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
+    } else if (lastYield.isThinning) {
       dispCls = 'dominant-thinning';
       dispIcon = '⚠️';
       const volNum = (lastYield.domSide === 'BEAR' ? lastYield.bearVol : lastYield.bullVol) / 1000;
-      dispText = `${volNum.toFixed(1)}K`;
+      dispText = `${volNum.toFixed(1)}K THINNING`;
       dispTitle = `${lastYield.domSide} THINNING OUT: ${dispText} consumed with collapsing yield (${lastYield.domSide === 'BEAR' ? lastYield.bearYield : lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
     } else if (lastYield.domSide === 'BEAR') {
       dispCls = 'dominant-bear';
@@ -2447,8 +2521,9 @@ export function updateExtensionSeriesRibbon(chart) {
     } else {
       dispCls = 'dominant-neutral';
       dispIcon = SVG_BAL;
-      dispText = `${((lastBoxMetrics.totalVol || 0) / 1000).toFixed(1)}K`;
-      dispTitle = `BALANCED AUCTION: ${dispText} total volume • Equal Yield • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+      const domVolNum = Math.max(lastYield.bullVol, lastYield.bearVol);
+      dispText = `${(domVolNum / 1000).toFixed(1)}K`;
+      dispTitle = `BALANCED AUCTION: ${dispText} volume • Equal Yield (${lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
     }
   }
 

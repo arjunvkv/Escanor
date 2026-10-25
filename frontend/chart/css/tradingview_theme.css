@@ -3428,6 +3428,15 @@ input[type="number"] {
   font-weight: 800;
 }
 
+.tv-ext-chip.dominant-efficient,
+.tv-ext-box-tag.efficient-highlight {
+  background: rgba(0, 229, 255, 0.18) !important;
+  border: 1.5px solid #00e5ff !important;
+  color: #00e5ff !important;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.55) !important;
+  font-weight: 800 !important;
+}
+
 .tv-dir-btn {
   transition: all 0.15s ease;
 }
