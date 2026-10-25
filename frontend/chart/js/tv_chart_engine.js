@@ -342,45 +342,62 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     }
   }
 
-  // --- Dynamic Volume Yield & Dominance Engine (Effort vs Movement) ---
-  // Ensure physical box excursion is accurately reflected
-  bullMovePts = Math.max(bullMovePts, Math.max(0.1, H_b - Math.min(P_0, L_b)));
-  bearMovePts = Math.max(bearMovePts, Math.max(0.1, Math.max(P_0, H_b) - L_b));
+  // --- Dynamic Volume Yield & Dominance Engine (What happened INSIDE the box) ---
+  // Composite internal directional progress (candle displacement + peak excursion inside box)
+  const grossBullProgress = Math.max(0.1, bullMovePts);
+  const grossBearProgress = Math.max(0.1, bearMovePts);
+  const peakBullProgress = Math.max(0, H_b - P_0);
+  const peakBearProgress = Math.max(0, P_0 - L_b);
+  const netBullProgress = Math.max(0, P_1 - P_0);
+  const netBearProgress = Math.max(0, P_0 - P_1);
+
+  // Effective progress inside the box:
+  const effBullMove = Math.max(0.1, grossBullProgress * 0.45 + peakBullProgress * 0.35 + netBullProgress * 0.20);
+  const effBearMove = Math.max(0.1, grossBearProgress * 0.45 + peakBearProgress * 0.35 + netBearProgress * 0.20);
 
   const bullVolK = Math.max(0.1, bullVol / 1000);
   const bearVolK = Math.max(0.1, bearVol / 1000);
-  const bullYield = bullMovePts / bullVolK;
-  const bearYield = bearMovePts / bearVolK;
+  const bullYield = effBullMove / bullVolK;
+  const bearYield = effBearMove / bearVolK;
 
   let domSide = 'NEUTRAL'; // 'BULL' | 'BEAR' | 'NEUTRAL'
   let domRatio = 1.0;
   let isThinning = false;
 
-  if (bearYield > bullYield * 1.10) {
+  if (bearYield > bullYield * 1.15) {
     domSide = 'BEAR';
     domRatio = Math.round((bearYield / Math.max(0.01, bullYield)) * 10) / 10;
-  } else if (bullYield > bearYield * 1.10) {
+  } else if (bullYield > bearYield * 1.15) {
     domSide = 'BULL';
     domRatio = Math.round((bullYield / Math.max(0.01, bearYield)) * 10) / 10;
   } else {
-    domSide = 'NEUTRAL';
-    domRatio = 1.0;
+    // When yields are close, examine internal delta score
+    if (netDeltaPct <= -10) {
+      domSide = 'BEAR';
+      domRatio = Math.round((Math.abs(netDeltaPct) / 10) * 10) / 10;
+    } else if (netDeltaPct >= 10) {
+      domSide = 'BULL';
+      domRatio = Math.round((netDeltaPct / 10) * 10) / 10;
+    } else {
+      domSide = 'NEUTRAL';
+      domRatio = 1.0;
+    }
   }
 
-  // Detect Thinning Out / Exhaustion (High volume consumed with collapsing yield or stalled progress)
+  // Detect Thinning Out / Exhaustion (High volume consumed with collapsing yield or stalled progress inside)
   if (domSide === 'BEAR') {
-    if (bearVol >= 8000 && (bearYield < 0.90 || (absorbPct >= 65 && Math.abs(netMove) < 8.0))) {
+    if (bearVol >= 8000 && (bearYield < 0.70 || (absorbPct >= 65 && effBearMove < 6.0))) {
       isThinning = true;
     }
   } else if (domSide === 'BULL') {
-    if (bullVol >= 8000 && (bullYield < 0.90 || (absorbPct >= 65 && Math.abs(netMove) < 8.0))) {
+    if (bullVol >= 8000 && (bullYield < 0.70 || (absorbPct >= 65 && effBullMove < 6.0))) {
       isThinning = true;
     }
   }
 
   const yieldAnalysis = {
-    bullMovePts: Math.round(bullMovePts * 10) / 10,
-    bearMovePts: Math.round(bearMovePts * 10) / 10,
+    bullMovePts: Math.round(effBullMove * 10) / 10,
+    bearMovePts: Math.round(effBearMove * 10) / 10,
     bullVol: Math.round(bullVol),
     bearVol: Math.round(bearVol),
     bullYield: Math.round(bullYield * 100) / 100,
@@ -2206,12 +2223,13 @@ export function updateExtensionSeriesRibbon(chart) {
   // Dynamic Volume Yield & Dominance Style (e.g. B1: ▼ 10.4K, B2: ▼ 7.1K, B4: ▲ 18.2K)
   const getBoxTagStyle = (m, isLast) => {
     if (!m || !m.yieldAnalysis) {
+      const volNum = m ? ((m.totalVol || 0) / 1000).toFixed(1) : '0';
       return {
         color: '#94a3b8',
         bg: 'rgba(148, 163, 184, 0.12)',
         border: 'rgba(148, 163, 184, 0.30)',
         shadow: 'none',
-        shortTag: `${SVG_BAL} 1.0x`,
+        shortTag: `${SVG_BAL} ${volNum}K`,
         domLabel: 'Balanced Auction (Equal Yield)',
         fullTooltip: 'Balanced Auction (Equal Yield)'
       };
@@ -2228,7 +2246,9 @@ export function updateExtensionSeriesRibbon(chart) {
     const bullMoveStr = y.bullMovePts.toFixed(1);
     const bearMoveStr = y.bearMovePts.toFixed(1);
 
-    let shortTag = `${SVG_BAL} 1.0x`;
+    const maxSideVol = Math.max(y.bullVol, y.bearVol);
+    const maxSideVolK = (maxSideVol / 1000).toFixed(1);
+    let shortTag = `${SVG_BAL} ${maxSideVolK}K`;
     let domLabel = 'Balanced Auction (Equal Yield)';
     let color = '#94a3b8';
     let bg = 'rgba(148, 163, 184, 0.12)';
@@ -2332,19 +2352,32 @@ export function updateExtensionSeriesRibbon(chart) {
       </span>
     `;
     if (!isLast) {
-      const nextY = sortedRects[idx + 1]?.metrics?.yieldAnalysis;
+      const nextM = sortedRects[idx + 1]?.metrics;
+      const nextY = nextM?.yieldAnalysis;
       const currY = m?.yieldAnalysis;
       if (nextY && currY) {
+        // Delta Effort between boxes (% Vol change)
+        const prevVol = Math.max(1, m.totalVol || 1);
+        const nextVol = Math.max(1, nextM.totalVol || 1);
+        const deltaEffortPct = Math.round(((nextVol - prevVol) / prevVol) * 100);
+        const volSign = deltaEffortPct >= 0 ? '+' : '';
+
+        // Delta Yield for Bull and Bear
         const deltaBull = Math.round((nextY.bullYield - currY.bullYield) * 10) / 10;
         const deltaBear = Math.round((nextY.bearYield - currY.bearYield) * 10) / 10;
         const bullSign = deltaBull >= 0 ? '+' : '';
         const bearSign = deltaBear >= 0 ? '+' : '';
-        const connTooltip = `Domination Rate Shift (B${idx + 1} → B${idx + 2}):\n• Bull: ${currY.bullYield.toFixed(1)} → ${nextY.bullYield.toFixed(1)} pt/K (${bullSign}${deltaBull.toFixed(1)})\n• Bear: ${currY.bearYield.toFixed(1)} → ${nextY.bearYield.toFixed(1)} pt/K (${bearSign}${deltaBear.toFixed(1)})`;
+
+        const connTooltip = `Inter-Box Effort & Efficiency Shift (B${idx + 1} → B${idx + 2}):
+• Delta Effort: ${(prevVol / 1000).toFixed(1)}K → ${(nextVol / 1000).toFixed(1)}K (${volSign}${deltaEffortPct}% Vol)
+• Bull Yield: ${currY.bullYield.toFixed(1)} → ${nextY.bullYield.toFixed(1)} pt/K (${bullSign}${deltaBull.toFixed(1)} shift)
+• Bear Yield: ${currY.bearYield.toFixed(1)} → ${nextY.bearYield.toFixed(1)} pt/K (${bearSign}${deltaBear.toFixed(1)} shift)`;
+
         seqHtml += `
           <div class="tv-ext-connector" title="${connTooltip}">
-            <span class="tv-ext-conn-bull">${nextY.bullYield.toFixed(1)} (${bullSign}${deltaBull.toFixed(1)})</span>
-            <span class="tv-ext-conn-arrow">→</span>
-            <span class="tv-ext-conn-bear">${nextY.bearYield.toFixed(1)} (${bearSign}${deltaBear.toFixed(1)})</span>
+            <span class="tv-ext-conn-bull">${nextY.bullYield.toFixed(1)} pt/K (${bullSign}${deltaBull.toFixed(1)})</span>
+            <span class="tv-ext-conn-arrow">→ ${volSign}${deltaEffortPct}% Vol</span>
+            <span class="tv-ext-conn-bear">${nextY.bearYield.toFixed(1)} pt/K (${bearSign}${deltaBear.toFixed(1)})</span>
           </div>
         `;
       } else {
