@@ -10,7 +10,7 @@
  */
 
 import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
-import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal, toggleStructuralInflectionLines, syncStructuralInflectionLines } from './tv_chart_engine.js?v=202610251515';
+import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal, toggleStructuralInflectionLines, syncStructuralInflectionLines } from './tv_chart_engine.js?v=202610251525';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;

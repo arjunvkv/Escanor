@@ -390,40 +390,33 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
 
   if (rects && rects.length >= 2) {
     const allBoxHighs = rects.map(r => {
-      const v0 = r.points?.[0]?.value || 0;
-      const v1 = r.points?.[1]?.value || 0;
-      return Math.max(v0, v1);
+      const vals = (r.points || []).map(p => p?.value).filter(val => typeof val === 'number' && !isNaN(val));
+      return vals.length > 0 ? Math.max(...vals) : 0;
     }).filter(v => v > 0);
     const allBoxLows = rects.map(r => {
-      const v0 = r.points?.[0]?.value || 0;
-      const v1 = r.points?.[1]?.value || 0;
-      return Math.min(v0, v1);
+      const vals = (r.points || []).map(p => p?.value).filter(val => typeof val === 'number' && !isNaN(val));
+      return vals.length > 0 ? Math.min(...vals) : 0;
     }).filter(v => v > 0);
 
     const seqCeil = allBoxHighs.length > 0 ? Math.max(...allBoxHighs) : topPrice;
     const seqFlr = allBoxLows.length > 0 ? Math.min(...allBoxLows) : bottomPrice;
     const seqRng = Math.max(1.0, seqCeil - seqFlr);
 
-    // Is this box testing the ceiling?
-    const isAtCeiling = (H_b >= seqCeil - 0.20 * seqRng || P_1 >= seqCeil - 0.25 * seqRng);
-    // Is this box testing the floor?
-    const isAtFloor = (L_b <= seqFlr + 0.20 * seqRng || P_1 <= seqFlr + 0.25 * seqRng);
+    // Is this box testing the sequence ceiling or floor?
+    const isAtCeiling = (H_b >= seqCeil - 0.25 * seqRng || P_1 >= seqCeil - 0.30 * seqRng);
+    const isAtFloor = (L_b <= seqFlr + 0.25 * seqRng || P_1 <= seqFlr + 0.30 * seqRng);
 
-    // No Demand at Ceiling: Price pushes into ceiling on low/declining volume or stalls under resistance without breakout
-    if (isAtCeiling && domSide === 'BULL' && P_1 <= seqCeil + 0.5) {
-      if (bullVol < 13000 || absorbPct >= 50 || effBullMove < effBearMove * 1.25) {
-        isExhaustion = true;
-        exhaustionType = 'NO_DEMAND';
-        isThinning = true;
-      }
+    // No Demand at Ceiling: Bulls pushing upward into sequence ceiling, but volume is exhausted / low (< 13.5K) without breakout
+    if (isAtCeiling && domSide === 'BULL' && bullVol < 13500 && P_1 <= seqCeil + 0.5) {
+      isExhaustion = true;
+      exhaustionType = 'NO_DEMAND';
+      isThinning = true;
     }
-    // No Supply at Floor: Price pushes into floor on low/declining volume or stalls above support without breakdown
-    else if (isAtFloor && domSide === 'BEAR' && P_1 >= seqFlr - 0.5) {
-      if (bearVol < 13000 || absorbPct >= 50 || effBearMove < effBullMove * 1.25) {
-        isExhaustion = true;
-        exhaustionType = 'NO_SUPPLY';
-        isThinning = true;
-      }
+    // No Supply at Floor: Bears pushing downward into sequence floor, but volume is exhausted / low (< 13.5K) without breakdown
+    else if (isAtFloor && domSide === 'BEAR' && bearVol < 13500 && P_1 >= seqFlr - 0.5) {
+      isExhaustion = true;
+      exhaustionType = 'NO_SUPPLY';
+      isThinning = true;
     }
   }
 
@@ -431,24 +424,27 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
   let isTrap = false;
   let trapType = '';
 
-  // True Wyckoff Trap / Absorption Logic:
-  // Ceiling Trap (Upthrust / Failed breakout): Bulls push high volume up, but close down (rejection at ceiling)
-  if (bullVol >= 9000 && netMove <= 0 && effBullMove < effBearMove && absorbPct >= 65) {
+  // True Wyckoff Trap / Absorption Logic (Requires extreme boundary probe + heavy opposite close rejection + high volume):
+  const boxBullPct = totalVol > 0 ? Math.round((bullVol / totalVol) * 100) : 50;
+  const boxBearPct = 100 - boxBullPct;
+
+  // Ceiling Trap (Upthrust / Failed breakout): Extreme probe of box ceiling, high bull effort, but violent rejection down
+  if (H_b >= topPrice - 0.15 * priceRange && (boxBullPct >= 58 || bullVol >= 18000) && (P_1 <= bottomPrice + 0.35 * priceRange && netMove <= -8.0) && absorbPct >= 75) {
     isTrap = true;
     trapType = 'CEILING_TRAP';
     isThinning = true;
   }
-  // Floor Trap (Spring / Failed breakdown): Bears push high volume down, but close up (rejection at floor)
-  else if (bearVol >= 9000 && netMove >= 0 && effBearMove < effBullMove && absorbPct >= 65) {
+  // Floor Trap (Spring / Failed breakdown): Extreme probe of box floor, high bear effort, but violent rejection up
+  else if (L_b <= bottomPrice + 0.15 * priceRange && (boxBearPct >= 58 || bearVol >= 18000) && (P_1 >= topPrice - 0.35 * priceRange && netMove >= +8.0) && absorbPct >= 75) {
     isTrap = true;
     trapType = 'FLOOR_TRAP';
     isThinning = true;
   }
   // General Exhaustion / Thinning Out (Heavy volume with stalled progress):
-  else if (domSide === 'BEAR' && bearVol >= 10000 && (bearYield < 0.65 || (absorbPct >= 65 && Math.abs(netMove) < 6.0))) {
+  else if (domSide === 'BEAR' && bearVol >= 12000 && (bearYield < 0.60 || (absorbPct >= 70 && Math.abs(netMove) < 4.0))) {
     isThinning = true;
   }
-  else if (domSide === 'BULL' && bullVol >= 10000 && (bullYield < 0.65 || (absorbPct >= 65 && Math.abs(netMove) < 6.0))) {
+  else if (domSide === 'BULL' && bullVol >= 12000 && (bullYield < 0.60 || (absorbPct >= 70 && Math.abs(netMove) < 4.0))) {
     isThinning = true;
   }
 
