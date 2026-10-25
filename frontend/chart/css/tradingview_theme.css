@@ -3324,7 +3324,25 @@ input[type="number"] {
 .tv-ext-chip.fuel-bull {
   background: rgba(34, 197, 94, 0.14);
   border: 1px solid rgba(34, 197, 94, 0.40);
-  color: #86efac;
+.tv-ext-chip.displacement-bear {
+  background: rgba(239, 68, 68, 0.16);
+  border: 1px solid rgba(239, 68, 68, 0.50);
+  color: #f43f5e;
+  font-weight: 800;
+}
+
+.tv-ext-chip.displacement-bull {
+  background: rgba(34, 197, 94, 0.16);
+  border: 1px solid rgba(34, 197, 94, 0.50);
+  color: #22c55e;
+  font-weight: 800;
+}
+
+.tv-ext-chip.displacement-neutral {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  font-weight: 800;
 }
 
 .tv-dir-btn {

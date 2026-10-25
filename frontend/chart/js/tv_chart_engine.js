@@ -2133,71 +2133,41 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // Dynamic Effort vs Win Domination Shades (Who is Winning with Effort + Movement):
-  // Combines Effort Vector (Bull vs Bear Volume) with Movement Vector (Price Displacement / Excursion):
-  // Score W = effortEdge * 0.45 + moveEdge * 0.55
-  // Tier 0: Balanced Equilibrium (|W| < 4 or totalVol == 0) -> Slate Grey (#94a3b8)
-  // Tier 1: Developing / Mild Win (4 <= |W| < 16) -> Soft Mint (#86efac) / Soft Rose (#fca5a5)
-  // Tier 2: Decisive Win (16 <= |W| < 28) -> Vivid Green (#22c55e) / Alert Red (#ef4444)
-  // Tier 3: Crushing Win (|W| >= 28) -> Radiant Neon Emerald (#00f5a0) / Deep Neon Ruby (#f43f5e)
+  // Box Ground Won (Movement & Displacement Domination Shades):
+  // Tier 0: Rotational Balance (|netMove| < 0.5pt) -> Slate Grey (#94a3b8)
+  // Tier 1: Mild Ground Won (0.5pt <= |netMove| < 8.0pt) -> Soft Mint (#86efac) / Soft Rose (#fca5a5)
+  // Tier 2: Decisive Ground Won (8.0pt <= |netMove| < 20.0pt) -> Vivid Green (#22c55e) / Alert Red (#ef4444)
+  // Tier 3: Crushing Ground Won (|netMove| >= 20.0pt) -> Radiant Neon Emerald (#00f5a0) / Deep Neon Ruby (#f43f5e)
   const getBoxTagStyle = (m, isLast) => {
-    if (!m || (m.totalVol || 0) <= 0) {
+    const netMove = m ? ((typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0))) : 0;
+    const absMove = Math.abs(netMove);
+
+    if (!m || absMove < 0.5) {
       return {
         color: '#94a3b8',
         bg: 'rgba(148, 163, 184, 0.12)',
         border: 'rgba(148, 163, 184, 0.30)',
         shadow: isLast ? '0 0 8px rgba(148, 163, 184, 0.50)' : 'none',
-        domLabel: '50/50 Balanced Equilibrium (No Effort Volume)'
+        groundLabel: 'Rotational Balance (No Significant Displacement)'
       };
     }
 
-    const totalVol = m.totalVol || 1;
-    const bullVol = (typeof m.bullVol === 'number') ? m.bullVol : Math.round(totalVol * ((m.bullPct || 50) / 100));
-    const bearVol = (typeof m.bearVol === 'number') ? m.bearVol : Math.round(totalVol * ((m.bearPct || 50) / 100));
-    const bullPct = Math.round((bullVol / totalVol) * 100);
-    const bearPct = 100 - bullPct;
-
-    // Effort component: Advantage in volume participation [-50 to +50]
-    const effortEdge = (bullPct - 50);
-
-    // Movement component: Price displacement result [-50 to +50]
-    const netMove = (typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0));
-    const boxRange = Math.max(0.1, m.R_b || ((m.H_b || 0) - (m.L_b || 0)) || 1.0);
-    const moveRatio = Math.max(-1.0, Math.min(1.0, netMove / (boxRange * 0.6)));
-    const moveEdge = moveRatio * 50;
-
-    // Combined Effort vs Win score [-50 to +50]
-    // 55% weight to Price Movement Result, 45% weight to Volume Effort
-    const winScore = (effortEdge * 0.45) + (moveEdge * 0.55);
-    const absScore = Math.abs(winScore);
-    const isBull = winScore > 0;
-
-    if (absScore < 4) {
-      return {
-        color: '#94a3b8',
-        bg: 'rgba(148, 163, 184, 0.12)',
-        border: 'rgba(148, 163, 184, 0.30)',
-        shadow: isLast ? '0 0 8px rgba(148, 163, 184, 0.50)' : 'none',
-        domLabel: '50/50 Balanced Flow (Effort & Movement In Equilibrium)'
-      };
-    }
-
-    if (isBull) {
-      if (absScore >= 28) {
+    if (netMove > 0) {
+      if (absMove >= 20.0) {
         return {
           color: '#00f5a0',
           bg: 'rgba(0, 245, 160, 0.18)',
-          border: 'rgba(0, 245, 160, 0.55)',
+          border: 'rgba(0, 245, 160, 0.60)',
           shadow: isLast ? '0 0 10px rgba(0, 245, 160, 0.70)' : '0 0 4px rgba(0, 245, 160, 0.25)',
-          domLabel: `Bulls Crushing Win (Effort ${bullPct}% + Strong Upward Expansion)`
+          groundLabel: `Crushing Bull Expansion (+${netMove.toFixed(1)}pt Ground Won)`
         };
-      } else if (absScore >= 16) {
+      } else if (absMove >= 8.0) {
         return {
           color: '#22c55e',
           bg: 'rgba(34, 197, 94, 0.16)',
           border: 'rgba(34, 197, 94, 0.45)',
           shadow: isLast ? '0 0 8px rgba(34, 197, 94, 0.60)' : 'none',
-          domLabel: `Bulls Winning with Effort & Upward Movement (Decisive Win)`
+          groundLabel: `Decisive Bull Expansion (+${netMove.toFixed(1)}pt Ground Won)`
         };
       } else {
         return {
@@ -2205,25 +2175,25 @@ export function updateExtensionSeriesRibbon(chart) {
           bg: 'rgba(134, 239, 172, 0.12)',
           border: 'rgba(134, 239, 172, 0.35)',
           shadow: isLast ? '0 0 8px rgba(134, 239, 172, 0.55)' : 'none',
-          domLabel: `Bulls Winning (Mild Edge)`
+          groundLabel: `Mild Bull Bounce (+${netMove.toFixed(1)}pt Ground Won)`
         };
       }
     } else {
-      if (absScore >= 28) {
+      if (absMove >= 20.0) {
         return {
           color: '#f43f5e',
           bg: 'rgba(244, 63, 94, 0.18)',
-          border: 'rgba(244, 63, 94, 0.55)',
+          border: 'rgba(244, 63, 94, 0.60)',
           shadow: isLast ? '0 0 10px rgba(244, 63, 94, 0.70)' : '0 0 4px rgba(244, 63, 94, 0.25)',
-          domLabel: `Bears Crushing Win (Effort ${bearPct}% + Strong Downward Breakdown)`
+          groundLabel: `Crushing Bear Breakdown (${netMove.toFixed(1)}pt Ground Lost to Bears)`
         };
-      } else if (absScore >= 16) {
+      } else if (absMove >= 8.0) {
         return {
           color: '#ef4444',
           bg: 'rgba(239, 68, 68, 0.16)',
           border: 'rgba(239, 68, 68, 0.45)',
           shadow: isLast ? '0 0 8px rgba(239, 68, 68, 0.60)' : 'none',
-          domLabel: `Bears Winning with Effort & Downward Movement (Decisive Win)`
+          groundLabel: `Decisive Bear Breakdown (${netMove.toFixed(1)}pt Ground Lost to Bears)`
         };
       } else {
         return {
@@ -2231,39 +2201,37 @@ export function updateExtensionSeriesRibbon(chart) {
           bg: 'rgba(252, 165, 165, 0.12)',
           border: 'rgba(252, 165, 165, 0.35)',
           shadow: isLast ? '0 0 8px rgba(252, 165, 165, 0.55)' : 'none',
-          domLabel: `Bears Winning (Mild Edge)`
+          groundLabel: `Mild Bear Drift (${netMove.toFixed(1)}pt Ground Lost to Bears)`
         };
       }
     }
   };
 
-  // 1. Build Sequence Micro-Group (Showing Bull & Bear Effort Volumes + Effort vs Win Domination Shades)
-  let seqHtml = '<div class="tv-ext-seq-group" title="Box Bull/Bear Volume Effort vs Movement Win Sequence (Click to inspect)">';
+  // 1. Build Sequence Micro-Group (Showing Box Ground Won e.g. B1: -13.8pt with Domination Shades)
+  let seqHtml = '<div class="tv-ext-seq-group" title="Box Ground Won Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const m = item.metrics;
     const isLast = (idx === sortedRects.length - 1);
     const styleObj = getBoxTagStyle(m, isLast);
 
+    const netMove = m ? ((typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0))) : 0;
+    const moveSign = netMove >= 0 ? '+' : '';
+    const moveFormatted = `${moveSign}${netMove.toFixed(1)}pt`;
+    const boxLabel = `B${idx + 1}: ${moveFormatted}`;
+
     const totalVol = m ? (m.totalVol || 0) : 0;
     const bullVol = m ? ((typeof m.bullVol === 'number') ? m.bullVol : Math.round(totalVol * ((m.bullPct || 50) / 100))) : 0;
     const bearVol = m ? ((typeof m.bearVol === 'number') ? m.bearVol : Math.round(totalVol * ((m.bearPct || 50) / 100))) : 0;
-    const netMove = m ? ((typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0))) : 0;
-    const moveSign = netMove >= 0 ? '+' : '';
-    const moveText = `${moveSign}${netMove.toFixed(1)}pt`;
+    const boxDelta = m ? (m.netDelta || 0) : 0;
+    const dSign = boxDelta >= 0 ? '+' : '';
 
     const bullVolText = formatVolNumber(bullVol);
     const bearVolText = formatVolNumber(bearVol);
-
-    const boxContent = `
-      <span style="color: ${styleObj.color}; font-weight: 800; margin-right: 3px;">B${idx + 1}:</span>
-      <span style="color: #4ade80;" title="Bull Volume Effort">${bullVolText}</span>
-      <span style="color: #64748b; margin: 0 2px; opacity: 0.6;">/</span>
-      <span style="color: #f87171;" title="Bear Volume Effort">${bearVolText}</span>
-    `;
+    const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
     
     seqHtml += `
-      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1}: ${bullVolText} Bull Effort vs ${bearVolText} Bear Effort • Move: ${moveText} • ${styleObj.domLabel} (Click to inspect)" style="background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : (styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : '')}">
-        ${boxContent}
+      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1}: ${moveFormatted} Ground Won • ${styleObj.groundLabel} • Bull Vol: ${bullVolText} vs Bear Vol: ${bearVolText} (Delta: ${deltaFormatted} Δ) (Click to inspect)" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : (styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : '')}">
+        ${boxLabel}
       </span>
     `;
     if (!isLast) {
@@ -2295,18 +2263,40 @@ export function updateExtensionSeriesRibbon(chart) {
     </div>
   `;
 
-  // 3. Order Flow Net Delta Capsule (💧 -7.9k Δ)
-  const netDelta = dossier ? dossier.totalNetDelta : 0;
-  const deltaSign = netDelta >= 0 ? '+' : '';
-  const deltaCls = netDelta < 0 ? 'delta-bear' : 'delta-bull';
-  const deltaHtml = `
-    <div class="tv-ext-chip ${deltaCls}" title="Net Cumulative Order Flow Delta">
-      <span>💧 ${deltaSign}${formatVolNumber(netDelta)} Δ</span>
+  // 3. Net Displacement Reality Pill (📉 -45.0pt BEARS IN CONTROL / 📈 +XX.Xpt BULLS IN CONTROL)
+  const startPrice = dossier?.firstSample?.P_0 || (sortedRects[0]?.metrics?.P_0 || 4000);
+  const currentPrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : (sortedRects[sortedRects.length - 1]?.metrics?.P_1 || startPrice);
+  const netDisplacement = currentPrice - startPrice;
+  const dispSign = netDisplacement >= 0 ? '+' : '';
+
+  let dispCls = 'displacement-neutral';
+  let dispIcon = '⚖️';
+  let dispText = `${dispSign}${netDisplacement.toFixed(1)}pt ROTATION`;
+  let dispNote = 'Range Rotation';
+
+  if (netDisplacement <= -1.0) {
+    dispCls = 'displacement-bear';
+    dispIcon = '📉';
+    dispText = `${netDisplacement.toFixed(1)}pt BEARS IN CONTROL`;
+    dispNote = 'Bears in Full Institutional Control';
+  } else if (netDisplacement >= 1.0) {
+    dispCls = 'displacement-bull';
+    dispIcon = '📈';
+    dispText = `+${netDisplacement.toFixed(1)}pt BULLS IN CONTROL`;
+    dispNote = 'Bulls in Full Institutional Control';
+  }
+
+  const netDeltaVal = dossier ? dossier.totalNetDelta : 0;
+  const deltaSignVal = netDeltaVal >= 0 ? '+' : '';
+
+  const displacementHtml = `
+    <div class="tv-ext-chip ${dispCls}" title="Net Sequence Price Ground: ${dispSign}${netDisplacement.toFixed(1)} pts (from $${startPrice.toFixed(2)} to $${currentPrice.toFixed(2)}) • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ • ${dispNote}">
+      <span>${dispIcon} ${dispText}</span>
     </div>
   `;
 
   // 4. Nominal Dollar Squeeze Fuel Capsule (💰 $31.6M FUEL) with matching metric shade
-  const trappedContracts = Math.abs(netDelta) > 0 ? Math.abs(netDelta) : Math.round((dossier?.totalVolume || 1000) * 0.25);
+  const trappedContracts = Math.abs(netDeltaVal) > 0 ? Math.abs(netDeltaVal) : Math.round((dossier?.totalVolume || 1000) * 0.25);
   const livePrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : 4000;
   const fuelMillions = Math.max(0.1, (trappedContracts * livePrice) / 1000000).toFixed(1);
   const fuelCls = isBear ? 'fuel-bear' : 'fuel-bull';
@@ -2317,7 +2307,7 @@ export function updateExtensionSeriesRibbon(chart) {
   `;
 
   // Assemble all capsules in track (zero dossier button, zero bull/bear text, zero runway, zero poc)
-  trackEl.innerHTML = `${seqHtml}${frictionHtml}${deltaHtml}${fuelHtml}`;
+  trackEl.innerHTML = `${seqHtml}${frictionHtml}${displacementHtml}${fuelHtml}`;
   ribbonEl.style.display = 'flex';
 
   // Clicking on the ribbon or ANY item inside it opens the modal
