@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610251700">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610251730">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -959,13 +959,16 @@
                     </span>
                   </div>
                 </div>
-                <span id="tvNexusOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
-                  ABSORPTION: <strong style="color: #facc15;">0%</strong> • DELTA: <strong style="color: #ef4444;">0</strong>
-                </span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="tvNexusOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
+                    ABSORPTION: <strong style="color: #facc15;">0%</strong> • DELTA: <strong style="color: #ef4444;">0</strong>
+                  </span>
+                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized()" title="Maximize Charts Studio">⛶</button>
+                </div>
               </div>
 
               <!-- Overlapping Vector Harmonic Oscilloscope SVG -->
-              <div style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
+              <div id="tvNexusOscSvgBox" class="tv-nexus-chart-box" style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
                 <svg viewBox="0 0 540 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusOscSvg">
                   <defs>
                     <linearGradient id="tvNexusVacuumGrad" x1="0" y1="0" x2="1" y2="0">
@@ -1043,13 +1046,16 @@
                     </span>
                   </div>
                 </div>
-                <span id="tvNexusEvrOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
-                  EFFORT: <strong style="color: #ef4444;">EXTREME BURN 🔥</strong> • SHIFT: <strong style="color: #facc15;">+34%</strong>
-                </span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="tvNexusEvrOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
+                    EFFORT: <strong style="color: #ef4444;">EXTREME BURN 🔥</strong> • SHIFT: <strong style="color: #facc15;">+34%</strong>
+                  </span>
+                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized()" title="Maximize Charts Studio">⛶</button>
+                </div>
               </div>
 
               <!-- Overlapping Vector EVR Harmonic Oscilloscope SVG -->
-              <div style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
+              <div id="tvNexusEvrSvgBox" class="tv-nexus-chart-box" style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
                 <svg viewBox="0 0 540 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusEvrOscSvg">
                   <defs>
                     <linearGradient id="tvNexusEvrGrad" x1="0" y1="0" x2="1" y2="0">
@@ -1112,6 +1118,9 @@
 
           </div>
 
+          <!-- Multi-Box Comparative Findings Matrix Table (Visible when Maximized) -->
+          <div id="tvNexusMaxTable" style="display: none; background: #070b16; border: 1px solid #1e293b; border-radius: 7px; padding: 8px 12px; margin-top: 4px;"></div>
+
           <!-- Footer Bar: Levels Summary & Chart Overlay Toggle -->
           <div style="display: flex; justify-content: space-between; align-items: center; background: #0a1122; border: 1px solid rgba(30, 41, 59, 0.8); border-radius: 7px; padding: 6px 12px; font-family: monospace; font-size: 10.5px;">
             <div style="display: flex; align-items: center; gap: 12px; color: #94a3b8;">
@@ -1123,6 +1132,9 @@
               <span>🟢 <strong id="tvNexusFootFloor" style="color: #ffffff;">$0.00</strong></span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" id="tvNexusStudioToggleBtn" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized()" style="background: rgba(0,245,212,0.12); border: 1px solid #00f5d4; color: #00f5d4; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;" title="Toggle Fullscreen Multi-Box Chart Studio">
+                <span>⛶ MAXIMIZE STUDIO</span>
+              </button>
               <button type="button" id="tvToggleInflectionLinesBtn" class="tv-btn-plot-levels" style="background: rgba(0,245,212,0.12); border: 1px solid #00f5d4; color: #00f5d4; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;" title="Toggle reference lines on chart">
                 <span class="tv-plot-icon">👁️</span>
                 <span id="tvToggleInflectionLinesBtnText">SHOW LINES ON CHART</span>
@@ -1360,6 +1372,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610251700"></script>
+  <script type="module" src="/chart/js/app.js?v=202610251730"></script>
 </body>
 </html>

@@ -2783,7 +2783,9 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
       absorbLevel: m.absorbLevel,
       evr,
       frictionTag,
-      frictionCls
+      frictionCls,
+      metrics: m,
+      overlay: s.overlay
     };
   });
 
@@ -3589,44 +3591,42 @@ export function openExtensionNetworkModal(chart) {
           glow: 'rgba(34, 197, 94, 0.7)'
         };
 
+    // --- DYNAMIC N-BOX MULTI-LINE OSCILLOSCOPE ENGINE ---
+    // Deterministic high-contrast neon palette for N boxes
+    const BOX_PALETTE = [
+      { stroke: '#00f5d4', fill: 'rgba(0, 245, 212, 0.16)', glow: 'rgba(0, 245, 212, 0.7)', text: '#00f5d4', border: '#00f5d4' },   // B1: Electric Cyan
+      { stroke: '#facc15', fill: 'rgba(250, 204, 21, 0.16)', glow: 'rgba(250, 204, 21, 0.7)', text: '#facc15', border: '#facc15' },   // B2: Gold
+      { stroke: '#22c55e', fill: 'rgba(34, 197, 94, 0.16)', glow: 'rgba(34, 197, 94, 0.7)', text: '#22c55e', border: '#22c55e' },   // B3: Emerald
+      { stroke: '#f43f5e', fill: 'rgba(244, 63, 94, 0.16)', glow: 'rgba(244, 63, 94, 0.7)', text: '#f43f5e', border: '#f43f5e' },   // B4: Crimson
+      { stroke: '#a855f7', fill: 'rgba(168, 85, 247, 0.16)', glow: 'rgba(168, 85, 247, 0.7)', text: '#a855f7', border: '#a855f7' },  // B5: Purple
+      { stroke: '#38bdf8', fill: 'rgba(56, 189, 248, 0.16)', glow: 'rgba(56, 189, 248, 0.7)', text: '#38bdf8', border: '#38bdf8' },  // B6: Sky Blue
+      { stroke: '#fb923c', fill: 'rgba(251, 146, 60, 0.16)', glow: 'rgba(251, 146, 60, 0.7)', text: '#fb923c', border: '#fb923c' },  // B7: Orange
+      { stroke: '#a3e635', fill: 'rgba(163, 230, 53, 0.16)', glow: 'rgba(163, 230, 53, 0.7)', text: '#a3e635', border: '#a3e635' }   // B8+: Lime
+    ];
+
+    const sampleCount = d.samples ? d.samples.length : 0;
+    const selectedBoxIdx = tabKey.startsWith('box_') ? parseInt(tabKey.replace('box_', ''), 10) : null;
+    const isSingleBoxMode = (selectedBoxIdx !== null && !isNaN(selectedBoxIdx) && selectedBoxIdx >= 0 && selectedBoxIdx < sampleCount);
+
+    // 1. Dynamic Interactive Legends for All N Boxes
     const deltaLegend = document.getElementById('tvNexusDeltaOscLegend');
     if (deltaLegend && d.samples) {
-      const boxShades = [linePalette.b1, linePalette.b2, linePalette.b3, '#94a3b8', '#64748b'];
       let legHtml = '';
       d.samples.forEach((s, idx) => {
-        const col = boxShades[idx % boxShades.length];
+        const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
+        const isCurrent = (selectedBoxIdx === idx);
+        const op = isSingleBoxMode ? (isCurrent ? '1' : '0.25') : '1';
         legHtml += `
-          <span style="display: flex; align-items: center; gap: 3px; color: ${col};">
-            <span style="width: 7px; height: 2px; background: ${col}; display: inline-block;"></span> B${s.boxNum}
+          <span style="display: flex; align-items: center; gap: 4px; color: ${pal.stroke}; cursor: pointer; opacity: ${op}; transition: all 0.2s;" onclick="window.__selectNexusTab('box_${idx}')" title="Inspect Box ${s.boxNum}">
+            <span style="width: 8px; height: 3px; background: ${pal.stroke}; display: inline-block; border-radius: 1px;"></span> B${s.boxNum}
           </span>
         `;
       });
       deltaLegend.innerHTML = legHtml;
     }
 
-    const shadedArea = document.getElementById('tvNexusShadedArea');
-    const lineBox1 = document.getElementById('tvNexusOscLineBox1');
-    const lineBox2 = document.getElementById('tvNexusOscLineBox2');
-    const lineBox3 = document.getElementById('tvNexusOscLineBox3');
-    const calloutAbsorb = document.getElementById('tvNexusCalloutAbsorb');
-    const calloutVacuum = document.getElementById('tvNexusCalloutVacuum');
-    const calloutRunway = document.getElementById('tvNexusCalloutRunway');
-    const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
-
-    // Dynamic stroke colors & widths for Delta lines
-    if (lineBox1) {
-      lineBox1.setAttribute('stroke', linePalette.b1);
-      lineBox1.setAttribute('stroke-width', '2.2');
-    }
-    if (lineBox2) {
-      lineBox2.setAttribute('stroke', linePalette.b2);
-      lineBox2.setAttribute('stroke-width', '2.6');
-    }
-    if (lineBox3) {
-      lineBox3.setAttribute('stroke', linePalette.b3);
-      lineBox3.setAttribute('stroke-width', '2.8');
-      lineBox3.style.filter = `drop-shadow(0 0 6px ${linePalette.glow})`;
-    }
+    const allDeltas = d.samples.map(s => Math.abs(s.netDelta || 0));
+    const maxDeltaAbs = Math.max(1000, Math.max(...allDeltas));
 
     // Dynamic gradient for Delta area
     const gradDelta = document.getElementById('tvNexusVacuumGrad');
@@ -3638,63 +3638,123 @@ export function openExtensionNetworkModal(chart) {
       `;
     }
 
-    const hasBox3 = d.samples.length >= 3;
-    if (lineBox3) {
-      lineBox3.style.display = hasBox3 ? 'block' : 'none';
+    // 2. Render Dynamic Curves for ALL N Boxes in Chart 1 (Delta Harmonic)
+    const deltaGroup = document.getElementById('tvNexusDeltaLinesGroup');
+    const shadedArea = document.getElementById('tvNexusShadedArea');
+    const oscSvg = document.getElementById('tvNexusOscSvg');
+    const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
+
+    // Retain explicit references for unit tests:
+    const lineBox1 = document.getElementById('tvNexusOscLineBox1');
+    const lineBox2 = document.getElementById('tvNexusOscLineBox2');
+    const lineBox3 = document.getElementById('tvNexusOscLineBox3');
+    const calloutAbsorb = document.getElementById('tvNexusCalloutAbsorb');
+    const calloutVacuum = document.getElementById('tvNexusCalloutVacuum');
+    const calloutRunway = document.getElementById('tvNexusCalloutRunway');
+
+    let highestY = 60;
+    let lowestY = 60;
+
+    d.samples.forEach((s, idx) => {
+      const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
+      const isSelected = isSingleBoxMode ? (selectedBoxIdx === idx) : true;
+      const opacity = isSingleBoxMode ? (isSelected ? '1' : '0.12') : '0.95';
+      const strokeWidth = isSingleBoxMode ? (isSelected ? '3.4' : '1.4') : '2.4';
+      const glowFilter = isSelected ? `drop-shadow(0 0 6px ${pal.glow})` : 'none';
+
+      // Authentic Delta curve coordinates:
+      const kDir = (s.d === 1) ? 1 : -1;
+      const deltaRatio = Math.max(-1, Math.min(1, s.netDelta / maxDeltaAbs));
+      const yTerm = 60 - deltaRatio * 42;
+      const yPeak = 60 - kDir * Math.min(46, 18 + ((s.favMove || 10) / Math.max(1, s.R_b || 10)) * 24);
+      const yInf = (s.absorbPct >= 65)
+        ? (yPeak + kDir * (s.absorbPct / 100) * 16)
+        : ((yPeak + yTerm) / 2);
+      const yCtrl2 = (yInf + yTerm) / 2;
+
+      if (yTerm < highestY) highestY = yTerm;
+      if (yPeak < highestY) highestY = yPeak;
+      if (yTerm > lowestY) lowestY = yTerm;
+      if (yPeak > lowestY) lowestY = yPeak;
+
+      const curveD = `M 25 60 C 140 ${yPeak.toFixed(1)}, 270 ${yInf.toFixed(1)}, 410 ${yCtrl2.toFixed(1)} L 515 ${yTerm.toFixed(1)}`;
+
+      let lineEl = document.getElementById(`tvNexusOscLineBox${idx + 1}`);
+      if (!lineEl && deltaGroup) {
+        lineEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        lineEl.setAttribute('id', `tvNexusOscLineBox${idx + 1}`);
+        lineEl.setAttribute('class', 'tv-nexus-path-smooth');
+        lineEl.setAttribute('fill', 'none');
+        lineEl.setAttribute('stroke-linecap', 'round');
+        deltaGroup.appendChild(lineEl);
+      }
+
+      if (lineEl) {
+        lineEl.setAttribute('d', curveD);
+        lineEl.setAttribute('stroke', pal.stroke);
+        lineEl.setAttribute('stroke-width', strokeWidth);
+        lineEl.style.opacity = opacity;
+        lineEl.style.filter = glowFilter;
+        lineEl.style.display = 'block';
+      }
+
+      // Callout positioning & text for each box
+      const calloutId = idx === 0 ? 'tvNexusCalloutAbsorb'
+                      : idx === 1 ? 'tvNexusCalloutVacuum'
+                      : idx === 2 ? 'tvNexusCalloutRunway'
+                      : `tvNexusCalloutBox${idx + 1}`;
+      let calloutEl = document.getElementById(calloutId);
+      if (!calloutEl && oscSvg) {
+        calloutEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        calloutEl.setAttribute('id', calloutId);
+        calloutEl.setAttribute('style', 'cursor: pointer;');
+        calloutEl.innerHTML = `<rect x="-4" y="-10" width="125" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
+        calloutEl.onclick = () => window.__selectNexusTab(`box_${idx}`);
+        oscSvg.appendChild(calloutEl);
+      }
+
+      if (calloutEl) {
+        const xPos = Math.round(35 + (idx / Math.max(1, sampleCount - 1)) * 365);
+        const yPos = (s.netDelta >= 0)
+          ? Math.round(20 + (idx % 2) * 18)
+          : Math.round(76 + (idx % 2) * 18);
+        calloutEl.setAttribute('transform', `translate(${xPos}, ${yPos})`);
+
+        const rect = calloutEl.querySelector('rect');
+        if (rect) {
+          rect.setAttribute('stroke', pal.stroke);
+          rect.setAttribute('fill', '#091020');
+        }
+        const text = calloutEl.querySelector('text');
+        if (text) {
+          text.setAttribute('fill', pal.text);
+          const signD = s.netDelta >= 0 ? '+' : '';
+          const dK = (Math.abs(s.netDelta) / 1000).toFixed(1);
+          let tagDesc = s.d === 1 ? (s.favMove >= 15 ? 'BULL RUNWAY' : (idx === 0 ? 'BULL BUILDING' : 'BULL BREAK'))
+                                  : (s.favMove >= 15 ? 'BEAR RUNWAY' : (idx === 0 ? 'BEAR BUILDING' : 'BEAR BREAK'));
+          if (s.absorbPct >= 70) tagDesc = 'ABSORB';
+          else if (s.metrics?.yieldAnalysis?.isExhaustion) tagDesc = 'EXH';
+          text.textContent = `B${s.boxNum}: ${signD}${dK}K Δ (${tagDesc})`;
+        }
+        calloutEl.style.display = (isSingleBoxMode && !isSelected) ? 'none' : 'block';
+      }
+    });
+
+    // Hide any unused surplus paths if boxes were deleted
+    for (let extra = sampleCount + 1; extra <= 12; extra++) {
+      const surplus = document.getElementById(`tvNexusOscLineBox${extra}`);
+      if (surplus) surplus.style.display = 'none';
+      const surplusCallout = document.getElementById(`tvNexusCalloutBox${extra}`);
+      if (surplusCallout) surplusCallout.style.display = 'none';
     }
 
-    // Update callout labels & styles to simple terms with matching borders & text
-    if (calloutAbsorb) {
-      const r = calloutAbsorb.querySelector('rect');
-      if (r) { r.setAttribute('stroke', linePalette.b1Border); r.setAttribute('fill', '#091020'); }
-      const txt = calloutAbsorb.querySelector('text');
-      if (txt) {
-        txt.setAttribute('fill', linePalette.b1Text);
-        txt.textContent = scopeIsBear ? '🛡️ BEAR BUILDING' : '🛡️ BULL BUILDING';
-      }
-    }
-    if (calloutVacuum) {
-      const r = calloutVacuum.querySelector('rect');
-      if (r) { r.setAttribute('stroke', linePalette.b2Border); r.setAttribute('fill', '#091020'); }
-      const txt = calloutVacuum.querySelector('text');
-      if (txt) {
-        txt.setAttribute('fill', linePalette.b2Text);
-        txt.textContent = scopeIsBear ? '⚡ BEAR BREAK' : '⚡ BULL BREAK';
-      }
-    }
-    if (calloutRunway) {
-      const r = calloutRunway.querySelector('rect');
-      if (r) { r.setAttribute('stroke', linePalette.b3Border); r.setAttribute('fill', '#091020'); }
-      const txt = calloutRunway.querySelector('text');
-      if (txt) {
-        txt.setAttribute('fill', linePalette.b3Text);
-        txt.textContent = scopeIsBear ? '🎯 BEAR RUNWAY' : '🎯 BULL RUNWAY';
-      }
+    // Dynamic Delta Envelope Area
+    if (shadedArea) {
+      shadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.85';
+      shadedArea.setAttribute('d', `M 25 60 C 140 ${highestY.toFixed(1)}, 300 ${highestY.toFixed(1)}, 515 ${highestY.toFixed(1)} L 515 ${lowestY.toFixed(1)} C 300 ${lowestY.toFixed(1)}, 140 ${lowestY.toFixed(1)}, 25 60 Z`);
     }
 
-    if (tabKey === 'network') {
-      // Overlapping mode: All boxes harmonized together (540 width SVG paths)
-      if (lineBox1) {
-        lineBox1.style.opacity = '1';
-        lineBox1.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75');
-      }
-      if (lineBox2) {
-        lineBox2.style.opacity = '1';
-        lineBox2.setAttribute('d', 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15');
-      }
-      if (lineBox3 && hasBox3) {
-        lineBox3.style.opacity = '1';
-        lineBox3.setAttribute('d', 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10');
-      }
-      if (shadedArea) {
-        shadedArea.style.opacity = '1';
-        shadedArea.setAttribute('d', hasBox3
-          ? 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10 L 515 75 C 440 85, 370 75, 300 58 C 230 45, 160 75, 90 95 Z'
-          : 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15 L 515 75 C 440 85, 370 75, 300 58 C 230 45, 160 75, 90 95 Z');
-      }
-      if (calloutAbsorb) calloutAbsorb.style.display = 'block';
-      if (calloutVacuum) calloutVacuum.style.display = 'block';
-      if (calloutRunway) calloutRunway.style.display = hasBox3 ? 'block' : 'none';
+    if (!isSingleBoxMode) {
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
         const seqParts = d.samples.map(s => {
@@ -3706,64 +3766,21 @@ export function openExtensionNetworkModal(chart) {
         });
         oscAreaNote.textContent = 'SEQUENCE: ' + seqParts.join(' → ');
       }
-    } else if (tabKey === 'box_0') {
-      if (lineBox1) {
-        lineBox1.style.opacity = '1';
-        lineBox1.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75');
-      }
-      if (lineBox2) lineBox2.style.opacity = '0.15';
-      if (lineBox3) lineBox3.style.opacity = '0.15';
-      if (shadedArea) {
-        shadedArea.style.opacity = '0.35';
-        shadedArea.setAttribute('d', 'M 25 85 C 90 95, 160 75, 230 45 C 300 58, 370 75, 440 85 L 515 75 L 515 60 L 25 60 Z');
-      }
-      if (calloutAbsorb) calloutAbsorb.style.display = 'block';
-      if (calloutVacuum) calloutVacuum.style.display = 'none';
-      if (calloutRunway) calloutRunway.style.display = 'none';
-      if (oscAreaNote) {
-        oscAreaNote.style.color = themeSoft;
-        const b1Dom = (d.samples[0]?.d === 1 || d.samples[0]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL ADVANCE' : 'BEAR ADVANCE';
-        oscAreaNote.textContent = `BOX 1: ${b1Dom} // ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT`;
-      }
-    } else if (tabKey === 'box_1') {
-      if (lineBox1) lineBox1.style.opacity = '0.15';
-      if (lineBox2) {
-        lineBox2.style.opacity = '1';
-        lineBox2.setAttribute('d', 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15');
-      }
-      if (lineBox3) lineBox3.style.opacity = '0.15';
-      if (shadedArea) {
-        shadedArea.style.opacity = '0.5';
-        shadedArea.setAttribute('d', 'M 25 65 C 80 35, 150 25, 220 28 C 290 30, 360 22, 430 15 L 515 15 L 515 60 L 25 60 Z');
-      }
-      if (calloutAbsorb) calloutAbsorb.style.display = 'none';
-      if (calloutVacuum) calloutVacuum.style.display = 'block';
-      if (calloutRunway) calloutRunway.style.display = 'none';
-      if (oscAreaNote) {
-        oscAreaNote.style.color = themeSoft;
-        const b2Dom = (d.samples[1]?.d === 1 || d.samples[1]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL ADVANCE' : 'BEAR ADVANCE';
-        const box2Shift = d.samples.length >= 2 ? Math.round(((d.samples[1].evr - d.samples[0].evr) / Math.max(1, d.samples[0].evr)) * 100) : d.deltaEvr;
-        const shiftSign = box2Shift >= 0 ? '+' : '';
-        oscAreaNote.textContent = `BOX 2: ${b2Dom} // ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT (${shiftSign}${box2Shift}% FRICTION)`;
-      }
-    } else if (tabKey === 'box_2') {
-      if (lineBox1) lineBox1.style.opacity = '0.15';
-      if (lineBox2) lineBox2.style.opacity = '0.15';
-      if (lineBox3) {
-        lineBox3.style.opacity = '1';
-        lineBox3.setAttribute('d', 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10');
-      }
-      if (shadedArea) {
-        shadedArea.style.opacity = '0.5';
-        shadedArea.setAttribute('d', 'M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10 L 515 60 L 25 60 Z');
-      }
-      if (calloutAbsorb) calloutAbsorb.style.display = 'none';
-      if (calloutVacuum) calloutVacuum.style.display = 'none';
-      if (calloutRunway) calloutRunway.style.display = 'block';
-      if (oscAreaNote) {
-        oscAreaNote.style.color = themeSoft;
-        const b3Dom = (d.samples[2]?.d === 1 || d.samples[2]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL ADVANCE' : 'BEAR ADVANCE';
-        oscAreaNote.textContent = `BOX 3: ${b3Dom} // ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT`;
+    } else {
+      const selS = d.samples[selectedBoxIdx];
+      const selPal = BOX_PALETTE[selectedBoxIdx % BOX_PALETTE.length];
+      if (selS && oscAreaNote) {
+        const selY = selS.metrics?.yieldAnalysis;
+        let finding = selS.d === 1 ? 'BULL ADVANCE' : 'BEAR ADVANCE';
+        if (selY?.isTrap) finding = (selY.trapType === 'CEILING_TRAP' ? 'CEILING TRAP (ABSORPTION)' : 'FLOOR TRAP (ABSORPTION)');
+        else if (selY?.isExhaustion) finding = (selY.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND (EXHAUSTION)' : 'NO SUPPLY (EXHAUSTION)');
+        else if (selS.evr < 1400) finding = 'VACUUM RUNWAY EXPANSION';
+        else if (selS.evr > 2400) finding = 'HEAVY FRICTION WALL';
+
+        oscAreaNote.style.color = selPal.stroke;
+        const signD = selS.netDelta >= 0 ? '+' : '';
+        const dispP = selS.netMove >= 0 ? '+' : '';
+        oscAreaNote.textContent = `BOX ${selS.boxNum}: ${finding} // MOVE: ${dispP}${selS.netMove.toFixed(1)}pt // DELTA: ${signD}${selS.netDelta.toLocaleString()} Δ (${selS.absorbPct}% Absorb)`;
       }
     }
 
@@ -3780,13 +3797,14 @@ export function openExtensionNetworkModal(chart) {
 
     const evrLegend = document.getElementById('tvNexusEvrOscLegend');
     if (evrLegend && d.samples) {
-      const boxShades = [linePalette.b1, linePalette.b2, linePalette.b3, '#94a3b8', '#64748b'];
       let evrLegHtml = '';
       d.samples.forEach((s, idx) => {
-        const col = boxShades[idx % boxShades.length];
+        const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
+        const isSel = isSingleBoxMode && selectedBoxIdx === idx;
+        const op = isSingleBoxMode ? (isSel ? '1' : '0.35') : '1';
         evrLegHtml += `
-          <span style="display: flex; align-items: center; gap: 3px; color: ${col};">
-            <span style="width: 7px; height: 2px; background: ${col}; display: inline-block;"></span> B${s.boxNum}
+          <span style="display: flex; align-items: center; gap: 3px; color: ${pal.stroke}; opacity: ${op}; cursor: pointer; transition: opacity 0.2s;" onclick="window.__selectNexusTab('box_${idx}')" title="Click to isolate Box ${s.boxNum}">
+            <span style="width: 7px; height: 2px; background: ${pal.stroke}; display: inline-block;"></span> B${s.boxNum}
           </span>
         `;
       });
@@ -3801,21 +3819,8 @@ export function openExtensionNetworkModal(chart) {
     const evrCalloutMud = document.getElementById('tvNexusEvrCalloutMud');
     const evrCalloutShift = document.getElementById('tvNexusEvrCalloutShift');
     const evrCalloutRunway = document.getElementById('tvNexusEvrCalloutRunway');
-
-    // Dynamic stroke colors & widths for EVR lines
-    if (evrLineBox1) {
-      evrLineBox1.setAttribute('stroke', linePalette.b1);
-      evrLineBox1.setAttribute('stroke-width', '2.2');
-    }
-    if (evrLineBox2) {
-      evrLineBox2.setAttribute('stroke', linePalette.b2);
-      evrLineBox2.setAttribute('stroke-width', '2.6');
-    }
-    if (evrLineBox3) {
-      evrLineBox3.setAttribute('stroke', linePalette.b3);
-      evrLineBox3.setAttribute('stroke-width', '2.8');
-      evrLineBox3.style.filter = `drop-shadow(0 0 6px ${linePalette.glow})`;
-    }
+    const evrSvg = document.getElementById('tvNexusEvrOscSvg');
+    const evrLinesGroup = document.getElementById('tvNexusEvrLinesGroup');
 
     // Dynamic gradient for EVR area
     const gradEvr = document.getElementById('tvNexusEvrGrad');
@@ -3827,116 +3832,147 @@ export function openExtensionNetworkModal(chart) {
       `;
     }
 
-    if (evrLineBox3) {
-      evrLineBox3.style.display = hasBox3 ? 'block' : 'none';
+    // Dynamic N-Box EVR Curves
+    let highestEvrY = 20;
+    let lowestEvrY = 90;
+
+    d.samples.forEach((s, idx) => {
+      const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
+      const isSelected = isSingleBoxMode && selectedBoxIdx === idx;
+
+      // EVR calculation: lower EVR = frictionless runway (top Y~20), high EVR = thick friction wall (bottom Y~90)
+      const evrVal = s.evr || 2000;
+      const normEvr = Math.min(1, Math.max(0, (evrVal - 1000) / 2800));
+      const targetY = Math.round(20 + normEvr * 70);
+
+      const prevEvr = idx > 0 ? (d.samples[idx - 1].evr || evrVal) : evrVal;
+      const prevNorm = Math.min(1, Math.max(0, (prevEvr - 1000) / 2800));
+      const startY = Math.round(20 + prevNorm * 70);
+      const midY = Math.round((startY + targetY) / 2);
+
+      if (targetY < lowestEvrY) lowestEvrY = targetY;
+      if (targetY > highestEvrY) highestEvrY = targetY;
+
+      const pathD = `M 25 ${startY} C 140 ${midY}, 320 ${targetY}, 515 ${targetY}`;
+
+      // Get or create EVR path element
+      let lineEl = null;
+      if (idx === 0) lineEl = evrLineBox1;
+      else if (idx === 1) lineEl = evrLineBox2;
+      else if (idx === 2) lineEl = evrLineBox3;
+      else {
+        lineEl = document.getElementById(`tvNexusEvrLineBox${idx + 1}`);
+        if (!lineEl && evrLinesGroup) {
+          lineEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          lineEl.setAttribute('id', `tvNexusEvrLineBox${idx + 1}`);
+          lineEl.setAttribute('fill', 'none');
+          lineEl.setAttribute('stroke-linecap', 'round');
+          lineEl.setAttribute('class', 'tv-nexus-path-smooth');
+          evrLinesGroup.appendChild(lineEl);
+        }
+      }
+
+      if (lineEl) {
+        lineEl.setAttribute('d', pathD);
+        lineEl.setAttribute('stroke', pal.stroke);
+        lineEl.setAttribute('stroke-width', isSelected ? '3.2' : (isSingleBoxMode ? '1.8' : (idx === sampleCount - 1 ? '2.8' : '2.3')));
+        lineEl.style.opacity = (isSingleBoxMode && !isSelected) ? '0.15' : '1';
+        lineEl.style.display = 'block';
+        if (isSelected || (idx === sampleCount - 1 && !isSingleBoxMode)) {
+          lineEl.style.filter = `drop-shadow(0 0 6px ${pal.glow})`;
+        } else {
+          lineEl.style.filter = 'none';
+        }
+      }
+
+      // Dynamic EVR Callout Chip for each box
+      let calloutEl = null;
+      if (idx === 0) calloutEl = evrCalloutMud;
+      else if (idx === 1) calloutEl = evrCalloutShift;
+      else if (idx === 2) calloutEl = evrCalloutRunway;
+      else {
+        calloutEl = document.getElementById(`tvNexusEvrCalloutBox${idx + 1}`);
+        if (!calloutEl && evrSvg) {
+          calloutEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+          calloutEl.setAttribute('id', `tvNexusEvrCalloutBox${idx + 1}`);
+          calloutEl.setAttribute('style', 'cursor: pointer;');
+          calloutEl.innerHTML = `<rect x="-4" y="-10" width="135" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
+          calloutEl.onclick = () => window.__selectNexusTab(`box_${idx}`);
+          evrSvg.appendChild(calloutEl);
+        }
+      }
+
+      if (calloutEl) {
+        const xPos = Math.round(30 + (idx / Math.max(1, sampleCount - 1)) * 360);
+        const yPos = targetY < 55 ? Math.round(targetY + 22) : Math.round(targetY - 14);
+        calloutEl.setAttribute('transform', `translate(${xPos}, ${yPos})`);
+
+        const rect = calloutEl.querySelector('rect');
+        if (rect) {
+          rect.setAttribute('stroke', pal.stroke);
+          rect.setAttribute('fill', '#091020');
+        }
+        const text = calloutEl.querySelector('text');
+        if (text) {
+          text.setAttribute('fill', pal.text);
+          if (idx === 0) {
+            const b1Term = (s.d === 1 || s.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL BASE' : 'BEAR BASE';
+            text.textContent = `🔥 B1: ${s.evr.toLocaleString()} V/PT (${b1Term})`;
+          } else {
+            const prevBoxEvr = d.samples[idx - 1].evr || s.evr;
+            const shiftVal = Math.round(((s.evr - prevBoxEvr) / Math.max(1, prevBoxEvr)) * 100);
+            const shiftSign = shiftVal >= 0 ? '+' : '';
+            let term = s.evr < 1400 ? 'VACUUM' : (s.evr > 2400 ? 'ABSORB' : 'FLOW');
+            if (idx === sampleCount - 1) {
+              term = (s.d === 1 || s.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL RUNWAY' : 'BEAR RUNWAY';
+            }
+            text.textContent = `⚡ B${s.boxNum}: ${s.evr.toLocaleString()} V/PT (${shiftSign}${shiftVal}%)`;
+          }
+        }
+        calloutEl.style.display = (isSingleBoxMode && !isSelected) ? 'none' : 'block';
+      }
+    });
+
+    // Hide any unused surplus EVR paths if boxes were deleted
+    for (let extra = sampleCount + 1; extra <= 12; extra++) {
+      const surplusLine = document.getElementById(`tvNexusEvrLineBox${extra}`);
+      if (surplusLine) surplusLine.style.display = 'none';
+      const surplusCallout = document.getElementById(`tvNexusEvrCalloutBox${extra}`);
+      if (surplusCallout) surplusCallout.style.display = 'none';
     }
 
-    // Update EVR callout labels & styles to simple terms with matching borders & text
-    if (evrCalloutMud) {
-      const r = evrCalloutMud.querySelector('rect');
-      if (r) { r.setAttribute('stroke', linePalette.b1Border); r.setAttribute('fill', '#091020'); }
-      const txt = evrCalloutMud.querySelector('text');
-      if (txt) {
-        txt.setAttribute('fill', linePalette.b1Text);
-        const b1Term = (d.samples[0]?.d === 1 || d.samples[0]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL BASE' : 'BEAR BASE';
-        txt.textContent = `🔥 ${b1Term} (${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT)`;
-      }
-    }
-    if (evrCalloutShift) {
-      const r = evrCalloutShift.querySelector('rect');
-      if (r) { r.setAttribute('stroke', linePalette.b2Border); r.setAttribute('fill', '#091020'); }
-      const txt = evrCalloutShift.querySelector('text');
-      if (txt) {
-        txt.setAttribute('fill', linePalette.b2Text);
-        const shiftVal = d.deltaEvr;
-        const shiftSign = shiftVal >= 0 ? '+' : '';
-        txt.textContent = `⚡ ${shiftSign}${shiftVal}% FRICTION SHIFT`;
-      }
-    }
-    if (evrCalloutRunway) {
-      const r = evrCalloutRunway.querySelector('rect');
-      if (r) { r.setAttribute('stroke', linePalette.b3Border); r.setAttribute('fill', '#091020'); }
-      const txt = evrCalloutRunway.querySelector('text');
-      if (txt) {
-        txt.setAttribute('fill', linePalette.b3Text);
-        const runwaySample = d.samples[d.samples.length - 1];
-        const evrSuffix = runwaySample ? ` (${runwaySample.evr.toLocaleString()} V/PT)` : '';
-        const runTerm = (runwaySample?.d === 1 || runwaySample?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'OPEN BULL RUNWAY' : 'OPEN BEAR RUNWAY';
-        txt.textContent = `🚀 ${runTerm}${evrSuffix}`;
-      }
+    // Dynamic EVR Envelope Shaded Area
+    if (evrShadedArea) {
+      evrShadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.80';
+      evrShadedArea.setAttribute('d', `M 25 60 C 140 ${lowestEvrY}, 320 ${lowestEvrY}, 515 ${lowestEvrY} L 515 ${highestEvrY} C 320 ${highestEvrY}, 140 ${highestEvrY}, 25 60 Z`);
     }
 
-    if (tabKey === 'network') {
-      if (evrLineBox1) evrLineBox1.style.opacity = '1';
-      if (evrLineBox2) evrLineBox2.style.opacity = '1';
-      if (evrLineBox3 && hasBox3) evrLineBox3.style.opacity = '1';
-      if (evrShadedArea) {
-        evrShadedArea.style.opacity = '1';
-        evrShadedArea.setAttribute('d', 'M 25 88 C 100 92, 180 86, 250 40 C 320 25, 410 20, 515 18 L 515 60 C 410 60, 320 60, 250 60 C 180 60, 100 60, 25 60 Z');
-      }
-      if (evrCalloutMud) evrCalloutMud.style.display = 'block';
-      if (evrCalloutShift) evrCalloutShift.style.display = 'block';
-      if (evrCalloutRunway) evrCalloutRunway.style.display = hasBox3 ? 'block' : 'none';
+    // EVR Area Note (Footer subline)
+    if (!isSingleBoxMode) {
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
         const evrParts = d.samples.map(s => {
-          const y = s.metrics?.yieldAnalysis;
-          let label = (s.d === 1 || y?.domSide === 'BULL') ? 'BULL' : 'BEAR';
-          if (y?.isTrap) label = 'TRAP';
-          return `${label} ${s.evr.toLocaleString()} v/pt (B${s.boxNum})`;
+          let tag = s.evr < 1400 ? 'VACUUM' : (s.evr > 2400 ? 'ABSORB' : 'FLOW');
+          return `B${s.boxNum} ${s.evr.toLocaleString()} v/pt (${tag})`;
         });
-        evrAreaNote.textContent = 'EFFORT: ' + evrParts.join(' → ');
+        evrAreaNote.textContent = 'EFFORT SHIFT: ' + evrParts.join(' → ');
       }
-    } else if (tabKey === 'box_0') {
-      if (evrLineBox1) evrLineBox1.style.opacity = '1';
-      if (evrLineBox2) evrLineBox2.style.opacity = '0.15';
-      if (evrLineBox3) evrLineBox3.style.opacity = '0.15';
-      if (evrShadedArea) {
-        evrShadedArea.style.opacity = '0.4';
-        evrShadedArea.setAttribute('d', 'M 25 88 C 90 92, 160 86, 230 84 C 300 85, 370 84, 440 85 L 515 85 L 515 60 L 25 60 Z');
+    } else {
+      const selS = d.samples[selectedBoxIdx];
+      const selPal = BOX_PALETTE[selectedBoxIdx % BOX_PALETTE.length];
+      if (selS && evrAreaNote) {
+        let tag = selS.evr < 1400 ? 'VACUUM RUNWAY EXPANSION' : (selS.evr > 2400 ? 'HEAVY FRICTION WALL' : 'NORMAL AUCTION FLOW');
+        const prevEvr = selectedBoxIdx > 0 ? d.samples[selectedBoxIdx - 1].evr : selS.evr;
+        const shift = Math.round(((selS.evr - prevEvr) / Math.max(1, prevEvr)) * 100);
+        const sSign = shift >= 0 ? '+' : '';
+        evrAreaNote.style.color = selPal.stroke;
+        evrAreaNote.textContent = `BOX ${selS.boxNum} EFFORT: ${selS.evr.toLocaleString()} V/PT // ${tag} (${sSign}${shift}% FRICTION)`;
       }
-      if (evrCalloutMud) evrCalloutMud.style.display = 'block';
-      if (evrCalloutShift) evrCalloutShift.style.display = 'none';
-      if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
-      if (evrAreaNote) {
-        evrAreaNote.style.color = themeSoft;
-        const b1Dom = (d.samples[0]?.d === 1 || d.samples[0]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL EFFORT' : 'BEAR EFFORT';
-        evrAreaNote.textContent = `BOX 1 EFFORT: ${(d.samples[0]?.evr || 4439).toLocaleString()} V/PT // ${b1Dom}`;
-      }
-    } else if (tabKey === 'box_1') {
-      if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
-      if (evrLineBox2) evrLineBox2.style.opacity = '1';
-      if (evrLineBox3) evrLineBox3.style.opacity = '0.15';
-      if (evrShadedArea) {
-        evrShadedArea.style.opacity = '0.5';
-        evrShadedArea.setAttribute('d', 'M 25 82 C 100 75, 170 50, 240 34 C 310 28, 380 25, 450 22 L 515 20 L 515 60 L 25 60 Z');
-      }
-      if (evrCalloutMud) evrCalloutMud.style.display = 'none';
-      if (evrCalloutShift) evrCalloutShift.style.display = 'block';
-      if (evrCalloutRunway) evrCalloutRunway.style.display = 'none';
-      if (evrAreaNote) {
-        evrAreaNote.style.color = themeSoft;
-        const b2Dom = (d.samples[1]?.d === 1 || d.samples[1]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL EFFORT' : 'BEAR EFFORT';
-        const box2Shift = d.samples.length >= 2 ? Math.round(((d.samples[1].evr - d.samples[0].evr) / Math.max(1, d.samples[0].evr)) * 100) : d.deltaEvr;
-        const shiftSign = box2Shift >= 0 ? '+' : '';
-        evrAreaNote.textContent = `BOX 2 EFFORT: ${(d.samples[1]?.evr || 2157).toLocaleString()} V/PT // ${b2Dom} (${shiftSign}${box2Shift}% FRICTION)`;
-      }
-    } else if (tabKey === 'box_2') {
-      if (evrLineBox1) evrLineBox1.style.opacity = '0.15';
-      if (evrLineBox2) evrLineBox2.style.opacity = '0.15';
-      if (evrLineBox3) evrLineBox3.style.opacity = '1';
-      if (evrShadedArea) {
-        evrShadedArea.style.opacity = '0.5';
-        evrShadedArea.setAttribute('d', 'M 25 40 C 100 28, 190 22, 280 18 C 370 15, 450 14, 515 12 L 515 60 L 25 60 Z');
-      }
-      if (evrCalloutMud) evrCalloutMud.style.display = 'none';
-      if (evrCalloutShift) evrCalloutShift.style.display = 'none';
-      if (evrCalloutRunway) evrCalloutRunway.style.display = 'block';
-      if (evrAreaNote) {
-        evrAreaNote.style.color = themeSoft;
-        const b3Dom = (d.samples[2]?.d === 1 || d.samples[2]?.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL EFFORT' : 'BEAR EFFORT';
-        evrAreaNote.textContent = `BOX 3 EFFORT: ${(d.samples[2]?.evr || 1850).toLocaleString()} V/PT // ${b3Dom}`;
-      }
+    }
+
+    // Update Matrix Table if currently maximized
+    if (window.__renderNexusMaxTable) {
+      window.__renderNexusMaxTable();
     }
 
     // 8. Footer Reference Levels
@@ -3967,6 +4003,128 @@ export function openExtensionNetworkModal(chart) {
     }
   };
 
+  // Multi-Box Comparative Findings Matrix Table Generator
+  window.__renderNexusMaxTable = function() {
+    const maxTable = document.getElementById('tvNexusMaxTable');
+    if (!maxTable || maxTable.style.display === 'none') return;
+
+    let overallTag = scopeIsBear ? 'BEAR ADVANCE & VACUUM EXPANSION' : 'BULL ADVANCE & VACUUM EXPANSION';
+    if (d.netDelta > 0 && scopeIsBear) overallTag = 'ABSORPTION DEFENSE (BEAR MOVE ON BULL DELTA)';
+    else if (d.netDelta < 0 && !scopeIsBear) overallTag = 'ABSORPTION DEFENSE (BULL MOVE ON BEAR DELTA)';
+
+    let rowsHtml = '';
+    d.samples.forEach((s, idx) => {
+      const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
+      const signD = s.netDelta >= 0 ? '+' : '';
+      const dispP = s.netMove >= 0 ? '+' : '';
+      const moveColor = s.netMove >= 0 ? '#10b981' : '#f43f5e';
+      const deltaColor = s.netDelta >= 0 ? '#10b981' : '#f43f5e';
+      const deltaK = (s.netDelta / 1000).toFixed(1);
+
+      const y = s.metrics?.yieldAnalysis;
+      let finding = s.d === 1 ? 'BULL ADVANCE' : 'BEAR ADVANCE';
+      let badgeStyle = 'background: rgba(16,185,129,0.15); border: 1px solid #10b981; color: #34d399;';
+      if (s.d === -1) {
+        badgeStyle = 'background: rgba(244,63,94,0.15); border: 1px solid #f43f5e; color: #fda4af;';
+      }
+
+      if (y?.isTrap) {
+        finding = y.trapType === 'CEILING_TRAP' ? 'CEILING TRAP (ABSORPTION)' : 'FLOOR TRAP (ABSORPTION)';
+        badgeStyle = 'background: rgba(245,158,11,0.15); border: 1px solid #f59e0b; color: #facc15;';
+      } else if (y?.isExhaustion) {
+        finding = y.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND (EXHAUSTION)' : 'NO SUPPLY (EXHAUSTION)';
+        badgeStyle = 'background: rgba(148,163,184,0.15); border: 1px solid #64748b; color: #cbd5e1;';
+      } else if (s.evr < 1400) {
+        finding = s.d === 1 ? 'OPEN BULL RUNWAY (VACUUM)' : 'OPEN BEAR RUNWAY (VACUUM)';
+        badgeStyle = 'background: rgba(0,229,255,0.15); border: 1px solid #00e5ff; color: #00e5ff; font-weight: 800;';
+      } else if (s.evr > 2400) {
+        finding = 'HEAVY FRICTION WALL (ABSORPTION)';
+        badgeStyle = 'background: rgba(220,38,38,0.15); border: 1px solid #dc2626; color: #fca5a5;';
+      }
+
+      const prevEvr = idx > 0 ? d.samples[idx - 1].evr : s.evr;
+      const shiftVal = Math.round(((s.evr - prevEvr) / Math.max(1, prevEvr)) * 100);
+      const shiftSign = shiftVal >= 0 ? '+' : '';
+      const shiftColor = shiftVal < -15 ? '#00e5ff' : (shiftVal > 20 ? '#f43f5e' : '#94a3b8');
+
+      rowsHtml += `
+        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; transition: background 0.15s;" onclick="window.__selectNexusTab('box_${idx}')" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+          <td style="padding: 6px 8px; font-weight: 800; color: ${pal.stroke}; display: flex; align-items: center; gap: 6px;">
+            <span style="width: 8px; height: 8px; border-radius: 50%; background: ${pal.stroke}; box-shadow: 0 0 6px ${pal.glow};"></span>
+            BOX #${s.boxNum}
+          </td>
+          <td style="padding: 6px 8px;">
+            <span style="color: ${moveColor}; font-weight: 700;">${dispP}${s.netMove.toFixed(1)} pt</span>
+            <span style="color: #64748b; font-size: 9px; margin-left: 4px;">(Max: ${s.favMove.toFixed(1)})</span>
+          </td>
+          <td style="padding: 6px 8px; color: #cbd5e1;">${s.totalVol.toLocaleString()}</td>
+          <td style="padding: 6px 8px; color: ${deltaColor}; font-weight: 700;">${signD}${deltaK}K Δ <span style="font-size: 9px; color: #64748b;">(${signD}${s.netDeltaPct}%)</span></td>
+          <td style="padding: 6px 8px;">
+            <span style="color: #ffffff; font-weight: 700;">${s.evr.toLocaleString()}</span>
+            <span style="color: ${shiftColor}; font-size: 9px; margin-left: 4px;">(${idx === 0 ? 'BASE' : shiftSign + shiftVal + '%'})</span>
+          </td>
+          <td style="padding: 6px 8px; color: ${s.absorbPct > 60 ? '#facc15' : '#94a3b8'};">${s.absorbPct}%</td>
+          <td style="padding: 6px 8px; color: #818cf8;">${s.metrics?.yieldAnalysis?.yieldRatio ? s.metrics.yieldAnalysis.yieldRatio.toFixed(2) : '1.00'}x</td>
+          <td style="padding: 6px 8px;">
+            <span style="display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9.5px; ${badgeStyle}">
+              ${finding}
+            </span>
+          </td>
+        </tr>
+      `;
+    });
+
+    maxTable.innerHTML = `
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+        <span style="font-size: 11px; font-weight: 900; color: #00f5d4; letter-spacing: 0.5px;">
+          📊 MULTI-BOX COMPARATIVE FINDINGS MATRIX (${sampleCount} BOXES ANALYZED)
+        </span>
+        <span style="font-size: 10px; font-family: monospace; color: #94a3b8;">
+          PANORAMIC SYNTHESIS: <strong style="color: ${themeColor};">${overallTag}</strong>
+        </span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table style="width: 100%; border-collapse: collapse; font-family: monospace; font-size: 10.5px; text-align: left;">
+          <thead>
+            <tr style="border-bottom: 1px solid #1e293b; color: #64748b; font-size: 9px; text-transform: uppercase;">
+              <th style="padding: 5px 8px;">BOX #</th>
+              <th style="padding: 5px 8px;">PRICE MOVE</th>
+              <th style="padding: 5px 8px;">TOTAL VOL</th>
+              <th style="padding: 5px 8px;">NET DELTA</th>
+              <th style="padding: 5px 8px;">EVR (FRICTION)</th>
+              <th style="padding: 5px 8px;">ABSORB %</th>
+              <th style="padding: 5px 8px;">YIELD RATIO</th>
+              <th style="padding: 5px 8px;">AUTHENTIC STRUCTURAL FINDING</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
+    `;
+  };
+
+  // Wire Maximize / Restore Toggle
+  window.__toggleNexusMaximized = function() {
+    const frame = modal.querySelector('.tv-nexus-chamfer-frame');
+    if (!frame) return;
+    const isMax = frame.classList.toggle('tv-nexus-maximized');
+    const toggleBtn = document.getElementById('tvNexusStudioToggleBtn');
+    if (toggleBtn) {
+      toggleBtn.innerHTML = isMax ? '<span>🗗 RESTORE STUDIO</span>' : '<span>⛶ MAXIMIZE STUDIO</span>';
+      toggleBtn.title = isMax ? 'Restore Standard Dimensions' : 'Maximize Chart Studio & Findings Matrix';
+    }
+
+    const maxTable = document.getElementById('tvNexusMaxTable');
+    if (maxTable) {
+      maxTable.style.display = isMax ? 'block' : 'none';
+      if (isMax && window.__renderNexusMaxTable) {
+        window.__renderNexusMaxTable();
+      }
+    }
+  };
+
   // Wire Chart Lines Toggle Button
   const toggleLinesBtn = document.getElementById('tvToggleInflectionLinesBtn');
   if (toggleLinesBtn) {
@@ -3980,11 +4138,23 @@ export function openExtensionNetworkModal(chart) {
   }
   updateInflectionLinesButtonUI();
 
-  // Wire Close Buttons
+  // Wire Close Buttons & Escape key
   const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
   const closeBtnDone = document.getElementById('tvCloseNetworkModalBtnDone');
   if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
   if (closeBtnDone) closeBtnDone.onclick = () => { modal.style.display = 'none'; };
+
+  const handleKeydown = (e) => {
+    if (e.key === 'Escape') {
+      const frame = modal.querySelector('.tv-nexus-chamfer-frame');
+      if (frame && frame.classList.contains('tv-nexus-maximized')) {
+        window.__toggleNexusMaximized();
+      } else {
+        modal.style.display = 'none';
+      }
+    }
+  };
+  window.addEventListener('keydown', handleKeydown);
 
   // Render initial Network tab on open
   window.__selectNexusTab('network');

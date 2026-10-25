@@ -3658,6 +3658,40 @@ input[type="number"] {
   max-width: 1160px !important;
   width: 95vw !important;
   padding: 16px 20px !important;
+  transition: max-width 0.3s ease, height 0.3s ease;
+}
+
+.tv-nexus-chamfer-frame.tv-nexus-maximized {
+  max-width: 98vw !important;
+  width: 98vw !important;
+  max-height: 96vh !important;
+  height: 96vh !important;
+  padding: 12px 18px !important;
+  overflow-y: auto !important;
+}
+
+.tv-nexus-max-btn {
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.tv-nexus-max-btn:hover {
+  background: #1e293b;
+  color: #00f5d4;
+  border-color: #00f5d4;
+}
+
+.tv-nexus-chart-box {
+  transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .tv-nexus-neon-border {
