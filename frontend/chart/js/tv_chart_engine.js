@@ -2133,109 +2133,137 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // Peak absolute delta across sequence for relative effort scaling
-  const maxAbsDelta = Math.max(1, ...sortedRects.map(item => Math.abs(item.metrics?.netDelta || 0)));
-
-  // Dynamic Effort vs Win Domination Shades (Who is Dominating):
-  // Tier 0: 50/50 Neutral / Zero Delta -> Slate Grey (#94a3b8)
-  // Tier 1: Developing / Mild Edge (relDelta < 0.45 & domPct < 58%) -> Soft Mint (#86efac) / Soft Rose (#fca5a5)
-  // Tier 2: Decisive Domination (0.45 <= relDelta < 0.85 or 58% <= domPct < 70%) -> Vivid Green (#22c55e) / Alert Red (#ef4444)
-  // Tier 3: Crushing Domination / Peak Win (relDelta >= 0.85 or domPct >= 70%) -> Radiant Neon Emerald (#00f5a0) / Neon Ruby (#f43f5e)
-  const getBoxTagStyle = (metrics, isLast) => {
-    const boxDelta = metrics ? metrics.netDelta : 0;
-    const totalVol = metrics ? metrics.totalVol : 0;
-    const bullPct = metrics ? (metrics.bullPct || 50) : 50;
-    const bearPct = 100 - bullPct;
-
-    if (!metrics || totalVol <= 0 || boxDelta === 0) {
+  // Dynamic Effort vs Win Domination Shades (Who is Winning with Effort + Movement):
+  // Combines Effort Vector (Bull vs Bear Volume) with Movement Vector (Price Displacement / Excursion):
+  // Score W = effortEdge * 0.45 + moveEdge * 0.55
+  // Tier 0: Balanced Equilibrium (|W| < 4 or totalVol == 0) -> Slate Grey (#94a3b8)
+  // Tier 1: Developing / Mild Win (4 <= |W| < 16) -> Soft Mint (#86efac) / Soft Rose (#fca5a5)
+  // Tier 2: Decisive Win (16 <= |W| < 28) -> Vivid Green (#22c55e) / Alert Red (#ef4444)
+  // Tier 3: Crushing Win (|W| >= 28) -> Radiant Neon Emerald (#00f5a0) / Deep Neon Ruby (#f43f5e)
+  const getBoxTagStyle = (m, isLast) => {
+    if (!m || (m.totalVol || 0) <= 0) {
       return {
         color: '#94a3b8',
         bg: 'rgba(148, 163, 184, 0.12)',
         border: 'rgba(148, 163, 184, 0.30)',
         shadow: isLast ? '0 0 8px rgba(148, 163, 184, 0.50)' : 'none',
-        domLabel: '50/50 Balanced Equilibrium'
+        domLabel: '50/50 Balanced Equilibrium (No Effort Volume)'
       };
     }
 
-    const isBull = boxDelta > 0;
-    const domPct = isBull ? bullPct : bearPct;
-    const relDelta = Math.abs(boxDelta) / maxAbsDelta;
+    const totalVol = m.totalVol || 1;
+    const bullVol = (typeof m.bullVol === 'number') ? m.bullVol : Math.round(totalVol * ((m.bullPct || 50) / 100));
+    const bearVol = (typeof m.bearVol === 'number') ? m.bearVol : Math.round(totalVol * ((m.bearPct || 50) / 100));
+    const bullPct = Math.round((bullVol / totalVol) * 100);
+    const bearPct = 100 - bullPct;
+
+    // Effort component: Advantage in volume participation [-50 to +50]
+    const effortEdge = (bullPct - 50);
+
+    // Movement component: Price displacement result [-50 to +50]
+    const netMove = (typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0));
+    const boxRange = Math.max(0.1, m.R_b || ((m.H_b || 0) - (m.L_b || 0)) || 1.0);
+    const moveRatio = Math.max(-1.0, Math.min(1.0, netMove / (boxRange * 0.6)));
+    const moveEdge = moveRatio * 50;
+
+    // Combined Effort vs Win score [-50 to +50]
+    // 55% weight to Price Movement Result, 45% weight to Volume Effort
+    const winScore = (effortEdge * 0.45) + (moveEdge * 0.55);
+    const absScore = Math.abs(winScore);
+    const isBull = winScore > 0;
+
+    if (absScore < 4) {
+      return {
+        color: '#94a3b8',
+        bg: 'rgba(148, 163, 184, 0.12)',
+        border: 'rgba(148, 163, 184, 0.30)',
+        shadow: isLast ? '0 0 8px rgba(148, 163, 184, 0.50)' : 'none',
+        domLabel: '50/50 Balanced Flow (Effort & Movement In Equilibrium)'
+      };
+    }
 
     if (isBull) {
-      if (relDelta >= 0.85 || domPct >= 70) {
-        // Tier 3: Crushing Buyer Domination / Peak Win
+      if (absScore >= 28) {
         return {
           color: '#00f5a0',
           bg: 'rgba(0, 245, 160, 0.18)',
           border: 'rgba(0, 245, 160, 0.55)',
           shadow: isLast ? '0 0 10px rgba(0, 245, 160, 0.70)' : '0 0 4px rgba(0, 245, 160, 0.25)',
-          domLabel: `${domPct}% Buyers (Crushing Domination — Peak Win)`
+          domLabel: `Bulls Crushing Win (Effort ${bullPct}% + Strong Upward Expansion)`
         };
-      } else if (relDelta >= 0.45 || domPct >= 58) {
-        // Tier 2: Decisive Buyer Domination
+      } else if (absScore >= 16) {
         return {
           color: '#22c55e',
           bg: 'rgba(34, 197, 94, 0.16)',
           border: 'rgba(34, 197, 94, 0.45)',
           shadow: isLast ? '0 0 8px rgba(34, 197, 94, 0.60)' : 'none',
-          domLabel: `${domPct}% Buyers (Decisive Domination)`
+          domLabel: `Bulls Winning with Effort & Upward Movement (Decisive Win)`
         };
       } else {
-        // Tier 1: Developing / Mild Buyer Edge
         return {
           color: '#86efac',
           bg: 'rgba(134, 239, 172, 0.12)',
           border: 'rgba(134, 239, 172, 0.35)',
           shadow: isLast ? '0 0 8px rgba(134, 239, 172, 0.55)' : 'none',
-          domLabel: `${domPct}% Buyers (Mild Edge)`
+          domLabel: `Bulls Winning (Mild Edge)`
         };
       }
     } else {
-      if (relDelta >= 0.85 || domPct >= 70) {
-        // Tier 3: Crushing Seller Domination / Peak Win
+      if (absScore >= 28) {
         return {
           color: '#f43f5e',
           bg: 'rgba(244, 63, 94, 0.18)',
           border: 'rgba(244, 63, 94, 0.55)',
           shadow: isLast ? '0 0 10px rgba(244, 63, 94, 0.70)' : '0 0 4px rgba(244, 63, 94, 0.25)',
-          domLabel: `${domPct}% Sellers (Crushing Domination — Peak Win)`
+          domLabel: `Bears Crushing Win (Effort ${bearPct}% + Strong Downward Breakdown)`
         };
-      } else if (relDelta >= 0.45 || domPct >= 58) {
-        // Tier 2: Decisive Seller Domination
+      } else if (absScore >= 16) {
         return {
           color: '#ef4444',
           bg: 'rgba(239, 68, 68, 0.16)',
           border: 'rgba(239, 68, 68, 0.45)',
           shadow: isLast ? '0 0 8px rgba(239, 68, 68, 0.60)' : 'none',
-          domLabel: `${domPct}% Sellers (Decisive Domination)`
+          domLabel: `Bears Winning with Effort & Downward Movement (Decisive Win)`
         };
       } else {
-        // Tier 1: Developing / Mild Seller Edge
         return {
           color: '#fca5a5',
           bg: 'rgba(252, 165, 165, 0.12)',
           border: 'rgba(252, 165, 165, 0.35)',
           shadow: isLast ? '0 0 8px rgba(252, 165, 165, 0.55)' : 'none',
-          domLabel: `${domPct}% Sellers (Mild Edge)`
+          domLabel: `Bears Winning (Mild Edge)`
         };
       }
     }
   };
 
-  // 1. Build Sequence Micro-Group (Showing Effort vs Win Domination Shades)
-  let seqHtml = '<div class="tv-ext-seq-group" title="Box Effort vs Win Domination Sequence (Click to inspect)">';
+  // 1. Build Sequence Micro-Group (Showing Bull & Bear Effort Volumes + Effort vs Win Domination Shades)
+  let seqHtml = '<div class="tv-ext-seq-group" title="Box Bull/Bear Volume Effort vs Movement Win Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const m = item.metrics;
-    const boxDelta = m ? m.netDelta : 0;
-    const dSign = boxDelta >= 0 ? '+' : '';
     const isLast = (idx === sortedRects.length - 1);
     const styleObj = getBoxTagStyle(m, isLast);
-    const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
-    const boxLabel = `B${idx + 1}: ${deltaFormatted}`;
+
+    const totalVol = m ? (m.totalVol || 0) : 0;
+    const bullVol = m ? ((typeof m.bullVol === 'number') ? m.bullVol : Math.round(totalVol * ((m.bullPct || 50) / 100))) : 0;
+    const bearVol = m ? ((typeof m.bearVol === 'number') ? m.bearVol : Math.round(totalVol * ((m.bearPct || 50) / 100))) : 0;
+    const netMove = m ? ((typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0))) : 0;
+    const moveSign = netMove >= 0 ? '+' : '';
+    const moveText = `${moveSign}${netMove.toFixed(1)}pt`;
+
+    const bullVolText = formatVolNumber(bullVol);
+    const bearVolText = formatVolNumber(bearVol);
+
+    const boxContent = `
+      <span style="color: ${styleObj.color}; font-weight: 800; margin-right: 3px;">B${idx + 1}:</span>
+      <span style="color: #4ade80;" title="Bull Volume Effort">${bullVolText}</span>
+      <span style="color: #64748b; margin: 0 2px; opacity: 0.6;">/</span>
+      <span style="color: #f87171;" title="Bear Volume Effort">${bearVolText}</span>
+    `;
     
     seqHtml += `
-      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1}: ${deltaFormatted} Δ • ${styleObj.domLabel} (Click to inspect)" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : (styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : '')}">
-        ${boxLabel}
+      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1}: ${bullVolText} Bull Effort vs ${bearVolText} Bear Effort • Move: ${moveText} • ${styleObj.domLabel} (Click to inspect)" style="background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : (styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : '')}">
+        ${boxContent}
       </span>
     `;
     if (!isLast) {
