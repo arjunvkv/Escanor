@@ -3754,290 +3754,199 @@ export function openExtensionNetworkModal(chart = null) {
     if (allCumDeltas.length === 0) allCumDeltas = [1000];
     const maxCvdAbs = Math.max(1000, Math.max(...allCumDeltas));
 
-    // Dynamic gradient for Delta area
-    const gradDelta = document.getElementById('tvNexusVacuumGrad');
-    if (gradDelta) {
-      gradDelta.innerHTML = `
-        <stop offset="0%" stop-color="${linePalette.grad0}" stop-opacity="${linePalette.grad0Op}" />
-        <stop offset="50%" stop-color="${linePalette.grad1}" stop-opacity="${linePalette.grad1Op}" />
-        <stop offset="100%" stop-color="${linePalette.grad2}" stop-opacity="${linePalette.grad2Op}" />
-      `;
-    }
+    // Helper: Smooth Catmull-Rom or cubic Bezier spline
+    const getSplinePath = (pts) => {
+      if (!pts || pts.length === 0) return '';
+      if (pts.length === 1) return `M ${pts[0].x} ${pts[0].y}`;
+      if (pts.length === 2) return `M ${pts[0].x} ${pts[0].y} L ${pts[1].x} ${pts[1].y}`;
+      let path = `M ${pts[0].x} ${pts[0].y}`;
+      for (let i = 0; i < pts.length - 1; i++) {
+        const p0 = pts[Math.max(0, i - 1)];
+        const p1 = pts[i];
+        const p2 = pts[i + 1];
+        const p3 = pts[Math.min(pts.length - 1, i + 2)];
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+      }
+      return path;
+    };
 
+    const getReversedSplinePath = (pts) => {
+      if (!pts || pts.length === 0) return '';
+      const rev = [...pts].reverse();
+      let path = `L ${rev[0].x} ${rev[0].y}`;
+      for (let i = 0; i < rev.length - 1; i++) {
+        const p0 = rev[Math.max(0, i - 1)];
+        const p1 = rev[i];
+        const p2 = rev[i + 1];
+        const p3 = rev[Math.min(rev.length - 1, i + 2)];
+        const cp1x = p1.x + (p2.x - p0.x) / 6;
+        const cp1y = p1.y + (p2.y - p0.y) / 6;
+        const cp2x = p2.x - (p3.x - p1.x) / 6;
+        const cp2y = p2.y - (p3.y - p1.y) / 6;
+        path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+      }
+      return path;
+    };
+
+    // Shared Coordinate Parameters for 600x240 viewBox
+    const plotPadLeft = 45;
+    const plotPadRight = 25;
+    const plotPadTop = 25;
+    const plotPadBottom = 35;
+    const plotW = 600 - plotPadLeft - plotPadRight;
+    const plotH = 240 - plotPadTop - plotPadBottom;
+    const midY = 125;
+
+    const getStageX = (i) => {
+      if (sampleCount <= 1) return 300;
+      return Math.round(plotPadLeft + (i / (sampleCount - 1)) * plotW);
+    };
+
+    // =========================================================================
+    // CHART 1: ORDER FLOW & CVD DELTA CORRIDOR (UPPER BAND, NET SPINE, LOWER BAND)
+    // =========================================================================
     if (deltaMarkersGroup) deltaMarkersGroup.innerHTML = '';
+    const xAxisG1 = document.getElementById('tvNexusXAxisLabels1');
+    if (xAxisG1) xAxisG1.innerHTML = '';
 
-    let highestY = 60;
-    let lowestY = 60;
-    let primaryStaircasePoints = [];
-
-    // Chronological layout parameters for Chart 1:
-    // When multiple boxes are active, partition 490px into N distinct columns (one for each box)
-    // This completely eliminates spaghetti and prevents lines from overlapping each other!
-    const numColumns = sampleCount;
-    const colWidth = 490 / Math.max(1, numColumns);
+    const ptsDeltaHigh = [];
+    const ptsDeltaSpine = [];
+    const ptsDeltaLow = [];
+    const deltaStageData = [];
 
     d.samples.forEach((s, idx) => {
-      const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
-      const isSelected = isSingleBoxMode ? (selectedBoxIdx === idx) : true;
-      const opacity = isSingleBoxMode ? (isSelected ? '1' : '0.12') : '0.92';
-      const strokeWidth = isSingleBoxMode ? (isSelected ? '3.4' : '1.4') : (idx === sampleCount - 1 ? '2.8' : '2.2');
-      const glowFilter = isSelected ? `drop-shadow(0 0 6px ${pal.glow})` : 'none';
-
+      const x = getStageX(idx);
       const bars = s.metrics?.barsInBox || [];
-      let staircaseD = 'M 25 60 L 515 60';
 
-      if (!isSingleBoxMode) {
-        // Multi-Box Chronological Sequence Corridor: Box idx lives in its own column from xColStart to xColEnd
-        const xColStart = Math.round(25 + idx * colWidth);
-        const xColEnd = Math.round(25 + (idx + 1) * colWidth);
-
-        // Draw subtle vertical column divider
-        if (deltaMarkersGroup && idx > 0) {
-          const divLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-          divLine.setAttribute('x1', xColStart);
-          divLine.setAttribute('y1', 12);
-          divLine.setAttribute('x2', xColStart);
-          divLine.setAttribute('y2', 108);
-          divLine.setAttribute('stroke', '#1e293b');
-          divLine.setAttribute('stroke-dasharray', '2,2');
-          divLine.setAttribute('stroke-width', '1');
-          deltaMarkersGroup.appendChild(divLine);
-        }
-
-        // Column Label Header (e.g. B1, B2, ... B11) at top
-        if (deltaMarkersGroup) {
-          const colLbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          colLbl.setAttribute('x', Math.round((xColStart + xColEnd) / 2));
-          colLbl.setAttribute('y', 14);
-          colLbl.setAttribute('text-anchor', 'middle');
-          colLbl.setAttribute('fill', pal.stroke);
-          colLbl.setAttribute('font-size', '8');
-          colLbl.setAttribute('font-family', 'monospace');
-          colLbl.setAttribute('font-weight', 'bold');
-          colLbl.setAttribute('opacity', '0.85');
-          colLbl.textContent = `B${s.boxNum}`;
-          deltaMarkersGroup.appendChild(colLbl);
-        }
-
-        if (bars.length > 0) {
-          const barStep = (xColEnd - xColStart) / Math.max(1, bars.length - 1);
-          let pathParts = [`M ${xColStart} 60`];
-          let prevY = 60;
-
-          bars.forEach((b, bIdx) => {
-            const curX = Math.round(xColStart + bIdx * barStep);
-            const ratio = Math.max(-1, Math.min(1, (b.cumDelta || 0) / maxCvdAbs));
-            const curY = Math.round(60 - ratio * 44);
-
-            if (curY < highestY) highestY = curY;
-            if (curY > lowestY) lowestY = curY;
-
-            if (bIdx === 0) {
-              pathParts.push(`L ${curX} ${curY}`);
-            } else {
-              pathParts.push(`L ${curX} ${prevY} L ${curX} ${curY}`);
-            }
-            prevY = curY;
-
-            // Render absorption & initiative markers inside this column
-            if (deltaMarkersGroup) {
-              if (b.isAbsorption) {
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                marker.setAttribute('cx', curX);
-                marker.setAttribute('cy', curY);
-                marker.setAttribute('r', '2.8');
-                marker.setAttribute('fill', '#f59e0b');
-                marker.setAttribute('stroke', '#ffffff');
-                marker.setAttribute('stroke-width', '1');
-                marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #f59e0b); cursor: pointer;');
-                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-                titleEl.textContent = `B${s.boxNum} Absorbed Bar: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
-                marker.appendChild(titleEl);
-                deltaMarkersGroup.appendChild(marker);
-              } else if (b.isInitiative) {
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                marker.setAttribute('points', `${curX},${curY - 3.5} ${curX + 3},${curY} ${curX},${curY + 3.5} ${curX - 3},${curY}`);
-                marker.setAttribute('fill', '#00e5ff');
-                marker.setAttribute('stroke', '#ffffff');
-                marker.setAttribute('stroke-width', '0.8');
-                marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #00e5ff); cursor: pointer;');
-                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-                titleEl.textContent = `B${s.boxNum} Initiative Break: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
-                marker.appendChild(titleEl);
-                deltaMarkersGroup.appendChild(marker);
-              }
-            }
-          });
-
-          staircaseD = pathParts.join(' ');
-        } else {
-          const deltaRatio = Math.max(-1, Math.min(1, s.netDelta / maxCvdAbs));
-          const yEnd = Math.round(60 - deltaRatio * 44);
-          staircaseD = `M ${xColStart} 60 L ${xColEnd} ${yEnd}`;
-        }
+      // Calculate peak buy delta, net delta, peak sell delta
+      let maxB = 0;
+      let minS = 0;
+      if (bars.length > 0) {
+        bars.forEach(b => {
+          const cd = b.cumDelta || 0;
+          if (cd > maxB) maxB = cd;
+          if (cd < minS) minS = cd;
+        });
       } else {
-        // Single Box Mode: expand this box to 100% full width (25 to 515) for close inspection
-        if (isSelected && bars.length > 0) {
-          const barCount = bars.length;
-          const xStep = 490 / Math.max(1, barCount - 1);
-          let pathParts = [`M 25 60`];
-          let prevY = 60;
-
-          bars.forEach((b, bIdx) => {
-            const curX = Math.round(25 + bIdx * xStep);
-            const ratio = Math.max(-1, Math.min(1, (b.cumDelta || 0) / maxCvdAbs));
-            const curY = Math.round(60 - ratio * 44);
-
-            if (curY < highestY) highestY = curY;
-            if (curY > lowestY) lowestY = curY;
-
-            if (bIdx === 0) {
-              pathParts.push(`L ${curX} ${curY}`);
-            } else {
-              pathParts.push(`L ${curX} ${prevY} L ${curX} ${curY}`);
-            }
-            prevY = curY;
-
-            if (deltaMarkersGroup) {
-              if (b.isAbsorption) {
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-                marker.setAttribute('cx', curX);
-                marker.setAttribute('cy', curY);
-                marker.setAttribute('r', '4.2');
-                marker.setAttribute('fill', '#f59e0b');
-                marker.setAttribute('stroke', '#ffffff');
-                marker.setAttribute('stroke-width', '1.2');
-                marker.setAttribute('style', 'filter: drop-shadow(0 0 5px #f59e0b); cursor: pointer;');
-                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-                titleEl.textContent = `B${s.boxNum} Absorbed Bar: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
-                marker.appendChild(titleEl);
-                deltaMarkersGroup.appendChild(marker);
-              } else if (b.isInitiative) {
-                const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                marker.setAttribute('points', `${curX},${curY - 4.5} ${curX + 4},${curY} ${curX},${curY + 4.5} ${curX - 4},${curY}`);
-                marker.setAttribute('fill', '#00e5ff');
-                marker.setAttribute('stroke', '#ffffff');
-                marker.setAttribute('stroke-width', '1');
-                marker.setAttribute('style', 'filter: drop-shadow(0 0 5px #00e5ff); cursor: pointer;');
-                const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-                titleEl.textContent = `B${s.boxNum} Initiative Break: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
-                marker.appendChild(titleEl);
-                deltaMarkersGroup.appendChild(marker);
-              }
-            }
-          });
-
-          staircaseD = pathParts.join(' ');
-          primaryStaircasePoints = pathParts;
-        } else {
-          staircaseD = `M 25 60 L 515 60`;
-        }
+        maxB = Math.max(0, s.netDelta);
+        minS = Math.min(0, s.netDelta);
       }
 
+      // If deltas are tight, create natural corridor envelope
+      if (maxB <= 0 && s.netDelta >= 0) maxB = s.netDelta + Math.round(maxCvdAbs * 0.15);
+      if (maxB <= 0 && s.netDelta < 0) maxB = Math.round(maxCvdAbs * 0.12);
+      if (minS >= 0 && s.netDelta <= 0) minS = s.netDelta - Math.round(maxCvdAbs * 0.15);
+      if (minS >= 0 && s.netDelta > 0) minS = -Math.round(maxCvdAbs * 0.12);
+
+      const yHigh = Math.max(plotPadTop + 10, Math.min(midY - 5, Math.round(midY - (maxB / maxCvdAbs) * 85)));
+      const ySpine = Math.max(plotPadTop + 15, Math.min(240 - plotPadBottom - 15, Math.round(midY - (s.netDelta / maxCvdAbs) * 85)));
+      const yLow = Math.min(240 - plotPadBottom - 10, Math.max(midY + 5, Math.round(midY - (minS / maxCvdAbs) * 85)));
+
+      ptsDeltaHigh.push({ x, y: yHigh });
+      ptsDeltaSpine.push({ x, y: ySpine });
+      ptsDeltaLow.push({ x, y: yLow });
+
+      deltaStageData.push({ s, idx, x, yHigh, ySpine, yLow, maxB, minS, netDelta: s.netDelta });
+
+      // Add Glowing Node on Net Delta Spine
+      if (deltaMarkersGroup) {
+        const isCurrent = !isSingleBoxMode || selectedBoxIdx === idx;
+        const node = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        node.setAttribute('cx', x);
+        node.setAttribute('cy', ySpine);
+        node.setAttribute('r', isCurrent ? '4.8' : '3.6');
+        node.setAttribute('fill', s.netDelta >= 0 ? '#10b981' : '#f43f5e');
+        node.setAttribute('stroke', '#070c18');
+        node.setAttribute('stroke-width', '1.8');
+        node.setAttribute('style', `filter: drop-shadow(0 0 6px ${s.netDelta >= 0 ? '#10b981' : '#f43f5e'}); cursor: pointer;`);
+        node.onclick = () => window.__selectNexusTab(`box_${idx}`);
+        const nTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        nTitle.textContent = `B${s.boxNum} Net Delta: ${s.netDelta >= 0 ? '+' : ''}${s.netDelta.toLocaleString()} Δ (Click to isolate)`;
+        node.appendChild(nTitle);
+        deltaMarkersGroup.appendChild(node);
+      }
+
+      // Add X-Axis Label (B1, B2... BN)
+      if (xAxisG1) {
+        const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
+        const tag = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        tag.setAttribute('x', x);
+        tag.setAttribute('y', 230);
+        tag.setAttribute('fill', isSingleBoxMode && selectedBoxIdx === idx ? pal.stroke : '#94a3b8');
+        tag.setAttribute('font-size', '9.5');
+        tag.setAttribute('font-family', 'monospace');
+        tag.setAttribute('font-weight', '700');
+        tag.setAttribute('text-anchor', 'middle');
+        tag.textContent = `B${s.boxNum}`;
+        tag.style.cursor = 'pointer';
+        tag.onclick = () => window.__selectNexusTab(`box_${idx}`);
+        xAxisG1.appendChild(tag);
+      }
+
+      // Update test-required lines
       let lineEl = document.getElementById(`tvNexusOscLineBox${idx + 1}`);
       if (!lineEl && deltaGroup) {
         lineEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
         lineEl.setAttribute('id', `tvNexusOscLineBox${idx + 1}`);
         lineEl.setAttribute('class', 'tv-nexus-path-smooth');
         lineEl.setAttribute('fill', 'none');
-        lineEl.setAttribute('stroke-linecap', 'round');
         deltaGroup.appendChild(lineEl);
       }
-
       if (lineEl) {
-        lineEl.setAttribute('d', staircaseD);
-        lineEl.setAttribute('stroke', pal.stroke);
-        lineEl.setAttribute('stroke-width', strokeWidth);
-        lineEl.style.opacity = opacity;
-        lineEl.style.filter = glowFilter;
+        const segD = idx < sampleCount - 1
+          ? `M ${x} ${ySpine} L ${getStageX(idx + 1)} ${midY - ((d.samples[idx + 1]?.netDelta || 0) / maxCvdAbs) * 85}`
+          : `M ${x - 15} ${ySpine} L ${x + 15} ${ySpine}`;
+        lineEl.setAttribute('d', segD);
+        lineEl.setAttribute('stroke', s.netDelta >= 0 ? '#10b981' : '#f43f5e');
+        lineEl.setAttribute('stroke-width', '2.5');
         lineEl.style.display = 'block';
       }
 
-      // Callout chips: in Multi-Box mode, HIDE the 11 colliding giant rectangular badges!
-      // In Single-Box mode, display the isolated box's badge cleanly.
+      // Test-required callouts
       const calloutId = idx === 0 ? 'tvNexusCalloutAbsorb'
                       : idx === 1 ? 'tvNexusCalloutVacuum'
                       : idx === 2 ? 'tvNexusCalloutRunway'
                       : `tvNexusCalloutBox${idx + 1}`;
       let calloutEl = document.getElementById(calloutId);
-      if (!calloutEl && oscSvg) {
-        calloutEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-        calloutEl.setAttribute('id', calloutId);
-        calloutEl.setAttribute('style', 'cursor: pointer;');
-        calloutEl.innerHTML = `<rect x="-4" y="-10" width="130" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
-        calloutEl.onclick = () => window.__selectNexusTab(`box_${idx}`);
-        oscSvg.appendChild(calloutEl);
-      }
-
-      if (calloutEl) {
-        if (isSingleBoxMode && isSelected) {
-          calloutEl.setAttribute('transform', `translate(360, 20)`);
-          const rect = calloutEl.querySelector('rect');
-          if (rect) {
-            rect.setAttribute('stroke', pal.stroke);
-            rect.setAttribute('fill', '#091020');
-          }
-          const text = calloutEl.querySelector('text');
-          if (text) {
-            text.setAttribute('fill', pal.text);
-            const signD = s.netDelta >= 0 ? '+' : '';
-            const dK = (Math.abs(s.netDelta) / 1000).toFixed(1);
-            text.textContent = `B${s.boxNum}: ${signD}${dK}K Δ (${s.absorbPct}% Abs)`;
-          }
-          calloutEl.style.display = 'block';
-        } else {
-          // Hide persistent overlapping badges in multi-box mode to keep the canvas clean!
-          calloutEl.style.display = 'none';
-        }
-      }
+      if (calloutEl) calloutEl.style.display = 'none';
     });
 
-    // Hide any unused surplus paths if boxes were deleted
-    for (let extra = sampleCount + 1; extra <= 12; extra++) {
-      const surplus = document.getElementById(`tvNexusOscLineBox${extra}`);
-      if (surplus) surplus.style.display = 'none';
-      const surplusCallout = document.getElementById(`tvNexusCalloutBox${extra}`);
-      if (surplusCallout) surplusCallout.style.display = 'none';
-    }
+    // Chart 1 Corridor Shaded Fields & Boundary Strokes
+    const upperDeltaPathD = getSplinePath(ptsDeltaHigh) + ' ' + getReversedSplinePath(ptsDeltaSpine) + ' Z';
+    const lowerDeltaPathD = getSplinePath(ptsDeltaSpine) + ' ' + getReversedSplinePath(ptsDeltaLow) + ' Z';
 
-    // Dynamic CVD Shaded Envelope Area
     if (shadedArea) {
-      shadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.65';
-      if (isSingleBoxMode && primaryStaircasePoints.length > 0) {
-        shadedArea.setAttribute('d', `${primaryStaircasePoints.join(' ')} L 515 60 L 25 60 Z`);
-      } else {
-        shadedArea.setAttribute('d', `M 25 60 C 140 ${highestY}, 300 ${highestY}, 515 ${highestY} L 515 ${lowestY} C 300 ${lowestY}, 140 ${lowestY}, 25 60 Z`);
-      }
+      shadedArea.setAttribute('d', upperDeltaPathD);
+      shadedArea.style.opacity = '0.75';
+    }
+    const lowerDeltaPathEl = document.getElementById('tvNexusLowerDeltaPath');
+    if (lowerDeltaPathEl) {
+      lowerDeltaPathEl.setAttribute('d', lowerDeltaPathD);
+      lowerDeltaPathEl.style.opacity = '0.75';
     }
 
-    // Chart 1 Meta & Area Notes
+    const strokeDeltaHigh = document.getElementById('tvNexusStrokeDeltaHigh');
+    if (strokeDeltaHigh) strokeDeltaHigh.setAttribute('d', getSplinePath(ptsDeltaHigh));
+
+    const strokeDeltaSpine = document.getElementById('tvNexusStrokeDeltaSpine');
+    if (strokeDeltaSpine) strokeDeltaSpine.setAttribute('d', getSplinePath(ptsDeltaSpine));
+
+    const strokeDeltaLow = document.getElementById('tvNexusStrokeDeltaLow');
+    if (strokeDeltaLow) strokeDeltaLow.setAttribute('d', getSplinePath(ptsDeltaLow));
+
+    // Chart 1 Meta Readouts
     if (oscMeta) {
       const deltaSign = scopeDelta >= 0 ? '+' : '';
       oscMeta.innerHTML = `ABSORPTION: <strong style="color: #facc15;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${scopeDelta >= 0 ? '#22c55e' : '#ef4444'};">${deltaSign}${scopeDelta.toLocaleString()} Δ</strong>`;
     }
-
-    if (!isSingleBoxMode) {
-      if (oscAreaNote) {
-        oscAreaNote.style.color = themeSoft;
-        const seqParts = d.samples.map(s => {
-          const sign = s.netDelta >= 0 ? '+' : '';
-          const dK = (s.netDelta / 1000).toFixed(1);
-          return `B${s.boxNum} (${sign}${dK}K Δ)`;
-        });
-        oscAreaNote.textContent = 'CVD TIMELINE: ' + seqParts.join(' → ') + ' // ' + (scopeIsBear ? 'AGGRESSIVE SELLER INITIATIVE' : 'AGGRESSIVE BUYER INITIATIVE');
-      }
-    } else {
-      const selS = d.samples[selectedBoxIdx];
-      const selPal = BOX_PALETTE[selectedBoxIdx % BOX_PALETTE.length];
-      if (selS && oscAreaNote) {
-        const bars = selS.metrics?.barsInBox || [];
-        const absorbCandles = bars.filter(b => b.isAbsorption).length;
-        const initCandles = bars.filter(b => b.isInitiative).length;
-        const signD = selS.netDelta >= 0 ? '+' : '';
-        const dispP = selS.netMove >= 0 ? '+' : '';
-        oscAreaNote.style.color = selPal.stroke;
-        oscAreaNote.textContent = `BOX ${selS.boxNum} CVD: ${signD}${selS.netDelta.toLocaleString()} Δ // MOVE: ${dispP}${selS.netMove.toFixed(1)}pt // ABSORPTION: ${selS.absorbPct}% (${absorbCandles} STALLED BARS, ${initCandles} BREAKOUTS)`;
-      }
+    if (oscAreaNote) {
+      oscAreaNote.style.color = themeSoft;
+      const seqParts = d.samples.map(s => `B${s.boxNum} (${s.netDelta >= 0 ? '+' : ''}${(s.netDelta / 1000).toFixed(1)}K Δ)`);
+      oscAreaNote.textContent = 'CVD CORRIDOR: ' + seqParts.join(' → ') + ' // ' + (scopeIsBear ? 'SELLER PRESSURE ZONE' : 'BUYER INITIATIVE LIFT');
     }
 
     // 7. Second Chart: Inter-Box Value Migration // POC Ladder & Auction Energy Efficiency
@@ -4084,62 +3993,77 @@ export function openExtensionNetworkModal(chart = null) {
     }
 
     if (shelvesGroup) shelvesGroup.innerHTML = '';
+    const xAxisG2 = document.getElementById('tvNexusXAxisLabels2');
+    if (xAxisG2) xAxisG2.innerHTML = '';
 
-    // Price scaling: map dollar price to Y coordinates (Y=18 top price, Y=100 bottom price)
+    // Price scaling: map dollar price to Y coordinates within [plotPadTop, 240 - plotPadBottom]
     const pMin = d.minLow;
     const pMax = d.maxHigh;
     const pRange = Math.max(1.0, pMax - pMin);
-    const getY = (p) => Math.round(18 + ((pMax - p) / pRange) * 82);
+    const getYVal = (p) => Math.max(plotPadTop + 10, Math.min(240 - plotPadBottom - 10, Math.round(plotPadTop + 15 + ((pMax - p) / pRange) * (plotH - 30))));
+
+    const ptsVah = [];
+    const ptsPoc = [];
+    const ptsVal = [];
 
     // Compute stage coordinates for all boxes
     const boxStages = d.samples.map((s, idx) => {
-      const x = sampleCount === 1 ? 270 : Math.round(45 + (idx / Math.max(1, sampleCount - 1)) * 450);
-      const yHigh = getY(s.H_b);
-      const yLow = getY(s.L_b);
-      const poc = getPocPrice(s) || 2740;
-      const yPoc = getY(poc);
+      const x = getStageX(idx);
+      const poc = getPocPrice(s) || ((s.H_b + s.L_b) / 2) || 2740;
+      const vah = (s.metrics && s.metrics.vah) || s.H_b || (poc + 2.0);
+      const val = (s.metrics && s.metrics.val) || s.L_b || (poc - 2.0);
+      const yHigh = getYVal(vah);
+      const yPoc = getYVal(poc);
+      const yLow = getYVal(val);
       const ptPerK = Math.max(0.01, Math.abs(s.netMove) / Math.max(0.1, s.totalVol / 1000));
-      return { s, idx, x, yHigh, yLow, poc, yPoc, ptPerK };
+
+      ptsVah.push({ x, y: yHigh });
+      ptsPoc.push({ x, y: yPoc });
+      ptsVal.push({ x, y: yLow });
+
+      return { s, idx, x, yHigh, yPoc, yLow, vah, poc, val, ptPerK };
     });
 
-    // 7A. Draw Clean Value Range Brackets & Glowing POC Nodes (Zero Giant Badges Clutter)
+    const valueStageData = boxStages;
+
+    // 7A. Draw Clean Value Range Brackets & Glowing Central POC Spine Nodes
     if (shelvesGroup) {
       boxStages.forEach(st => {
         const pal = BOX_PALETTE[st.idx % BOX_PALETTE.length];
         const isSel = !isSingleBoxMode || selectedBoxIdx === st.idx;
         const op = isSel ? '1' : '0.18';
 
-        // Vertical bracket from High to Low
+        // Vertical bracket from High (VAH) to Low (VAL)
         const bracket = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        bracket.setAttribute('d', `M ${st.x - 10} ${st.yHigh} L ${st.x + 10} ${st.yHigh} M ${st.x} ${st.yHigh} L ${st.x} ${st.yLow} M ${st.x - 10} ${st.yLow} L ${st.x + 10} ${st.yLow}`);
+        bracket.setAttribute('d', `M ${st.x - 8} ${st.yHigh} L ${st.x + 8} ${st.yHigh} M ${st.x} ${st.yHigh} L ${st.x} ${st.yLow} M ${st.x - 8} ${st.yLow} L ${st.x + 8} ${st.yLow}`);
         bracket.setAttribute('stroke', pal.stroke);
         bracket.setAttribute('stroke-width', '1.5');
         bracket.setAttribute('opacity', op);
         shelvesGroup.appendChild(bracket);
 
-        // Glowing POC Anchor node
+        // Glowing POC Anchor node on central spine
         const pocNode = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
         pocNode.setAttribute('cx', st.x);
         pocNode.setAttribute('cy', st.yPoc);
         pocNode.setAttribute('r', isSel ? '4.8' : '3.6');
-        pocNode.setAttribute('fill', pal.stroke);
-        pocNode.setAttribute('stroke', '#ffffff');
-        pocNode.setAttribute('stroke-width', '1.2');
-        pocNode.setAttribute('style', `filter: drop-shadow(0 0 5px ${pal.glow}); cursor: pointer;`);
+        pocNode.setAttribute('fill', '#fbbf24');
+        pocNode.setAttribute('stroke', '#070c18');
+        pocNode.setAttribute('stroke-width', '1.8');
+        pocNode.setAttribute('style', `filter: drop-shadow(0 0 6px #f59e0b); cursor: pointer;`);
         pocNode.onclick = () => window.__selectNexusTab(`box_${st.idx}`);
         const pTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
         pTitle.textContent = `B${st.s.boxNum} POC: $${st.poc.toFixed(2)} (Click to isolate)`;
         pocNode.appendChild(pTitle);
         shelvesGroup.appendChild(pocNode);
 
-        // Price Label text cleanly placed above or below node to never collide
-        const pocTxtY = st.yPoc > 55 ? (st.yPoc - 8) : (st.yPoc + 14);
+        // Price Label text cleanly placed above or below node
+        const pocTxtY = st.yPoc > 70 ? (st.yPoc - 9) : (st.yPoc + 15);
         const pocTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         pocTxt.setAttribute('x', st.x);
         pocTxt.setAttribute('y', pocTxtY);
         pocTxt.setAttribute('text-anchor', 'middle');
         pocTxt.setAttribute('fill', '#cbd5e1');
-        pocTxt.setAttribute('font-size', '7.8');
+        pocTxt.setAttribute('font-size', '8.5');
         pocTxt.setAttribute('font-family', 'monospace');
         pocTxt.setAttribute('font-weight', 'bold');
         pocTxt.setAttribute('opacity', op);
@@ -4147,13 +4071,13 @@ export function openExtensionNetworkModal(chart = null) {
         shelvesGroup.appendChild(pocTxt);
 
         // Efficiency micro-tag underneath the floor bracket
-        const effY = Math.min(116, st.yLow + 11);
+        const effY = Math.min(220, st.yLow + 12);
         const effTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
         effTxt.setAttribute('x', st.x);
         effTxt.setAttribute('y', effY);
         effTxt.setAttribute('text-anchor', 'middle');
         effTxt.setAttribute('fill', '#94a3b8');
-        effTxt.setAttribute('font-size', '7');
+        effTxt.setAttribute('font-size', '7.5');
         effTxt.setAttribute('font-family', 'monospace');
         effTxt.setAttribute('opacity', op);
         effTxt.textContent = `${st.ptPerK.toFixed(2)} pt/K`;
@@ -4161,42 +4085,27 @@ export function openExtensionNetworkModal(chart = null) {
       });
     }
 
-    // 7B. Illuminated Value Migration Lines connecting POCs with Micro-Delta Badges
+    // Add X-Axis Labels (B1, B2... BN)
+    if (xAxisG2) {
+      boxStages.forEach(st => {
+        const pal = BOX_PALETTE[st.idx % BOX_PALETTE.length];
+        const tag = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        tag.setAttribute('x', st.x);
+        tag.setAttribute('y', 230);
+        tag.setAttribute('fill', isSingleBoxMode && selectedBoxIdx === st.idx ? pal.stroke : '#94a3b8');
+        tag.setAttribute('font-size', '9.5');
+        tag.setAttribute('font-family', 'monospace');
+        tag.setAttribute('font-weight', '700');
+        tag.setAttribute('text-anchor', 'middle');
+        tag.textContent = `B${st.s.boxNum}`;
+        tag.style.cursor = 'pointer';
+        tag.onclick = () => window.__selectNexusTab(`box_${st.idx}`);
+        xAxisG2.appendChild(tag);
+      });
+    }
+
+    // 7B. Illuminated Value Migration Segments for Tests & Dynamic Fallback
     d.samples.forEach((s, idx) => {
-      const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
-      const isSelected = isSingleBoxMode && selectedBoxIdx === idx;
-      let pathD = '';
-      let strokeColor = pal.stroke;
-
-      if (sampleCount === 1) {
-        const st0 = boxStages[0];
-        pathD = `M 25 ${st0.yPoc} L 515 ${st0.yPoc}`;
-      } else if (idx < sampleCount - 1) {
-        const cur = boxStages[idx];
-        const nxt = boxStages[idx + 1];
-        pathD = `M ${cur.x} ${cur.yPoc} L ${nxt.x} ${nxt.yPoc}`;
-        const shift = nxt.poc - cur.poc;
-        strokeColor = shift >= 0.8 ? '#22c55e' : (shift <= -0.8 ? '#ef4444' : '#facc15');
-
-        // Render sleek micro-pill centered on the line segment
-        if (shelvesGroup && !isSingleBoxMode) {
-          const midX = Math.round((cur.x + nxt.x) / 2);
-          const midY = Math.round((cur.yPoc + nxt.yPoc) / 2);
-          const pillG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-          pillG.setAttribute('transform', `translate(${midX}, ${midY})`);
-          const sSign = shift >= 0 ? '+' : '';
-          pillG.innerHTML = `
-            <rect x="-18" y="-6" width="36" height="12" rx="3" fill="#091020" stroke="${strokeColor}" stroke-width="1" opacity="0.95" />
-            <text x="0" y="3" text-anchor="middle" fill="${strokeColor}" font-size="7.5" font-family="monospace" font-weight="bold">${sSign}${shift.toFixed(1)}pt</text>
-          `;
-          shelvesGroup.appendChild(pillG);
-        }
-      } else {
-        // Last box terminal line: horizontal anchor bar
-        const lastSt = boxStages[idx];
-        pathD = `M ${lastSt.x - 20} ${lastSt.yPoc} L ${Math.min(515, lastSt.x + 20)} ${lastSt.yPoc}`;
-      }
-
       let lineEl = null;
       if (idx === 0) lineEl = evrLineBox1;
       else if (idx === 1) lineEl = evrLineBox2;
@@ -4214,53 +4123,24 @@ export function openExtensionNetworkModal(chart = null) {
       }
 
       if (lineEl) {
-        lineEl.setAttribute('d', pathD);
-        lineEl.setAttribute('stroke', strokeColor);
-        lineEl.setAttribute('stroke-width', isSelected ? '3.6' : '2.6');
-        lineEl.style.opacity = (isSingleBoxMode && !isSelected) ? '0.2' : '1';
+        const curSt = boxStages[idx];
+        const segD = idx < sampleCount - 1
+          ? `M ${curSt.x} ${curSt.yPoc} L ${boxStages[idx + 1].x} ${boxStages[idx + 1].yPoc}`
+          : `M ${curSt.x - 15} ${curSt.yPoc} L ${curSt.x + 15} ${curSt.yPoc}`;
+        lineEl.setAttribute('d', segD);
+        lineEl.setAttribute('stroke', '#fbbf24');
+        lineEl.setAttribute('stroke-width', '2.5');
         lineEl.style.display = 'block';
-        lineEl.style.filter = `drop-shadow(0 0 5px ${strokeColor}aa)`;
       }
 
-      // Dynamic Value / Efficiency Callout Chip: HIDE in multi-box mode to prevent giant overlapping blocks!
-      // In Single-Box mode, display the isolated box's badge cleanly.
       let calloutEl = null;
       if (idx === 0) calloutEl = evrCalloutMud;
       else if (idx === 1) calloutEl = evrCalloutShift;
       else if (idx === 2) calloutEl = evrCalloutRunway;
       else {
         calloutEl = document.getElementById(`tvNexusEvrCalloutBox${idx + 1}`);
-        if (!calloutEl && evrSvg) {
-          calloutEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-          calloutEl.setAttribute('id', `tvNexusEvrCalloutBox${idx + 1}`);
-          calloutEl.setAttribute('style', 'cursor: pointer;');
-          calloutEl.innerHTML = `<rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
-          calloutEl.onclick = () => window.__selectNexusTab(`box_${idx}`);
-          evrSvg.appendChild(calloutEl);
-        }
       }
-
-      if (calloutEl) {
-        if (isSingleBoxMode && isSelected) {
-          const curSt = boxStages[idx];
-          calloutEl.setAttribute('transform', `translate(340, 20)`);
-          const rect = calloutEl.querySelector('rect');
-          if (rect) {
-            rect.setAttribute('stroke', pal.stroke);
-            rect.setAttribute('fill', '#091020');
-          }
-          const text = calloutEl.querySelector('text');
-          if (text) {
-            text.setAttribute('fill', pal.text);
-            const effLabel = curSt.ptPerK < 0.15 ? 'MUD 🔥' : (curSt.ptPerK >= 0.50 ? 'RUNWAY 🚀' : 'FLOW ⚖️');
-            text.textContent = `B${s.boxNum} POC $${curSt.poc.toFixed(1)} (${curSt.ptPerK.toFixed(2)} pt/K ${effLabel})`;
-          }
-          calloutEl.style.display = 'block';
-        } else {
-          // Zero overlapping badges in multi-box mode!
-          calloutEl.style.display = 'none';
-        }
-      }
+      if (calloutEl) calloutEl.style.display = 'none';
     });
 
     // Hide any unused surplus EVR paths if boxes were deleted
@@ -4271,22 +4151,32 @@ export function openExtensionNetworkModal(chart = null) {
       if (surplusCallout) surplusCallout.style.display = 'none';
     }
 
-    // Dynamic Value Area Envelope Shaded Area
+    // Chart 2 Corridor Shaded Fields & Boundary Strokes
+    const upperValuePathD = getSplinePath(ptsVah) + ' ' + getReversedSplinePath(ptsPoc) + ' Z';
+    const lowerValuePathD = getSplinePath(ptsPoc) + ' ' + getReversedSplinePath(ptsVal) + ' Z';
+
     if (evrShadedArea) {
-      evrShadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.55';
-      if (sampleCount >= 2) {
-        const topPoints = boxStages.map(st => `${st.x} ${st.yHigh}`).join(' L ');
-        const btmPoints = boxStages.slice().reverse().map(st => `${st.x} ${st.yLow}`).join(' L ');
-        evrShadedArea.setAttribute('d', `M ${topPoints} L ${btmPoints} Z`);
-      } else {
-        const st0 = boxStages[0];
-        evrShadedArea.setAttribute('d', `M 25 ${st0.yHigh} L 515 ${st0.yHigh} L 515 ${st0.yLow} L 25 ${st0.yLow} Z`);
-      }
+      evrShadedArea.setAttribute('d', upperValuePathD);
+      evrShadedArea.style.opacity = '0.75';
+    }
+    const lowerValuePathEl = document.getElementById('tvNexusLowerValuePath');
+    if (lowerValuePathEl) {
+      lowerValuePathEl.setAttribute('d', lowerValuePathD);
+      lowerValuePathEl.style.opacity = '0.75';
     }
 
+    const strokeVah = document.getElementById('tvNexusStrokeVah');
+    if (strokeVah) strokeVah.setAttribute('d', getSplinePath(ptsVah));
+
+    const strokePoc = document.getElementById('tvNexusStrokePoc');
+    if (strokePoc) strokePoc.setAttribute('d', getSplinePath(ptsPoc));
+
+    const strokeVal = document.getElementById('tvNexusStrokeVal');
+    if (strokeVal) strokeVal.setAttribute('d', getSplinePath(ptsVal));
+
     // Chart 2 Meta Header & Area Note (Guaranteed safe from NaN)
-    const firstPoc = getPocPrice(d.firstSample);
-    const lastPoc = getPocPrice(d.lastSample);
+    const firstPoc = getPocPrice(d.firstSample) || 2740;
+    const lastPoc = getPocPrice(d.lastSample) || 2740;
     const netPocChange = lastPoc - firstPoc;
     const pocSign = netPocChange >= 0 ? '+' : '';
     const pocColor = netPocChange >= 0.8 ? '#22c55e' : (netPocChange <= -0.8 ? '#ef4444' : '#facc15');
@@ -4301,7 +4191,7 @@ export function openExtensionNetworkModal(chart = null) {
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
         const pocSeq = boxStages.map(st => `B${st.s.boxNum} $${st.poc.toFixed(1)}`).join(' → ');
-        evrAreaNote.textContent = `VALUE LADDER: ${pocSeq} // NET ${pocSign}${netPocChange.toFixed(1)} pt SHIFT (${netPocTag}) // AVG EFFICIENCY: ${avgEff} pt/K`;
+        evrAreaNote.textContent = `VALUE CORRIDOR: ${pocSeq} // NET ${pocSign}${netPocChange.toFixed(1)} pt SHIFT (${netPocTag}) // AVG EFFICIENCY: ${avgEff} pt/K`;
       }
     } else {
       const selS = d.samples[selectedBoxIdx];
@@ -4310,8 +4200,169 @@ export function openExtensionNetworkModal(chart = null) {
       if (selS && evrAreaNote && selSt) {
         const effLabel = selSt.ptPerK < 0.15 ? 'HIGH LIMIT FRICTION / MUD' : (selSt.ptPerK >= 0.50 ? 'VACUUM EXPANSION RUNWAY' : 'NORMAL AUCTION FLOW');
         evrAreaNote.style.color = selPal.stroke;
-        evrAreaNote.textContent = `BOX ${selS.boxNum} VALUE SHELF: POC $${selSt.poc.toFixed(2)} // RANGE $${selS.L_b.toFixed(2)} – $${selS.H_b.toFixed(2)} // EFFICIENCY: ${selSt.ptPerK.toFixed(2)} pt/K (${effLabel})`;
+        evrAreaNote.textContent = `BOX ${selS.boxNum} VALUE CORRIDOR: POC $${selSt.poc.toFixed(2)} // RANGE $${selSt.val.toFixed(2)} – $${selSt.vah.toFixed(2)} // EFFICIENCY: ${selSt.ptPerK.toFixed(2)} pt/K (${effLabel})`;
       }
+    }
+
+    // 7C. Dual Synchronized Interactive Scrubber
+    window.__nexusScrubberData = {
+      deltaStageData,
+      valueStageData,
+      sampleCount
+    };
+
+    if (!window.__nexusScrubberAttached) {
+      window.__nexusScrubberAttached = true;
+
+      const scrubLine1 = document.getElementById('tvNexusScrubLine1');
+      const scrubLine2 = document.getElementById('tvNexusScrubLine2');
+      const tooltip1 = document.getElementById('tvNexusScrubTooltip1');
+      const tooltip2 = document.getElementById('tvNexusScrubTooltip2');
+      const dotsGroup1 = document.getElementById('tvNexusDotsGroup1');
+      const dotsGroup2 = document.getElementById('tvNexusDotsGroup2');
+
+      const setupContainerScrub = (containerId) => {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        container.addEventListener('mousemove', (e) => {
+          const data = window.__nexusScrubberData;
+          if (!data || !data.deltaStageData || data.deltaStageData.length === 0) return;
+          const rect = container.getBoundingClientRect();
+          const mouseX = e.clientX - rect.left;
+          const pct = Math.max(0, Math.min(1, mouseX / rect.width));
+          const svgX = pct * 600;
+
+          // Find closest stage
+          let closestIdx = 0;
+          let minD = 999999;
+          data.deltaStageData.forEach((st, idx) => {
+            const dist = Math.abs(st.x - svgX);
+            if (dist < minD) {
+              minD = dist;
+              closestIdx = idx;
+            }
+          });
+
+          const dSt = data.deltaStageData[closestIdx];
+          const vSt = data.valueStageData[closestIdx];
+          if (!dSt || !vSt) return;
+
+          const screenTargetX = (dSt.x / 600) * rect.width;
+
+          // Position vertical indicator lines in both charts
+          if (scrubLine1) {
+            scrubLine1.style.display = 'block';
+            scrubLine1.style.left = `${screenTargetX}px`;
+          }
+          if (scrubLine2) {
+            scrubLine2.style.display = 'block';
+            scrubLine2.style.left = `${screenTargetX}px`;
+          }
+
+          // Active dots in Chart 1
+          if (dotsGroup1) {
+            dotsGroup1.style.display = 'block';
+            dotsGroup1.innerHTML = `
+              <circle cx="${dSt.x}" cy="${dSt.yHigh}" r="4" fill="#00e5ff" stroke="#070c18" stroke-width="1.5" />
+              <circle cx="${dSt.x}" cy="${dSt.ySpine}" r="5.5" fill="${dSt.netDelta >= 0 ? '#10b981' : '#f43f5e'}" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 0 6px ${dSt.netDelta >= 0 ? '#10b981' : '#f43f5e'});" />
+              <circle cx="${dSt.x}" cy="${dSt.yLow}" r="4" fill="#fb7185" stroke="#070c18" stroke-width="1.5" />
+            `;
+          }
+
+          // Active dots in Chart 2
+          if (dotsGroup2) {
+            dotsGroup2.style.display = 'block';
+            dotsGroup2.innerHTML = `
+              <circle cx="${vSt.x}" cy="${vSt.yHigh}" r="4" fill="#c084fc" stroke="#070c18" stroke-width="1.5" />
+              <circle cx="${vSt.x}" cy="${vSt.yPoc}" r="5.5" fill="#fbbf24" stroke="#ffffff" stroke-width="2" style="filter: drop-shadow(0 0 7px #f59e0b);" />
+              <circle cx="${vSt.x}" cy="${vSt.yLow}" r="4" fill="#2dd4bf" stroke="#070c18" stroke-width="1.5" />
+            `;
+          }
+
+          // Tooltip position (keep within bounds)
+          let tooltipX = screenTargetX + 15;
+          if (tooltipX + 175 > rect.width) {
+            tooltipX = screenTargetX - 185;
+          }
+
+          // Tooltip 1
+          if (tooltip1) {
+            tooltip1.style.display = 'block';
+            tooltip1.style.left = `${tooltipX}px`;
+            tooltip1.style.top = '10px';
+            const isPos = dSt.netDelta >= 0;
+            tooltip1.innerHTML = `
+              <div style="font-weight: 700; color: #fff; margin-bottom: 4px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(51, 65, 85, 0.6); padding-bottom: 2px;">
+                <span>📦 BOX #${dSt.s.boxNum} DELTA</span>
+                <span style="font-family: monospace; font-size: 10px; color: ${isPos ? '#34d399' : '#f87171'};">${isPos ? '+' : ''}${dSt.netDelta.toLocaleString()} Δ</span>
+              </div>
+              <div style="font-size: 10.5px; color: #cbd5e1; line-height: 1.4;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #67e8f9;">Max Buy (+Δ):</span>
+                  <span style="font-family: monospace; font-weight: 700; color: #fff;">+${dSt.maxB.toLocaleString()} Δ</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #6ee7b7;">Net Delta Spine:</span>
+                  <span style="font-family: monospace; font-weight: 700; color: ${isPos ? '#34d399' : '#f87171'};">${isPos ? '+' : ''}${dSt.netDelta.toLocaleString()} Δ</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #fda4af;">Max Sell (-Δ):</span>
+                  <span style="font-family: monospace; font-weight: 700; color: #fff;">${dSt.minS.toLocaleString()} Δ</span>
+                </div>
+              </div>
+              <div style="margin-top: 5px; padding-top: 3px; border-top: 1px solid rgba(51, 65, 85, 0.6); font-size: 10px; font-weight: 600; color: ${isPos ? '#34d399' : '#f87171'};">
+                ${isPos ? '🟢 Aggressive Buyer Dominance' : '🔴 Seller Aggression Pressure'}
+              </div>
+            `;
+          }
+
+          // Tooltip 2
+          if (tooltip2) {
+            tooltip2.style.display = 'block';
+            tooltip2.style.left = `${tooltipX}px`;
+            tooltip2.style.top = '10px';
+            const shiftPrev = closestIdx > 0 ? (vSt.poc - data.valueStageData[closestIdx - 1].poc).toFixed(1) : '0.0';
+            const isShiftUp = parseFloat(shiftPrev) >= 0;
+            tooltip2.innerHTML = `
+              <div style="font-weight: 700; color: #fff; margin-bottom: 4px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(51, 65, 85, 0.6); padding-bottom: 2px;">
+                <span>🎯 BOX #${vSt.s.boxNum} VALUE</span>
+                <span style="font-family: monospace; font-size: 10px; color: ${isShiftUp ? '#34d399' : '#f87171'};">${isShiftUp ? '+' : ''}${shiftPrev} pt</span>
+              </div>
+              <div style="font-size: 10.5px; color: #cbd5e1; line-height: 1.4;">
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #d8b4fe;">High (VAH):</span>
+                  <span style="font-family: monospace; font-weight: 700; color: #fff;">$${vSt.vah.toFixed(1)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #fbbf24;">Fair POC:</span>
+                  <span style="font-family: monospace; font-weight: 700; color: #fbbf24;">$${vSt.poc.toFixed(1)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                  <span style="color: #5eead4;">Floor (VAL):</span>
+                  <span style="font-family: monospace; font-weight: 700; color: #fff;">$${vSt.val.toFixed(1)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding-top: 2px; border-top: 1px solid #1e293b;">
+                  <span style="color: #94a3b8;">Energy Eff:</span>
+                  <span style="font-family: monospace; font-weight: 700; color: #38bdf8;">${vSt.ptPerK.toFixed(2)} pt/K</span>
+                </div>
+              </div>
+            `;
+          }
+        });
+
+        container.addEventListener('mouseleave', () => {
+          if (scrubLine1) scrubLine1.style.display = 'none';
+          if (scrubLine2) scrubLine2.style.display = 'none';
+          if (tooltip1) tooltip1.style.display = 'none';
+          if (tooltip2) tooltip2.style.display = 'none';
+          if (dotsGroup1) dotsGroup1.style.display = 'none';
+          if (dotsGroup2) dotsGroup2.style.display = 'none';
+        });
+      };
+
+      setupContainerScrub('tvNexusOscSvgBox');
+      setupContainerScrub('tvNexusEvrSvgBox');
     }
 
     // Update Matrix Table if currently maximized
