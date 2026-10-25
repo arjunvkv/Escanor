@@ -2133,39 +2133,108 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // Color each box tag dynamically according to its empirical net delta polarity:
-  // Positive delta = Green (#22c55e) buyers dominant
-  // Negative delta = Red (#ef4444) sellers dominant
-  const getBoxTagStyle = (boxDelta, isLast) => {
-    let col = '#22c55e';
-    let r = 34, g = 197, b = 94;
-    if (boxDelta < 0) {
-      col = '#ef4444';
-      r = 239; g = 68; b = 68;
-    } else if (boxDelta === 0) {
-      col = '#94a3b8';
-      r = 148; g = 163; b = 184;
+  // Peak absolute delta across sequence for relative effort scaling
+  const maxAbsDelta = Math.max(1, ...sortedRects.map(item => Math.abs(item.metrics?.netDelta || 0)));
+
+  // Dynamic Effort vs Win Domination Shades (Who is Dominating):
+  // Tier 0: 50/50 Neutral / Zero Delta -> Slate Grey (#94a3b8)
+  // Tier 1: Developing / Mild Edge (relDelta < 0.45 & domPct < 58%) -> Soft Mint (#86efac) / Soft Rose (#fca5a5)
+  // Tier 2: Decisive Domination (0.45 <= relDelta < 0.85 or 58% <= domPct < 70%) -> Vivid Green (#22c55e) / Alert Red (#ef4444)
+  // Tier 3: Crushing Domination / Peak Win (relDelta >= 0.85 or domPct >= 70%) -> Radiant Neon Emerald (#00f5a0) / Neon Ruby (#f43f5e)
+  const getBoxTagStyle = (metrics, isLast) => {
+    const boxDelta = metrics ? metrics.netDelta : 0;
+    const totalVol = metrics ? metrics.totalVol : 0;
+    const bullPct = metrics ? (metrics.bullPct || 50) : 50;
+    const bearPct = 100 - bullPct;
+
+    if (!metrics || totalVol <= 0 || boxDelta === 0) {
+      return {
+        color: '#94a3b8',
+        bg: 'rgba(148, 163, 184, 0.12)',
+        border: 'rgba(148, 163, 184, 0.30)',
+        shadow: isLast ? '0 0 8px rgba(148, 163, 184, 0.50)' : 'none',
+        domLabel: '50/50 Balanced Equilibrium'
+      };
     }
-    return {
-      color: col,
-      bg: `rgba(${r}, ${g}, ${b}, 0.14)`,
-      border: `rgba(${r}, ${g}, ${b}, 0.40)`,
-      shadow: isLast ? `0 0 8px rgba(${r}, ${g}, ${b}, 0.55)` : 'none'
-    };
+
+    const isBull = boxDelta > 0;
+    const domPct = isBull ? bullPct : bearPct;
+    const relDelta = Math.abs(boxDelta) / maxAbsDelta;
+
+    if (isBull) {
+      if (relDelta >= 0.85 || domPct >= 70) {
+        // Tier 3: Crushing Buyer Domination / Peak Win
+        return {
+          color: '#00f5a0',
+          bg: 'rgba(0, 245, 160, 0.18)',
+          border: 'rgba(0, 245, 160, 0.55)',
+          shadow: isLast ? '0 0 10px rgba(0, 245, 160, 0.70)' : '0 0 4px rgba(0, 245, 160, 0.25)',
+          domLabel: `${domPct}% Buyers (Crushing Domination — Peak Win)`
+        };
+      } else if (relDelta >= 0.45 || domPct >= 58) {
+        // Tier 2: Decisive Buyer Domination
+        return {
+          color: '#22c55e',
+          bg: 'rgba(34, 197, 94, 0.16)',
+          border: 'rgba(34, 197, 94, 0.45)',
+          shadow: isLast ? '0 0 8px rgba(34, 197, 94, 0.60)' : 'none',
+          domLabel: `${domPct}% Buyers (Decisive Domination)`
+        };
+      } else {
+        // Tier 1: Developing / Mild Buyer Edge
+        return {
+          color: '#86efac',
+          bg: 'rgba(134, 239, 172, 0.12)',
+          border: 'rgba(134, 239, 172, 0.35)',
+          shadow: isLast ? '0 0 8px rgba(134, 239, 172, 0.55)' : 'none',
+          domLabel: `${domPct}% Buyers (Mild Edge)`
+        };
+      }
+    } else {
+      if (relDelta >= 0.85 || domPct >= 70) {
+        // Tier 3: Crushing Seller Domination / Peak Win
+        return {
+          color: '#f43f5e',
+          bg: 'rgba(244, 63, 94, 0.18)',
+          border: 'rgba(244, 63, 94, 0.55)',
+          shadow: isLast ? '0 0 10px rgba(244, 63, 94, 0.70)' : '0 0 4px rgba(244, 63, 94, 0.25)',
+          domLabel: `${domPct}% Sellers (Crushing Domination — Peak Win)`
+        };
+      } else if (relDelta >= 0.45 || domPct >= 58) {
+        // Tier 2: Decisive Seller Domination
+        return {
+          color: '#ef4444',
+          bg: 'rgba(239, 68, 68, 0.16)',
+          border: 'rgba(239, 68, 68, 0.45)',
+          shadow: isLast ? '0 0 8px rgba(239, 68, 68, 0.60)' : 'none',
+          domLabel: `${domPct}% Sellers (Decisive Domination)`
+        };
+      } else {
+        // Tier 1: Developing / Mild Seller Edge
+        return {
+          color: '#fca5a5',
+          bg: 'rgba(252, 165, 165, 0.12)',
+          border: 'rgba(252, 165, 165, 0.35)',
+          shadow: isLast ? '0 0 8px rgba(252, 165, 165, 0.55)' : 'none',
+          domLabel: `${domPct}% Sellers (Mild Edge)`
+        };
+      }
+    }
   };
 
-  // 1. Build Sequence Micro-Group (Showing Box Delta with Empirical Polarity Shades)
-  let seqHtml = '<div class="tv-ext-seq-group" title="Box Delta Sequence (Click to inspect)">';
+  // 1. Build Sequence Micro-Group (Showing Effort vs Win Domination Shades)
+  let seqHtml = '<div class="tv-ext-seq-group" title="Box Effort vs Win Domination Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
-    const boxDelta = item.metrics ? item.metrics.netDelta : 0;
+    const m = item.metrics;
+    const boxDelta = m ? m.netDelta : 0;
     const dSign = boxDelta >= 0 ? '+' : '';
     const isLast = (idx === sortedRects.length - 1);
-    const styleObj = getBoxTagStyle(boxDelta, isLast);
+    const styleObj = getBoxTagStyle(m, isLast);
     const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
     const boxLabel = `B${idx + 1}: ${deltaFormatted}`;
     
     seqHtml += `
-      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1} Net Delta: ${dSign}${boxDelta.toLocaleString()} (Click to inspect)" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
+      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1}: ${deltaFormatted} Δ • ${styleObj.domLabel} (Click to inspect)" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${isLast ? 'box-shadow: ' + styleObj.shadow + ';' : (styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : '')}">
         ${boxLabel}
       </span>
     `;
