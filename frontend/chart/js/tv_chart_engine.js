@@ -114,6 +114,8 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
   let bullVol = 0;
   let bearVol = 0;
   let candleCount = 0;
+  let bullMovePts = 0;
+  let bearMovePts = 0;
 
   let observedHigh = -Infinity;
   let observedLow = Infinity;
@@ -178,6 +180,20 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
 
     bullVol += volInBox * bullRatio;
     bearVol += volInBox * (1 - bullRatio);
+
+    // Effort vs Movement: track upward and downward displacement within this box
+    const effOpen = Math.max(overlapLow, Math.min(overlapHigh, bar.open));
+    const effClose = Math.max(overlapLow, Math.min(overlapHigh, bar.close));
+    if (effClose > effOpen) {
+      bullMovePts += (effClose - effOpen) + Math.max(0, overlapHigh - effClose) * 0.4;
+      bearMovePts += Math.max(0, effOpen - overlapLow) * 0.4;
+    } else if (effClose < effOpen) {
+      bearMovePts += (effOpen - effClose) + Math.max(0, effClose - overlapLow) * 0.4;
+      bullMovePts += Math.max(0, overlapHigh - effOpen) * 0.4;
+    } else {
+      bullMovePts += Math.max(0, overlapHigh - effOpen) * 0.4;
+      bearMovePts += Math.max(0, effOpen - overlapLow) * 0.4;
+    }
   }
 
   // Fallbacks if box is drawn in empty future/past space
@@ -326,147 +342,58 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     }
   }
 
-  // --- Wyckoff & Auction Structural Archetype Classification ---
-  const upperWickSpan = H_b - Math.max(P_0, P_1);
-  const lowerWickSpan = Math.min(P_0, P_1) - L_b;
-  const upperWickRatio = R_b > 0.001 ? (upperWickSpan / R_b) : 0;
-  const lowerWickRatio = R_b > 0.001 ? (lowerWickSpan / R_b) : 0;
+  // --- Dynamic Volume Yield & Dominance Engine (Effort vs Movement) ---
+  // Ensure physical box excursion is accurately reflected
+  bullMovePts = Math.max(bullMovePts, Math.max(0.1, H_b - Math.min(P_0, L_b)));
+  bearMovePts = Math.max(bearMovePts, Math.max(0.1, Math.max(P_0, H_b) - L_b));
 
-  // Boundary interactions: did price push to range ceiling or floor?
-  const testedCeiling = (H_b >= topPrice - 0.25 * priceRange) || (H_b >= topPrice - 2.5);
-  const testedFloor = (L_b <= bottomPrice + 0.25 * priceRange) || (L_b <= bottomPrice + 2.5);
+  const bullVolK = Math.max(0.1, bullVol / 1000);
+  const bearVolK = Math.max(0.1, bearVol / 1000);
+  const bullYield = bullMovePts / bullVolK;
+  const bearYield = bearMovePts / bearVolK;
 
-  let archetypeCode = 'BALANCE';
-  let archetypeTag = '⚖️ Balance';
-  let archetypeName = 'Fair Value Rotation';
-  let archetypeColor = '#94a3b8';
-  let archetypeBg = 'rgba(148, 163, 184, 0.12)';
-  let archetypeBorder = 'rgba(148, 163, 184, 0.35)';
-  let archetypeShadow = 'none';
-  let archetypeDesc = 'Low-displacement, two-way balanced rotation around fair value.';
+  let domSide = 'NEUTRAL'; // 'BULL' | 'BEAR' | 'NEUTRAL'
+  let domRatio = 1.0;
+  let isThinning = false;
 
-  // 1. BULL TRAP / UTAD (Upthrust After Distribution)
-  const isBullTrap = (
-    (testedCeiling && (absorbPct >= 60 || upperWickRatio >= 0.25)) ||
-    (netMove > 3.0 && absorbPct >= 65) ||
-    (upperWickRatio >= 0.30 && totalVol >= avgVol && absorbPct >= 55) ||
-    (netMove > 0 && absorbPct >= 72)
-  );
-
-  // 2. BEAR TRAP / SPRING
-  const isBearTrap = (
-    !isBullTrap && (
-      (testedFloor && (absorbPct >= 60 || lowerWickRatio >= 0.25)) ||
-      (netMove < -3.0 && absorbPct >= 65) ||
-      (lowerWickRatio >= 0.30 && totalVol >= avgVol && absorbPct >= 55) ||
-      (netMove < 0 && absorbPct >= 72)
-    )
-  );
-
-  // 3. BEAR DRIVE (Initiative Downward Flush)
-  const isBearDrive = (
-    !isBullTrap && !isBearTrap &&
-    netMove <= -4.0 && absorbPct < 60 && bearPct >= 48
-  );
-
-  // 4. BULL DRIVE (Initiative Upward Expansion)
-  const isBullDrive = (
-    !isBullTrap && !isBearTrap &&
-    netMove >= 4.0 && absorbPct < 60 && bullPct >= 48 && !testedCeiling
-  );
-
-  // 5. CHURN (Effort Without Result)
-  const isChurn = (
-    !isBullTrap && !isBearTrap && !isBearDrive && !isBullDrive &&
-    absorbPct >= 60 && Math.abs(netMove) < 6.0
-  );
-
-  // 6. PASSIVE ABSORPTION WALL
-  const isPassiveWall = (
-    !isBullTrap && !isBearTrap && !isBearDrive && !isBullDrive && !isChurn &&
-    absorbPct >= 65
-  );
-
-  if (isBullTrap) {
-    archetypeCode = 'BULL_TRAP';
-    archetypeTag = `🪤 Trap ${absorbPct}%`;
-    archetypeName = 'Wyckoff UTAD / Bull Trap';
-    archetypeColor = '#fbbf24'; // Amber Warning
-    archetypeBg = 'rgba(245, 158, 11, 0.18)';
-    archetypeBorder = 'rgba(245, 158, 11, 0.65)';
-    archetypeShadow = '0 0 10px rgba(245, 158, 11, 0.70)';
-    archetypeDesc = `Wyckoff UTAD / Bull Trap: Price swept into ceiling ($${H_b.toFixed(2)}) with ${absorbPct}% of volume absorbed by passive institutional sell limits. High probability reversal/waterfall threat.`;
-  } else if (isBearTrap) {
-    archetypeCode = 'BEAR_TRAP';
-    archetypeTag = `🪤 Spring ${absorbPct}%`;
-    archetypeName = 'Wyckoff Spring / Bear Trap';
-    archetypeColor = '#2dd4bf'; // Turquoise Rebound
-    archetypeBg = 'rgba(45, 212, 191, 0.18)';
-    archetypeBorder = 'rgba(45, 212, 191, 0.65)';
-    archetypeShadow = '0 0 10px rgba(45, 212, 191, 0.70)';
-    archetypeDesc = `Wyckoff Spring / Bear Trap: Price swept into floor ($${L_b.toFixed(2)}) with ${absorbPct}% of volume absorbed by passive buyers. Rebound / squeeze threat active.`;
-  } else if (isBearDrive) {
-    archetypeCode = 'BEAR_DRIVE';
-    archetypeTag = `🩸 Flush ${netMove.toFixed(1)}pt`;
-    archetypeName = 'Initiative Bear Drive';
-    archetypeColor = '#f43f5e'; // Crimson
-    archetypeBg = 'rgba(244, 63, 94, 0.18)';
-    archetypeBorder = 'rgba(244, 63, 94, 0.60)';
-    archetypeShadow = '0 0 8px rgba(244, 63, 94, 0.60)';
-    archetypeDesc = `Initiative Bear Drive: Sellers in aggressive control displacing price downward (${netMove.toFixed(1)}pt) with low friction.`;
-  } else if (isBullDrive) {
-    archetypeCode = 'BULL_DRIVE';
-    archetypeTag = `🚀 Drive +${netMove.toFixed(1)}pt`;
-    archetypeName = 'Initiative Bull Drive';
-    archetypeColor = '#10b981'; // Emerald
-    archetypeBg = 'rgba(16, 185, 129, 0.18)';
-    archetypeBorder = 'rgba(16, 185, 129, 0.60)';
-    archetypeShadow = '0 0 8px rgba(16, 185, 129, 0.60)';
-    archetypeDesc = `Initiative Bull Drive: Buyers in aggressive control displacing price upward (+${netMove.toFixed(1)}pt) with clean volume expansion.`;
-  } else if (isChurn) {
-    archetypeCode = 'CHURN';
-    archetypeTag = `⚡ Churn ${absorbPct}%`;
-    archetypeName = 'Effort Without Result (Churn)';
-    archetypeColor = '#c084fc'; // Violet
-    archetypeBg = 'rgba(192, 132, 252, 0.15)';
-    archetypeBorder = 'rgba(192, 132, 252, 0.50)';
-    archetypeShadow = 'none';
-    archetypeDesc = `Effort Without Result: Heavy volume burned with minimal net displacement (${netMove.toFixed(1)}pt). Two-way internal rotation.`;
-  } else if (isPassiveWall) {
-    archetypeCode = 'ABSORB';
-    archetypeTag = `🛡️ Absorb ${absorbPct}%`;
-    archetypeName = 'Passive Wall Absorption';
-    archetypeColor = '#38bdf8'; // Sky
-    archetypeBg = 'rgba(56, 189, 248, 0.15)';
-    archetypeBorder = 'rgba(56, 189, 248, 0.50)';
-    archetypeShadow = 'none';
-    archetypeDesc = `Passive Absorption: Active flow absorbed by resting liquidity (${absorbPct}% absorption).`;
+  if (bearYield > bullYield * 1.10) {
+    domSide = 'BEAR';
+    domRatio = Math.round((bearYield / Math.max(0.01, bullYield)) * 10) / 10;
+  } else if (bullYield > bearYield * 1.10) {
+    domSide = 'BULL';
+    domRatio = Math.round((bullYield / Math.max(0.01, bearYield)) * 10) / 10;
   } else {
-    archetypeCode = 'BALANCE';
-    const moveSign = netMove >= 0 ? '+' : '';
-    archetypeTag = Math.abs(netMove) >= 1.0 ? `⚖️ ${moveSign}${netMove.toFixed(1)}pt` : '⚖️ Balance';
-    archetypeName = 'Fair Value Rotation';
-    archetypeColor = '#94a3b8';
-    archetypeBg = 'rgba(148, 163, 184, 0.12)';
-    archetypeBorder = 'rgba(148, 163, 184, 0.35)';
-    archetypeShadow = 'none';
-    archetypeDesc = 'Two-way balanced rotation around fair value with low displacement.';
+    domSide = 'NEUTRAL';
+    domRatio = 1.0;
   }
 
-  const archetype = {
-    code: archetypeCode,
-    shortTag: archetypeTag,
-    name: archetypeName,
-    color: archetypeColor,
-    bg: archetypeBg,
-    border: archetypeBorder,
-    shadow: archetypeShadow,
-    desc: archetypeDesc
+  // Detect Thinning Out / Exhaustion (High volume consumed with collapsing yield or stalled progress)
+  const avgVol = Math.max(10, totalVol / Math.max(1, candleCount));
+  if (domSide === 'BEAR') {
+    if (bearVol >= 8000 && (bearYield < 0.90 || (absorbPct >= 65 && Math.abs(netMove) < 8.0))) {
+      isThinning = true;
+    }
+  } else if (domSide === 'BULL') {
+    if (bullVol >= 8000 && (bullYield < 0.90 || (absorbPct >= 65 && Math.abs(netMove) < 8.0))) {
+      isThinning = true;
+    }
+  }
+
+  const yieldAnalysis = {
+    bullMovePts: Math.round(bullMovePts * 10) / 10,
+    bearMovePts: Math.round(bearMovePts * 10) / 10,
+    bullVol: Math.round(bullVol),
+    bearVol: Math.round(bearVol),
+    bullYield: Math.round(bullYield * 100) / 100,
+    bearYield: Math.round(bearYield * 100) / 100,
+    domSide,
+    domRatio,
+    isThinning
   };
 
   return {
     boxNum,
-    archetype,
+    yieldAnalysis,
     topPrice,
     bottomPrice,
     priceRange,
@@ -2272,80 +2199,131 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // Box Archetype & Order Flow Structural Style:
-  // Evaluates True Wyckoff & Order Flow Intent (Bull Trap, Bear Trap, Flush, Drive, Churn, Balance)
+  // Dynamic Volume Yield & Dominance Style (Option A: e.g. B1: 🐻 3.6x, B3: 🐻 0.8x ⚠️, B4: 🐂 2.2x)
   const getBoxTagStyle = (m, isLast) => {
-    if (!m) {
+    if (!m || !m.yieldAnalysis) {
       return {
         color: '#94a3b8',
         bg: 'rgba(148, 163, 184, 0.12)',
         border: 'rgba(148, 163, 184, 0.30)',
         shadow: 'none',
-        shortTag: '⚖️ Balance',
-        name: 'Fair Value Rotation',
-        desc: 'Rotational Balance (No Significant Displacement)'
+        shortTag: '⚖️ 1.0x',
+        domLabel: 'Balanced Auction (Equal Yield)',
+        fullTooltip: 'Balanced Auction (Equal Yield)'
       };
     }
 
-    const arch = m.archetype;
-    if (arch) {
-      const shadow = isLast
-        ? (arch.code === 'BULL_TRAP' ? '0 0 12px rgba(245, 158, 11, 0.85)' :
-           arch.code === 'BEAR_TRAP' ? '0 0 12px rgba(45, 212, 191, 0.85)' :
-           arch.code === 'BEAR_DRIVE' ? '0 0 10px rgba(244, 63, 94, 0.70)' :
-           arch.code === 'BULL_DRIVE' ? '0 0 10px rgba(16, 185, 129, 0.70)' :
-           arch.shadow)
-        : arch.shadow;
+    const y = m.yieldAnalysis;
+    const domSide = y.domSide;
+    const domRatio = y.domRatio;
+    const isThinning = y.isThinning;
+    const bullVolK = (y.bullVol / 1000).toFixed(1);
+    const bearVolK = (y.bearVol / 1000).toFixed(1);
+    const bYieldStr = y.bullYield.toFixed(2);
+    const sYieldStr = y.bearYield.toFixed(2);
+    const bullMoveStr = y.bullMovePts.toFixed(1);
+    const bearMoveStr = y.bearMovePts.toFixed(1);
 
-      return {
-        color: arch.color,
-        bg: arch.bg,
-        border: arch.border,
-        shadow: shadow,
-        shortTag: arch.shortTag,
-        name: arch.name,
-        desc: arch.desc
-      };
+    let shortTag = '⚖️ 1.0x';
+    let domLabel = 'Balanced Auction (Equal Yield)';
+    let color = '#94a3b8';
+    let bg = 'rgba(148, 163, 184, 0.12)';
+    let border = 'rgba(148, 163, 184, 0.30)';
+    let shadow = 'none';
+
+    if (domSide === 'BEAR') {
+      shortTag = isThinning ? `🐻 ${domRatio}x ⚠️` : `🐻 ${domRatio}x`;
+      domLabel = isThinning
+        ? `Bears Thinning Out (Effort High, Yield Collapsing)`
+        : `Bears Dominating (${domRatio}x Efficiency Advantage)`;
+
+      if (isThinning) {
+        color = '#fb923c';
+        bg = 'rgba(251, 146, 60, 0.18)';
+        border = 'rgba(251, 146, 60, 0.60)';
+        shadow = isLast ? '0 0 10px rgba(251, 146, 60, 0.75)' : '0 0 4px rgba(251, 146, 60, 0.30)';
+      } else if (domRatio >= 2.5) {
+        color = '#f43f5e';
+        bg = 'rgba(244, 63, 94, 0.18)';
+        border = 'rgba(244, 63, 94, 0.60)';
+        shadow = isLast ? '0 0 10px rgba(244, 63, 94, 0.70)' : '0 0 4px rgba(244, 63, 94, 0.25)';
+      } else if (domRatio >= 1.5) {
+        color = '#ef4444';
+        bg = 'rgba(239, 68, 68, 0.16)';
+        border = 'rgba(239, 68, 68, 0.45)';
+        shadow = isLast ? '0 0 8px rgba(239, 68, 68, 0.60)' : 'none';
+      } else {
+        color = '#fca5a5';
+        bg = 'rgba(252, 165, 165, 0.12)';
+        border = 'rgba(252, 165, 165, 0.35)';
+        shadow = isLast ? '0 0 8px rgba(252, 165, 165, 0.55)' : 'none';
+      }
+    } else if (domSide === 'BULL') {
+      shortTag = isThinning ? `🐂 ${domRatio}x ⚠️` : `🐂 ${domRatio}x`;
+      domLabel = isThinning
+        ? `Bulls Thinning Out (Effort High, Yield Collapsing)`
+        : `Bulls Dominating (${domRatio}x Efficiency Advantage)`;
+
+      if (isThinning) {
+        color = '#fb923c';
+        bg = 'rgba(251, 146, 60, 0.18)';
+        border = 'rgba(251, 146, 60, 0.60)';
+        shadow = isLast ? '0 0 10px rgba(251, 146, 60, 0.75)' : '0 0 4px rgba(251, 146, 60, 0.30)';
+      } else if (domRatio >= 2.5) {
+        color = '#00f5a0';
+        bg = 'rgba(0, 245, 160, 0.18)';
+        border = 'rgba(0, 245, 160, 0.60)';
+        shadow = isLast ? '0 0 10px rgba(0, 245, 160, 0.70)' : '0 0 4px rgba(0, 245, 160, 0.25)';
+      } else if (domRatio >= 1.5) {
+        color = '#22c55e';
+        bg = 'rgba(34, 197, 94, 0.16)';
+        border = 'rgba(34, 197, 94, 0.45)';
+        shadow = isLast ? '0 0 8px rgba(34, 197, 94, 0.60)' : 'none';
+      } else {
+        color = '#86efac';
+        bg = 'rgba(134, 239, 172, 0.12)';
+        border = 'rgba(134, 239, 172, 0.35)';
+        shadow = isLast ? '0 0 8px rgba(134, 239, 172, 0.55)' : 'none';
+      }
     }
 
-    // Fallback if archetype not computed
-    const netMove = (typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0));
-    const moveSign = netMove >= 0 ? '+' : '';
+    let eqFormula = '';
+    if (domSide === 'BEAR') {
+      eqFormula = `Bear Yield (${sYieldStr} pt/K) ÷ Bull Yield (${bYieldStr} pt/K) = ${domRatio}x Bear Advantage`;
+    } else if (domSide === 'BULL') {
+      eqFormula = `Bull Yield (${bYieldStr} pt/K) ÷ Bear Yield (${sYieldStr} pt/K) = ${domRatio}x Bull Advantage`;
+    } else {
+      eqFormula = `Bull Yield (${bYieldStr} pt/K) ≈ Bear Yield (${sYieldStr} pt/K) = 1.0x (Balanced Yield)`;
+    }
+
+    const fullTooltip = `${domLabel}
+• Bull Effort: ${bullVolK}K vol → ${bullMoveStr}pt movement = ${bYieldStr} pt/K yield
+• Bear Effort: ${bearVolK}K vol → ${bearMoveStr}pt movement = ${sYieldStr} pt/K yield
+• Full Equation: ${eqFormula}${isThinning ? '\n⚠️ WARNING: Heavy volume consumed with collapsing yield — Power Thinning Out!' : ''}
+(Click to inspect)`;
+
     return {
-      color: netMove >= 0 ? '#10b981' : '#f43f5e',
-      bg: netMove >= 0 ? 'rgba(16, 185, 129, 0.16)' : 'rgba(244, 63, 94, 0.16)',
-      border: netMove >= 0 ? 'rgba(16, 185, 129, 0.45)' : 'rgba(244, 63, 94, 0.45)',
-      shadow: isLast ? '0 0 8px rgba(148, 163, 184, 0.50)' : 'none',
-      shortTag: `${moveSign}${netMove.toFixed(1)}pt`,
-      name: 'Price Displacement',
-      desc: `Net Move: ${moveSign}${netMove.toFixed(1)}pt`
+      color,
+      bg,
+      border,
+      shadow,
+      shortTag,
+      domLabel,
+      fullTooltip
     };
   };
 
-  // 1. Build Sequence Micro-Group (Showing True Structural Archetypes e.g. B8: 🪤 Trap 88%, B7: 🩸 Flush -13.4pt)
-  let seqHtml = '<div class="tv-ext-seq-group" title="Box Structural Archetype Sequence (Click to inspect)">';
+  // 1. Build Sequence Micro-Group (Option A: Dominance Multiplier e.g. B1: 🐻 3.6x, B3: 🐻 0.8x ⚠️, B4: 🐂 2.2x)
+  let seqHtml = '<div class="tv-ext-seq-group" title="Dynamic Volume Yield Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const m = item.metrics;
     const isLast = (idx === sortedRects.length - 1);
     const styleObj = getBoxTagStyle(m, isLast);
-
-    const netMove = m ? ((typeof m.netMove === 'number') ? m.netMove : ((m.P_1 || 0) - (m.P_0 || 0))) : 0;
-    const moveSign = netMove >= 0 ? '+' : '';
-    const moveFormatted = `${moveSign}${netMove.toFixed(1)}pt`;
     const boxTagLabel = `B${idx + 1}: ${styleObj.shortTag}`;
+    const boxTooltip = `Box ${idx + 1}: ${styleObj.fullTooltip}`;
 
-    const totalVol = m ? (m.totalVol || 0) : 0;
-    const bullVol = m ? ((typeof m.bullVol === 'number') ? m.bullVol : Math.round(totalVol * ((m.bullPct || 50) / 100))) : 0;
-    const bearVol = m ? ((typeof m.bearVol === 'number') ? m.bearVol : Math.round(totalVol * ((m.bearPct || 50) / 100))) : 0;
-    const boxDelta = m ? (m.netDelta || 0) : 0;
-    const dSign = boxDelta >= 0 ? '+' : '';
-
-    const bullVolText = formatVolNumber(bullVol);
-    const bearVolText = formatVolNumber(bearVol);
-    const deltaFormatted = `${dSign}${formatVolNumber(boxDelta)}`;
-    
     seqHtml += `
-      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="Box ${idx + 1}: ${styleObj.name || styleObj.shortTag} • ${styleObj.desc} • Move: ${moveFormatted} • Bull Vol: ${bullVolText} vs Bear Vol: ${bearVolText} (Delta: ${deltaFormatted} Δ) (Click to inspect)" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
+      <span class="tv-ext-box-tag" data-box-idx="${idx}" title="${boxTooltip}" style="color: ${styleObj.color}; background: ${styleObj.bg}; border: 1px solid ${styleObj.border}; ${styleObj.shadow !== 'none' ? 'box-shadow: ' + styleObj.shadow + ';' : ''}">
         ${boxTagLabel}
       </span>
     `;
@@ -2378,40 +2356,47 @@ export function updateExtensionSeriesRibbon(chart) {
     </div>
   `;
 
-  // 3. Net Displacement Reality Pill (Detects active UTAD / Spring traps or physical displacement)
+  // 3. Dynamic Yield & Displacement Reality Pill
   const startPrice = dossier?.firstSample?.P_0 || (sortedRects[0]?.metrics?.P_0 || 4000);
   const currentPrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : (sortedRects[sortedRects.length - 1]?.metrics?.P_1 || startPrice);
   const netDisplacement = currentPrice - startPrice;
   const dispSign = netDisplacement >= 0 ? '+' : '';
 
   const lastBoxMetrics = sortedRects.length > 0 ? sortedRects[sortedRects.length - 1]?.metrics : null;
-  const lastArchetype = lastBoxMetrics?.archetype?.code;
+  const lastYield = lastBoxMetrics?.yieldAnalysis;
 
   let dispCls = 'displacement-neutral';
   let dispIcon = '⚖️';
   let dispText = `${dispSign}${netDisplacement.toFixed(1)}pt ROTATION`;
   let dispNote = 'Range Rotation';
 
-  if (lastArchetype === 'BULL_TRAP') {
-    dispCls = 'displacement-trap';
-    dispIcon = '⚠️';
-    dispText = `UTAD BULL TRAP AT CEILING`;
-    dispNote = 'Wyckoff UTAD Trap: Passive Sell Limits Absorbing Breakout at Ceiling';
-  } else if (lastArchetype === 'BEAR_TRAP') {
-    dispCls = 'displacement-trap';
-    dispIcon = '⚠️';
-    dispText = `SPRING BEAR TRAP AT FLOOR`;
-    dispNote = 'Wyckoff Spring Trap: Passive Buy Limits Absorbing Flush at Floor';
-  } else if (netDisplacement <= -1.0) {
-    dispCls = 'displacement-bear';
-    dispIcon = '📉';
-    dispText = `${netDisplacement.toFixed(1)}pt BEARS IN CONTROL`;
-    dispNote = 'Bears in Full Institutional Control';
-  } else if (netDisplacement >= 1.0) {
-    dispCls = 'displacement-bull';
-    dispIcon = '📈';
-    dispText = `+${netDisplacement.toFixed(1)}pt BULLS IN CONTROL`;
-    dispNote = 'Bulls in Full Institutional Control';
+  if (lastYield) {
+    if (lastYield.isThinning) {
+      dispCls = 'displacement-trap';
+      dispIcon = '⚠️';
+      dispText = `${lastYield.domSide === 'BEAR' ? 'BEARS' : 'BULLS'} THINNING OUT (YIELD COLLAPSED)`;
+      dispNote = `Effort high but movement collapsed (${lastYield.domSide === 'BEAR' ? lastYield.bearYield : lastYield.bullYield} pt/K) — Thinning Out`;
+    } else if (lastYield.domSide === 'BEAR' && lastYield.domRatio >= 1.5) {
+      dispCls = 'displacement-bear';
+      dispIcon = '📉';
+      dispText = `BEARS DOMINATING (${lastYield.domRatio}x EFFICIENCY)`;
+      dispNote = `Bears moving ${lastYield.bearYield} pt/K vs Bulls ${lastYield.bullYield} pt/K`;
+    } else if (lastYield.domSide === 'BULL' && lastYield.domRatio >= 1.5) {
+      dispCls = 'displacement-bull';
+      dispIcon = '📈';
+      dispText = `BULLS DOMINATING (${lastYield.domRatio}x EFFICIENCY)`;
+      dispNote = `Bulls moving ${lastYield.bullYield} pt/K vs Bears ${lastYield.bearYield} pt/K`;
+    } else if (netDisplacement <= -1.0) {
+      dispCls = 'displacement-bear';
+      dispIcon = '📉';
+      dispText = `${netDisplacement.toFixed(1)}pt BEARS IN CONTROL`;
+      dispNote = 'Bears in Full Institutional Control';
+    } else if (netDisplacement >= 1.0) {
+      dispCls = 'displacement-bull';
+      dispIcon = '📈';
+      dispText = `+${netDisplacement.toFixed(1)}pt BULLS IN CONTROL`;
+      dispNote = 'Bulls in Full Institutional Control';
+    }
   }
 
   const netDeltaVal = dossier ? dossier.totalNetDelta : 0;
