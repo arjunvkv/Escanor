@@ -4,7 +4,7 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610251525';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610251540';
 import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610241430';
 import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610241430';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';

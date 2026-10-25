@@ -2534,60 +2534,53 @@ export function updateExtensionSeriesRibbon(chart) {
   const currentPrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : (sortedRects[sortedRects.length - 1]?.metrics?.P_1 || startPrice);
   const netDisplacement = currentPrice - startPrice;
   const dispSign = netDisplacement >= 0 ? '+' : '';
-  const netDeltaVal = dossier ? dossier.totalNetDelta : 0;
-  const deltaSignVal = netDeltaVal >= 0 ? '+' : '';
-
   const lastBoxMetrics = sortedRects.length > 0 ? sortedRects[sortedRects.length - 1]?.metrics : null;
   const lastYield = lastBoxMetrics?.yieldAnalysis;
+
+  const netDeltaVal = dossier ? dossier.totalNetDelta : (lastBoxMetrics ? lastBoxMetrics.netDelta : 0);
+  const deltaSignVal = netDeltaVal >= 0 ? '+' : '';
+  const cvdDeltaFormatted = `${deltaSignVal}${formatVolNumber(netDeltaVal)}`;
+  const cvdColor = netDeltaVal >= 0 ? '#22c55e' : '#ef4444';
 
   let dispCls = 'dominant-neutral';
   let dispIcon = SVG_BAL;
   let domVolK = lastBoxMetrics ? ((lastYield?.domSide === 'BEAR' ? lastYield.bearVol : (lastYield?.bullVol || lastBoxMetrics.totalVol)) / 1000).toFixed(1) + 'K' : '0K';
-  let dispText = `${domVolK}`;
-  let dispTitle = `Net Sequence Price Ground: ${dispSign}${netDisplacement.toFixed(1)} pts (from $${startPrice.toFixed(2)} to $${currentPrice.toFixed(2)}) • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+
+  // Format: "17.5K / -/+ cvd delta" with high-contrast colored CVD delta
+  let dispText = `${domVolK} / <span style="color: ${cvdColor}; font-weight: 800;">${cvdDeltaFormatted} CVD Δ</span>`;
+  let dispTitle = `Net Sequence Price Ground: ${dispSign}${netDisplacement.toFixed(1)} pts (from $${startPrice.toFixed(2)} to $${currentPrice.toFixed(2)}) • Cumulative Delta: ${cvdDeltaFormatted} Δ (Box Delta: ${lastBoxMetrics ? (lastBoxMetrics.netDelta >= 0 ? '+' : '') + formatVolNumber(lastBoxMetrics.netDelta) : '0'} Δ)`;
 
   if (lastYield) {
     if (lastYield.isTrap) {
       dispCls = 'dominant-thinning';
       dispIcon = '⚠️';
-      const volNum = (lastYield.trapType === 'CEILING_TRAP' ? lastYield.bullVol : lastYield.bearVol) / 1000;
       const trapName = lastYield.trapType === 'CEILING_TRAP' ? 'CEILING TRAP' : 'FLOOR TRAP';
-      dispText = `${volNum.toFixed(1)}K ${trapName}`;
-      dispTitle = `⚠️ ${trapName}: ${volNum.toFixed(1)}K volume absorbed at barrier with stalled progress (${lastYield.bullYield} vs ${lastYield.bearYield} pt/K) • Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
+      dispTitle = `⚠️ ${trapName}: ${domVolK} volume absorbed at barrier with stalled progress • CVD: ${cvdDeltaFormatted} • Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     } else if (lastYield.isExhaustion) {
       dispCls = 'dominant-thinning';
       dispIcon = '⚠️';
-      const volNum = (lastYield.exhaustionType === 'NO_DEMAND' ? lastYield.bullVol : lastYield.bearVol) / 1000;
       const exhName = lastYield.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND' : 'NO SUPPLY';
-      dispText = `${volNum.toFixed(1)}K ${exhName}`;
-      dispTitle = `⚠️ ${exhName} AT BARRIER: Low-volume test at boundary without breakout (${volNum.toFixed(1)}K vol) • High Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
+      dispTitle = `⚠️ ${exhName} AT BARRIER: Low-volume test at boundary without breakout (${domVolK} vol) • CVD: ${cvdDeltaFormatted} • High Reversal Risk! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     } else if (isBracketChop) {
       dispCls = 'dominant-thinning';
       dispIcon = '⚖️';
-      dispText = `${domVolK} ROTATION`;
-      dispTitle = `⚖️ BRACKET ROTATION: Multi-box distribution churn (${flipCount}x efficiency flips). Neither side has directional runway! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+      dispTitle = `⚖️ BRACKET ROTATION: Multi-box distribution churn (${flipCount}x efficiency flips). Vol: ${domVolK} • CVD: ${cvdDeltaFormatted} • Neither side has directional runway! • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     } else if (lastYield.isThinning) {
       dispCls = 'dominant-thinning';
       dispIcon = '⚠️';
-      const volNum = (lastYield.domSide === 'BEAR' ? lastYield.bearVol : lastYield.bullVol) / 1000;
-      dispText = `${volNum.toFixed(1)}K THINNING`;
-      dispTitle = `${lastYield.domSide} THINNING OUT: ${dispText} consumed with collapsing yield (${lastYield.domSide === 'BEAR' ? lastYield.bearYield : lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+      dispTitle = `${lastYield.domSide} THINNING OUT: ${domVolK} consumed with collapsing yield • CVD: ${cvdDeltaFormatted} • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     } else if (lastYield.domSide === 'BEAR') {
       dispCls = 'dominant-bear';
       dispIcon = SVG_BEAR;
-      dispText = `${(lastYield.bearVol / 1000).toFixed(1)}K`;
-      dispTitle = `BEAR DOMINANT: ${dispText} volume (${lastYield.domRatio}x yield advantage: ${lastYield.bearYield} vs ${lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+      dispTitle = `BEAR DOMINANT: ${domVolK} volume (${lastYield.domRatio}x yield advantage) • CVD: ${cvdDeltaFormatted} • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     } else if (lastYield.domSide === 'BULL') {
       dispCls = 'dominant-bull';
       dispIcon = SVG_BULL;
-      dispText = `${(lastYield.bullVol / 1000).toFixed(1)}K`;
-      dispTitle = `BULL DOMINANT: ${dispText} volume (${lastYield.domRatio}x yield advantage: ${lastYield.bullYield} vs ${lastYield.bearYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+      dispTitle = `BULL DOMINANT: ${domVolK} volume (${lastYield.domRatio}x yield advantage) • CVD: ${cvdDeltaFormatted} • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     } else {
       dispCls = 'dominant-neutral';
       dispIcon = SVG_BAL;
-      const domVolNum = Math.max(lastYield.bullVol, lastYield.bearVol);
-      dispText = `${(domVolNum / 1000).toFixed(1)}K`;
-      dispTitle = `BALANCED AUCTION: ${dispText} volume • Equal Yield (${lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+      dispTitle = `BALANCED AUCTION: ${domVolK} volume • CVD: ${cvdDeltaFormatted} • Equal Yield • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt`;
     }
   }
 
