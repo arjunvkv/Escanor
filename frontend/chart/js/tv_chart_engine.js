@@ -2695,8 +2695,8 @@ window.__toggleBoxVisibility = toggleBoxVisibility;
  * 3. Strongest Structural Inflection Nodes (Anchors, Peak Volume Shelves, Mid-Structure Eq)
  * 4. Structural Runway & Liquidity Vacuum (Distance to historical ceilings/floors, Invalidation Tripwires)
  */
-export function computeNetworkDossier(customRects = null, customDataList = null) {
-  const c = chartInstance;
+export function computeNetworkDossier(customRects = null, customDataList = null, customChart = null) {
+  const c = customChart || chartInstance || (typeof window !== 'undefined' && (window.__chartInstance || window.__chart)) || null;
   const allOverlays = customRects || (c?.getOverlays?.() || []).filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
   const dataList = customDataList || (c?.getDataList?.() || []);
 
@@ -2711,7 +2711,7 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
     const t0 = times.length > 0 ? Math.min(...times) : 0;
     const m = computeRectangleVolumeMetrics(r, dataList, allOverlays);
     return { overlay: r, t0, metrics: m };
-  }).filter(s => s.metrics && s.metrics.totalVol > 0).sort((a, b) => a.t0 - b.t0);
+  }).filter(s => s.metrics).sort((a, b) => a.t0 - b.t0);
 
   if (samples.length === 0) {
     return null;
@@ -3029,12 +3029,14 @@ export function computeNetworkDossier(customRects = null, customDataList = null)
 }
 window.__computeNetworkDossier = computeNetworkDossier;
 
-export function openExtensionNetworkModal(chart) {
+export function openExtensionNetworkModal(chart = null) {
   const modal = document.getElementById('tvExtensionNetworkModal');
   if (!modal) return;
 
-  const c = chart || chartInstance;
-  const dossier = computeNetworkDossier(null, c?.getDataList?.());
+  const c = chart || chartInstance || (typeof window !== 'undefined' && (window.__chartInstance || window.__chart)) || null;
+  const allOverlays = (c?.getOverlays?.() || []).filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+  const dataList = c?.getDataList?.() || [];
+  const dossier = computeNetworkDossier(allOverlays.length > 0 ? allOverlays : null, dataList, c);
   const symbol = dossier?.symbol || window.__currentSymbol || 'XAUUSD';
 
   const subtitleEl = document.getElementById('tvNetworkModalSubtitle');
