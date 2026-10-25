@@ -553,11 +553,13 @@ function registerCustomOverlays() {
         const boxW = maxX - minX;
         const boxH = maxY - minY;
 
-        const figures = [];
         const isBoxesDeactivated = Boolean(window.__hideBoxBodies);
+        if (isBoxesDeactivated) {
+          return [];
+        }
 
-        if (!isBoxesDeactivated) {
-          figures.push({
+        const figures = [
+          {
             type: 'polygon',
             attrs: {
               coordinates: [
@@ -568,8 +570,8 @@ function registerCustomOverlays() {
               ]
             },
             styles: polyStyle
-          });
-        }
+          }
+        ];
 
         // Visual In-Box Trend Excursion Vector (Clean Canvas: Red ✕ Anchor & Cyan/Blue Trend Vector)
         const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
@@ -2601,8 +2603,8 @@ export function updateExtensionSeriesRibbon(chart) {
   const boxToggleCls = isBoxesDeactivated ? 'box-toggle-off' : 'box-toggle-on';
   const boxToggleText = isBoxesDeactivated ? 'BOXES: OFF' : 'BOXES: ON';
   const boxToggleTitle = isBoxesDeactivated
-    ? 'Boxes deactivated (Line markings visible) — Click to activate boxes'
-    : 'Boxes active — Click to deactivate boxes (Line markings remain visible)';
+    ? 'Boxes deactivated — Click to activate boxes & excursion vectors'
+    : 'Boxes active — Click to deactivate boxes & excursion vectors';
   const boxToggleHtml = `
     <div id="tvBoxToggleChip" class="tv-ext-chip ${boxToggleCls}" title="${boxToggleTitle}">
       <span>📦 ${boxToggleText}</span>
@@ -2613,15 +2615,28 @@ export function updateExtensionSeriesRibbon(chart) {
   trackEl.innerHTML = `${seqHtml}${frictionHtml}${displacementHtml}${boxToggleHtml}`;
   ribbonEl.style.display = 'flex';
 
+  // Dedicated click handler on the toggle button with full propagation arrest
+  const boxToggleChip = document.getElementById('tvBoxToggleChip');
+  if (boxToggleChip) {
+    boxToggleChip.onclick = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') {
+          e.stopImmediatePropagation();
+        }
+      }
+      toggleBoxVisibility(c);
+    };
+  }
+
   // Clicking on the ribbon or ANY item inside it opens the modal, EXCEPT the box toggle chip!
   ribbonEl.onclick = function(e) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
     }
-    const boxToggleChip = e?.target?.closest?.('#tvBoxToggleChip');
-    if (boxToggleChip) {
-      toggleBoxVisibility(c);
+    if (e?.target?.closest?.('#tvBoxToggleChip')) {
       return;
     }
     const targetTag = e?.target?.closest?.('.tv-ext-box-tag');
@@ -2666,9 +2681,9 @@ export function toggleBoxVisibility(chart = chartInstance) {
   }
 
   updateExtensionSeriesRibbon(c);
-  const stateStr = window.__hideBoxBodies ? 'Deactivated (Line markings visible)' : 'Active (Visible)';
+  const stateStr = window.__hideBoxBodies ? 'Deactivated' : 'Active';
   if (typeof showChartToast === 'function') {
-    showChartToast(`Box outlines: ${stateStr}`, 2500);
+    showChartToast(`Boxes & In-Box Vectors: ${stateStr}`, 2500);
   }
 }
 window.__toggleBoxVisibility = toggleBoxVisibility;
