@@ -3667,7 +3667,67 @@ input[type="number"] {
   max-height: 96vh !important;
   height: 96vh !important;
   padding: 12px 18px !important;
-  overflow-y: auto !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+/* Maximized Studio: ONLY the charts in maximized form, nothing else */
+.tv-nexus-chamfer-frame.tv-nexus-maximized #tvNexusTopTierGrid {
+  display: none !important;
+}
+
+.tv-nexus-chamfer-frame.tv-nexus-maximized #tvNexusMaxTable {
+  display: none !important;
+}
+
+.tv-nexus-chamfer-frame.tv-nexus-maximized #tvNexusChartsGrid {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 12px !important;
+  flex: 1 !important;
+  height: calc(96vh - 115px) !important;
+  min-height: 480px !important;
+}
+
+.tv-nexus-chamfer-frame.tv-nexus-maximized .tv-nexus-card {
+  display: flex !important;
+  flex-direction: column !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 10px 14px !important;
+  background: #070b16 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+.tv-nexus-chamfer-frame.tv-nexus-maximized .tv-nexus-chart-box {
+  height: calc(96vh - 195px) !important;
+  min-height: 420px !important;
+  flex: 1 !important;
+}
+
+/* Focus mode: Focus Delta only */
+.tv-nexus-chamfer-frame.tv-nexus-maximized.focus-delta #tvNexusChartsGrid {
+  grid-template-columns: 1fr !important;
+}
+.tv-nexus-chamfer-frame.tv-nexus-maximized.focus-delta #tvNexusDeltaCard {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+}
+.tv-nexus-chamfer-frame.tv-nexus-maximized.focus-delta #tvNexusEvrCard {
+  display: none !important;
+}
+
+/* Focus mode: Focus EVR only */
+.tv-nexus-chamfer-frame.tv-nexus-maximized.focus-evr #tvNexusChartsGrid {
+  grid-template-columns: 1fr !important;
+}
+.tv-nexus-chamfer-frame.tv-nexus-maximized.focus-evr #tvNexusEvrCard {
+  grid-column: 1 / -1 !important;
+  display: flex !important;
+}
+.tv-nexus-chamfer-frame.tv-nexus-maximized.focus-evr #tvNexusDeltaCard {
+  display: none !important;
 }
 
 .tv-nexus-max-btn {

@@ -1,6 +1,45 @@
 {
   "XAUUSD": [
     {
+      "id": "overlay_1792931449154_1",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792509300000,
+          "value": 4136.031703589909,
+          "dataIndex": 1067
+        },
+        {
+          "timestamp": 1792515000000,
+          "value": 4136.031703589909,
+          "dataIndex": 1086
+        },
+        {
+          "timestamp": 1792515000000,
+          "value": 4105.531105271669,
+          "dataIndex": 1086
+        },
+        {
+          "timestamp": 1792509300000,
+          "value": 4105.531105271669,
+          "dataIndex": 1067
+        },
+        {
+          "timestamp": 1792509300000,
+          "value": 4120.781404430789,
+          "dataIndex": 1067
+        },
+        {
+          "timestamp": 1792515000000,
+          "value": 4120.781404430789,
+          "dataIndex": 1086
+        }
+      ],
+      "styles": null,
+      "zLevel": 10,
+      "extendData": {}
+    },
+    {
       "id": "overlay_1792928686689_1",
       "name": "rect",
       "points": [
@@ -36,7 +75,7 @@
         }
       ],
       "styles": null,
-      "zLevel": 10,
+      "zLevel": 16,
       "extendData": {}
     },
     {
@@ -75,7 +114,7 @@
         }
       ],
       "styles": null,
-      "zLevel": 18,
+      "zLevel": 23,
       "extendData": {}
     },
     {
@@ -114,7 +153,7 @@
         }
       ],
       "styles": null,
-      "zLevel": 25,
+      "zLevel": 29,
       "extendData": {}
     },
     {
@@ -153,7 +192,7 @@
         }
       ],
       "styles": null,
-      "zLevel": 33,
+      "zLevel": 35,
       "extendData": {}
     },
     {
@@ -192,7 +231,7 @@
         }
       ],
       "styles": null,
-      "zLevel": 40,
+      "zLevel": 42,
       "extendData": {}
     },
     {

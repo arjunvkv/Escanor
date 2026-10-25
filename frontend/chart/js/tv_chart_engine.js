@@ -4107,23 +4107,49 @@ export function openExtensionNetworkModal(chart = null) {
     `;
   };
 
-  // Wire Maximize / Restore Toggle
-  window.__toggleNexusMaximized = function() {
+  // Wire Maximize / Restore Toggle (Exclusively shows maximized charts, nothing else)
+  window.__toggleNexusMaximized = function(focusChart = null) {
     const frame = modal.querySelector('.tv-nexus-chamfer-frame');
     if (!frame) return;
-    const isMax = frame.classList.toggle('tv-nexus-maximized');
+
+    const currentlyMax = frame.classList.contains('tv-nexus-maximized');
+    const currentDelta = frame.classList.contains('focus-delta');
+    const currentEvr = frame.classList.contains('focus-evr');
+
+    if (focusChart === 'delta') {
+      if (currentlyMax && currentDelta) {
+        frame.classList.remove('tv-nexus-maximized', 'focus-delta', 'focus-evr');
+      } else {
+        frame.classList.add('tv-nexus-maximized', 'focus-delta');
+        frame.classList.remove('focus-evr');
+      }
+    } else if (focusChart === 'evr') {
+      if (currentlyMax && currentEvr) {
+        frame.classList.remove('tv-nexus-maximized', 'focus-delta', 'focus-evr');
+      } else {
+        frame.classList.add('tv-nexus-maximized', 'focus-evr');
+        frame.classList.remove('focus-delta');
+      }
+    } else {
+      if (currentlyMax) {
+        frame.classList.remove('tv-nexus-maximized', 'focus-delta', 'focus-evr');
+      } else {
+        frame.classList.add('tv-nexus-maximized');
+        frame.classList.remove('focus-delta', 'focus-evr');
+      }
+    }
+
+    const isMax = frame.classList.contains('tv-nexus-maximized');
     const toggleBtn = document.getElementById('tvNexusStudioToggleBtn');
     if (toggleBtn) {
       toggleBtn.innerHTML = isMax ? '<span>🗗 RESTORE STUDIO</span>' : '<span>⛶ MAXIMIZE STUDIO</span>';
-      toggleBtn.title = isMax ? 'Restore Standard Dimensions' : 'Maximize Chart Studio & Findings Matrix';
+      toggleBtn.title = isMax ? 'Restore Standard Dimensions' : 'Maximize Chart Studio';
     }
 
+    // Keep table hidden so only the chart in maximized form is shown
     const maxTable = document.getElementById('tvNexusMaxTable');
     if (maxTable) {
-      maxTable.style.display = isMax ? 'block' : 'none';
-      if (isMax && window.__renderNexusMaxTable) {
-        window.__renderNexusMaxTable();
-      }
+      maxTable.style.display = 'none';
     }
   };
 

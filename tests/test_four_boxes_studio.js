@@ -36,6 +36,16 @@ assert.ok(engineCode.includes('window.__renderNexusMaxTable'), 'window.__renderN
 assert.ok(engineCode.includes('MULTI-BOX COMPARATIVE FINDINGS MATRIX'), 'Matrix table header must be generated');
 assert.ok(engineCode.includes('AUTHENTIC STRUCTURAL FINDING'), 'Matrix table must have findings column');
 
+// Ensure exclusive chart maximization rules exist in CSS
+assert.ok(cssContent.includes('.tv-nexus-chamfer-frame.tv-nexus-maximized #tvNexusTopTierGrid'), 'Maximized mode must hide top tier grid');
+assert.ok(cssContent.includes('.tv-nexus-chamfer-frame.tv-nexus-maximized #tvNexusMaxTable'), 'Maximized mode must hide extra table');
+assert.ok(cssContent.includes('focus-delta'), 'Focus delta mode must exist in CSS');
+assert.ok(cssContent.includes('focus-evr'), 'Focus evr mode must exist in CSS');
+
+// Ensure preserveAspectRatio="none" is set on SVGs for smooth stretching
+assert.ok(indexHtml.includes('id="tvNexusOscSvg"') && indexHtml.includes('preserveAspectRatio="none"'), 'Oscilloscope SVG must have preserveAspectRatio="none"');
+assert.ok(indexHtml.includes('id="tvNexusEvrOscSvg"'), 'EVR SVG must exist');
+
 // Ensure Maximize Studio toggle function exists
 assert.ok(engineCode.includes('window.__toggleNexusMaximized'), 'window.__toggleNexusMaximized must be defined');
 

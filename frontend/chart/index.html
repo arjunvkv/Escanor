@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610251750">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610251800">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -832,7 +832,7 @@
           </div>
 
           <!-- Top Tier: 4 Horizontal Telemetry Cards (Pipeline Load, Structural Runway, Trapped Quantum, Tape Velocity) -->
-          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+          <div id="tvNexusTopTierGrid" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
 
             <!-- Card 1: Pipeline Load / Effort Profile -->
             <div class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px;">
@@ -940,10 +940,10 @@
           </div>
 
           <!-- Bottom Tier: Side-by-Side Command Oscillation Charts (Delta Harmonic | EVR Harmonic) -->
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div id="tvNexusChartsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
 
             <!-- Chart Card 1: Command Oscillation // Multi-Box Delta Harmonic -->
-            <div class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
+            <div id="tvNexusDeltaCard" class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
               <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-weight: 800; color: #fca5a5; text-transform: uppercase;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span id="tvNexusDeltaChartTitle">COMMAND OSCILLATION // DELTA HARMONIC</span>
@@ -963,13 +963,13 @@
                   <span id="tvNexusOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
                     ABSORPTION: <strong style="color: #facc15;">0%</strong> • DELTA: <strong style="color: #ef4444;">0</strong>
                   </span>
-                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized()" title="Maximize Charts Studio">⛶</button>
+                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized('delta')" title="Maximize Delta Harmonic Chart">⛶</button>
                 </div>
               </div>
 
               <!-- Overlapping Vector Harmonic Oscilloscope SVG -->
               <div id="tvNexusOscSvgBox" class="tv-nexus-chart-box" style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
-                <svg viewBox="0 0 540 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusOscSvg">
+                <svg viewBox="0 0 540 120" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusOscSvg">
                   <defs>
                     <linearGradient id="tvNexusVacuumGrad" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stop-color="#fca5a5" stop-opacity="0.15" />
@@ -1030,7 +1030,7 @@
             </div>
 
             <!-- Chart Card 2: Command Oscillation // Effort vs Result (EVR Harmonic) -->
-            <div class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
+            <div id="tvNexusEvrCard" class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
               <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-weight: 800; color: #fca5a5; text-transform: uppercase;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span id="tvNexusEvrChartTitle">COMMAND OSCILLATION // EVR</span>
@@ -1050,13 +1050,13 @@
                   <span id="tvNexusEvrOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
                     EFFORT: <strong style="color: #ef4444;">EXTREME BURN 🔥</strong> • SHIFT: <strong style="color: #facc15;">+34%</strong>
                   </span>
-                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized()" title="Maximize Charts Studio">⛶</button>
+                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized('evr')" title="Maximize EVR Harmonic Chart">⛶</button>
                 </div>
               </div>
 
               <!-- Overlapping Vector EVR Harmonic Oscilloscope SVG -->
               <div id="tvNexusEvrSvgBox" class="tv-nexus-chart-box" style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
-                <svg viewBox="0 0 540 120" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusEvrOscSvg">
+                <svg viewBox="0 0 540 120" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusEvrOscSvg">
                   <defs>
                     <linearGradient id="tvNexusEvrGrad" x1="0" y1="0" x2="1" y2="0">
                       <stop offset="0%" stop-color="#fca5a5" stop-opacity="0.15" />
@@ -1372,6 +1372,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610251750"></script>
+  <script type="module" src="/chart/js/app.js?v=202610251800"></script>
 </body>
 </html>
