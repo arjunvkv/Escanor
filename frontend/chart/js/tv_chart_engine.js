@@ -368,7 +368,6 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
   }
 
   // Detect Thinning Out / Exhaustion (High volume consumed with collapsing yield or stalled progress)
-  const avgVol = Math.max(10, totalVol / Math.max(1, candleCount));
   if (domSide === 'BEAR') {
     if (bearVol >= 8000 && (bearYield < 0.90 || (absorbPct >= 65 && Math.abs(netMove) < 8.0))) {
       isThinning = true;
