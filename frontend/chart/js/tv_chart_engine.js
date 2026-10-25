@@ -410,13 +410,13 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     const isAtFloor = (L_b <= seqFlr + 0.25 * seqRng || P_1 <= seqFlr + 0.30 * seqRng);
 
     // No Demand at Ceiling: Bulls pushing upward into sequence ceiling, but volume is exhausted / low (< 13.5K) without breakout
-    if (isAtCeiling && domSide === 'BULL' && bullVol < 13500 && P_1 <= seqCeil + 0.5) {
+    if (totalVol >= 1000 && isAtCeiling && domSide === 'BULL' && bullVol < 13500 && P_1 <= seqCeil + 0.5) {
       isExhaustion = true;
       exhaustionType = 'NO_DEMAND';
       isThinning = true;
     }
     // No Supply at Floor: Bears pushing downward into sequence floor, but volume is exhausted / low (< 13.5K) without breakdown
-    else if (isAtFloor && domSide === 'BEAR' && bearVol < 13500 && P_1 >= seqFlr - 0.5) {
+    else if (totalVol >= 1000 && isAtFloor && domSide === 'BEAR' && bearVol < 13500 && P_1 >= seqFlr - 0.5) {
       isExhaustion = true;
       exhaustionType = 'NO_SUPPLY';
       isThinning = true;
@@ -2285,18 +2285,17 @@ export function updateExtensionSeriesRibbon(chart) {
   const SVG_BEAR = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M12 22 L2 4 L12 9 L22 4 Z"/></svg>`;
   const SVG_BAL = `<svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><rect x="4" y="4" width="16" height="16" transform="rotate(45 12 12)"/></svg>`;
 
-  // Dynamic Volume Yield & Dominance Style (e.g. B1: ▼ 10.4K, B2: ▼ 7.1K, B4: ▲ 18.2K)
   const getBoxTagStyle = (m, isLast) => {
-    if (!m || !m.yieldAnalysis) {
+    if (!m || !m.yieldAnalysis || m.totalVol === 0) {
       const volNum = m ? ((m.totalVol || 0) / 1000).toFixed(1) : '0';
       return {
         color: '#94a3b8',
         bg: 'rgba(148, 163, 184, 0.12)',
         border: 'rgba(148, 163, 184, 0.30)',
         shadow: 'none',
-        shortTag: `${SVG_BAL} ${volNum}K`,
-        domLabel: 'Balanced Auction (Equal Yield)',
-        fullTooltip: 'Balanced Auction (Equal Yield)'
+        shortTag: m && m.totalVol === 0 ? 'SYNCING...' : `${SVG_BAL} ${volNum}K`,
+        domLabel: m && m.totalVol === 0 ? 'Awaiting Candle History' : 'Balanced Auction (Equal Yield)',
+        fullTooltip: m && m.totalVol === 0 ? 'Historical candle data for this box interval is loading...' : 'Balanced Auction (Equal Yield)'
       };
     }
 

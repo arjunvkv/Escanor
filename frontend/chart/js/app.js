@@ -4,8 +4,8 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610251655';
-import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610251655';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610251700';
+import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610251700';
 import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610241430';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
 import { LineTradingManager } from './line_trading.js?v=202610141545';
@@ -36,13 +36,13 @@ const MAX_HISTORY_MS = 15 * 24 * 60 * 60 * 1000; // Max 15 days of historical ca
 
 function getInitialCandleCount(tfMinutes) {
   const tf = Number(tfMinutes) || 5;
-  const twoDaysMinutes = 2 * 24 * 60; // 2880 mins
-  const bars = Math.ceil(twoDaysMinutes / tf);
-  // Ensure enough bars to comfortably fill wide screens without reaching edge on boot
-  if (tf >= 1440) return 300;
-  if (tf >= 240) return 400;
-  if (tf >= 60) return 600;
-  return Math.max(bars, 800);
+  // Generous history (7-10 days on intraday) so historical boxes and swing structures load with full volume metrics
+  if (tf <= 1) return 3000;
+  if (tf <= 5) return 2000;
+  if (tf <= 15) return 1500;
+  if (tf <= 60) return 1000;
+  if (tf <= 240) return 600;
+  return 400;
 }
 
 let hasReachedStart = false;
@@ -193,6 +193,43 @@ async function init() {
   try {
     const savedDrawings = await fetchServerDrawings(currentSymbol);
     if (savedDrawings && savedDrawings.length > 0) {
+      // Check if any drawing has timestamps older than current bars
+      let minDrawingTime = Infinity;
+      savedDrawings.forEach(d => {
+        (d.points || []).forEach(p => {
+          if (typeof p.timestamp === 'number' && !isNaN(p.timestamp) && p.timestamp > 0) {
+            if (p.timestamp < minDrawingTime) minDrawingTime = p.timestamp;
+          }
+        });
+      });
+
+      const currentBars = chart.getDataList() || [];
+      const oldestBar = currentBars.length > 0 ? currentBars[0] : null;
+      const tf = window.__currentTimeframeMinutes || currentTimeframeMinutes;
+      const barMs = (tf || 5) * 60 * 1000;
+
+      if (oldestBar && minDrawingTime < oldestBar.timestamp && isFinite(minDrawingTime)) {
+        const neededCount = Math.min(3000, Math.ceil((oldestBar.timestamp - minDrawingTime) / barMs) + 60);
+        try {
+          const res = await fetch(`/api/candles?symbol=${currentSymbol}&timeframe=${tf}&count=${neededCount}&end_time=${oldestBar.timestamp}`);
+          const json = await res.json();
+          const olderCandles = json.candles || [];
+          if (olderCandles.length > 0) {
+            const cs = chart._chartStore || (typeof chart.getChartStore === 'function' ? chart.getChartStore() : null);
+            if (cs && typeof cs._addData === 'function') {
+              const currentDiff = typeof cs.getLastBarRightSideDiffBarCount === 'function' ? cs.getLastBarRightSideDiffBarCount() : 0;
+              if (typeof cs.setLastBarRightSideDiffBarCount === 'function') {
+                cs.setLastBarRightSideDiffBarCount(currentDiff - olderCandles.length);
+              }
+              cs._addData(olderCandles, 'forward', false);
+              console.log(`[Escanor TV] Auto-backfilled ${olderCandles.length} candles for historical drawings.`);
+            }
+          }
+        } catch (be) {
+          console.warn('[Escanor TV] Failed to auto-backfill candles for drawings:', be);
+        }
+      }
+
       restoreDrawings(chart, savedDrawings);
       console.log(`[Escanor TV] Restored ${savedDrawings.length} drawing(s) from server`);
 
