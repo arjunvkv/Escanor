@@ -158,15 +158,6 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
 
     const effTypPrice = (overlapHigh + overlapLow + Math.max(overlapLow, Math.min(overlapHigh, bar.close))) / 3;
 
-    barsInBox.push({
-      bar,
-      index: i,
-      volInBox,
-      effectiveLow: overlapLow,
-      effectiveHigh: overlapHigh,
-      effectiveTypPrice: effTypPrice
-    });
-
     const upperWick = bar.high - Math.max(bar.open, bar.close);
     const lowerWick = Math.min(bar.open, bar.close) - bar.low;
 
@@ -181,8 +172,35 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
     const deltaScore = Math.max(-1.0, Math.min(1.0, displacement * 0.45 + closeLocation * 0.35 + wickDiff * 0.20));
     const bullRatio = (1 + deltaScore) / 2;
 
-    bullVol += volInBox * bullRatio;
-    bearVol += volInBox * (1 - bullRatio);
+    const barBullVol = volInBox * bullRatio;
+    const barBearVol = volInBox * (1 - bullRatio);
+    const barDelta = Math.round(barBullVol - barBearVol);
+
+    bullVol += barBullVol;
+    bearVol += barBearVol;
+
+    // Detect bar-by-bar absorption & initiative
+    const isHighVol = volInBox >= 1200;
+    const isWickHeavy = (upperWick / barRange >= 0.38) || (lowerWick / barRange >= 0.38);
+    const isStalled = Math.abs(bar.close - bar.open) <= 0.8;
+    const isAbsorption = (isHighVol && (isWickHeavy || isStalled)) || (Math.abs(barDelta) >= 1200 && isStalled);
+    const isInitiative = Math.abs(bar.close - bar.open) >= 1.4 && Math.abs(barDelta) >= 800;
+
+    barsInBox.push({
+      bar,
+      index: i,
+      volInBox,
+      effectiveLow: overlapLow,
+      effectiveHigh: overlapHigh,
+      effectiveTypPrice: effTypPrice,
+      barDelta,
+      barBullVol,
+      barBearVol,
+      isAbsorption,
+      isInitiative,
+      displacement: bar.close - bar.open,
+      cumDelta: 0 // populated below
+    });
 
     // Effort vs Movement: track upward and downward displacement within this box
     const effOpen = Math.max(overlapLow, Math.min(overlapHigh, bar.open));
@@ -198,6 +216,13 @@ export function computeRectangleVolumeMetrics(overlay, dataList, allRectsList) {
       bearMovePts += Math.max(0, effOpen - overlapLow) * 0.4;
     }
   }
+
+  // Compute running Cumulative Volume Delta (CVD) staircase for this box
+  let runningCvd = 0;
+  barsInBox.forEach(b => {
+    runningCvd += b.barDelta;
+    b.cumDelta = runningCvd;
+  });
 
   // Fallbacks if box is drawn in empty future/past space
   if (observedHigh === -Infinity) observedHigh = topPrice;
@@ -3627,8 +3652,34 @@ export function openExtensionNetworkModal(chart = null) {
       deltaLegend.innerHTML = legHtml;
     }
 
-    const allDeltas = d.samples.map(s => Math.abs(s.netDelta || 0));
-    const maxDeltaAbs = Math.max(1000, Math.max(...allDeltas));
+    // 2. Render Authentic Bar-by-Bar Cumulative Volume Delta (CVD) Staircase & Absorption Trajectory in Chart 1
+    const deltaGroup = document.getElementById('tvNexusDeltaLinesGroup');
+    const deltaMarkersGroup = document.getElementById('tvNexusDeltaMarkersGroup');
+    const shadedArea = document.getElementById('tvNexusShadedArea');
+    const oscSvg = document.getElementById('tvNexusOscSvg');
+    const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
+    const oscMeta = document.getElementById('tvNexusOscMeta');
+
+    // Retain explicit references for unit tests:
+    const lineBox1 = document.getElementById('tvNexusOscLineBox1');
+    const lineBox2 = document.getElementById('tvNexusOscLineBox2');
+    const lineBox3 = document.getElementById('tvNexusOscLineBox3');
+    const calloutAbsorb = document.getElementById('tvNexusCalloutAbsorb');
+    const calloutVacuum = document.getElementById('tvNexusCalloutVacuum');
+    const calloutRunway = document.getElementById('tvNexusCalloutRunway');
+
+    // Find global peak cumulative delta across all boxes for proportionate scaling
+    let allCumDeltas = [];
+    d.samples.forEach(s => {
+      const bars = s.metrics?.barsInBox || [];
+      if (bars.length > 0) {
+        bars.forEach(b => allCumDeltas.push(Math.abs(b.cumDelta || 0)));
+      } else {
+        allCumDeltas.push(Math.abs(s.netDelta || 0));
+      }
+    });
+    if (allCumDeltas.length === 0) allCumDeltas = [1000];
+    const maxCvdAbs = Math.max(1000, Math.max(...allCumDeltas));
 
     // Dynamic gradient for Delta area
     const gradDelta = document.getElementById('tvNexusVacuumGrad');
@@ -3640,46 +3691,89 @@ export function openExtensionNetworkModal(chart = null) {
       `;
     }
 
-    // 2. Render Dynamic Curves for ALL N Boxes in Chart 1 (Delta Harmonic)
-    const deltaGroup = document.getElementById('tvNexusDeltaLinesGroup');
-    const shadedArea = document.getElementById('tvNexusShadedArea');
-    const oscSvg = document.getElementById('tvNexusOscSvg');
-    const oscAreaNote = document.getElementById('tvNexusOscAreaNote');
-
-    // Retain explicit references for unit tests:
-    const lineBox1 = document.getElementById('tvNexusOscLineBox1');
-    const lineBox2 = document.getElementById('tvNexusOscLineBox2');
-    const lineBox3 = document.getElementById('tvNexusOscLineBox3');
-    const calloutAbsorb = document.getElementById('tvNexusCalloutAbsorb');
-    const calloutVacuum = document.getElementById('tvNexusCalloutVacuum');
-    const calloutRunway = document.getElementById('tvNexusCalloutRunway');
+    if (deltaMarkersGroup) deltaMarkersGroup.innerHTML = '';
 
     let highestY = 60;
     let lowestY = 60;
+    let primaryStaircasePoints = [];
 
     d.samples.forEach((s, idx) => {
       const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
       const isSelected = isSingleBoxMode ? (selectedBoxIdx === idx) : true;
       const opacity = isSingleBoxMode ? (isSelected ? '1' : '0.12') : '0.95';
-      const strokeWidth = isSingleBoxMode ? (isSelected ? '3.4' : '1.4') : '2.4';
+      const strokeWidth = isSingleBoxMode ? (isSelected ? '3.4' : '1.4') : (idx === sampleCount - 1 ? '2.8' : '2.2');
       const glowFilter = isSelected ? `drop-shadow(0 0 6px ${pal.glow})` : 'none';
 
-      // Authentic Delta curve coordinates:
-      const kDir = (s.d === 1) ? 1 : -1;
-      const deltaRatio = Math.max(-1, Math.min(1, s.netDelta / maxDeltaAbs));
-      const yTerm = 60 - deltaRatio * 42;
-      const yPeak = 60 - kDir * Math.min(46, 18 + ((s.favMove || 10) / Math.max(1, s.R_b || 10)) * 24);
-      const yInf = (s.absorbPct >= 65)
-        ? (yPeak + kDir * (s.absorbPct / 100) * 16)
-        : ((yPeak + yTerm) / 2);
-      const yCtrl2 = (yInf + yTerm) / 2;
+      const bars = s.metrics?.barsInBox || [];
+      let staircaseD = 'M 25 60 L 515 60';
+      let lastX = 515;
+      let lastY = 60;
 
-      if (yTerm < highestY) highestY = yTerm;
-      if (yPeak < highestY) highestY = yPeak;
-      if (yTerm > lowestY) lowestY = yTerm;
-      if (yPeak > lowestY) lowestY = yPeak;
+      if (bars.length > 0) {
+        const barCount = bars.length;
+        const xStep = 490 / Math.max(1, barCount - 1);
+        let pathParts = [`M 25 60`];
+        let prevY = 60;
 
-      const curveD = `M 25 60 C 140 ${yPeak.toFixed(1)}, 270 ${yInf.toFixed(1)}, 410 ${yCtrl2.toFixed(1)} L 515 ${yTerm.toFixed(1)}`;
+        bars.forEach((b, bIdx) => {
+          const curX = Math.round(25 + bIdx * xStep);
+          const ratio = Math.max(-1, Math.min(1, (b.cumDelta || 0) / maxCvdAbs));
+          const curY = Math.round(60 - ratio * 44);
+
+          if (curY < highestY) highestY = curY;
+          if (curY > lowestY) lowestY = curY;
+
+          if (bIdx === 0) {
+            pathParts.push(`L ${curX} ${curY}`);
+          } else {
+            // True orthogonal staircase: step horizontally to curX with prevY, then vertically to curY
+            pathParts.push(`L ${curX} ${prevY} L ${curX} ${curY}`);
+          }
+          prevY = curY;
+          lastX = curX;
+          lastY = curY;
+
+          // Render absorption and initiative markers on the active / visible lines
+          if (deltaMarkersGroup && (!isSingleBoxMode || isSelected)) {
+            if (b.isAbsorption) {
+              const marker = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+              marker.setAttribute('cx', curX);
+              marker.setAttribute('cy', curY);
+              marker.setAttribute('r', isSingleBoxMode ? '4.2' : '3.2');
+              marker.setAttribute('fill', '#f59e0b');
+              marker.setAttribute('stroke', '#ffffff');
+              marker.setAttribute('stroke-width', '1.2');
+              marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #f59e0b); cursor: pointer;');
+              const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+              titleEl.textContent = `B${s.boxNum} Absorbed Bar: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()} (Vol: ${b.volInBox.toLocaleString()})`;
+              marker.appendChild(titleEl);
+              deltaMarkersGroup.appendChild(marker);
+            } else if (b.isInitiative) {
+              const marker = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+              marker.setAttribute('points', `${curX},${curY - 4.5} ${curX + 4},${curY} ${curX},${curY + 4.5} ${curX - 4},${curY}`);
+              marker.setAttribute('fill', '#00e5ff');
+              marker.setAttribute('stroke', '#ffffff');
+              marker.setAttribute('stroke-width', '1');
+              marker.setAttribute('style', 'filter: drop-shadow(0 0 4px #00e5ff); cursor: pointer;');
+              const titleEl = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+              titleEl.textContent = `B${s.boxNum} Initiative Break: Δ ${b.barDelta > 0 ? '+' : ''}${b.barDelta.toLocaleString()}`;
+              marker.appendChild(titleEl);
+              deltaMarkersGroup.appendChild(marker);
+            }
+          }
+        });
+
+        staircaseD = pathParts.join(' ');
+        if (isSelected) {
+          primaryStaircasePoints = pathParts;
+        }
+      } else {
+        const deltaRatio = Math.max(-1, Math.min(1, s.netDelta / maxCvdAbs));
+        lastY = Math.round(60 - deltaRatio * 44);
+        if (lastY < highestY) highestY = lastY;
+        if (lastY > lowestY) lowestY = lastY;
+        staircaseD = `M 25 60 L 515 ${lastY}`;
+      }
 
       let lineEl = document.getElementById(`tvNexusOscLineBox${idx + 1}`);
       if (!lineEl && deltaGroup) {
@@ -3692,7 +3786,7 @@ export function openExtensionNetworkModal(chart = null) {
       }
 
       if (lineEl) {
-        lineEl.setAttribute('d', curveD);
+        lineEl.setAttribute('d', staircaseD);
         lineEl.setAttribute('stroke', pal.stroke);
         lineEl.setAttribute('stroke-width', strokeWidth);
         lineEl.style.opacity = opacity;
@@ -3700,7 +3794,7 @@ export function openExtensionNetworkModal(chart = null) {
         lineEl.style.display = 'block';
       }
 
-      // Callout positioning & text for each box
+      // Callout chip positioning & text for each box
       const calloutId = idx === 0 ? 'tvNexusCalloutAbsorb'
                       : idx === 1 ? 'tvNexusCalloutVacuum'
                       : idx === 2 ? 'tvNexusCalloutRunway'
@@ -3710,7 +3804,7 @@ export function openExtensionNetworkModal(chart = null) {
         calloutEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
         calloutEl.setAttribute('id', calloutId);
         calloutEl.setAttribute('style', 'cursor: pointer;');
-        calloutEl.innerHTML = `<rect x="-4" y="-10" width="125" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
+        calloutEl.innerHTML = `<rect x="-4" y="-10" width="130" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
         calloutEl.onclick = () => window.__selectNexusTab(`box_${idx}`);
         oscSvg.appendChild(calloutEl);
       }
@@ -3718,7 +3812,7 @@ export function openExtensionNetworkModal(chart = null) {
       if (calloutEl) {
         const xPos = Math.round(35 + (idx / Math.max(1, sampleCount - 1)) * 365);
         const yPos = (s.netDelta >= 0)
-          ? Math.round(20 + (idx % 2) * 18)
+          ? Math.round(18 + (idx % 2) * 18)
           : Math.round(76 + (idx % 2) * 18);
         calloutEl.setAttribute('transform', `translate(${xPos}, ${yPos})`);
 
@@ -3732,11 +3826,8 @@ export function openExtensionNetworkModal(chart = null) {
           text.setAttribute('fill', pal.text);
           const signD = s.netDelta >= 0 ? '+' : '';
           const dK = (Math.abs(s.netDelta) / 1000).toFixed(1);
-          let tagDesc = s.d === 1 ? (s.favMove >= 15 ? 'BULL RUNWAY' : (idx === 0 ? 'BULL BUILDING' : 'BULL BREAK'))
-                                  : (s.favMove >= 15 ? 'BEAR RUNWAY' : (idx === 0 ? 'BEAR BUILDING' : 'BEAR BREAK'));
-          if (s.absorbPct >= 70) tagDesc = 'ABSORB';
-          else if (s.metrics?.yieldAnalysis?.isExhaustion) tagDesc = 'EXH';
-          text.textContent = `B${s.boxNum}: ${signD}${dK}K Δ (${tagDesc})`;
+          let tagDesc = s.absorbPct >= 65 ? 'ABSORB' : (s.metrics?.yieldAnalysis?.isTrap ? 'TRAP' : (Math.abs(s.netMove) >= 12 ? 'RUNWAY' : 'FLOW'));
+          text.textContent = `B${s.boxNum}: ${signD}${dK}K Δ (${s.absorbPct}% Abs)`;
         }
         calloutEl.style.display = (isSingleBoxMode && !isSelected) ? 'none' : 'block';
       }
@@ -3750,53 +3841,51 @@ export function openExtensionNetworkModal(chart = null) {
       if (surplusCallout) surplusCallout.style.display = 'none';
     }
 
-    // Dynamic Delta Envelope Area
+    // Dynamic CVD Shaded Envelope Area
     if (shadedArea) {
-      shadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.85';
-      shadedArea.setAttribute('d', `M 25 60 C 140 ${highestY.toFixed(1)}, 300 ${highestY.toFixed(1)}, 515 ${highestY.toFixed(1)} L 515 ${lowestY.toFixed(1)} C 300 ${lowestY.toFixed(1)}, 140 ${lowestY.toFixed(1)}, 25 60 Z`);
+      shadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.75';
+      if (isSingleBoxMode && primaryStaircasePoints.length > 0) {
+        shadedArea.setAttribute('d', `${primaryStaircasePoints.join(' ')} L 515 60 L 25 60 Z`);
+      } else {
+        shadedArea.setAttribute('d', `M 25 60 C 140 ${highestY}, 300 ${highestY}, 515 ${highestY} L 515 ${lowestY} C 300 ${lowestY}, 140 ${lowestY}, 25 60 Z`);
+      }
+    }
+
+    // Chart 1 Meta & Area Notes
+    if (oscMeta) {
+      const deltaSign = scopeDelta >= 0 ? '+' : '';
+      oscMeta.innerHTML = `ABSORPTION: <strong style="color: #facc15;">${scopeAbsorb}%</strong> • DELTA: <strong style="color: ${scopeDelta >= 0 ? '#22c55e' : '#ef4444'};">${deltaSign}${scopeDelta.toLocaleString()} Δ</strong>`;
     }
 
     if (!isSingleBoxMode) {
       if (oscAreaNote) {
         oscAreaNote.style.color = themeSoft;
         const seqParts = d.samples.map(s => {
-          const y = s.metrics?.yieldAnalysis;
-          let stage = (s.d === 1 || y?.domSide === 'BULL') ? 'BULL' : 'BEAR';
-          if (y?.isTrap) stage = (y.trapType === 'CEILING_TRAP' ? 'BULL TRAP' : 'BEAR TRAP');
-          else if (y?.isExhaustion) stage = (y.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND' : 'NO SUPPLY');
-          return `${stage} (B${s.boxNum})`;
+          const sign = s.netDelta >= 0 ? '+' : '';
+          const dK = (s.netDelta / 1000).toFixed(1);
+          return `B${s.boxNum} (${sign}${dK}K Δ)`;
         });
-        oscAreaNote.textContent = 'SEQUENCE: ' + seqParts.join(' → ');
+        oscAreaNote.textContent = 'CVD TRAJECTORY: ' + seqParts.join(' → ') + ' // ' + (scopeIsBear ? 'AGGRESSIVE SELLER INITIATIVE' : 'AGGRESSIVE BUYER INITIATIVE');
       }
     } else {
       const selS = d.samples[selectedBoxIdx];
       const selPal = BOX_PALETTE[selectedBoxIdx % BOX_PALETTE.length];
       if (selS && oscAreaNote) {
-        const selY = selS.metrics?.yieldAnalysis;
-        let finding = selS.d === 1 ? 'BULL ADVANCE' : 'BEAR ADVANCE';
-        if (selY?.isTrap) finding = (selY.trapType === 'CEILING_TRAP' ? 'CEILING TRAP (ABSORPTION)' : 'FLOOR TRAP (ABSORPTION)');
-        else if (selY?.isExhaustion) finding = (selY.exhaustionType === 'NO_DEMAND' ? 'NO DEMAND (EXHAUSTION)' : 'NO SUPPLY (EXHAUSTION)');
-        else if (selS.evr < 1400) finding = 'VACUUM RUNWAY EXPANSION';
-        else if (selS.evr > 2400) finding = 'HEAVY FRICTION WALL';
-
-        oscAreaNote.style.color = selPal.stroke;
+        const bars = selS.metrics?.barsInBox || [];
+        const absorbCandles = bars.filter(b => b.isAbsorption).length;
+        const initCandles = bars.filter(b => b.isInitiative).length;
         const signD = selS.netDelta >= 0 ? '+' : '';
         const dispP = selS.netMove >= 0 ? '+' : '';
-        oscAreaNote.textContent = `BOX ${selS.boxNum}: ${finding} // MOVE: ${dispP}${selS.netMove.toFixed(1)}pt // DELTA: ${signD}${selS.netDelta.toLocaleString()} Δ (${selS.absorbPct}% Absorb)`;
+        oscAreaNote.style.color = selPal.stroke;
+        oscAreaNote.textContent = `BOX ${selS.boxNum} CVD: ${signD}${selS.netDelta.toLocaleString()} Δ // MOVE: ${dispP}${selS.netMove.toFixed(1)}pt // ABSORPTION: ${selS.absorbPct}% (${absorbCandles} STALLED BARS, ${initCandles} BREAKOUTS)`;
       }
     }
 
-    // 7. Second Command Oscillation Line Chart (EVR & Effort vs Result Friction Harmonic)
+    // 7. Second Chart: Inter-Box Value Migration // POC Ladder & Auction Energy Efficiency
     const evrChartTitle = document.getElementById('tvNexusEvrChartTitle');
     if (evrChartTitle) evrChartTitle.style.color = themeSoft;
 
     const evrMetaEl = document.getElementById('tvNexusEvrOscMeta');
-    if (evrMetaEl) {
-      const evrTag = scopeIsBear ? 'EXTREME BURN 🔥' : 'CLEAN EXPANSION ⚡';
-      const evrSign = d.deltaEvr >= 0 ? '+' : '';
-      evrMetaEl.innerHTML = `EFFORT: <strong style="color: ${themeColor};">${evrTag}</strong> • SHIFT: <strong style="color: #facc15;">${evrSign}${d.deltaEvr}%</strong>`;
-    }
-
     const evrLegend = document.getElementById('tvNexusEvrOscLegend');
     if (evrLegend && d.samples) {
       let evrLegHtml = '';
@@ -3823,8 +3912,9 @@ export function openExtensionNetworkModal(chart = null) {
     const evrCalloutRunway = document.getElementById('tvNexusEvrCalloutRunway');
     const evrSvg = document.getElementById('tvNexusEvrOscSvg');
     const evrLinesGroup = document.getElementById('tvNexusEvrLinesGroup');
+    const shelvesGroup = document.getElementById('tvNexusValueShelvesGroup');
 
-    // Dynamic gradient for EVR area
+    // Dynamic gradient for EVR / Value area
     const gradEvr = document.getElementById('tvNexusEvrGrad');
     if (gradEvr) {
       gradEvr.innerHTML = `
@@ -3834,30 +3924,91 @@ export function openExtensionNetworkModal(chart = null) {
       `;
     }
 
-    // Dynamic N-Box EVR Curves
-    let highestEvrY = 20;
-    let lowestEvrY = 90;
+    if (shelvesGroup) shelvesGroup.innerHTML = '';
 
+    // Price scaling: map dollar price to Y coordinates (Y=18 top price, Y=102 bottom price)
+    const pMin = d.minLow;
+    const pMax = d.maxHigh;
+    const pRange = Math.max(1.0, pMax - pMin);
+    const getY = (p) => Math.round(18 + ((pMax - p) / pRange) * 84);
+
+    // Compute stage coordinates for all boxes
+    const boxStages = d.samples.map((s, idx) => {
+      const x = sampleCount === 1 ? 270 : Math.round(55 + (idx / Math.max(1, sampleCount - 1)) * 410);
+      const yHigh = getY(s.H_b);
+      const yLow = getY(s.L_b);
+      const poc = s.metrics?.pocPrice || s.pocPrice || s.P_0 || 2740;
+      const yPoc = getY(poc);
+      const ptPerK = Math.max(0.01, Math.abs(s.netMove) / Math.max(0.1, s.totalVol / 1000));
+      return { s, idx, x, yHigh, yLow, poc, yPoc, ptPerK };
+    });
+
+    // 7A. Draw Value Range Brackets & Glowing POC Nodes for each box
+    if (shelvesGroup) {
+      boxStages.forEach(st => {
+        const pal = BOX_PALETTE[st.idx % BOX_PALETTE.length];
+        const isSel = !isSingleBoxMode || selectedBoxIdx === st.idx;
+        const op = isSel ? '1' : '0.2';
+
+        // Vertical bracket from High to Low
+        const bracket = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        bracket.setAttribute('d', `M ${st.x - 14} ${st.yHigh} L ${st.x + 14} ${st.yHigh} M ${st.x} ${st.yHigh} L ${st.x} ${st.yLow} M ${st.x - 14} ${st.yLow} L ${st.x + 14} ${st.yLow}`);
+        bracket.setAttribute('stroke', pal.stroke);
+        bracket.setAttribute('stroke-width', '1.6');
+        bracket.setAttribute('opacity', op);
+        shelvesGroup.appendChild(bracket);
+
+        // Glowing POC Anchor node
+        const pocNode = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        pocNode.setAttribute('cx', st.x);
+        pocNode.setAttribute('cy', st.yPoc);
+        pocNode.setAttribute('r', isSel ? '5.5' : '4');
+        pocNode.setAttribute('fill', pal.stroke);
+        pocNode.setAttribute('stroke', '#ffffff');
+        pocNode.setAttribute('stroke-width', '1.5');
+        pocNode.setAttribute('style', `filter: drop-shadow(0 0 6px ${pal.glow}); cursor: pointer;`);
+        pocNode.onclick = () => window.__selectNexusTab(`box_${st.idx}`);
+        const pTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+        pTitle.textContent = `B${st.s.boxNum} POC: $${st.poc.toFixed(2)}`;
+        pocNode.appendChild(pTitle);
+        shelvesGroup.appendChild(pocNode);
+
+        // POC Price Label text right next to POC node
+        const pocTxt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        pocTxt.setAttribute('x', st.x + 8);
+        pocTxt.setAttribute('y', st.yPoc + 3);
+        pocTxt.setAttribute('fill', '#e2e8f0');
+        pocTxt.setAttribute('font-size', '8');
+        pocTxt.setAttribute('font-family', 'monospace');
+        pocTxt.setAttribute('font-weight', 'bold');
+        pocTxt.setAttribute('opacity', op);
+        pocTxt.textContent = `$${st.poc.toFixed(1)}`;
+        shelvesGroup.appendChild(pocTxt);
+      });
+    }
+
+    // 7B. Illuminated Value Migration Lines connecting POCs
     d.samples.forEach((s, idx) => {
       const pal = BOX_PALETTE[idx % BOX_PALETTE.length];
       const isSelected = isSingleBoxMode && selectedBoxIdx === idx;
+      let pathD = '';
+      let strokeColor = pal.stroke;
 
-      // EVR calculation: lower EVR = frictionless runway (top Y~20), high EVR = thick friction wall (bottom Y~90)
-      const evrVal = s.evr || 2000;
-      const normEvr = Math.min(1, Math.max(0, (evrVal - 1000) / 2800));
-      const targetY = Math.round(20 + normEvr * 70);
+      if (sampleCount === 1) {
+        const st0 = boxStages[0];
+        pathD = `M 25 ${st0.yPoc} L 515 ${st0.yPoc}`;
+      } else if (idx < sampleCount - 1) {
+        const cur = boxStages[idx];
+        const nxt = boxStages[idx + 1];
+        pathD = `M ${cur.x} ${cur.yPoc} L ${nxt.x} ${nxt.yPoc}`;
+        const shift = nxt.poc - cur.poc;
+        strokeColor = shift >= 0.8 ? '#22c55e' : (shift <= -0.8 ? '#ef4444' : '#facc15');
+      } else {
+        // Last box terminal line: horizontal anchor bar
+        const lastSt = boxStages[idx];
+        pathD = `M ${lastSt.x - 25} ${lastSt.yPoc} L ${Math.min(515, lastSt.x + 25)} ${lastSt.yPoc}`;
+      }
 
-      const prevEvr = idx > 0 ? (d.samples[idx - 1].evr || evrVal) : evrVal;
-      const prevNorm = Math.min(1, Math.max(0, (prevEvr - 1000) / 2800));
-      const startY = Math.round(20 + prevNorm * 70);
-      const midY = Math.round((startY + targetY) / 2);
-
-      if (targetY < lowestEvrY) lowestEvrY = targetY;
-      if (targetY > highestEvrY) highestEvrY = targetY;
-
-      const pathD = `M 25 ${startY} C 140 ${midY}, 320 ${targetY}, 515 ${targetY}`;
-
-      // Get or create EVR path element
       let lineEl = null;
       if (idx === 0) lineEl = evrLineBox1;
       else if (idx === 1) lineEl = evrLineBox2;
@@ -3876,18 +4027,14 @@ export function openExtensionNetworkModal(chart = null) {
 
       if (lineEl) {
         lineEl.setAttribute('d', pathD);
-        lineEl.setAttribute('stroke', pal.stroke);
-        lineEl.setAttribute('stroke-width', isSelected ? '3.2' : (isSingleBoxMode ? '1.8' : (idx === sampleCount - 1 ? '2.8' : '2.3')));
-        lineEl.style.opacity = (isSingleBoxMode && !isSelected) ? '0.15' : '1';
+        lineEl.setAttribute('stroke', strokeColor);
+        lineEl.setAttribute('stroke-width', isSelected ? '3.6' : '2.8');
+        lineEl.style.opacity = (isSingleBoxMode && !isSelected) ? '0.2' : '1';
         lineEl.style.display = 'block';
-        if (isSelected || (idx === sampleCount - 1 && !isSingleBoxMode)) {
-          lineEl.style.filter = `drop-shadow(0 0 6px ${pal.glow})`;
-        } else {
-          lineEl.style.filter = 'none';
-        }
+        lineEl.style.filter = `drop-shadow(0 0 6px ${strokeColor}aa)`;
       }
 
-      // Dynamic EVR Callout Chip for each box
+      // Dynamic Value / Efficiency Callout Chip for each box
       let calloutEl = null;
       if (idx === 0) calloutEl = evrCalloutMud;
       else if (idx === 1) calloutEl = evrCalloutShift;
@@ -3898,15 +4045,16 @@ export function openExtensionNetworkModal(chart = null) {
           calloutEl = document.createElementNS('http://www.w3.org/2000/svg', 'g');
           calloutEl.setAttribute('id', `tvNexusEvrCalloutBox${idx + 1}`);
           calloutEl.setAttribute('style', 'cursor: pointer;');
-          calloutEl.innerHTML = `<rect x="-4" y="-10" width="135" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
+          calloutEl.innerHTML = `<rect x="-4" y="-10" width="145" height="16" rx="3" fill="#091020" stroke-width="1.2" opacity="0.95"/><text x="0" y="2" font-size="8.5" font-family="monospace" font-weight="bold"></text>`;
           calloutEl.onclick = () => window.__selectNexusTab(`box_${idx}`);
           evrSvg.appendChild(calloutEl);
         }
       }
 
       if (calloutEl) {
-        const xPos = Math.round(30 + (idx / Math.max(1, sampleCount - 1)) * 360);
-        const yPos = targetY < 55 ? Math.round(targetY + 22) : Math.round(targetY - 14);
+        const curSt = boxStages[idx];
+        const xPos = Math.max(15, Math.min(380, curSt.x - 65));
+        const yPos = curSt.yPoc < 55 ? Math.round(curSt.yPoc + 26) : Math.round(curSt.yPoc - 16);
         calloutEl.setAttribute('transform', `translate(${xPos}, ${yPos})`);
 
         const rect = calloutEl.querySelector('rect');
@@ -3917,18 +4065,15 @@ export function openExtensionNetworkModal(chart = null) {
         const text = calloutEl.querySelector('text');
         if (text) {
           text.setAttribute('fill', pal.text);
+          const effLabel = curSt.ptPerK < 0.15 ? 'MUD 🔥' : (curSt.ptPerK >= 0.50 ? 'RUNWAY 🚀' : 'FLOW ⚖️');
           if (idx === 0) {
-            const b1Term = (s.d === 1 || s.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL BASE' : 'BEAR BASE';
-            text.textContent = `🔥 B1: ${s.evr.toLocaleString()} V/PT (${b1Term})`;
+            text.textContent = `B1 POC $${curSt.poc.toFixed(1)} (${curSt.ptPerK.toFixed(2)} pt/K ${effLabel})`;
           } else {
-            const prevBoxEvr = d.samples[idx - 1].evr || s.evr;
-            const shiftVal = Math.round(((s.evr - prevBoxEvr) / Math.max(1, prevBoxEvr)) * 100);
-            const shiftSign = shiftVal >= 0 ? '+' : '';
-            let term = s.evr < 1400 ? 'VACUUM' : (s.evr > 2400 ? 'ABSORB' : 'FLOW');
-            if (idx === sampleCount - 1) {
-              term = (s.d === 1 || s.metrics?.yieldAnalysis?.domSide === 'BULL') ? 'BULL RUNWAY' : 'BEAR RUNWAY';
-            }
-            text.textContent = `⚡ B${s.boxNum}: ${s.evr.toLocaleString()} V/PT (${shiftSign}${shiftVal}%)`;
+            const prevSt = boxStages[idx - 1];
+            const pShift = curSt.poc - prevSt.poc;
+            const pSign = pShift >= 0 ? '+' : '';
+            const pEmoji = pShift >= 0.8 ? '🟢' : (pShift <= -0.8 ? '🔴' : '⚖️');
+            text.textContent = `B${s.boxNum}: ${pSign}${pShift.toFixed(1)}pt ${pEmoji} (${curSt.ptPerK.toFixed(2)} pt/K)`;
           }
         }
         calloutEl.style.display = (isSingleBoxMode && !isSelected) ? 'none' : 'block';
@@ -3943,32 +4088,44 @@ export function openExtensionNetworkModal(chart = null) {
       if (surplusCallout) surplusCallout.style.display = 'none';
     }
 
-    // Dynamic EVR Envelope Shaded Area
+    // Dynamic Value Area Envelope Shaded Area
     if (evrShadedArea) {
-      evrShadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.80';
-      evrShadedArea.setAttribute('d', `M 25 60 C 140 ${lowestEvrY}, 320 ${lowestEvrY}, 515 ${lowestEvrY} L 515 ${highestEvrY} C 320 ${highestEvrY}, 140 ${highestEvrY}, 25 60 Z`);
+      evrShadedArea.style.opacity = isSingleBoxMode ? '0.35' : '0.65';
+      if (sampleCount >= 2) {
+        const topPoints = boxStages.map(st => `${st.x} ${st.yHigh}`).join(' L ');
+        const btmPoints = boxStages.slice().reverse().map(st => `${st.x} ${st.yLow}`).join(' L ');
+        evrShadedArea.setAttribute('d', `M ${topPoints} L ${btmPoints} Z`);
+      } else {
+        const st0 = boxStages[0];
+        evrShadedArea.setAttribute('d', `M 25 ${st0.yHigh} L 515 ${st0.yHigh} L 515 ${st0.yLow} L 25 ${st0.yLow} Z`);
+      }
     }
 
-    // EVR Area Note (Footer subline)
+    // Chart 2 Meta Header & Area Note
+    const netPocChange = d.lastSample.pocPrice - d.firstSample.pocPrice;
+    const pocSign = netPocChange >= 0 ? '+' : '';
+    const pocColor = netPocChange >= 0.8 ? '#22c55e' : (netPocChange <= -0.8 ? '#ef4444' : '#facc15');
+    const netPocTag = netPocChange >= 0.8 ? 'VALUE LIFT 🟢' : (netPocChange <= -0.8 ? 'VALUE DROP 🔴' : 'CHOP ⚖️');
+    const avgEff = (boxStages.reduce((acc, st) => acc + st.ptPerK, 0) / Math.max(1, sampleCount)).toFixed(2);
+
+    if (evrMetaEl) {
+      evrMetaEl.innerHTML = `POC SHIFT: <strong style="color: ${pocColor};">${pocSign}${netPocChange.toFixed(1)} pt (${netPocTag})</strong> • EFFICIENCY: <strong style="color: #00e5ff;">${avgEff} pt/K</strong>`;
+    }
+
     if (!isSingleBoxMode) {
       if (evrAreaNote) {
         evrAreaNote.style.color = themeSoft;
-        const evrParts = d.samples.map(s => {
-          let tag = s.evr < 1400 ? 'VACUUM' : (s.evr > 2400 ? 'ABSORB' : 'FLOW');
-          return `B${s.boxNum} ${s.evr.toLocaleString()} v/pt (${tag})`;
-        });
-        evrAreaNote.textContent = 'EFFORT SHIFT: ' + evrParts.join(' → ');
+        const pocSeq = boxStages.map(st => `B${st.s.boxNum} $${st.poc.toFixed(1)}`).join(' → ');
+        evrAreaNote.textContent = `VALUE MIGRATION: ${pocSeq} // NET ${pocSign}${netPocChange.toFixed(1)} pt SHIFT (${netPocTag}) // AVG EFFICIENCY: ${avgEff} pt/K`;
       }
     } else {
       const selS = d.samples[selectedBoxIdx];
       const selPal = BOX_PALETTE[selectedBoxIdx % BOX_PALETTE.length];
-      if (selS && evrAreaNote) {
-        let tag = selS.evr < 1400 ? 'VACUUM RUNWAY EXPANSION' : (selS.evr > 2400 ? 'HEAVY FRICTION WALL' : 'NORMAL AUCTION FLOW');
-        const prevEvr = selectedBoxIdx > 0 ? d.samples[selectedBoxIdx - 1].evr : selS.evr;
-        const shift = Math.round(((selS.evr - prevEvr) / Math.max(1, prevEvr)) * 100);
-        const sSign = shift >= 0 ? '+' : '';
+      const selSt = boxStages[selectedBoxIdx];
+      if (selS && evrAreaNote && selSt) {
+        const effLabel = selSt.ptPerK < 0.15 ? 'HIGH LIMIT FRICTION / MUD' : (selSt.ptPerK >= 0.50 ? 'VACUUM EXPANSION RUNWAY' : 'NORMAL AUCTION FLOW');
         evrAreaNote.style.color = selPal.stroke;
-        evrAreaNote.textContent = `BOX ${selS.boxNum} EFFORT: ${selS.evr.toLocaleString()} V/PT // ${tag} (${sSign}${shift}% FRICTION)`;
+        evrAreaNote.textContent = `BOX ${selS.boxNum} VALUE SHELF: POC $${selSt.poc.toFixed(2)} // RANGE $${selS.L_b.toFixed(2)} – $${selS.H_b.toFixed(2)} // EFFICIENCY: ${selSt.ptPerK.toFixed(2)} pt/K (${effLabel})`;
       }
     }
 

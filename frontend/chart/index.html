@@ -942,11 +942,11 @@
           <!-- Bottom Tier: Side-by-Side Command Oscillation Charts (Delta Harmonic | EVR Harmonic) -->
           <div id="tvNexusChartsGrid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
 
-            <!-- Chart Card 1: Command Oscillation // Multi-Box Delta Harmonic -->
+            <!-- Chart Card 1: Intra-Box CVD // Order Flow & Absorption Staircase -->
             <div id="tvNexusDeltaCard" class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
               <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-weight: 800; color: #fca5a5; text-transform: uppercase;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span id="tvNexusDeltaChartTitle">COMMAND OSCILLATION // DELTA HARMONIC</span>
+                  <span id="tvNexusDeltaChartTitle">INTRA-BOX CVD // ORDER FLOW & ABSORPTION</span>
                   <div id="tvNexusDeltaOscLegend" style="display: flex; align-items: center; gap: 6px; font-size: 9.5px; font-family: monospace;">
                     <span style="display: flex; align-items: center; gap: 3px; color: #22c55e;">
                       <span style="width: 7px; height: 2px; background: #22c55e; display: inline-block;"></span> B1
@@ -963,11 +963,11 @@
                   <span id="tvNexusOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
                     ABSORPTION: <strong style="color: #facc15;">0%</strong> • DELTA: <strong style="color: #ef4444;">0</strong>
                   </span>
-                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized('delta')" title="Maximize Delta Harmonic Chart">⛶</button>
+                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized('delta')" title="Maximize Delta CVD Chart">⛶</button>
                 </div>
               </div>
 
-              <!-- Overlapping Vector Harmonic Oscilloscope SVG -->
+              <!-- Bar-by-Bar Cumulative Volume Delta (CVD) Staircase & Absorption Markers SVG -->
               <div id="tvNexusOscSvgBox" class="tv-nexus-chart-box" style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
                 <svg viewBox="0 0 540 120" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusOscSvg">
                   <defs>
@@ -989,7 +989,7 @@
                   <text x="5" y="33" fill="#64748b" font-size="8" font-family="monospace">+Δ</text>
                   <text x="5" y="93" fill="#64748b" font-size="8" font-family="monospace">-Δ</text>
 
-                  <!-- Shaded Overlapping Area -->
+                  <!-- Shaded Cumulative Delta Area -->
                   <path id="tvNexusShadedArea" d="M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10 L 515 75 C 440 85, 370 75, 300 58 C 230 45, 160 75, 90 95 Z" fill="url(#tvNexusVacuumGrad)" class="tv-nexus-path-smooth" />
 
                   <!-- Dynamic Delta Lines Group -->
@@ -1003,6 +1003,9 @@
                     <!-- Box 3 Overlapping Line: Deep Crimson (Runway Extension) -->
                     <path id="tvNexusOscLineBox3" d="M 25 45 C 100 22, 190 16, 280 14 C 370 12, 440 12, 515 10" fill="none" stroke="#dc2626" stroke-width="2.8" stroke-linecap="round" class="tv-nexus-path-smooth" style="filter: drop-shadow(0 0 6px rgba(220,38,38,0.7)); opacity: 1;" />
                   </g>
+
+                  <!-- Dynamic Delta Absorption & Initiative Markers Group -->
+                  <g id="tvNexusDeltaMarkersGroup"></g>
 
                   <!-- Interactive Callout Chips explaining the areas -->
                   <g id="tvNexusCalloutAbsorb" transform="translate(65, 75)" style="cursor: pointer;">
@@ -1024,16 +1027,16 @@
 
               <!-- Readout Subline explaining the active area -->
               <div style="display: flex; justify-content: space-between; font-size: 9px; font-family: monospace; color: #64748b; padding-top: 1px;">
-                <span>HARMONIZED DELTA & ABSORPTION</span>
+                <span>REAL BAR-BY-BAR CUMULATIVE DELTA & ABSORPTION</span>
                 <span id="tvNexusOscAreaNote" style="color: #fca5a5; font-weight: 700;">ALL 3 BOXES: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)</span>
               </div>
             </div>
 
-            <!-- Chart Card 2: Command Oscillation // Effort vs Result (EVR Harmonic) -->
+            <!-- Chart Card 2: Inter-Box Value Migration // POC Ladder & Auction Efficiency -->
             <div id="tvNexusEvrCard" class="tv-nexus-card" style="padding: 9px 10px; display: flex; flex-direction: column; gap: 5px;">
               <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10.5px; font-weight: 800; color: #fca5a5; text-transform: uppercase;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <span id="tvNexusEvrChartTitle">COMMAND OSCILLATION // EVR</span>
+                  <span id="tvNexusEvrChartTitle">VALUE MIGRATION // POC LADDER & EFFICIENCY</span>
                   <div id="tvNexusEvrOscLegend" style="display: flex; align-items: center; gap: 6px; font-size: 9.5px; font-family: monospace;">
                     <span style="display: flex; align-items: center; gap: 3px; color: #22c55e;">
                       <span style="width: 7px; height: 2px; background: #22c55e; display: inline-block;"></span> B1
@@ -1050,11 +1053,11 @@
                   <span id="tvNexusEvrOscMeta" style="font-size: 9.5px; font-family: monospace; color: #e2e8f0;">
                     EFFORT: <strong style="color: #ef4444;">EXTREME BURN 🔥</strong> • SHIFT: <strong style="color: #facc15;">+34%</strong>
                   </span>
-                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized('evr')" title="Maximize EVR Harmonic Chart">⛶</button>
+                  <button type="button" class="tv-nexus-max-btn" onclick="window.__toggleNexusMaximized('evr')" title="Maximize Value Migration Chart">⛶</button>
                 </div>
               </div>
 
-              <!-- Overlapping Vector EVR Harmonic Oscilloscope SVG -->
+              <!-- Value Migration POC Ladder & Auction Efficiency SVG -->
               <div id="tvNexusEvrSvgBox" class="tv-nexus-chart-box" style="position: relative; width: 100%; height: 110px; background: #070b16; border: 1px solid #172238; border-radius: 6px; overflow: hidden; padding: 2px;">
                 <svg viewBox="0 0 540 120" preserveAspectRatio="none" style="width: 100%; height: 100%; overflow: visible;" id="tvNexusEvrOscSvg">
                   <defs>
@@ -1071,13 +1074,16 @@
                   <line x1="0" y1="60" x2="540" y2="60" stroke="#facc15" stroke-width="1.2" stroke-dasharray="4,2" opacity="0.65" />
                   <line x1="0" y1="90" x2="540" y2="90" stroke="#121b2d" stroke-dasharray="3,3" stroke-width="1" />
 
-                  <!-- Labels: Runway (top), Equilibrium (mid), Building (bottom) -->
-                  <text x="5" y="33" fill="#64748b" font-size="8" font-family="monospace">🚀 RUNWAY</text>
-                  <text x="5" y="63" fill="#facc15" font-size="8.5" font-family="monospace">⚡ 0 EQ</text>
-                  <text x="5" y="93" fill="#64748b" font-size="8" font-family="monospace">🛡️ BUILDING</text>
+                  <!-- Labels: High Value (top), POC Equilibrium (mid), Low Value (bottom) -->
+                  <text x="5" y="33" fill="#64748b" font-size="8" font-family="monospace">HIGH VAL</text>
+                  <text x="5" y="63" fill="#facc15" font-size="8.5" font-family="monospace">POC EQ</text>
+                  <text x="5" y="93" fill="#64748b" font-size="8" font-family="monospace">LOW VAL</text>
 
                   <!-- Shaded EVR Collapse Area -->
                   <path id="tvNexusEvrShadedArea" d="M 25 88 C 100 92, 180 86, 250 40 C 320 25, 410 20, 515 18 L 515 60 C 410 60, 320 60, 250 60 C 180 60, 100 60, 25 60 Z" fill="url(#tvNexusEvrGrad)" class="tv-nexus-path-smooth" />
+
+                  <!-- Dynamic Value Shelves & POC Nodes Group -->
+                  <g id="tvNexusValueShelvesGroup"></g>
 
                   <!-- Dynamic EVR Lines Group -->
                   <g id="tvNexusEvrLinesGroup">
@@ -1111,7 +1117,7 @@
 
               <!-- Readout Subline explaining EVR -->
               <div style="display: flex; justify-content: space-between; font-size: 9px; font-family: monospace; color: #64748b; padding-top: 1px;">
-                <span>AUCTION EFFORT/RESULT: VOLUME PER 1.0 PT</span>
+                <span>AUCTION VALUE MIGRATION: POC LADDER & ENERGY EFFICIENCY</span>
                 <span id="tvNexusEvrAreaNote" style="color: #fca5a5; font-weight: 700;">EFFORT SHIFT: BEAR BUILDING (B1) → BEAR BREAK (B2) → BEAR RUNWAY (B3)</span>
               </div>
             </div>
@@ -1372,6 +1378,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610251800"></script>
+  <script type="module" src="/chart/js/app.js?v=202610251945"></script>
 </body>
 </html>
