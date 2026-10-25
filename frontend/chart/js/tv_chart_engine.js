@@ -19,6 +19,9 @@ window.__disableAllRectFill = (typeof localStorage !== 'undefined' && localStora
 // Global preference: Hide Top Extension Ribbon (Favourable Move Series)
 window.__hideExtensionRibbon = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_hide_extension_ribbon') === 'true');
 
+// Global preference: Hide Box Outlines and Fills (keep in-box excursion arrows and chart line markings)
+window.__hideBoxBodies = (typeof localStorage !== 'undefined' && localStorage.getItem('escanor_hide_box_bodies') === 'true');
+
 // State tracking for Structural Inflection Reference Lines plotted on the chart canvas
 if (typeof window !== 'undefined') {
   window.__inflectionLinesState = window.__inflectionLinesState || {
@@ -550,8 +553,11 @@ function registerCustomOverlays() {
         const boxW = maxX - minX;
         const boxH = maxY - minY;
 
-        const figures = [
-          {
+        const figures = [];
+        const isBoxesDeactivated = Boolean(window.__hideBoxBodies);
+
+        if (!isBoxesDeactivated) {
+          figures.push({
             type: 'polygon',
             attrs: {
               coordinates: [
@@ -562,8 +568,8 @@ function registerCustomOverlays() {
               ]
             },
             styles: polyStyle
-          }
-        ];
+          });
+        }
 
         // Visual In-Box Trend Excursion Vector (Clean Canvas: Red ✕ Anchor & Cyan/Blue Trend Vector)
         const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
@@ -2590,26 +2596,33 @@ export function updateExtensionSeriesRibbon(chart) {
     </div>
   `;
 
-  // 4. Nominal Dollar Squeeze Fuel Capsule (💰 $31.6M FUEL) with matching metric shade
-  const trappedContracts = Math.abs(netDeltaVal) > 0 ? Math.abs(netDeltaVal) : Math.round((dossier?.totalVolume || 1000) * 0.25);
-  const livePrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : 4000;
-  const fuelMillions = Math.max(0.1, (trappedContracts * livePrice) / 1000000).toFixed(1);
-  const fuelCls = isBear ? 'fuel-bear' : 'fuel-bull';
-  const fuelHtml = `
-    <div class="tv-ext-chip ${fuelCls}" title="Nominal Gold Contract Dollar Value of Trapped Positions">
-      <span>💰 $${fuelMillions}M FUEL</span>
+  // 4. Box Show / Hide Toggle Capsule (📦 BOXES: ON / OFF) replaces fuel button
+  const isBoxesDeactivated = Boolean(window.__hideBoxBodies);
+  const boxToggleCls = isBoxesDeactivated ? 'box-toggle-off' : 'box-toggle-on';
+  const boxToggleText = isBoxesDeactivated ? 'BOXES: OFF' : 'BOXES: ON';
+  const boxToggleTitle = isBoxesDeactivated
+    ? 'Boxes deactivated (Line markings visible) — Click to activate boxes'
+    : 'Boxes active — Click to deactivate boxes (Line markings remain visible)';
+  const boxToggleHtml = `
+    <div id="tvBoxToggleChip" class="tv-ext-chip ${boxToggleCls}" title="${boxToggleTitle}">
+      <span>📦 ${boxToggleText}</span>
     </div>
   `;
 
   // Assemble all capsules in track (zero dossier button, zero bull/bear text, zero runway, zero poc)
-  trackEl.innerHTML = `${seqHtml}${frictionHtml}${displacementHtml}${fuelHtml}`;
+  trackEl.innerHTML = `${seqHtml}${frictionHtml}${displacementHtml}${boxToggleHtml}`;
   ribbonEl.style.display = 'flex';
 
-  // Clicking on the ribbon or ANY item inside it opens the modal
+  // Clicking on the ribbon or ANY item inside it opens the modal, EXCEPT the box toggle chip!
   ribbonEl.onclick = function(e) {
     if (e) {
       e.preventDefault();
       e.stopPropagation();
+    }
+    const boxToggleChip = e?.target?.closest?.('#tvBoxToggleChip');
+    if (boxToggleChip) {
+      toggleBoxVisibility(c);
+      return;
     }
     const targetTag = e?.target?.closest?.('.tv-ext-box-tag');
     if (targetTag && targetTag.hasAttribute('data-box-idx')) {
@@ -2628,6 +2641,37 @@ export function updateExtensionSeriesRibbon(chart) {
   }
 }
 window.__updateExtensionSeriesRibbon = updateExtensionSeriesRibbon;
+
+/**
+ * Toggles visibility of all box bodies and outlines while strictly preserving
+ * all line markings (in-box excursion arrows/fins/numbers, red ✕ anchors,
+ * trend lines, rays, horizontal lines, and structural inflection lines).
+ */
+export function toggleBoxVisibility(chart = chartInstance) {
+  const c = chart || chartInstance;
+  window.__hideBoxBodies = !Boolean(window.__hideBoxBodies);
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('escanor_hide_box_bodies', window.__hideBoxBodies ? 'true' : 'false');
+    }
+  } catch (_) {}
+
+  if (c && typeof c.getOverlays === 'function') {
+    const all = c.getOverlays() || [];
+    all.filter(o => o.name === 'rect').forEach(r => {
+      try {
+        c.overrideOverlay({ id: r.id });
+      } catch (err) {}
+    });
+  }
+
+  updateExtensionSeriesRibbon(c);
+  const stateStr = window.__hideBoxBodies ? 'Deactivated (Line markings visible)' : 'Active (Visible)';
+  if (typeof showChartToast === 'function') {
+    showChartToast(`Box outlines: ${stateStr}`, 2500);
+  }
+}
+window.__toggleBoxVisibility = toggleBoxVisibility;
 
 /**
  * Computes deep multi-sample empirical network dossier across all connected rectangles.

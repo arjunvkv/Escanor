@@ -3380,6 +3380,39 @@ input[type="number"] {
   color: #86efac;
 }
 
+.tv-ext-chip.box-toggle-on {
+  background: rgba(0, 229, 255, 0.16);
+  border: 1px solid rgba(0, 229, 255, 0.50);
+  color: #00e5ff;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.35);
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tv-ext-chip.box-toggle-on:hover {
+  background: rgba(0, 229, 255, 0.28);
+  border-color: #00e5ff;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.60);
+}
+
+.tv-ext-chip.box-toggle-off {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px dashed rgba(148, 163, 184, 0.45);
+  color: #94a3b8;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.tv-ext-chip.box-toggle-off:hover {
+  background: rgba(148, 163, 184, 0.22);
+  color: #e2e8f0;
+  border-color: #cbd5e1;
+}
+
 .tv-ext-chip.displacement-trap {
   background: rgba(245, 158, 11, 0.18);
   border: 1px solid rgba(245, 158, 11, 0.60);
