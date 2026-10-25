@@ -3267,6 +3267,43 @@ input[type="number"] {
   margin: 0 1px;
 }
 
+.tv-ext-connector {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0 5px;
+  line-height: 1;
+  user-select: none;
+  vertical-align: middle;
+}
+
+.tv-ext-conn-bull {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #22c55e;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  letter-spacing: -0.2px;
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.tv-ext-conn-arrow {
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.tv-ext-conn-bear {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: #ef4444;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  letter-spacing: -0.2px;
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
 .tv-ext-chip {
   display: inline-flex;
   align-items: center;
@@ -3350,6 +3387,37 @@ input[type="number"] {
 }
 
 .tv-ext-chip.displacement-neutral {
+  background: rgba(148, 163, 184, 0.12);
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  color: #94a3b8;
+  font-weight: 800;
+}
+
+.tv-ext-chip.dominant-bear {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.55);
+  color: #ef4444;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.35);
+}
+
+.tv-ext-chip.dominant-bull {
+  background: rgba(34, 197, 94, 0.18);
+  border: 1px solid rgba(34, 197, 94, 0.55);
+  color: #22c55e;
+  font-weight: 800;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.35);
+}
+
+.tv-ext-chip.dominant-thinning {
+  background: rgba(251, 146, 60, 0.18);
+  border: 1px solid rgba(251, 146, 60, 0.60);
+  color: #fb923c;
+  font-weight: 800;
+  box-shadow: 0 0 10px rgba(251, 146, 60, 0.50);
+}
+
+.tv-ext-chip.dominant-neutral {
   background: rgba(148, 163, 184, 0.12);
   border: 1px solid rgba(148, 163, 184, 0.35);
   color: #94a3b8;

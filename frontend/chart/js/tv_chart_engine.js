@@ -2198,7 +2198,12 @@ export function updateExtensionSeriesRibbon(chart) {
   const dossier = computeNetworkDossier(rects, dataList);
   const isBear = dossier ? dossier.isBear : true;
 
-  // Dynamic Volume Yield & Dominance Style (Option A: e.g. B1: 🐻 3.6x, B3: 🐻 0.8x ⚠️, B4: 🐂 2.2x)
+  // Sleek cyber/terminal SVG symbols matching the modal theme (replaces cartoon emojis)
+  const SVG_BULL = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M12 2 L22 20 L12 15 L2 20 Z"/></svg>`;
+  const SVG_BEAR = `<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><path d="M12 22 L2 4 L12 9 L22 4 Z"/></svg>`;
+  const SVG_BAL = `<svg width="8" height="8" viewBox="0 0 24 24" fill="currentColor" style="display:inline-block;vertical-align:-1px;margin-right:2px;"><rect x="4" y="4" width="16" height="16" transform="rotate(45 12 12)"/></svg>`;
+
+  // Dynamic Volume Yield & Dominance Style (e.g. B1: ▼ 10.4K, B2: ▼ 7.1K, B4: ▲ 18.2K)
   const getBoxTagStyle = (m, isLast) => {
     if (!m || !m.yieldAnalysis) {
       return {
@@ -2206,7 +2211,7 @@ export function updateExtensionSeriesRibbon(chart) {
         bg: 'rgba(148, 163, 184, 0.12)',
         border: 'rgba(148, 163, 184, 0.30)',
         shadow: 'none',
-        shortTag: '⚖️ 1.0x',
+        shortTag: `${SVG_BAL} 1.0x`,
         domLabel: 'Balanced Auction (Equal Yield)',
         fullTooltip: 'Balanced Auction (Equal Yield)'
       };
@@ -2223,7 +2228,7 @@ export function updateExtensionSeriesRibbon(chart) {
     const bullMoveStr = y.bullMovePts.toFixed(1);
     const bearMoveStr = y.bearMovePts.toFixed(1);
 
-    let shortTag = '⚖️ 1.0x';
+    let shortTag = `${SVG_BAL} 1.0x`;
     let domLabel = 'Balanced Auction (Equal Yield)';
     let color = '#94a3b8';
     let bg = 'rgba(148, 163, 184, 0.12)';
@@ -2231,7 +2236,7 @@ export function updateExtensionSeriesRibbon(chart) {
     let shadow = 'none';
 
     if (domSide === 'BEAR') {
-      shortTag = isThinning ? `🐻 ${domRatio}x ⚠️` : `🐻 ${domRatio}x`;
+      shortTag = isThinning ? `${SVG_BEAR} ${bearVolK}K ⚠️` : `${SVG_BEAR} ${bearVolK}K`;
       domLabel = isThinning
         ? `Bears Thinning Out (Effort High, Yield Collapsing)`
         : `Bears Dominating (${domRatio}x Efficiency Advantage)`;
@@ -2258,7 +2263,7 @@ export function updateExtensionSeriesRibbon(chart) {
         shadow = isLast ? '0 0 8px rgba(252, 165, 165, 0.55)' : 'none';
       }
     } else if (domSide === 'BULL') {
-      shortTag = isThinning ? `🐂 ${domRatio}x ⚠️` : `🐂 ${domRatio}x`;
+      shortTag = isThinning ? `${SVG_BULL} ${bullVolK}K ⚠️` : `${SVG_BULL} ${bullVolK}K`;
       domLabel = isThinning
         ? `Bulls Thinning Out (Effort High, Yield Collapsing)`
         : `Bulls Dominating (${domRatio}x Efficiency Advantage)`;
@@ -2312,7 +2317,7 @@ export function updateExtensionSeriesRibbon(chart) {
     };
   };
 
-  // 1. Build Sequence Micro-Group (Option A: Dominance Multiplier e.g. B1: 🐻 3.6x, B3: 🐻 0.8x ⚠️, B4: 🐂 2.2x)
+  // 1. Build Sequence Micro-Group (Dynamic Dominant Volume Number & Inter-Box Domination Rate Connector)
   let seqHtml = '<div class="tv-ext-seq-group" title="Dynamic Volume Yield Sequence (Click to inspect)">';
   sortedRects.forEach((item, idx) => {
     const m = item.metrics;
@@ -2327,7 +2332,24 @@ export function updateExtensionSeriesRibbon(chart) {
       </span>
     `;
     if (!isLast) {
-      seqHtml += `<span class="tv-ext-arrow">→</span>`;
+      const nextY = sortedRects[idx + 1]?.metrics?.yieldAnalysis;
+      const currY = m?.yieldAnalysis;
+      if (nextY && currY) {
+        const deltaBull = Math.round((nextY.bullYield - currY.bullYield) * 10) / 10;
+        const deltaBear = Math.round((nextY.bearYield - currY.bearYield) * 10) / 10;
+        const bullSign = deltaBull >= 0 ? '+' : '';
+        const bearSign = deltaBear >= 0 ? '+' : '';
+        const connTooltip = `Domination Rate Shift (B${idx + 1} → B${idx + 2}):\n• Bull: ${currY.bullYield.toFixed(1)} → ${nextY.bullYield.toFixed(1)} pt/K (${bullSign}${deltaBull.toFixed(1)})\n• Bear: ${currY.bearYield.toFixed(1)} → ${nextY.bearYield.toFixed(1)} pt/K (${bearSign}${deltaBear.toFixed(1)})`;
+        seqHtml += `
+          <div class="tv-ext-connector" title="${connTooltip}">
+            <span class="tv-ext-conn-bull">${nextY.bullYield.toFixed(1)} (${bullSign}${deltaBull.toFixed(1)})</span>
+            <span class="tv-ext-conn-arrow">→</span>
+            <span class="tv-ext-conn-bear">${nextY.bearYield.toFixed(1)} (${bearSign}${deltaBear.toFixed(1)})</span>
+          </div>
+        `;
+      } else {
+        seqHtml += `<span class="tv-ext-arrow">→</span>`;
+      }
     }
   });
   seqHtml += '</div>';
@@ -2355,54 +2377,50 @@ export function updateExtensionSeriesRibbon(chart) {
     </div>
   `;
 
-  // 3. Dynamic Yield & Displacement Reality Pill
+  // 3. Dominant Volume Number Pill (Replaces verbose label with high-contrast colored volume number)
   const startPrice = dossier?.firstSample?.P_0 || (sortedRects[0]?.metrics?.P_0 || 4000);
   const currentPrice = (dossier?.livePrice && dossier.livePrice > 100) ? dossier.livePrice : (sortedRects[sortedRects.length - 1]?.metrics?.P_1 || startPrice);
   const netDisplacement = currentPrice - startPrice;
   const dispSign = netDisplacement >= 0 ? '+' : '';
+  const netDeltaVal = dossier ? dossier.totalNetDelta : 0;
+  const deltaSignVal = netDeltaVal >= 0 ? '+' : '';
 
   const lastBoxMetrics = sortedRects.length > 0 ? sortedRects[sortedRects.length - 1]?.metrics : null;
   const lastYield = lastBoxMetrics?.yieldAnalysis;
 
-  let dispCls = 'displacement-neutral';
-  let dispIcon = '⚖️';
-  let dispText = `${dispSign}${netDisplacement.toFixed(1)}pt ROTATION`;
-  let dispNote = 'Range Rotation';
+  let dispCls = 'dominant-neutral';
+  let dispIcon = SVG_BAL;
+  let domVolK = lastBoxMetrics ? ((lastYield?.domSide === 'BEAR' ? lastYield.bearVol : (lastYield?.bullVol || lastBoxMetrics.totalVol)) / 1000).toFixed(1) + 'K' : '0K';
+  let dispText = `${domVolK}`;
+  let dispTitle = `Net Sequence Price Ground: ${dispSign}${netDisplacement.toFixed(1)} pts (from $${startPrice.toFixed(2)} to $${currentPrice.toFixed(2)}) • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
 
   if (lastYield) {
     if (lastYield.isThinning) {
-      dispCls = 'displacement-trap';
+      dispCls = 'dominant-thinning';
       dispIcon = '⚠️';
-      dispText = `${lastYield.domSide === 'BEAR' ? 'BEARS' : 'BULLS'} THINNING OUT (YIELD COLLAPSED)`;
-      dispNote = `Effort high but movement collapsed (${lastYield.domSide === 'BEAR' ? lastYield.bearYield : lastYield.bullYield} pt/K) — Thinning Out`;
-    } else if (lastYield.domSide === 'BEAR' && lastYield.domRatio >= 1.5) {
-      dispCls = 'displacement-bear';
-      dispIcon = '📉';
-      dispText = `BEARS DOMINATING (${lastYield.domRatio}x EFFICIENCY)`;
-      dispNote = `Bears moving ${lastYield.bearYield} pt/K vs Bulls ${lastYield.bullYield} pt/K`;
-    } else if (lastYield.domSide === 'BULL' && lastYield.domRatio >= 1.5) {
-      dispCls = 'displacement-bull';
-      dispIcon = '📈';
-      dispText = `BULLS DOMINATING (${lastYield.domRatio}x EFFICIENCY)`;
-      dispNote = `Bulls moving ${lastYield.bullYield} pt/K vs Bears ${lastYield.bearYield} pt/K`;
-    } else if (netDisplacement <= -1.0) {
-      dispCls = 'displacement-bear';
-      dispIcon = '📉';
-      dispText = `${netDisplacement.toFixed(1)}pt BEARS IN CONTROL`;
-      dispNote = 'Bears in Full Institutional Control';
-    } else if (netDisplacement >= 1.0) {
-      dispCls = 'displacement-bull';
-      dispIcon = '📈';
-      dispText = `+${netDisplacement.toFixed(1)}pt BULLS IN CONTROL`;
-      dispNote = 'Bulls in Full Institutional Control';
+      const volNum = (lastYield.domSide === 'BEAR' ? lastYield.bearVol : lastYield.bullVol) / 1000;
+      dispText = `${volNum.toFixed(1)}K`;
+      dispTitle = `${lastYield.domSide} THINNING OUT: ${dispText} consumed with collapsing yield (${lastYield.domSide === 'BEAR' ? lastYield.bearYield : lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+    } else if (lastYield.domSide === 'BEAR') {
+      dispCls = 'dominant-bear';
+      dispIcon = SVG_BEAR;
+      dispText = `${(lastYield.bearVol / 1000).toFixed(1)}K`;
+      dispTitle = `BEAR DOMINANT: ${dispText} volume (${lastYield.domRatio}x yield advantage: ${lastYield.bearYield} vs ${lastYield.bullYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+    } else if (lastYield.domSide === 'BULL') {
+      dispCls = 'dominant-bull';
+      dispIcon = SVG_BULL;
+      dispText = `${(lastYield.bullVol / 1000).toFixed(1)}K`;
+      dispTitle = `BULL DOMINANT: ${dispText} volume (${lastYield.domRatio}x yield advantage: ${lastYield.bullYield} vs ${lastYield.bearYield} pt/K) • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
+    } else {
+      dispCls = 'dominant-neutral';
+      dispIcon = SVG_BAL;
+      dispText = `${((lastBoxMetrics.totalVol || 0) / 1000).toFixed(1)}K`;
+      dispTitle = `BALANCED AUCTION: ${dispText} total volume • Equal Yield • Net Ground: ${dispSign}${netDisplacement.toFixed(1)}pt • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ`;
     }
   }
 
-  const netDeltaVal = dossier ? dossier.totalNetDelta : 0;
-  const deltaSignVal = netDeltaVal >= 0 ? '+' : '';
-
   const displacementHtml = `
-    <div class="tv-ext-chip ${dispCls}" title="Net Sequence Price Ground: ${dispSign}${netDisplacement.toFixed(1)} pts (from $${startPrice.toFixed(2)} to $${currentPrice.toFixed(2)}) • Cumulative Delta: ${deltaSignVal}${formatVolNumber(netDeltaVal)} Δ • ${dispNote}">
+    <div class="tv-ext-chip ${dispCls}" title="${dispTitle}">
       <span>${dispIcon} ${dispText}</span>
     </div>
   `;
