@@ -48,50 +48,50 @@
       }
     },
     {
-      "id": "sov_box_launchpad_shelf",
+      "id": "sov_box_demand_shelf_fvg",
       "name": "rect",
       "points": [
         {
           "timestamp": 1793034900000,
-          "value": 4014.0,
+          "value": 4017.5,
           "dataIndex": 1998
         },
         {
-          "timestamp": 1793036400000,
-          "value": 4014.0,
-          "dataIndex": 2003
+          "timestamp": 1793039400000,
+          "value": 4017.5,
+          "dataIndex": 2013
         },
         {
-          "timestamp": 1793036400000,
-          "value": 4007.0,
-          "dataIndex": 2003
+          "timestamp": 1793039400000,
+          "value": 4013.5,
+          "dataIndex": 2013
         },
         {
           "timestamp": 1793034900000,
-          "value": 4007.0,
+          "value": 4013.5,
           "dataIndex": 1998
         },
         {
           "timestamp": 1793034900000,
-          "value": 4010.5,
+          "value": 4015.5,
           "dataIndex": 1998
         },
         {
-          "timestamp": 1793036400000,
-          "value": 4010.5,
-          "dataIndex": 2003
+          "timestamp": 1793039400000,
+          "value": 4015.5,
+          "dataIndex": 2013
         }
       ],
       "styles": {
         "rect": {
-          "color": "rgba(148, 163, 184, 0.03)",
-          "borderColor": "rgba(148, 163, 184, 0.45)",
+          "color": "rgba(251, 191, 36, 0.03)",
+          "borderColor": "rgba(251, 191, 36, 0.45)",
           "borderSize": 1.0
         }
       },
-      "zLevel": 30,
+      "zLevel": 35,
       "extendData": {
-        "label": "Breakout Launchpad Shelf ($4,007.00 - $4,014.00)"
+        "label": "Demand Shelf & M15 FVG ($4,013.50 - $4,017.50)"
       }
     },
     {
@@ -104,29 +104,29 @@
           "dataIndex": 2004
         },
         {
-          "timestamp": 1793038200000,
+          "timestamp": 1793039100000,
           "value": 4026.75,
-          "dataIndex": 2009
+          "dataIndex": 2012
         },
         {
-          "timestamp": 1793038200000,
-          "value": 4020.5,
-          "dataIndex": 2009
+          "timestamp": 1793039100000,
+          "value": 4021.0,
+          "dataIndex": 2012
         },
         {
           "timestamp": 1793036700000,
-          "value": 4020.5,
+          "value": 4021.0,
           "dataIndex": 2004
         },
         {
           "timestamp": 1793036700000,
-          "value": 4023.6,
+          "value": 4023.8,
           "dataIndex": 2004
         },
         {
-          "timestamp": 1793038200000,
-          "value": 4023.6,
-          "dataIndex": 2009
+          "timestamp": 1793039100000,
+          "value": 4023.8,
+          "dataIndex": 2012
         }
       ],
       "styles": {
@@ -138,101 +138,101 @@
       },
       "zLevel": 20,
       "extendData": {
-        "label": "Session Climax Bracket ($4,020.50 - $4,026.75)"
+        "label": "Distribution Ceiling ($4,021.00 - $4,026.75)"
       }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 15:15:38 UTC",
-    "anchor_timestamp": 1793038200000,
-    "market_context": "Auction consolidating at Session High Climax Bracket ($4,020.50 - $4,026.75) following +38pt impulse from $3,988 Sweep Low",
+    "last_updated": "2026-10-26 15:32:31 UTC",
+    "anchor_timestamp": 1793039400000,
+    "market_context": "Path B mean-reversion fulfilled into Demand Shelf & M15 Bullish FVG ($4,013.50 - $4,017.50) following $4,026.75 Climax Rejection",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Buy-Stop Runway Expansion",
+        "name": "Path A: Demand Shelf Absorption & Re-Expansion",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "rgba(232, 121, 249, 0.45)",
-        "trigger_level": 4027.0,
-        "trigger_start_time": 1793037000000,
-        "trigger_end_time": 1793041200000,
-        "trigger_label": "TRIGGER: 5M C > $4,027.00",
-        "target_level": 4034.0,
-        "target_start_time": 1793038200000,
-        "target_end_time": 1793041200000,
-        "target_label": "TARGET: $4,034.00",
+        "trigger_level": 4019.5,
+        "trigger_start_time": 1793038200000,
+        "trigger_end_time": 1793042400000,
+        "trigger_label": "TRIGGER: 5M C > $4,019.50",
+        "target_level": 4024.5,
+        "target_start_time": 1793039400000,
+        "target_end_time": 1793042400000,
+        "target_label": "TARGET: $4,024.50",
         "vector": {
-          "from_time": 1793038200000,
-          "from_price": 4023.4,
-          "to_time": 1793041200000,
-          "to_price": 4034.0
+          "from_time": 1793039400000,
+          "from_price": 4016.2,
+          "to_time": 1793042400000,
+          "to_price": 4024.5
         },
         "card": {
-          "title": "PATH A: BUY-STOP RUNWAY EXPANSION",
-          "badge": "TARGET: $4,034.00",
-          "body": "A decisive 5m close <strong>above $4,027.00</strong> cleans out resting buy-stop liquidity, releasing an impulsive sprint to test the Previous Day High (PDH) at <strong>$4,034.00</strong>.",
-          "footer_left": "TRIGGER: 5M C > $4,027.00",
-          "footer_right": "+7.0 PT RUNWAY",
+          "title": "PATH A: DEMAND SHELF ABSORPTION",
+          "badge": "TARGET: $4,024.50",
+          "body": "Decisive 5m close <strong>above $4,019.50</strong> confirms institutional FVG defense, releasing an impulsive bounce rotation to retest the supply ceiling at <strong>$4,024.50</strong>.",
+          "footer_left": "TRIGGER: 5M C > $4,019.50",
+          "footer_right": "+5.0 PT RUNWAY",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: Mean-Reversion FVG Retest",
+        "name": "Path B: Shelf Coil & Range Churn",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
         "border": "rgba(251, 191, 36, 0.45)",
-        "floor_level": 4015.5,
-        "floor_start_time": 1793037000000,
-        "floor_end_time": 1793041200000,
-        "floor_label": "FLOOR: $4,015.50",
+        "floor_level": 4014.0,
+        "floor_start_time": 1793038200000,
+        "floor_end_time": 1793042400000,
+        "floor_label": "FLOOR: $4,014.00",
         "vector": {
-          "from_time": 1793038200000,
-          "from_price": 4023.4,
-          "to_time": 1793040600000,
-          "to_price": 4015.5
+          "from_time": 1793039400000,
+          "from_price": 4016.2,
+          "to_time": 1793041500000,
+          "to_price": 4014.0
         },
         "card": {
-          "title": "PATH B: MEAN-REVERSION FVG RETEST",
-          "badge": "FLOOR: $4,015.50",
-          "body": "Exhaustion rejection under the $4,026.75 ceiling triggers profit-taking, rotating price back down to test the virgin M15 Bullish FVG and Launchpad floor at <strong>$4,014.00 \u2013 $4,016.00</strong>.",
-          "footer_left": "RESISTANCE: $4,025 \u2013 $4,027",
-          "footer_right": "FVG 50% CE ROTATION",
+          "title": "PATH B: SHELF COIL & RE-TEST",
+          "badge": "FLOOR: $4,014.00",
+          "body": "Rejection at $4,019 keeps price coiling inside the demand pocket, churning between the <strong>$4,014.00</strong> shelf base and $4,018 local midpoint.",
+          "footer_left": "RESISTANCE: $4,019 \u2013 $4,021",
+          "footer_right": "DEMAND BASE CHURN",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Climax Floor Breakdown",
+        "name": "Path C: Demand Shelf Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "rgba(251, 113, 133, 0.45)",
-        "tripwire_level": 4020.0,
-        "tripwire_start_time": 1793037000000,
-        "tripwire_end_time": 1793042100000,
-        "tripwire_label": "TRIPWIRE: 5M C < $4,020.00",
-        "target_level": 4008.0,
-        "target_start_time": 1793038200000,
-        "target_end_time": 1793042100000,
-        "target_label": "DOWN: $4,008.00",
+        "tripwire_level": 4013.0,
+        "tripwire_start_time": 1793038200000,
+        "tripwire_end_time": 1793043000000,
+        "tripwire_label": "TRIPWIRE: 5M C < $4,013.00",
+        "target_level": 4005.5,
+        "target_start_time": 1793039400000,
+        "target_end_time": 1793043000000,
+        "target_label": "DOWN: $4,005.50",
         "vector": {
-          "from_time": 1793038200000,
-          "from_price": 4020.0,
-          "to_time": 1793042100000,
-          "to_price": 4008.0
+          "from_time": 1793039400000,
+          "from_price": 4013.0,
+          "to_time": 1793043000000,
+          "to_price": 4005.5
         },
         "card": {
-          "title": "TRIPWIRE: CLIMAX FLOOR BREAKDOWN",
-          "badge": "CANCEL: $4,020.00",
-          "body": "A decisive 5m candle body close <strong>below $4,020.00</strong> breaks the climax shelf floor, triggering an aggressive liquidation sweep back into the $4,008 broken shelf origin.",
-          "footer_left": "TRIPWIRE: 5M C < $4,020.00",
+          "title": "TRIPWIRE: DEMAND SHELF BREAKDOWN",
+          "badge": "CANCEL: $4,013.00",
+          "body": "A decisive 5m candle body close <strong>below $4,013.00</strong> invalidates the bullish FVG defense, triggering an accelerated liquidation slide back to session VWAP at <strong>$4,005.50</strong>.",
+          "footer_left": "TRIPWIRE: 5M C < $4,013.00",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
         }
