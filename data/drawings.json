@@ -5,34 +5,34 @@
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793033100000,
-          "value": 3993.5,
-          "dataIndex": 1992
+          "timestamp": 1792555500000,
+          "value": 4111.0,
+          "dataIndex": 1025
         },
         {
-          "timestamp": 1793035200000,
-          "value": 3993.5,
-          "dataIndex": 1999
+          "timestamp": 1792556700000,
+          "value": 4111.0,
+          "dataIndex": 1029
         },
         {
-          "timestamp": 1793035200000,
-          "value": 3988.5,
-          "dataIndex": 1999
+          "timestamp": 1792556700000,
+          "value": 4106.0,
+          "dataIndex": 1029
         },
         {
-          "timestamp": 1793033100000,
-          "value": 3988.5,
-          "dataIndex": 1992
+          "timestamp": 1792555500000,
+          "value": 4106.0,
+          "dataIndex": 1025
         },
         {
-          "timestamp": 1793033100000,
-          "value": 3991.0,
-          "dataIndex": 1992
+          "timestamp": 1792555500000,
+          "value": 4108.5,
+          "dataIndex": 1025
         },
         {
-          "timestamp": 1793035200000,
-          "value": 3991.0,
-          "dataIndex": 1999
+          "timestamp": 1792556700000,
+          "value": 4108.5,
+          "dataIndex": 1029
         }
       ],
       "styles": {
@@ -44,42 +44,42 @@
       },
       "zLevel": 100,
       "extendData": {
-        "label": "Absorption Sweep Base ($3,988.50 - $3,993.50)"
+        "label": "Absorption Sweep Base ($4,106.00 - $4,111.00)"
       }
     },
     {
-      "id": "sov_box_demand_shelf_fvg",
+      "id": "sov_box_demand_shelf",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793034900000,
-          "value": 4018.5,
-          "dataIndex": 1998
+          "timestamp": 1792556700000,
+          "value": 4118.5,
+          "dataIndex": 1029
         },
         {
-          "timestamp": 1793040600000,
-          "value": 4018.5,
-          "dataIndex": 2017
+          "timestamp": 1792561500000,
+          "value": 4118.5,
+          "dataIndex": 1045
         },
         {
-          "timestamp": 1793040600000,
-          "value": 4013.8,
-          "dataIndex": 2017
+          "timestamp": 1792561500000,
+          "value": 4114.0,
+          "dataIndex": 1045
         },
         {
-          "timestamp": 1793034900000,
-          "value": 4013.8,
-          "dataIndex": 1998
+          "timestamp": 1792556700000,
+          "value": 4114.0,
+          "dataIndex": 1029
         },
         {
-          "timestamp": 1793034900000,
-          "value": 4016.15,
-          "dataIndex": 1998
+          "timestamp": 1792556700000,
+          "value": 4116.25,
+          "dataIndex": 1029
         },
         {
-          "timestamp": 1793040600000,
-          "value": 4016.15,
-          "dataIndex": 2017
+          "timestamp": 1792561500000,
+          "value": 4116.25,
+          "dataIndex": 1045
         }
       ],
       "styles": {
@@ -91,42 +91,42 @@
       },
       "zLevel": 35,
       "extendData": {
-        "label": "VWAP +1\u03c3 & FVG Support Shelf ($4,013.80 - $4,018.50)"
+        "label": "Demand Shelf & Re-Accumulation ($4,114.00 - $4,118.50)"
       }
     },
     {
-      "id": "sov_box_session_climax",
+      "id": "sov_box_supply_ceiling",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793036700000,
-          "value": 4026.75,
-          "dataIndex": 2004
+          "timestamp": 1792557000000,
+          "value": 4124.5,
+          "dataIndex": 1030
         },
         {
-          "timestamp": 1793039100000,
-          "value": 4026.75,
-          "dataIndex": 2012
+          "timestamp": 1792559100000,
+          "value": 4124.5,
+          "dataIndex": 1037
         },
         {
-          "timestamp": 1793039100000,
-          "value": 4021.0,
-          "dataIndex": 2012
+          "timestamp": 1792559100000,
+          "value": 4121.5,
+          "dataIndex": 1037
         },
         {
-          "timestamp": 1793036700000,
-          "value": 4021.0,
-          "dataIndex": 2004
+          "timestamp": 1792557000000,
+          "value": 4121.5,
+          "dataIndex": 1030
         },
         {
-          "timestamp": 1793036700000,
-          "value": 4023.8,
-          "dataIndex": 2004
+          "timestamp": 1792557000000,
+          "value": 4123.0,
+          "dataIndex": 1030
         },
         {
-          "timestamp": 1793039100000,
-          "value": 4023.8,
-          "dataIndex": 2012
+          "timestamp": 1792559100000,
+          "value": 4123.0,
+          "dataIndex": 1037
         }
       ],
       "styles": {
@@ -138,101 +138,101 @@
       },
       "zLevel": 20,
       "extendData": {
-        "label": "Distribution Ceiling ($4,021.00 - $4,026.75)"
+        "label": "Supply Barrier & Swing High ($4,121.50 - $4,124.50)"
       }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 15:53:54 UTC",
-    "anchor_timestamp": 1793040600000,
-    "market_context": "Auction defending +1\u03c3 VWAP Band ($4,015.66) & M15 FVG Shelf ($4,013.80 - $4,018.50) following Climax Rejection",
+    "last_updated": "2026-10-21 05:45:00 UTC (Zero Lookahead Scrolled Snapshot)",
+    "anchor_timestamp": 1792561500000,
+    "market_context": "Auction rebounding from Demand Shelf ($4,114.00 - $4,118.50) toward Supply Barrier ($4,121.50 - $4,124.50) following $4,106.14 Absorption Sweep",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: VWAP +1\u03c3 Rebound Expansion",
+        "name": "Path A: Shelf Breakout Expansion",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "rgba(232, 121, 249, 0.45)",
-        "trigger_level": 4019.5,
-        "trigger_start_time": 1793039400000,
-        "trigger_end_time": 1793043600000,
-        "trigger_label": "TRIGGER: 5M C > $4,019.50",
-        "target_level": 4025.5,
-        "target_start_time": 1793040600000,
-        "target_end_time": 1793043600000,
-        "target_label": "TARGET: $4,025.50",
+        "trigger_level": 4122.5,
+        "trigger_start_time": 1792560000000,
+        "trigger_end_time": 1792565100000,
+        "trigger_label": "TRIGGER: 5M C > $4,122.50",
+        "target_level": 4130.0,
+        "target_start_time": 1792561500000,
+        "target_end_time": 1792565100000,
+        "target_label": "TARGET: $4,130.00",
         "vector": {
-          "from_time": 1793040600000,
-          "from_price": 4016.5,
-          "to_time": 1793043600000,
-          "to_price": 4025.5
+          "from_time": 1792561500000,
+          "from_price": 4119.0,
+          "to_time": 1792565100000,
+          "to_price": 4130.0
         },
         "card": {
-          "title": "PATH A: VWAP +1\u03c3 REBOUND EXPANSION",
-          "badge": "TARGET: $4,025.50",
-          "body": "Decisive 5m close <strong>above $4,019.50</strong> confirms +1\u03c3 VWAP bounce, releasing an impulsive sprint back to retest the <strong>$4,025.50</strong> ceiling.",
-          "footer_left": "TRIGGER: 5M C > $4,019.50",
-          "footer_right": "+6.0 PT RUNWAY",
+          "title": "PATH A: SHELF BREAKOUT EXPANSION",
+          "badge": "TARGET: $4,130.00",
+          "body": "Decisive 5m close <strong>above $4,122.50</strong> shatters the immediate supply ceiling, releasing an impulsive short-squeeze toward the <strong>$4,130.00</strong> liquidity pool.",
+          "footer_left": "TRIGGER: 5M C > $4,122.50",
+          "footer_right": "+7.5 PT RUNWAY",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: Shelf Base Compression",
+        "name": "Path B: Demand Shelf Rotation",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
         "border": "rgba(251, 191, 36, 0.45)",
-        "floor_level": 4015.0,
-        "floor_start_time": 1793039400000,
-        "floor_end_time": 1793043600000,
-        "floor_label": "FLOOR: $4,015.00",
+        "floor_level": 4114.5,
+        "floor_start_time": 1792560000000,
+        "floor_end_time": 1792563600000,
+        "floor_label": "FLOOR: $4,114.50",
         "vector": {
-          "from_time": 1793040600000,
-          "from_price": 4016.5,
-          "to_time": 1793042400000,
-          "to_price": 4015.0
+          "from_time": 1792561500000,
+          "from_price": 4119.0,
+          "to_time": 1792563600000,
+          "to_price": 4114.5
         },
         "card": {
-          "title": "PATH B: SHELF BASE COMPRESSION",
-          "badge": "FLOOR: $4,015.00",
-          "body": "Rejection at $4,019 keeps price coiling inside the support zone, rotating tightly between the <strong>$4,015.00</strong> VWAP band and $4,018.50 local midpoint.",
-          "footer_left": "RESISTANCE: $4,019 \u2013 $4,020",
-          "footer_right": "+1\u03c3 VWAP COIL",
+          "title": "PATH B: DEMAND SHELF ROTATION",
+          "badge": "FLOOR: $4,114.50",
+          "body": "Rejection at $4,121 supply confirms overhead resistance, rotating price back down to test buyer defense at the <strong>$4,114.50</strong> shelf floor.",
+          "footer_left": "RESISTANCE: $4,121 \u2013 $4,123",
+          "footer_right": "SHELF MIDPOINT ROLL",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: VWAP +1\u03c3 Failure Breakdown",
+        "name": "Path C: Demand Shelf Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "rgba(251, 113, 133, 0.45)",
-        "tripwire_level": 4013.5,
-        "tripwire_start_time": 1793039400000,
-        "tripwire_end_time": 1793044200000,
-        "tripwire_label": "TRIPWIRE: 5M C < $4,013.50",
-        "target_level": 4004.5,
-        "target_start_time": 1793040600000,
-        "target_end_time": 1793044200000,
-        "target_label": "DOWN: $4,004.50",
+        "tripwire_level": 4113.5,
+        "tripwire_start_time": 1792560000000,
+        "tripwire_end_time": 1792565400000,
+        "tripwire_label": "TRIPWIRE: 5M C < $4,113.50",
+        "target_level": 4106.5,
+        "target_start_time": 1792561500000,
+        "target_end_time": 1792565400000,
+        "target_label": "DOWN: $4,106.50",
         "vector": {
-          "from_time": 1793040600000,
-          "from_price": 4013.5,
-          "to_time": 1793044200000,
-          "to_price": 4004.5
+          "from_time": 1792561500000,
+          "from_price": 4113.5,
+          "to_time": 1792565400000,
+          "to_price": 4106.5
         },
         "card": {
-          "title": "TRIPWIRE: VWAP +1\u03c3 FAILURE BREAKDOWN",
-          "badge": "CANCEL: $4,013.50",
-          "body": "A decisive 5m candle body close <strong>below $4,013.50</strong> confirms loss of the +1\u03c3 VWAP band, triggering a liquidation slide back to Session VWAP at <strong>$4,004.50</strong>.",
-          "footer_left": "TRIPWIRE: 5M C < $4,013.50",
+          "title": "TRIPWIRE: DEMAND SHELF BREAKDOWN",
+          "badge": "CANCEL: $4,113.50",
+          "body": "A decisive 5m candle body close <strong>below $4,113.50</strong> invalidates the re-accumulation shelf, triggering a liquidation slide back toward the <strong>$4,106.50</strong> sweep base.",
+          "footer_left": "TRIPWIRE: 5M C < $4,113.50",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
         }
