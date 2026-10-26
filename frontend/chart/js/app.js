@@ -7,7 +7,7 @@
 import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610252048';
 import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610252048';
 import { fetchServerDrawings, fetchServerDrawingsAndEvaluation, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610261700';
-import { initSovereignPathsOverlay, updateSovereignPathsData, renderSovereignPaths } from './sovereign_paths_overlay.js?v=202610261700';
+import { initSovereignPathsOverlay, updateSovereignPathsData, renderSovereignPaths } from './sovereign_paths_overlay.js?v=202610261720';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
 import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
