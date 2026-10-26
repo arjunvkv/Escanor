@@ -48,7 +48,7 @@
       }
     },
     {
-      "id": "sov_box_demand_shelf",
+      "id": "sov_box_launchpad_floor",
       "name": "rect",
       "points": [
         {
@@ -57,14 +57,14 @@
           "dataIndex": 1029
         },
         {
-          "timestamp": 1792561500000,
+          "timestamp": 1792563600000,
           "value": 4118.5,
-          "dataIndex": 1045
+          "dataIndex": 1052
         },
         {
-          "timestamp": 1792561500000,
+          "timestamp": 1792563600000,
           "value": 4114.0,
-          "dataIndex": 1045
+          "dataIndex": 1052
         },
         {
           "timestamp": 1792556700000,
@@ -77,9 +77,9 @@
           "dataIndex": 1029
         },
         {
-          "timestamp": 1792561500000,
+          "timestamp": 1792563600000,
           "value": 4116.25,
-          "dataIndex": 1045
+          "dataIndex": 1052
         }
       ],
       "styles": {
@@ -91,42 +91,42 @@
       },
       "zLevel": 35,
       "extendData": {
-        "label": "Demand Shelf & Re-Accumulation ($4,114.00 - $4,118.50)"
+        "label": "Launchpad Consolidation Floor ($4,114.00 - $4,118.50)"
       }
     },
     {
-      "id": "sov_box_supply_ceiling",
+      "id": "sov_box_broken_supply_shelf",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792557000000,
-          "value": 4124.5,
-          "dataIndex": 1030
+          "timestamp": 1792564200000,
+          "value": 4125.5,
+          "dataIndex": 1054
         },
         {
-          "timestamp": 1792559100000,
-          "value": 4124.5,
-          "dataIndex": 1037
+          "timestamp": 1792565400000,
+          "value": 4125.5,
+          "dataIndex": 1058
         },
         {
-          "timestamp": 1792559100000,
-          "value": 4121.5,
-          "dataIndex": 1037
+          "timestamp": 1792565400000,
+          "value": 4120.5,
+          "dataIndex": 1058
         },
         {
-          "timestamp": 1792557000000,
-          "value": 4121.5,
-          "dataIndex": 1030
+          "timestamp": 1792564200000,
+          "value": 4120.5,
+          "dataIndex": 1054
         },
         {
-          "timestamp": 1792557000000,
+          "timestamp": 1792564200000,
           "value": 4123.0,
-          "dataIndex": 1030
+          "dataIndex": 1054
         },
         {
-          "timestamp": 1792559100000,
+          "timestamp": 1792565400000,
           "value": 4123.0,
-          "dataIndex": 1037
+          "dataIndex": 1058
         }
       ],
       "styles": {
@@ -138,101 +138,101 @@
       },
       "zLevel": 20,
       "extendData": {
-        "label": "Supply Barrier & Swing High ($4,121.50 - $4,124.50)"
+        "label": "Broken Supply Turned Support ($4,120.50 - $4,125.50)"
       }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-21 05:45:00 UTC (Zero Lookahead Scrolled Snapshot)",
-    "anchor_timestamp": 1792561500000,
-    "market_context": "Auction rebounding from Demand Shelf ($4,114.00 - $4,118.50) toward Supply Barrier ($4,121.50 - $4,124.50) following $4,106.14 Absorption Sweep",
+    "last_updated": "2026-10-21 06:50:00 UTC (Zero Lookahead Scrolled Snapshot)",
+    "anchor_timestamp": 1792565400000,
+    "market_context": "Path A Breakout verified into $4,125.66 high; Auction testing Broken Supply Turned Support ($4,120.50 - $4,125.50)",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Shelf Breakout Expansion",
+        "name": "Path A: Liquidity Runway Continuation",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "rgba(232, 121, 249, 0.45)",
-        "trigger_level": 4122.5,
-        "trigger_start_time": 1792560000000,
-        "trigger_end_time": 1792565100000,
-        "trigger_label": "TRIGGER: 5M C > $4,122.50",
-        "target_level": 4130.0,
-        "target_start_time": 1792561500000,
-        "target_end_time": 1792565100000,
-        "target_label": "TARGET: $4,130.00",
+        "trigger_level": 4126.0,
+        "trigger_start_time": 1792564200000,
+        "trigger_end_time": 1792569000000,
+        "trigger_label": "TRIGGER: 5M C > $4,126.00",
+        "target_level": 4133.5,
+        "target_start_time": 1792565400000,
+        "target_end_time": 1792569000000,
+        "target_label": "TARGET: $4,133.50",
         "vector": {
-          "from_time": 1792561500000,
-          "from_price": 4119.0,
-          "to_time": 1792565100000,
-          "to_price": 4130.0
+          "from_time": 1792565400000,
+          "from_price": 4121.66,
+          "to_time": 1792569000000,
+          "to_price": 4133.5
         },
         "card": {
-          "title": "PATH A: SHELF BREAKOUT EXPANSION",
-          "badge": "TARGET: $4,130.00",
-          "body": "Decisive 5m close <strong>above $4,122.50</strong> shatters the immediate supply ceiling, releasing an impulsive short-squeeze toward the <strong>$4,130.00</strong> liquidity pool.",
-          "footer_left": "TRIGGER: 5M C > $4,122.50",
+          "title": "PATH A: LIQUIDITY RUNWAY CONTINUATION",
+          "badge": "TARGET: $4,133.50",
+          "body": "Decisive 5m close <strong>above $4,126.00</strong> shatters local high resistance, unleashing an impulsive extension toward the major session liquidity pool at <strong>$4,133.50</strong>.",
+          "footer_left": "TRIGGER: 5M C > $4,126.00",
           "footer_right": "+7.5 PT RUNWAY",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: Demand Shelf Rotation",
+        "name": "Path B: Broken Shelf Retest",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
         "border": "rgba(251, 191, 36, 0.45)",
-        "floor_level": 4114.5,
-        "floor_start_time": 1792560000000,
-        "floor_end_time": 1792563600000,
-        "floor_label": "FLOOR: $4,114.50",
+        "floor_level": 4119.5,
+        "floor_start_time": 1792564200000,
+        "floor_end_time": 1792567500000,
+        "floor_label": "FLOOR: $4,119.50",
         "vector": {
-          "from_time": 1792561500000,
-          "from_price": 4119.0,
-          "to_time": 1792563600000,
-          "to_price": 4114.5
+          "from_time": 1792565400000,
+          "from_price": 4121.66,
+          "to_time": 1792567500000,
+          "to_price": 4119.5
         },
         "card": {
-          "title": "PATH B: DEMAND SHELF ROTATION",
-          "badge": "FLOOR: $4,114.50",
-          "body": "Rejection at $4,121 supply confirms overhead resistance, rotating price back down to test buyer defense at the <strong>$4,114.50</strong> shelf floor.",
-          "footer_left": "RESISTANCE: $4,121 \u2013 $4,123",
-          "footer_right": "SHELF MIDPOINT ROLL",
+          "title": "PATH B: BROKEN SHELF RETEST",
+          "badge": "FLOOR: $4,119.50",
+          "body": "Pullback into the broken resistance shelf finds buyer support at <strong>$4,119.50</strong>, rotating price between $4,120 floor and $4,124 ceiling.",
+          "footer_left": "SUPPORT: $4,119 \u2013 $4,121",
+          "footer_right": "SUPPORT FLIP CHURN",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Demand Shelf Breakdown",
+        "name": "Path C: Breakout Failure Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "rgba(251, 113, 133, 0.45)",
-        "tripwire_level": 4113.5,
-        "tripwire_start_time": 1792560000000,
-        "tripwire_end_time": 1792565400000,
-        "tripwire_label": "TRIPWIRE: 5M C < $4,113.50",
-        "target_level": 4106.5,
-        "target_start_time": 1792561500000,
-        "target_end_time": 1792565400000,
-        "target_label": "DOWN: $4,106.50",
+        "tripwire_level": 4118.5,
+        "tripwire_start_time": 1792564200000,
+        "tripwire_end_time": 1792568700000,
+        "tripwire_label": "TRIPWIRE: 5M C < $4,118.50",
+        "target_level": 4114.0,
+        "target_start_time": 1792565400000,
+        "target_end_time": 1792568700000,
+        "target_label": "DOWN: $4,114.00",
         "vector": {
-          "from_time": 1792561500000,
-          "from_price": 4113.5,
-          "to_time": 1792565400000,
-          "to_price": 4106.5
+          "from_time": 1792565400000,
+          "from_price": 4118.5,
+          "to_time": 1792568700000,
+          "to_price": 4114.0
         },
         "card": {
-          "title": "TRIPWIRE: DEMAND SHELF BREAKDOWN",
-          "badge": "CANCEL: $4,113.50",
-          "body": "A decisive 5m candle body close <strong>below $4,113.50</strong> invalidates the re-accumulation shelf, triggering a liquidation slide back toward the <strong>$4,106.50</strong> sweep base.",
-          "footer_left": "TRIPWIRE: 5M C < $4,113.50",
+          "title": "TRIPWIRE: BREAKOUT FAILURE BREAKDOWN",
+          "badge": "CANCEL: $4,118.50",
+          "body": "A decisive 5m candle body close <strong>below $4,118.50</strong> traps breakout buyers, triggering a liquidation cascade back to the launchpad floor at <strong>$4,114.00</strong>.",
+          "footer_left": "TRIPWIRE: 5M C < $4,118.50",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
         }
