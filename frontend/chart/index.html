@@ -246,14 +246,55 @@
 
         <!-- Bottom Left Sidebar Desk Actions Dock -->
         <div class="tv-sidebar-bottom-dock">
-          <!-- Toggle Causal Paths & Story Overlays (On/Off) -->
-          <button type="button" id="tvSidebarPathsToggleBtn" class="tv-sidebar-paths-btn active" title="Toggle Causal Paths & Story Overlays (On/Off)">
+          <!-- Toggle Causal Paths (On/Off) -->
+          <button type="button" id="tvSidebarPathsToggleBtn" class="tv-sidebar-paths-btn active" title="Toggle Causal Paths (On/Off)">
             <svg class="tv-spaths-svg" viewBox="0 0 24 24" width="20" height="20" fill="none">
               <path d="M4 12h5l3-6h8M9 12l3 6h8M9 12h11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
               <circle cx="4" cy="12" r="2.2" fill="currentColor"/>
               <circle cx="20" cy="6" r="1.8" fill="#d946ef"/>
               <circle cx="20" cy="12" r="1.8" fill="#fbbf24"/>
               <circle cx="20" cy="18" r="1.8" fill="#f43f5e"/>
+            </svg>
+          </button>
+
+          <!-- Toggle Strategy HUD Comment Boxes (On/Off) -->
+          <button type="button" id="tvSidebarCardsToggleBtn" class="tv-sidebar-toggle-btn tv-sidebar-cards-btn active" title="Toggle Strategy HUD Boxes (On/Off)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <rect x="3" y="4" width="18" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/>
+              <line x1="7" y1="8" x2="13" y2="8" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="7" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="17" cy="8" r="1.5" fill="#38bdf8"/>
+            </svg>
+          </button>
+
+          <!-- Toggle 50% FVG CE Filament (On/Off) -->
+          <button type="button" id="tvSidebarFvgBtn" class="tv-sidebar-toggle-btn tv-sidebar-fvg-btn active" title="Toggle 50% FVG CE Filament (On/Off)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <circle cx="12" cy="12" r="7" stroke="currentColor" stroke-width="1.8"/>
+              <line x1="12" y1="2" x2="12" y2="6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="12" y1="18" x2="12" y2="22" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="2" y1="12" x2="6" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <line x1="18" y1="12" x2="22" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <circle cx="12" cy="12" r="2.2" fill="#00e5ff"/>
+            </svg>
+          </button>
+
+          <!-- Toggle Canonical Benchmarks PDH / PDL (On/Off) -->
+          <button type="button" id="tvSidebarBenchmarksBtn" class="tv-sidebar-toggle-btn tv-sidebar-benchmarks-btn active" title="Toggle Canonical Benchmarks PDH / PDL (On/Off)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <line x1="3" y1="6" x2="21" y2="6" stroke="#c084fc" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 2"/>
+              <line x1="3" y1="18" x2="21" y2="18" stroke="#10b981" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 2"/>
+              <line x1="12" y1="6" x2="12" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="12" cy="6" r="2" fill="#c084fc"/>
+              <circle cx="12" cy="18" r="2" fill="#10b981"/>
+            </svg>
+          </button>
+
+          <!-- Toggle $25 Options Gamma Strike Pins (On/Off) -->
+          <button type="button" id="tvSidebarGammaBtn" class="tv-sidebar-toggle-btn tv-sidebar-gamma-btn active" title="Toggle $25 Options Gamma Pins (On/Off)">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
+              <polygon points="12,3 20,12 12,21 4,12" stroke="#fbbf24" stroke-width="1.8"/>
+              <circle cx="12" cy="12" r="2.5" fill="#fde68a"/>
             </svg>
           </button>
 
@@ -327,6 +368,9 @@
             <g id="svgGroupPathA" class="tv-path-group"></g>
             <g id="svgGroupPathB" class="tv-path-group"></g>
             <g id="svgGroupPathC" class="tv-path-group"></g>
+            <g id="svgGroupFvgCe" class="tv-fvg-group"></g>
+            <g id="svgGroupBenchmarks" class="tv-benchmarks-group"></g>
+            <g id="svgGroupGammaPins" class="tv-gamma-group"></g>
           </svg>
 
           <!-- HUD Chamfered Callout Cards Layer (Zero-Overlap Airspace) -->

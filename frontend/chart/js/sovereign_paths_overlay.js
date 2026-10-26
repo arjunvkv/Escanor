@@ -19,18 +19,29 @@ let svgElement = null;
 let groupA = null;
 let groupB = null;
 let groupC = null;
+let groupFvgCe = null;
+let groupBenchmarks = null;
+let groupGammaPins = null;
 let cardA = null;
 let cardB = null;
 let cardC = null;
 let toggleBtn = null;
+let btnCards = null;
+let btnFvg = null;
+let btnBenchmarks = null;
+let btnGamma = null;
 let chartInstance = null;
 let currentEvalData = null;
 let isOverlayVisible = true;
+let isCardsVisible = true;
+let isFvgVisible = true;
+let isBenchmarksVisible = true;
+let isGammaVisible = true;
 let isDraggingChart = false;
 let rafId = null;
 
 /**
- * Initialize Sovereign Paths Overlay and wire sidebar toggle button
+ * Initialize Sovereign Paths Overlay and wire sidebar toggle buttons
  */
 export function initSovereignPathsOverlay(chart) {
   chartInstance = chart;
@@ -39,22 +50,37 @@ export function initSovereignPathsOverlay(chart) {
   groupA = document.getElementById('svgGroupPathA');
   groupB = document.getElementById('svgGroupPathB');
   groupC = document.getElementById('svgGroupPathC');
+  groupFvgCe = document.getElementById('svgGroupFvgCe');
+  groupBenchmarks = document.getElementById('svgGroupBenchmarks');
+  groupGammaPins = document.getElementById('svgGroupGammaPins');
   cardA = document.getElementById('hudCardPathA');
   cardB = document.getElementById('hudCardPathB');
   cardC = document.getElementById('hudCardPathC');
   toggleBtn = document.getElementById('tvSidebarPathsToggleBtn');
+  btnCards = document.getElementById('tvSidebarCardsToggleBtn');
+  btnFvg = document.getElementById('tvSidebarFvgBtn');
+  btnBenchmarks = document.getElementById('tvSidebarBenchmarksBtn');
+  btnGamma = document.getElementById('tvSidebarGammaBtn');
 
-  // Load saved visibility state from localStorage (default: true)
+  // Load saved visibility states from localStorage (defaults: true)
   const savedState = localStorage.getItem('tv_sovereign_paths_visible');
-  if (savedState !== null) {
-    isOverlayVisible = (savedState === 'true');
-  } else {
-    isOverlayVisible = true;
-  }
+  isOverlayVisible = (savedState !== null) ? (savedState === 'true') : true;
+
+  const savedCards = localStorage.getItem('tv_cards_visible');
+  isCardsVisible = (savedCards !== null) ? (savedCards === 'true') : true;
+
+  const savedFvg = localStorage.getItem('tv_fvg_visible');
+  isFvgVisible = (savedFvg !== null) ? (savedFvg === 'true') : true;
+
+  const savedBenchmarks = localStorage.getItem('tv_benchmarks_visible');
+  isBenchmarksVisible = (savedBenchmarks !== null) ? (savedBenchmarks === 'true') : true;
+
+  const savedGamma = localStorage.getItem('tv_gamma_visible');
+  isGammaVisible = (savedGamma !== null) ? (savedGamma === 'true') : true;
 
   applyVisibilityState();
 
-  // Wire Sidebar Toggle Button
+  // Wire Sidebar Toggle Button (Causal Paths)
   if (toggleBtn) {
     toggleBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -92,6 +118,55 @@ export function initSovereignPathsOverlay(chart) {
         showToast('⚡ Scrolled to Active Sovereign Causal Paths Setup');
         requestAnimationFrame(renderSovereignPaths);
       }
+    });
+  }
+
+  // Wire Discrete Feature Toggle Buttons
+  if (btnCards) {
+    btnCards.classList.toggle('active', isCardsVisible);
+    btnCards.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isCardsVisible = !isCardsVisible;
+      localStorage.setItem('tv_cards_visible', isCardsVisible ? 'true' : 'false');
+      btnCards.classList.toggle('active', isCardsVisible);
+      showToast(isCardsVisible ? '⚡ Strategy HUD Boxes: ON' : 'Strategy HUD Boxes: OFF');
+      requestAnimationFrame(renderSovereignPaths);
+    });
+  }
+
+  if (btnFvg) {
+    btnFvg.classList.toggle('active', isFvgVisible);
+    btnFvg.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isFvgVisible = !isFvgVisible;
+      localStorage.setItem('tv_fvg_visible', isFvgVisible ? 'true' : 'false');
+      btnFvg.classList.toggle('active', isFvgVisible);
+      showToast(isFvgVisible ? '🎯 50% FVG CE Filament: ON ($4,015.25)' : '50% FVG CE Filament: OFF');
+      requestAnimationFrame(renderSovereignPaths);
+    });
+  }
+
+  if (btnBenchmarks) {
+    btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
+    btnBenchmarks.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isBenchmarksVisible = !isBenchmarksVisible;
+      localStorage.setItem('tv_benchmarks_visible', isBenchmarksVisible ? 'true' : 'false');
+      btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
+      showToast(isBenchmarksVisible ? '📏 Canonical Benchmarks (PDH/PDL): ON' : 'Canonical Benchmarks: OFF');
+      requestAnimationFrame(renderSovereignPaths);
+    });
+  }
+
+  if (btnGamma) {
+    btnGamma.classList.toggle('active', isGammaVisible);
+    btnGamma.addEventListener('click', (e) => {
+      e.stopPropagation();
+      isGammaVisible = !isGammaVisible;
+      localStorage.setItem('tv_gamma_visible', isGammaVisible ? 'true' : 'false');
+      btnGamma.classList.toggle('active', isGammaVisible);
+      showToast(isGammaVisible ? '◆ $25 Gamma Option Strike Pins: ON' : '$25 Gamma Pins: OFF');
+      requestAnimationFrame(renderSovereignPaths);
     });
   }
 
@@ -291,7 +366,12 @@ export function applyBoxBorderOverrides(isActive) {
     // Default box IDs to handle with light and thin (1.0px) solid borders (matching dashed markings)
     const boxOverrides = [
       { id: 'sov_box_ascending_base', activeColor: 'rgba(251, 191, 36, 0.45)', defaultColor: 'rgba(0, 229, 255, 0.35)', fillColor: 'rgba(251, 191, 36, 0.03)' },
-      { id: 'sov_box_compression_gate', activeColor: 'rgba(240, 171, 252, 0.45)', defaultColor: 'rgba(245, 158, 11, 0.35)', fillColor: 'rgba(240, 171, 252, 0.03)' }
+      { id: 'sov_box_dual_supply_pool', activeColor: 'rgba(232, 121, 249, 0.45)', defaultColor: 'rgba(236, 64, 122, 0.35)', fillColor: 'rgba(232, 121, 249, 0.03)' },
+      { id: 'sov_box_compression_gate', activeColor: 'rgba(240, 171, 252, 0.45)', defaultColor: 'rgba(245, 158, 11, 0.35)', fillColor: 'rgba(240, 171, 252, 0.03)' },
+      { id: 'box_phase_1_flush', activeColor: 'rgba(244, 63, 94, 0.65)', defaultColor: 'rgba(244, 63, 94, 0.35)', fillColor: 'rgba(244, 63, 94, 0.03)' },
+      { id: 'box_phase_2_impulse', activeColor: 'rgba(0, 229, 255, 0.65)', defaultColor: 'rgba(0, 229, 255, 0.35)', fillColor: 'rgba(0, 229, 255, 0.03)' },
+      { id: 'box_phase_3_climax', activeColor: 'rgba(251, 191, 36, 0.65)', defaultColor: 'rgba(251, 191, 36, 0.35)', fillColor: 'rgba(251, 191, 36, 0.03)' },
+      { id: 'box_phase_4_coil', activeColor: 'rgba(168, 85, 247, 0.65)', defaultColor: 'rgba(168, 85, 247, 0.35)', fillColor: 'rgba(168, 85, 247, 0.03)' }
     ];
 
     // If paths specify explicit box IDs and colors, dynamically add them
@@ -564,9 +644,9 @@ export function renderSovereignPaths() {
       }
 
       // 4. Dotted Leader Line connecting Target Line / Box to Card A (Light & delicate)
-      if (isBoxVisible || isTrigVisible || isTargetVisible) {
+      if (isCardsVisible && (isBoxVisible || isTrigVisible || isTargetVisible)) {
         svgMarkup += `
-          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="rgba(232, 121, 249, 0.40)" stroke-width="1.0" stroke-dasharray="3 3" />
+          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="rgba(232, 121, 249, 0.40)" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
           <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#f0abfc" opacity="0.6" />
           <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#e879f9" opacity="0.6" />
         `;
@@ -574,28 +654,29 @@ export function renderSovereignPaths() {
 
       groupA.innerHTML = svgMarkup;
 
-      // Update Card A HUD
+      // Update Card A HUD (Minimal, intelligent, zero-loss)
       const c = pathAData.card || {};
       cardA.style.top = `${cardATop}px`;
+      cardA.style.bottom = 'auto';
       cardA.style.left = `${cardALeft}px`;
       cardA.style.width = `${cardAW}px`;
-      cardA.style.display = 'block';
+      cardA.style.display = isCardsVisible ? 'block' : 'none';
       cardA.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(217,70,239,0.35); padding-bottom: 6px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(217,70,239,0.35); padding-bottom: 5px; margin-bottom: 6px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="width: 9px; height: 9px; border-radius: 2px; background: #d946ef; display: inline-block;"></span>
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #f0abfc; text-transform: uppercase;">${c.title || 'PATH A: EXPANSION SQUEEZE'}</span>
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: #d946ef; display: inline-block;"></span>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #f0abfc; text-transform: uppercase;">${c.title || 'PATH A: CEILING SWEEP FADE'}</span>
           </div>
-          <span style="padding: 2px 6px; font-size: 10px; font-family: monospace; font-weight: 800; background: rgba(217,70,239,0.25); color: #fdf4ff; border: 1px solid rgba(217,70,239,0.45); border-radius: 3px;">
-            ${c.badge || 'TARGET: $4,052.00'}
+          <span style="padding: 1.5px 6px; font-size: 9.5px; font-family: monospace; font-weight: 800; background: rgba(217,70,239,0.25); color: #fdf4ff; border: 1px solid rgba(217,70,239,0.45); border-radius: 3px;">
+            ${c.badge || 'TP1: $4,018.12 | BE LOCK'}
           </span>
         </div>
-        <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
-          ${c.body || 'A clean 5m close triggers an impulsive short-squeeze out of the coil.'}
+        <div style="font-size: 11px; line-height: 1.45; color: #cbd5e1; font-weight: 500;">
+          ${c.body || 'Trigger: Sweep $4,026.75 ➔ M5 Close &lt; $4,026.00'}
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid rgba(217,70,239,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 6px; gap: 8px;">
-          <span class="hud-pill-violet" style="white-space: nowrap;">${c.footer_left || 'TRIGGER: 5M C > $4,032.50'}</span>
-          <span style="color: #34d399; font-weight: 800; white-space: nowrap;">${c.footer_right || '+19.5 PT RUNWAY'}</span>
+        <div style="margin-top: 6px; border-top: 1px solid rgba(217,70,239,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 5px; gap: 8px;">
+          <span class="hud-pill-violet" style="white-space: nowrap;">${c.footer_left || 'ENTRY: $4,026.00 | SL: $4,028.50'}</span>
+          <span style="color: #34d399; font-weight: 800; white-space: nowrap;">${c.footer_right || '0-LOSS PROTOCOL 🛡️'}</span>
         </div>
       `;
     }
@@ -648,17 +729,17 @@ export function renderSovereignPaths() {
       const maxY = floorTopLeft && floorBottomRight ? Math.max(floorTopLeft.y, floorBottomRight.y) : (floorEnd ? floorEnd.y : 230);
       const boxH = Math.max(12, maxY - minY);
 
-      // Card B placement in bottom-left airspace (Clearing left sidebar)
+      // Card B placement in bottom-left airspace (Clearing left sidebar, anchored to bottom to NEVER overflow)
       const cardBW = Math.min(320, Math.max(270, width * 0.28));
-      const cardBTop = Math.max(110, height - 185);
       const cardBLeft = leftSidebarMargin;
+      const cardBTopApprox = Math.max(topRibbonMargin + 20, height - (cardB.offsetHeight || 115) - 28);
 
       // Leader line connection from Floor Line / Box left edge to Card B
       const leaderStartX = Math.max(10, Math.min(width - 50, floorStart ? floorStart.x : minX));
       const rawStartY = floorTopLeft ? (minY + boxH * 0.5) : (floorStart ? floorStart.y : (vecTo ? vecTo.y : height - 100));
       const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardBLeft + cardBW;
-      const leaderEndY = cardBTop + 20;
+      const leaderEndY = cardBTopApprox + 20;
 
       let svgMarkup = '';
 
@@ -677,7 +758,7 @@ export function renderSovereignPaths() {
       }
 
       // 3. Connector Line: Box 1 / Floor Line left edge -> Bottom-Left HUD Card B (Light & delicate)
-      if (isFloorVisible || isFloorLineVisible) {
+      if (isCardsVisible && (isFloorVisible || isFloorLineVisible)) {
         svgMarkup += `
           <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX - 25},${leaderStartY} ${leaderStartX - 25},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#fbbf24" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
           <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fde68a" opacity="0.6" />
@@ -687,28 +768,29 @@ export function renderSovereignPaths() {
 
       groupB.innerHTML = svgMarkup;
 
-      // Update Card B HUD (Clean, ultra-readable pill)
+      // Update Card B HUD (Anchor to bottom: 28px so it never overflows viewport)
       const c = pathBData.card || {};
-      cardB.style.top = `${cardBTop}px`;
+      cardB.style.top = 'auto';
+      cardB.style.bottom = '28px';
       cardB.style.left = `${cardBLeft}px`;
       cardB.style.width = `${cardBW}px`;
-      cardB.style.display = 'block';
+      cardB.style.display = isCardsVisible ? 'block' : 'none';
       cardB.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(245,158,11,0.35); padding-bottom: 6px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(245,158,11,0.35); padding-bottom: 5px; margin-bottom: 6px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="width: 9px; height: 9px; border-radius: 2px; background: #fbbf24; display: inline-block;"></span>
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: #fbbf24; display: inline-block;"></span>
             <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fde68a; text-transform: uppercase;">${c.title || 'PATH B: DEMAND SHELF RETEST'}</span>
           </div>
-          <span style="padding: 2px 6px; font-size: 10px; font-family: monospace; font-weight: 800; background: rgba(245,158,11,0.25); color: #fef08a; border: 1px solid rgba(245,158,11,0.45); border-radius: 3px;">
+          <span style="padding: 1.5px 6px; font-size: 9.5px; font-family: monospace; font-weight: 800; background: rgba(245,158,11,0.25); color: #fef08a; border: 1px solid rgba(245,158,11,0.45); border-radius: 3px;">
             ${c.badge || 'FLOOR: $4,021.50'}
           </span>
         </div>
-        <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
-          ${c.body || 'Rejection rotates price back down to test coil absorption floor.'}
+        <div style="font-size: 11px; line-height: 1.45; color: #cbd5e1; font-weight: 500;">
+          ${c.body || 'Entry: $4,018.00 POC / $4,015.25 FVG CE (Dry Vol)'}
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 6px; gap: 8px;">
-          <span class="hud-pill-amber" style="white-space: nowrap;">${c.footer_left || 'SUPPORT: $4,021.50 – $4,024.50'}</span>
-          <span style="color: #f59e0b; font-weight: 800; white-space: nowrap;">${c.footer_right || 'LPS COIL RE-TEST'}</span>
+        <div style="margin-top: 6px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 5px; gap: 8px;">
+          <span class="hud-pill-amber" style="white-space: nowrap;">${c.footer_left || 'ENTRY: $4,018.00 | SL: $4,013.75'}</span>
+          <span style="color: #f59e0b; font-weight: 800; white-space: nowrap;">${c.footer_right || '1:7+ RR ASYMMETRY 🛡️'}</span>
         </div>
       `;
     }
@@ -773,17 +855,17 @@ export function renderSovereignPaths() {
       const maxY = downTopLeft && downBottomRight ? Math.max(downTopLeft.y, downBottomRight.y) : (targetEnd ? targetEnd.y : (tripStart ? tripStart.y + 25 : 30));
       const downLineY = (minY + maxY) * 0.5;
 
-      // Card C placement in bottom-right airspace (Clearing right price axis)
+      // Card C placement in bottom-right airspace (Clearing right price axis, anchored to bottom to NEVER overflow)
       const cardCW = Math.min(320, Math.max(260, width * 0.28));
-      const cardCTop = Math.max(110, height - 185);
       const cardCLeft = width - cardCW - rightAxisMargin;
+      const cardCTopApprox = Math.max(topRibbonMargin + 20, height - (cardC.offsetHeight || 115) - 28);
 
       // Leader line connection from Target / Tripwire Line right coordinate to Card C
       const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, targetEnd ? targetEnd.x : (tripEnd ? tripEnd.x : maxX)));
       const rawStartY = targetEnd ? targetEnd.y : (tripEnd ? tripEnd.y : downLineY);
       const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardCLeft;
-      const leaderEndY = cardCTop + 20;
+      const leaderEndY = cardCTopApprox + 20;
 
       let svgMarkup = '';
 
@@ -813,7 +895,7 @@ export function renderSovereignPaths() {
       }
 
       // 4. Connector Line: Tripwire Line -> Bottom-Right HUD Card C (Light & delicate)
-      if (isTripVisible || isTargetVisible || isDownVisible) {
+      if (isCardsVisible && (isTripVisible || isTargetVisible || isDownVisible)) {
         svgMarkup += `
           <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#f43f5e" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
           <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fecdd3" opacity="0.6" />
@@ -823,30 +905,119 @@ export function renderSovereignPaths() {
 
       groupC.innerHTML = svgMarkup;
 
-      // Update Card C HUD (Clean, ultra-readable pill)
+      // Update Card C HUD (Anchor to bottom: 28px so it never overflows viewport)
       const c = pathCData.card || {};
-      cardC.style.top = `${cardCTop}px`;
+      cardC.style.top = 'auto';
+      cardC.style.bottom = '28px';
       cardC.style.left = `${cardCLeft}px`;
       cardC.style.width = `${cardCW}px`;
-      cardC.style.display = 'block';
+      cardC.style.display = isCardsVisible ? 'block' : 'none';
       cardC.innerHTML = `
-        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(244,63,94,0.35); padding-bottom: 6px; margin-bottom: 8px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(244,63,94,0.35); padding-bottom: 5px; margin-bottom: 6px;">
           <div style="display: flex; align-items: center; gap: 6px;">
-            <span style="width: 9px; height: 9px; border-radius: 2px; background: #f43f5e; display: inline-block;"></span>
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fecdd3; text-transform: uppercase;">${c.title || 'TRIPWIRE: COIL FLOOR BREAKDOWN'}</span>
+            <span style="width: 8px; height: 8px; border-radius: 2px; background: #f43f5e; display: inline-block;"></span>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fecdd3; text-transform: uppercase;">${c.title || 'PATH C: COIL BREAKDOWN (ZERO-LOSS SHORT)'}</span>
           </div>
-          <span style="padding: 2px 6px; font-size: 10px; font-family: monospace; font-weight: 800; background: rgba(244,63,94,0.25); color: #fecdd3; border: 1px solid rgba(244,63,94,0.45); border-radius: 3px;">
-            ${c.badge || 'CANCEL: $4,019.00'}
+          <span style="padding: 1.5px 6px; font-size: 9.5px; font-family: monospace; font-weight: 800; background: rgba(244,63,94,0.25); color: #fecdd3; border: 1px solid rgba(244,63,94,0.45); border-radius: 3px;">
+            ${c.badge || 'TP1: $4,008.00 | BE LOCK'}
           </span>
         </div>
-        <div style="font-size: 11.5px; line-height: 1.5; color: #ffe4e6; font-weight: 500;">
-          ${c.body || 'A 5m close below $4,019 invalidates coil, triggering a liquidation slide.'}
+        <div style="font-size: 11px; line-height: 1.45; color: #ffe4e6; font-weight: 500;">
+          ${c.body || 'Tripwire: M5 Close &lt; $4,014.50 (Coil Floor Break)'}
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid rgba(244,63,94,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 6px; gap: 8px;">
-          <span class="hud-pill-red" style="white-space: nowrap;">${c.footer_left || 'TRIPWIRE: 5M C < $4,019.00'}</span>
-          <span style="color: #fb7185; font-weight: 800; white-space: nowrap;">${c.footer_right || 'FULL CANCELLATION'}</span>
+        <div style="margin-top: 6px; border-top: 1px solid rgba(244,63,94,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 5px; gap: 8px;">
+          <span class="hud-pill-red" style="white-space: nowrap;">${c.footer_left || 'ENTRY: $4,014.25 | SL: $4,016.50'}</span>
+          <span style="color: #fb7185; font-weight: 800; white-space: nowrap;">${c.footer_right || 'FULL CANCELLATION 🛡️'}</span>
         </div>
       `;
     }
   }
+
+  // -------------------------------------------------------------------------
+  // 4. RENDER REALITY BUFF FILAMENTS (FVG 50% CE, BENCHMARKS, GAMMA PINS)
+  // -------------------------------------------------------------------------
+  renderFvgCe(width, height);
+  renderBenchmarks(width, height);
+  renderGammaPins(width, height);
+}
+
+/**
+ * Render FVG 50% CE Magnet Level ($4,015.25)
+ */
+function renderFvgCe(width, height) {
+  if (!groupFvgCe) return;
+  if (!isFvgVisible) {
+    groupFvgCe.innerHTML = '';
+    return;
+  }
+  const ptFvg = pointToPixel(chartInstance, 1793035200000, 4015.25);
+  const ptY = ptFvg ? ptFvg.y : (pointToPixel(chartInstance, null, 4015.25)?.y ?? null);
+  if (ptY === null || ptY < 0 || ptY > height) {
+    groupFvgCe.innerHTML = '';
+    return;
+  }
+  const startX = ptFvg ? Math.max(10, ptFvg.x) : 65;
+  const endX = width - 75;
+  if (startX >= endX) {
+    groupFvgCe.innerHTML = '';
+    return;
+  }
+  groupFvgCe.innerHTML = `
+    <line x1="${startX}" y1="${ptY}" x2="${endX}" y2="${ptY}" stroke="#00e5ff" stroke-width="1.1" stroke-dasharray="4 3" opacity="0.80" />
+    <circle cx="${startX}" cy="${ptY}" r="3" fill="#00e5ff" opacity="0.9" />
+    <circle cx="${endX}" cy="${ptY}" r="3" fill="#00e5ff" opacity="0.9" />
+  `;
+}
+
+/**
+ * Render Canonical Benchmarks (PDH $4,034.07, PDL $3,975.58)
+ */
+function renderBenchmarks(width, height) {
+  if (!groupBenchmarks) return;
+  if (!isBenchmarksVisible) {
+    groupBenchmarks.innerHTML = '';
+    return;
+  }
+  const ptPdh = pointToPixel(chartInstance, null, 4034.07);
+  const ptPdl = pointToPixel(chartInstance, null, 3975.58);
+  let markup = '';
+  const startX = 65;
+  const endX = width - 75;
+
+  if (ptPdh && ptPdh.y >= 0 && ptPdh.y <= height) {
+    markup += `
+      <line x1="${startX}" y1="${ptPdh.y}" x2="${endX}" y2="${ptPdh.y}" stroke="#c084fc" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.55" />
+      <circle cx="${endX}" cy="${ptPdh.y}" r="2.5" fill="#c084fc" opacity="0.8" />
+    `;
+  }
+  if (ptPdl && ptPdl.y >= 0 && ptPdl.y <= height) {
+    markup += `
+      <line x1="${startX}" y1="${ptPdl.y}" x2="${endX}" y2="${ptPdl.y}" stroke="#10b981" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.50" />
+      <circle cx="${endX}" cy="${ptPdl.y}" r="2.5" fill="#10b981" opacity="0.8" />
+    `;
+  }
+  groupBenchmarks.innerHTML = markup;
+}
+
+/**
+ * Render $25 Options Gamma Pins ($4,025.00, $4,000.00)
+ */
+function renderGammaPins(width, height) {
+  if (!groupGammaPins) return;
+  if (!isGammaVisible) {
+    groupGammaPins.innerHTML = '';
+    return;
+  }
+  const strikes = [4025.0, 4000.0];
+  let markup = '';
+  strikes.forEach(strike => {
+    const pt = pointToPixel(chartInstance, null, strike);
+    if (pt && pt.y >= 0 && pt.y <= height) {
+      markup += `
+        <line x1="${width - 150}" y1="${pt.y}" x2="${width - 75}" y2="${pt.y}" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.45" />
+        <polygon points="${width - 75},${pt.y} ${width - 70},${pt.y - 4} ${width - 65},${pt.y} ${width - 70},${pt.y + 4}" fill="#fbbf24" opacity="0.85" />
+      `;
+    }
+  });
+  groupGammaPins.innerHTML = markup;
 }

@@ -82,111 +82,104 @@ One of the greatest retail pitfalls is confusing **low-probability breakout chas
 
 ---
 
-## 5. PLAYBOOK: EVALUATING & MARKING HIGH-PROBABILITY SETUPS BY REGIME
+## 5. THE 4 HEAVYWEIGHT REALITY BUFFS (NO LIARS / 100% REALITY FILTER)
 
-Depending on the active market structure, the Auction Matrix instructs you to evaluate and mark specific high-probability setups:
+To filter out fake retail setups and ensure every trade either resolves in profit or a clean breakeven with zero losses, 4 institutional buffs are integrated:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                 MARKET STRUCTURE SITUATION                                      │
-├───────────────────────────────┬─────────────────────────────────┬───────────────────────────────┤
-│    SITUATION 1: RANGE / CHOP  │    SITUATION 2: STRONG TREND    │ SITUATION 3: DEEP FLUSH/PURGE │
-│  (Bracket / Re-Accumulation)  │   (Vacuum Discovery Expansion)  │    (Capitulation & Spring)    │
-├───────────────────────────────┼─────────────────────────────────┼───────────────────────────────┤
-│ • Setup 1: Ceiling Sweep Fade │ • Setup 1: Pullback to Broken   │ • Setup 1: Terminal Spring    │
-│   (Upthrust fade short)       │   Ceiling (Previous box top     │   Reclaim (Buy immediately on │
-│ • Setup 2: POC Value Reload   │   retested as support)          │   reclaim of swept benchmark) │
-│   (Long at Composite POC/VAL) │ • Setup 2: Coil Expansion Leg   │ • Setup 2: Stop-Run Retest    │
-│ • Setup 3: Range Tripwire     │   (Buy breakout of tight coil   │   (Higher low test of sweep   │
-│   (Short below coil base)     │   BEFORE the extended run)      │   wick base)                  │
-└───────────────────────────────┴─────────────────────────────────┴───────────────────────────────┘
+│                                   THE 4 REALITY BUFFS FRAMEWORK                                 │
+├─────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 1. 🎯 FVG 50% CE FILAMENT:                                                                      │
+│    • Consequent Encroachment (CE) of the impulsive imbalance wave ($4,015.25).                  │
+│    • Exact coordinate where drying volume retests fair-value before continuation.               │
+│                                                                                                 │
+│ 2. 📏 CANONICAL MULTI-TIMEFRAME BENCHMARKS:                                                     │
+│    • Previous Day High ($4,034.07) & Previous Day Low ($3,975.58) reference tracks.             │
+│    • Identifies external liquidity pools where institutions hunt retail stop runs.              │
+│                                                                                                 │
+│ 3. ◆ $25 ROUND INSTITUTIONAL OPTIONS GAMMA PINS:                                                │
+│    • Major psychological and option open interest strikes ($4,000.00, $4,025.00, $4,050.00).    │
+│    • Market makers pin price around these coordinates during expiration cycles.                 │
+│                                                                                                 │
+│ 4. 🛡️ TWO-TIER ZERO-LOSS SCALE-OUT PROTOCOL:                                                    │
+│    • Tier 1: Bank 50% lot size at TP1 (+7 to +8 pts) ➔ Advance SL to Entry +0.50 pt (BE Lock).  │
+│    • Tier 2: Let remaining 50% ride to terminal runner target (TP2).                            │
+│    • Math Guarantee: Trade is 100% risk-free the instant TP1 hits. Net loss = $0.00.           │
+└─────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Situation 1: Range-Bound Bracket / Re-Accumulation Coil (Current Market)
-When price has rallied into an overhead ceiling and formed a multi-bar compression coil:
-1. **The High-Probability Short: Ceiling Sweep & Upthrust Fade**
-   - **Where**: Top boundary of Box 2 / Box 3 (\$4,026.75 – \$4,028.50).
-   - **Trigger**: 5M price spikes above \$4,026.75, fails to sustain, prints an upper rejection wick, and closes back below \$4,026.00.
-   - **Entry**: \$4,026.00 – \$4,026.50 | **SL**: \$4,029.00 (above sweep wick) | **TP**: \$4,018.12 (Composite POC) and \$4,012.80 (Net VWAP).
-   - **Edge**: Trapped breakout buyers are forced to liquidate, accelerating price back to the POC mean.
-2. **The High-Probability Long: POC Anchor Value Reload**
-   - **Where**: High-volume node of Box 4 & Composite POC (\$4,017.50 – \$4,018.50).
-   - **Trigger**: Pullback into \$4,018.00 with volume drying up (Wyckoff "No Supply" test) and a bullish 5M defense candle.
-   - **Entry**: \$4,018.00 – \$4,018.50 | **SL**: \$4,014.00 (below coil base) | **TP**: \$4,026.50 (Ceiling re-test).
-   - **Edge**: Buying at institutional fair-value with the highest-volume inventory shelf at your back.
-3. **The Structural Breakdown: Coil Base Tripwire Short**
-   - **Where**: Bottom boundary of Box 4 (\$4,014.50).
-   - **Trigger**: Decisive 5M candle body close below \$4,014.50.
-   - **Entry**: Breakdown close / retest at \$4,014.50 | **SL**: \$4,017.50 | **TP**: \$4,005.00 (50% Mid-Eq / Value Area Low).
-
 ---
 
-### Situation 2: Strong Trend / Discovery Expansion
-When the market breaks out of a multi-hour consolidation and expands in an impulsive trend:
-1. **The Pullback-to-Structure Reload (NEVER Chase the Expansion)**:
-   - Wait for the breakout impulse box to complete.
-   - Mark the **broken ceiling** of the previous accumulation box.
-   - Enter on the **first re-test of that broken ceiling turned support**, targeting the +1.5 standard deviation Fibonacci extension.
-2. **The In-Trend Compression Coil Entry**:
-   - If price pauses and forms a tight 5-to-10 bar coil (like Box 4), enter on the **initial compression breakout bar**, NOT after a 20-point run.
+## 6. LEFT SIDEBAR DISCRETE FEATURE TOGGLE DOCK
 
----
+To ensure the candle tape remains clean and unburdened, all features are independently controllable via the left sidebar bottom dock:
 
-### Situation 3: Deep Capitulation Flush & Panic Sweep (The Spring)
-When the market flushes aggressively through major psychological round numbers (like \$4,000):
-1. **The Terminal Sweep Reclaim**:
-   - Box 1 captures the entire flush down to the terminal low (e.g., \$3,988.71).
-   - Watch for climactic volume (Phase 1 printed 40K contracts) with an immediate rejection wick.
-   - **The Sure-Shot Trigger**: The instant a 5M candle closes **back above the swept benchmark (\$4,000.00)**, enter Long.
-   - **SL**: 1.5–2 points below the sweep low (\$3,987.00).
-   - **TP**: Origin of the breakdown (\$4,020.00+).
-   - **Edge**: 1:10+ asymmetric payoff because trapped late shorts are forced to cover simultaneously.
-
----
-
-## 6. THE DUAL-LAYER RULE: CANVAS VS DEEP DOSSIER
-
-To keep the TradingView chart canvas razor-sharp, institutional, and legible while preserving full analytical depth:
-
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│                        LAYER 1: LIVE CHART CANVAS                      │
-│  • Chronological Auction Wave Boxes (Clean non-overlapping boundaries) │
-│  • Visual In-Box Vectors: Red ✕ Start Anchor, Cyan Trend Ray, +pts     │
-│  • High-Probability Causal Paths (Path A Fade, Path B Reload, Path C) │
-│  • Tactical Scenario Cards (HUD float cards at the live edge)          │
-│  • Optional Inflection Lines (Ceiling, 50% Eq, VWAP, POC Anchor, Floor)│
-└────────────────────────────────────────────────────────────────────────┘
-                                    │
-                                    ▼
-┌────────────────────────────────────────────────────────────────────────┐
-│                   LAYER 2: DEEP TEXT ANALYSIS DOSSIER                  │
-│  • Latest Live Macro News (Yields, DXY, Central Bank Wires, Geopolitics)│
-│  • Box-by-Box Forensic Perspectives:                                   │
-│      - Highest Volume Node (POC) for EACH individual box               │
-│      - Value Area High (VAH) & Value Area Low (VAL) for EACH box       │
-│      - Effort-vs-Result (EVR) & Friction Classifications               │
-│  • Combined Multi-Box Composite Volume Profile (Network POC & VWAP)    │
-│  • Cumulative Volume Delta (CVD) & Trapped Inventory Deconstruction    │
-│  • Living Tape Reaction & Invalidation Tripwires                       │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-> **Mandate**: Deep structural lines (individual POCs, VAH/VAL shelves, horizontal price grids) do **NOT** clutter the canvas with messy lines. They are computed mathematically, stored in JSON, and presented in the text report. The chart canvas remains clean, showing only the active structural wave boxes and the high-probability causal paths.
-
----
-
-## 7. THE 5 STRUCTURAL INFLECTION LINES (`SHOW LINES ON CHART`)
-
-The system features an on-demand structural overlay toggled via the interactive modal or Card 3 (`tvToggleInflectionLinesBtn`):
-
-| Line Name | Visual Style | Color | Sovereign Calculation |
+| Button ID | Emblem / Icon | Color Theme | Feature Controlled |
 | :--- | :--- | :--- | :--- |
-| **🧱 CEILING** | Dashed (2px) | `#ef4444` Crimson Red | $\max(\text{High}_1, \dots, \text{High}_N)$ across all drawn boxes. The terminal liquidity barrier. |
-| **⚖️ 50% EQ** | Dashed (2px) | `#fbbf24` Warm Yellow | $\frac{\text{Ceiling} + \text{Floor}}{2}$. Fair-value equilibrium dividing premium from discount. |
-| **🌊 NET VWAP** | Dashed (2px) | `#3b82f6` Royal Blue | $\frac{\sum (\text{Typical Price} \times \text{Volume})}{\sum \text{Volume}}$ across all bars inside active boxes. |
-| **🎯 ANCHOR** | Solid (2px) | `#00e5ff` Electric Cyan | The single price coordinate with the highest total volume turnover (Network POC). |
-| **🛡️ FLOOR** | Dashed (2px) | `#10b981` Emerald Green | $\min(\text{Low}_1, \dots, \text{Low}_N)$ across all drawn boxes. The base absorption support. |
+| `#tvSidebarPathsToggleBtn` | Fork Vector (⚡) | Electric Violet (`#d946ef`) | Causal Trade Path Vectors & Trigger Rays (Paths A, B, C) |
+| `#tvSidebarCardsToggleBtn` | HUD Card Panel (🗂️) | Sky Blue (`#38bdf8`) | Strategy HUD Comment Boxes (Cards A, B, C) |
+| `#tvSidebarFvgBtn` | Crosshair / Target (🎯) | Cyan (`#00e5ff`) | 50% FVG CE Imbalance Filament ($4,015.25) |
+| `#tvSidebarBenchmarksBtn` | Dual Level Track (📏) | Purple & Emerald | Canonical Benchmarks (PDH $4,034 / PDL $3,975) |
+| `#tvSidebarGammaBtn` | Glowing Diamond (◆) | Solar Amber (`#fbbf24`) | $25 Institutional Options Gamma Strike Pins |
+| `#tvSidebarEvaluateBtn` | Gold Sovereign Shield | Gold Amber Gradient | Trigger AI Sovereign Structural Evaluation |
+| `#tvSidebarHudPill` | Lightning Bolt Pill | Charcoal Pill | Line Trading Touch-Trigger Execution HUD |
+
+> **State Persistence**: Every button persists its toggle state in `localStorage` (`tv_sovereign_paths_visible`, `tv_cards_visible`, `tv_fvg_visible`, `tv_benchmarks_visible`, `tv_gamma_visible`).
+
+---
+
+## 7. VIEWPORT BOTTOM-EDGE DEFENSE & MINIMAL CARD SCHEMA
+
+### A. Viewport Bottom-Edge Defense (Zero Overflow Guarantee)
+- Lower strategy cards (`#hudCardPathB` and `#hudCardPathC`) are positioned using `bottom: 28px; top: auto;`.
+- Regardless of display aspect ratio, screen height, or zoom level, the bottom border of the cards **NEVER** clips or extends below the visible chart canvas.
+- Leader lines connect dynamically to the calculated card top coordinate (`height - cardHeight - 28px + 20px`).
+
+### B. Minimal Intelligent Strategy Box Schema
+Cards avoid verbose fluff and display pure, high-density actionable telemetry in 3 crisp lines:
+
+```
+┌────────────────────────────────────────────────────────┐
+│ PATH B: POC / FVG RELOAD (ZERO-LOSS LONG)  [TP1: $4,023.50] │
+├────────────────────────────────────────────────────────┤
+│ Entry: $4,018.00 POC / $4,015.25 FVG CE (Dry Vol)      │
+│ SL: $4,013.75 (1.5 pt) | TP1: $4,023.50 (50% + BE Lock)│
+│ TP2: $4,026.50 (Coil Top Runner)                       │
+├────────────────────────────────────────────────────────┤
+│ ENTRY: $4,018.00 | SL: $4,013.75   1:7+ RR ASYMMETRY 🛡️ │
+└────────────────────────────────────────────────────────┘
+```
+
+- **Line 1 (Entry)**: Exact entry coordinate and volume confirmation condition.
+- **Line 2 (Risk & Bank)**: Strict Stop Loss with point risk, plus TP1 de-risking milestone (Bank 50% + Lock BE).
+- **Line 3 (Runner)**: TP2 terminal objective.
+- **Zero Chart Text**: No `<text>` tags or duplicate shapes on the candles; all labels remain strictly inside HUD cards.
+
+---
+
+## 8. STANDING ORDERS FOR FUTURE EVALUATIONS & MARKINGS
+
+Whenever the user prompts to **"evaluate"** or **"mark setups"**, the agent must strictly execute through this automated 5-step sequence:
+
+```
+[STEP 1: MT5 PRICE & REGIME AUDIT]  Inspect current spot price, active session, and market structure.
+                  │
+                  ▼
+[STEP 2: CHRONOLOGICAL WAVE BOUNDING] Identify all distinct market phases ($N \ge 2$).
+                  │                   Compute in-box vectors, EVR (v/pt), and $\Delta\text{EVR}$ sequence shift.
+                  ▼
+[STEP 3: 4 REALITY BUFFS CALIBRATION] Pinpoint 50% FVG CE, PDH/PDL benchmarks, and nearest $25 Gamma pins.
+                  │
+                  ▼
+[STEP 4: TWO-TIER ZERO-LOSS PROPOSAL] Format exactly 3 setups:
+                  │                   • Path A: High-probability ceiling sweep fade or trend reload.
+                  │                   • Path B: Value Area POC / FVG reload with 1:5+ RR.
+                  │                   • Path C: Structural breakdown or cancellation tripwire.
+                  ▼
+[STEP 5: JSON DISPATCH & CARD SYNC]   Update data/drawings.json using the Minimal Intelligent Card Schema,
+                                      with target_box and supporting_box intact, and sync to live chart.
+```
 
 ---
 

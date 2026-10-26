@@ -123,6 +123,12 @@
         "target_start_time": 1793044800000,
         "target_end_time": 1793048400000,
         "target_label": "TP1: $4,018.12 (BANK 50% + LOCK BE)",
+        "target_box": {
+          "start_time": 1793044800000,
+          "end_time": 1793048400000,
+          "top": 4020.0,
+          "bottom": 4018.12
+        },
         "vector": {
           "from_time": 1793044800000,
           "from_price": 4026.0,
@@ -132,9 +138,9 @@
         "card": {
           "title": "PATH A: CEILING SWEEP FADE (ZERO-LOSS SHORT)",
           "badge": "TP1: $4,018.12 | BE LOCK",
-          "body": "<strong>Sniper Entry:</strong> Enter Short on 5M close <strong>below $4,026.00</strong> after sweep of $4,026.75.<br>\u2022 <strong>SL:</strong> $4,028.50 (2.5 pt risk)<br>\u2022 <strong>TP1:</strong> $4,018.12 (Close 50% lot size & lock SL to Entry +0.50 pt)<br>\u2022 <strong>TP2:</strong> $4,012.80 (Net VWAP runner). <em>100% de-risked trade.</em>",
+          "body": "<strong>Trigger:</strong> Sweep $4,026.75 ➔ M5 Close &lt; $4,026.00<br><strong>SL:</strong> $4,028.50 (2.5 pt) | <strong>TP1:</strong> $4,018.12 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,012.80 (Net VWAP Runner)",
           "footer_left": "ENTRY: $4,026.00 | SL: $4,028.50",
-          "footer_right": "0-LOSS PROTOCOL \ud83d\udee1\ufe0f",
+          "footer_right": "0-LOSS PROTOCOL 🛡️",
           "position": "top-right"
         }
       },
@@ -150,6 +156,12 @@
         "floor_start_time": 1793043600000,
         "floor_end_time": 1793048400000,
         "floor_label": "ENTRY: $4,018.00 (POC) / $4,015.25 (FVG CE)",
+        "supporting_box": {
+          "start_time": 1793043600000,
+          "end_time": 1793048400000,
+          "top": 4018.0,
+          "bottom": 4015.25
+        },
         "vector": {
           "from_time": 1793044800000,
           "from_price": 4018.12,
@@ -157,11 +169,11 @@
           "to_price": 4026.5
         },
         "card": {
-          "title": "PATH B: POC / FVG VALUE RELOAD (ZERO-LOSS LONG)",
+          "title": "PATH B: POC / FVG RELOAD (ZERO-LOSS LONG)",
           "badge": "TP1: $4,023.50 | BE LOCK",
-          "body": "<strong>Sniper Entry:</strong> Enter Long at <strong>$4,018.00 POC Shelf</strong> or <strong>$4,015.25 (50% FVG CE)</strong> on drying volume.<br>\u2022 <strong>SL:</strong> $4,013.75 (1.5 pt risk below FVG CE)<br>\u2022 <strong>TP1:</strong> $4,023.50 (Close 50% lot size & lock SL to Entry +0.50 pt)<br>\u2022 <strong>TP2:</strong> $4,026.50 (Ceiling runner). <em>100% de-risked trade.</em>",
+          "body": "<strong>Entry:</strong> $4,018.00 POC / $4,015.25 FVG CE (Dry Vol)<br><strong>SL:</strong> $4,013.75 (1.5 pt) | <strong>TP1:</strong> $4,023.50 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,026.50 (Coil Top Runner)",
           "footer_left": "ENTRY: $4,018.00 | SL: $4,013.75",
-          "footer_right": "1:7+ RR ASYMMETRY \ud83d\udee1\ufe0f",
+          "footer_right": "1:7+ RR ASYMMETRY 🛡️",
           "position": "bottom-left"
         }
       },
@@ -181,6 +193,12 @@
         "target_start_time": 1793044800000,
         "target_end_time": 1793048400000,
         "target_label": "TP1: $4,008.00 | BE LOCK",
+        "target_box": {
+          "start_time": 1793044800000,
+          "end_time": 1793048400000,
+          "top": 4008.0,
+          "bottom": 4004.5
+        },
         "vector": {
           "from_time": 1793044800000,
           "from_price": 4014.25,
@@ -188,11 +206,11 @@
           "to_price": 4005.0
         },
         "card": {
-          "title": "PATH C: COIL BASE BREAKDOWN (ZERO-LOSS SHORT)",
+          "title": "PATH C: COIL BREAKDOWN (ZERO-LOSS SHORT)",
           "badge": "TP1: $4,008.00 | BE LOCK",
-          "body": "<strong>Sniper Entry:</strong> Enter Short on decisive 5M close <strong>below $4,014.50</strong>.<br>\u2022 <strong>SL:</strong> $4,016.50 (2.25 pt risk back inside coil)<br>\u2022 <strong>TP1:</strong> $4,008.00 (Close 50% lot size & lock SL to Entry +0.50 pt)<br>\u2022 <strong>TP2:</strong> $4,004.50 (50% Mid-Eq runner). <em>100% de-risked trade.</em>",
+          "body": "<strong>Tripwire:</strong> M5 Close &lt; $4,014.50 (Coil Floor Break)<br><strong>SL:</strong> $4,016.50 (2.0 pt) | <strong>TP1:</strong> $4,008.00 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,004.50 (Mid-Eq Runner)",
           "footer_left": "ENTRY: $4,014.25 | SL: $4,016.50",
-          "footer_right": "FULL CANCELLATION \ud83d\udee1\ufe0f",
+          "footer_right": "FULL CANCELLATION 🛡️",
           "position": "bottom-right"
         }
       }
