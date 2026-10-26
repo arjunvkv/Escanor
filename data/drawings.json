@@ -1,129 +1,5 @@
 {
-  "XAUUSD": [
-    {
-      "id": "sov_box_compression_gate",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793025900000,
-          "value": 4025.5
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4025.5
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4022.0
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4022.0
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4023.75
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4023.75
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(245, 158, 11, 0.12)",
-          "borderColor": "rgba(245, 158, 11, 0.85)",
-          "borderSize": 1.5
-        }
-      },
-      "zLevel": 29,
-      "extendData": {
-        "label": "Breakout Gate ($4,022.00 - $4,025.50)"
-      }
-    },
-    {
-      "id": "sov_box_ascending_base",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793025900000,
-          "value": 4017.5
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4017.5
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4014.5
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4014.5
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4016.0
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4016.0
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(0, 229, 255, 0.12)",
-          "borderColor": "rgba(0, 229, 255, 0.85)",
-          "borderSize": 1.5
-        }
-      },
-      "zLevel": 48,
-      "extendData": {
-        "label": "Demand Shelf Base ($4,014.50 - $4,017.50)"
-      }
-    },
-    {
-      "id": "sov_box_dual_supply_pool",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793025900000,
-          "value": 4040.0
-        },
-        {
-          "timestamp": 1793032800000,
-          "value": 4040.0
-        },
-        {
-          "timestamp": 1793032800000,
-          "value": 4034.0
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4034.0
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4037.0
-        },
-        {
-          "timestamp": 1793032800000,
-          "value": 4037.0
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(168, 85, 247, 0.12)",
-          "borderColor": "rgba(168, 85, 247, 0.85)",
-          "borderSize": 1.5
-        }
-      },
-      "zLevel": 100,
-      "extendData": {
-        "label": "Overhead Supply Imbalance Target ($4,034.00 - $4,040.00)"
-      }
-    }
-  ],
+  "XAUUSD": [],
   "XAUUSD_EVALUATION": {
     "enabled": true,
     "last_updated": "2026-10-26 13:11:18 UTC",
@@ -137,20 +13,12 @@
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
-        "border": "#e879f9",
+        "border": "rgba(232, 121, 249, 0.45)",
         "supporting_type": "breakout_shelf_and_target",
         "trigger_level": 4025.5,
         "trigger_start_time": 1793025900000,
         "trigger_end_time": 1793032800000,
         "trigger_label": "TRIGGER: 5M C > $4,025.50",
-        "target_box": {
-          "id": "sov_box_dual_supply_pool",
-          "top": 4040.0,
-          "bottom": 4034.0,
-          "start_time": 1793025900000,
-          "end_time": 1793032800000,
-          "label": "TARGET: $4,034 - $4,040.00"
-        },
         "vector": {
           "from_time": 1793031000000,
           "from_price": 4013.35,
@@ -164,7 +32,11 @@
           "footer_left": "TRIGGER: 5M C > $4,025.50",
           "footer_right": "+14.5 PT RUNWAY",
           "position": "top-right"
-        }
+        },
+        "target_level": 4038.0,
+        "target_start_time": 1793025900000,
+        "target_end_time": 1793032800000,
+        "target_label": "TARGET: ,038.00"
       },
       {
         "id": "path_b",
@@ -173,7 +45,7 @@
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
-        "border": "#fbbf24",
+        "border": "rgba(251, 191, 36, 0.45)",
         "supporting_type": "floor_box",
         "supporting_box": {
           "id": "sov_box_ascending_base",
@@ -205,7 +77,7 @@
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
-        "border": "#fb7185",
+        "border": "rgba(251, 113, 133, 0.45)",
         "supporting_type": "tripwire_shelf_and_target",
         "tripwire_level": 4012.0,
         "tripwire_start_time": 1793025900000,
@@ -231,7 +103,11 @@
           "footer_left": "TRIPWIRE: 5M C < $4,012.00",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
-        }
+        },
+        "target_level": 4001.0,
+        "target_start_time": 1793031000000,
+        "target_end_time": 1793032800000,
+        "target_label": "DOWN: ,001.00"
       }
     ]
   }

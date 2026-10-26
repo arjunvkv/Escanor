@@ -288,11 +288,11 @@ export function applyBoxBorderOverrides(isActive) {
   try {
     const paths = currentEvalData?.paths || [];
     
-    // Default box IDs to handle
+    // Default box IDs to handle with thin (1px), light, elegant borders
     const boxOverrides = [
-      { id: 'sov_box_dual_supply_pool', activeColor: '#e879f9', defaultColor: 'rgba(168, 85, 247, 0.85)' },
-      { id: 'sov_box_ascending_base', activeColor: '#fbbf24', defaultColor: 'rgba(0, 229, 255, 0.85)' },
-      { id: 'sov_box_compression_gate', activeColor: '#f0abfc', defaultColor: 'rgba(245, 158, 11, 0.85)' }
+      { id: 'sov_box_ascending_base', activeColor: 'rgba(251, 191, 36, 0.50)', defaultColor: 'rgba(0, 229, 255, 0.40)' },
+      { id: 'sov_box_compression_gate', activeColor: 'rgba(240, 171, 252, 0.50)', defaultColor: 'rgba(245, 158, 11, 0.40)' },
+      { id: 'sov_box_dual_supply_pool', activeColor: 'rgba(232, 121, 249, 0.45)', defaultColor: 'rgba(168, 85, 247, 0.40)' }
     ];
 
     // If paths specify explicit box IDs and colors, dynamically add them
@@ -301,8 +301,8 @@ export function applyBoxBorderOverrides(isActive) {
       if (bId && !boxOverrides.some(o => o.id === bId)) {
         boxOverrides.push({
           id: bId,
-          activeColor: p.border || p.color || '#e879f9',
-          defaultColor: 'rgba(245, 158, 11, 0.85)'
+          activeColor: p.border || p.color || 'rgba(232, 121, 249, 0.50)',
+          defaultColor: 'rgba(245, 158, 11, 0.40)'
         });
       }
     });
@@ -314,7 +314,7 @@ export function applyBoxBorderOverrides(isActive) {
           styles: {
             rect: {
               borderColor: isActive ? item.activeColor : item.defaultColor,
-              borderSize: isActive ? 2 : 1.5
+              borderSize: 1.0
             }
           }
         });
@@ -346,8 +346,8 @@ export function applyBoxBorderOverrides(isActive) {
                 id: r.id,
                 styles: {
                   rect: {
-                    borderColor: isActive ? (p.border || p.color || '#e879f9') : '#ec407a',
-                    borderSize: isActive ? 2 : 1.5
+                    borderColor: isActive ? (p.border || p.color || 'rgba(232, 121, 249, 0.50)') : 'rgba(236, 64, 122, 0.40)',
+                    borderSize: 1.0
                   }
                 }
               });
@@ -476,6 +476,13 @@ export function renderSovereignPaths() {
       ? pointToPixel(chartInstance, pathAData.trigger_end_time, pathAData.trigger_level)
       : null;
 
+    const targetStart = (pathAData.target_level && pathAData.target_start_time)
+      ? pointToPixel(chartInstance, pathAData.target_start_time, pathAData.target_level)
+      : null;
+    const targetEnd = (pathAData.target_level && pathAData.target_end_time)
+      ? pointToPixel(chartInstance, pathAData.target_end_time, pathAData.target_level)
+      : null;
+
     const boxTopLeft = (pathAData.target_box?.start_time && pathAData.target_box?.top)
       ? pointToPixel(chartInstance, pathAData.target_box.start_time, pathAData.target_box.top)
       : null;
@@ -501,16 +508,23 @@ export function renderSovereignPaths() {
       Math.max(trigStart.x, trigEnd.x),
       width
     );
+
+    const isTargetVisible = targetStart && targetEnd && isHorizontallyInViewport(
+      Math.min(targetStart.x, targetEnd.x),
+      Math.max(targetStart.x, targetEnd.x),
+      width
+    );
+
     const isVecVisible = isVectorInViewport(vecFrom, vecTo, width, height);
 
-    if (!isBoxVisible && !isTrigVisible && !isVecVisible) {
+    if (!isBoxVisible && !isTrigVisible && !isTargetVisible && !isVecVisible) {
       groupA.innerHTML = '';
       cardA.style.display = 'none';
     } else {
-      const minX = boxTopLeft && boxBottomRight ? Math.min(boxTopLeft.x, boxBottomRight.x) : (trigStart ? trigStart.x : 0);
-      const maxX = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.x, boxBottomRight.x) : (trigEnd ? trigEnd.x : 100);
-      const minY = boxTopLeft && boxBottomRight ? Math.min(boxTopLeft.y, boxBottomRight.y) : (trigStart ? trigStart.y - 15 : 0);
-      const maxY = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.y, boxBottomRight.y) : (trigStart ? trigStart.y + 15 : 30);
+      const minX = boxTopLeft && boxBottomRight ? Math.min(boxTopLeft.x, boxBottomRight.x) : (targetStart ? targetStart.x : (trigStart ? trigStart.x : 0));
+      const maxX = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.x, boxBottomRight.x) : (targetEnd ? targetEnd.x : (trigEnd ? trigEnd.x : 100));
+      const minY = boxTopLeft && boxBottomRight ? Math.min(boxTopLeft.y, boxBottomRight.y) : (targetStart ? targetStart.y : (trigStart ? trigStart.y - 15 : 0));
+      const maxY = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.y, boxBottomRight.y) : (targetEnd ? targetEnd.y : (trigStart ? trigStart.y + 15 : 30));
       const boxH = Math.max(12, maxY - minY);
 
       // Card A placement in top-right airspace (Clearing top ribbon and right price-axis)
@@ -518,9 +532,9 @@ export function renderSovereignPaths() {
       const cardATop = topRibbonMargin;
       const cardALeft = width - cardAW - rightAxisMargin;
 
-      // Leader line connection from Target Box (right edge) to Card A
-      const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, maxX));
-      const rawStartY = boxTopLeft ? (minY + boxH * 0.5) : (trigEnd ? trigEnd.y : 50);
+      // Leader line connection from Target Line / Target Box to Card A
+      const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, targetEnd ? targetEnd.x : maxX));
+      const rawStartY = targetEnd ? targetEnd.y : (boxTopLeft ? (minY + boxH * 0.5) : (trigEnd ? trigEnd.y : 50));
       const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardALeft;
       const leaderEndY = cardATop + 20;
@@ -530,21 +544,28 @@ export function renderSovereignPaths() {
       // 1. Trigger Level Line (Clean line marking, zero text clutter on chart)
       if (trigStart && trigEnd) {
         svgMarkup += `
-          <line x1="${trigStart.x}" y1="${trigStart.y}" x2="${trigEnd.x}" y2="${trigEnd.y}" stroke="#f0abfc" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.65" />
+          <line x1="${trigStart.x}" y1="${trigStart.y}" x2="${trigEnd.x}" y2="${trigEnd.y}" stroke="rgba(240, 171, 252, 0.70)" stroke-width="1.2" stroke-dasharray="4 3" />
         `;
       }
 
-      // 2. Squeeze Vector Arrow (Light & subtle)
+      // 2. Target Level Line (Clean line marking instead of empty-space box)
+      if (targetStart && targetEnd) {
+        svgMarkup += `
+          <line x1="${targetStart.x}" y1="${targetStart.y}" x2="${targetEnd.x}" y2="${targetEnd.y}" stroke="rgba(232, 121, 249, 0.75)" stroke-width="1.2" stroke-dasharray="4 3" />
+        `;
+      }
+
+      // 3. Squeeze Vector Arrow (Light & subtle)
       if (vecFrom && vecTo) {
         svgMarkup += `
-          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + (vecTo.x - vecFrom.x) * 0.5} ${vecFrom.y - 4}, ${vecTo.x - 20} ${vecTo.y + 8}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#f0abfc" stroke-width="1.6" opacity="0.65" marker-end="url(#arrowViolet)" />
+          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + (vecTo.x - vecFrom.x) * 0.5} ${vecFrom.y - 4}, ${vecTo.x - 20} ${vecTo.y + 8}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="rgba(240, 171, 252, 0.65)" stroke-width="1.5" marker-end="url(#arrowViolet)" />
         `;
       }
 
-      // 3. Dotted Leader Line connecting Box 3 / Target to Card A (Light & delicate)
-      if (isBoxVisible || isTrigVisible) {
+      // 4. Dotted Leader Line connecting Target Line / Box to Card A (Light & delicate)
+      if (isBoxVisible || isTrigVisible || isTargetVisible) {
         svgMarkup += `
-          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#e879f9" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="rgba(232, 121, 249, 0.40)" stroke-width="1.0" stroke-dasharray="3 3" />
           <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#f0abfc" opacity="0.6" />
           <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#e879f9" opacity="0.6" />
         `;
@@ -571,9 +592,9 @@ export function renderSovereignPaths() {
         <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
           ${c.body || 'A clean 5m close triggers an impulsive short-squeeze out of the coil.'}
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid rgba(217,70,239,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="hud-pill-violet">${c.footer_left || 'TRIGGER: 5M C > $4,032.50'}</span>
-          <span style="color: #34d399; font-weight: 800;">${c.footer_right || '+19.5 PT RUNWAY'}</span>
+        <div style="margin-top: 8px; border-top: 1px solid rgba(217,70,239,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 6px; gap: 8px;">
+          <span class="hud-pill-violet" style="white-space: nowrap;">${c.footer_left || 'TRIGGER: 5M C > $4,032.50'}</span>
+          <span style="color: #34d399; font-weight: 800; white-space: nowrap;">${c.footer_right || '+19.5 PT RUNWAY'}</span>
         </div>
       `;
     }
@@ -615,7 +636,7 @@ export function renderSovereignPaths() {
       const boxH = Math.max(12, maxY - minY);
 
       // Card B placement in bottom-left airspace (Clearing left sidebar)
-      const cardBW = Math.min(300, Math.max(250, width * 0.27));
+      const cardBW = Math.min(320, Math.max(270, width * 0.28));
       const cardBTop = Math.max(110, height - 185);
       const cardBLeft = leftSidebarMargin;
 
@@ -665,9 +686,9 @@ export function renderSovereignPaths() {
         <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
           ${c.body || 'Rejection rotates price back down to test coil absorption floor.'}
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="hud-pill-amber">${c.footer_left || 'SUPPORT: $4,021.50 – $4,024.50'}</span>
-          <span style="color: #f59e0b; font-weight: 800;">${c.footer_right || 'LPS COIL RE-TEST'}</span>
+        <div style="margin-top: 8px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 6px; gap: 8px;">
+          <span class="hud-pill-amber" style="white-space: nowrap;">${c.footer_left || 'SUPPORT: $4,021.50 – $4,024.50'}</span>
+          <span style="color: #f59e0b; font-weight: 800; white-space: nowrap;">${c.footer_right || 'LPS COIL RE-TEST'}</span>
         </div>
       `;
     }
@@ -682,6 +703,13 @@ export function renderSovereignPaths() {
       : null;
     const tripEnd = (pathCData.tripwire_end_time && pathCData.tripwire_level)
       ? pointToPixel(chartInstance, pathCData.tripwire_end_time, pathCData.tripwire_level)
+      : null;
+
+    const targetStart = (pathCData.target_level && pathCData.target_start_time)
+      ? pointToPixel(chartInstance, pathCData.target_start_time, pathCData.target_level)
+      : null;
+    const targetEnd = (pathCData.target_level && pathCData.target_end_time)
+      ? pointToPixel(chartInstance, pathCData.target_end_time, pathCData.target_level)
       : null;
 
     const downTopLeft = (pathCData.target_box?.start_time && pathCData.target_box?.top)
@@ -703,6 +731,11 @@ export function renderSovereignPaths() {
       Math.max(tripStart.x, tripEnd.x),
       width
     );
+    const isTargetVisible = targetStart && targetEnd && isHorizontallyInViewport(
+      Math.min(targetStart.x, targetEnd.x),
+      Math.max(targetStart.x, targetEnd.x),
+      width
+    );
     const isDownVisible = downTopLeft && downBottomRight && isHorizontallyInViewport(
       Math.min(downTopLeft.x, downBottomRight.x),
       Math.max(downTopLeft.x, downBottomRight.x),
@@ -710,14 +743,14 @@ export function renderSovereignPaths() {
     );
     const isVecVisible = isVectorInViewport(vecFrom, vecTo, width, height);
 
-    if (!isTripVisible && !isDownVisible && !isVecVisible) {
+    if (!isTripVisible && !isTargetVisible && !isDownVisible && !isVecVisible) {
       groupC.innerHTML = '';
       cardC.style.display = 'none';
     } else {
-      const minX = downTopLeft && downBottomRight ? Math.min(downTopLeft.x, downBottomRight.x) : (tripStart ? tripStart.x : 0);
-      const maxX = downTopLeft && downBottomRight ? Math.max(downTopLeft.x, downBottomRight.x) : (tripEnd ? tripEnd.x : 100);
-      const minY = downTopLeft && downBottomRight ? Math.min(downTopLeft.y, downBottomRight.y) : (tripStart ? tripStart.y + 10 : 0);
-      const maxY = downTopLeft && downBottomRight ? Math.max(downTopLeft.y, downBottomRight.y) : (tripStart ? tripStart.y + 25 : 30);
+      const minX = downTopLeft && downBottomRight ? Math.min(downTopLeft.x, downBottomRight.x) : (targetStart ? targetStart.x : (tripStart ? tripStart.x : 0));
+      const maxX = downTopLeft && downBottomRight ? Math.max(downTopLeft.x, downBottomRight.x) : (targetEnd ? targetEnd.x : (tripEnd ? tripEnd.x : 100));
+      const minY = downTopLeft && downBottomRight ? Math.min(downTopLeft.y, downBottomRight.y) : (targetStart ? targetStart.y : (tripStart ? tripStart.y + 10 : 0));
+      const maxY = downTopLeft && downBottomRight ? Math.max(downTopLeft.y, downBottomRight.y) : (targetEnd ? targetEnd.y : (tripStart ? tripStart.y + 25 : 30));
       const downLineY = (minY + maxY) * 0.5;
 
       // Card C placement in bottom-right airspace (Clearing right price axis)
@@ -725,9 +758,9 @@ export function renderSovereignPaths() {
       const cardCTop = Math.max(110, height - 185);
       const cardCLeft = width - cardCW - rightAxisMargin;
 
-      // Leader line connection from Tripwire Line right coordinate to Card C
-      const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, tripEnd ? tripEnd.x : maxX));
-      const rawStartY = tripEnd ? tripEnd.y : downLineY;
+      // Leader line connection from Target / Tripwire Line right coordinate to Card C
+      const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, targetEnd ? targetEnd.x : (tripEnd ? tripEnd.x : maxX)));
+      const rawStartY = targetEnd ? targetEnd.y : (tripEnd ? tripEnd.y : downLineY);
       const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardCLeft;
       const leaderEndY = cardCTop + 20;
@@ -737,14 +770,18 @@ export function renderSovereignPaths() {
       // 1. Tripwire Level Line (Clean line marking, zero text clutter on chart)
       if (tripStart && tripEnd) {
         svgMarkup += `
-          <line x1="${tripStart.x}" y1="${tripStart.y}" x2="${tripEnd.x}" y2="${tripEnd.y}" stroke="#f43f5e" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.65" />
+          <line x1="${tripStart.x}" y1="${tripStart.y}" x2="${tripEnd.x}" y2="${tripEnd.y}" stroke="#f43f5e" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.65" />
         `;
       }
 
       // 2. Downside Target Level Line (Clean line marking instead of duplicate box)
-      if (downTopLeft && downBottomRight) {
+      if (targetStart && targetEnd) {
         svgMarkup += `
-          <line x1="${minX}" y1="${downLineY}" x2="${maxX}" y2="${downLineY}" stroke="#f43f5e" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.55" />
+          <line x1="${targetStart.x}" y1="${targetStart.y}" x2="${targetEnd.x}" y2="${targetEnd.y}" stroke="#f43f5e" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.60" />
+        `;
+      } else if (downTopLeft && downBottomRight) {
+        svgMarkup += `
+          <line x1="${minX}" y1="${downLineY}" x2="${maxX}" y2="${downLineY}" stroke="#f43f5e" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.55" />
         `;
       }
 
@@ -756,7 +793,7 @@ export function renderSovereignPaths() {
       }
 
       // 4. Connector Line: Tripwire Line -> Bottom-Right HUD Card C (Light & delicate)
-      if (isTripVisible || isDownVisible) {
+      if (isTripVisible || isTargetVisible || isDownVisible) {
         svgMarkup += `
           <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#f43f5e" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
           <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fecdd3" opacity="0.6" />
@@ -785,9 +822,9 @@ export function renderSovereignPaths() {
         <div style="font-size: 11.5px; line-height: 1.5; color: #ffe4e6; font-weight: 500;">
           ${c.body || 'A 5m close below $4,019 invalidates coil, triggering a liquidation slide.'}
         </div>
-        <div style="margin-top: 8px; border-top: 1px solid rgba(244,63,94,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="hud-pill-red">${c.footer_left || 'TRIPWIRE: 5M C < $4,019.00'}</span>
-          <span style="color: #fb7185; font-weight: 800;">${c.footer_right || 'FULL CANCELLATION'}</span>
+        <div style="margin-top: 8px; border-top: 1px solid rgba(244,63,94,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 6px; gap: 8px;">
+          <span class="hud-pill-red" style="white-space: nowrap;">${c.footer_left || 'TRIPWIRE: 5M C < $4,019.00'}</span>
+          <span style="color: #fb7185; font-weight: 800; white-space: nowrap;">${c.footer_right || 'FULL CANCELLATION'}</span>
         </div>
       `;
     }
