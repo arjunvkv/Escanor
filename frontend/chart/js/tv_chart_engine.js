@@ -558,13 +558,18 @@ function registerCustomOverlays() {
       const isThisBoxFillDisabled = Boolean(overlay?.extendData?.disableFill);
       const isFillDisabled = isGlobalFillDisabled || isThisBoxFillDisabled;
 
+      const customRectStyle = overlay?.styles?.rect || overlay?.styles?.polygon || {};
+      const customBorderColor = customRectStyle.borderColor || customRectStyle.color;
+      const customFillColor = customRectStyle.color || customRectStyle.fillColor;
+      const customBorderSize = customRectStyle.borderSize || customRectStyle.size;
+
       const polyStyle = {
         style: isFillDisabled ? 'stroke' : 'stroke_fill',
         color: isFillDisabled
           ? 'transparent'
-          : (isArmed ? (isBoth ? 'rgba(245, 158, 11, 0.16)' : 'rgba(236, 64, 122, 0.14)') : 'rgba(236, 64, 122, 0.12)'),
-        borderColor: isArmed ? (isBoth ? '#f59e0b' : '#ec407a') : '#ec407a',
-        borderSize: isArmed ? 2 : 1.5
+          : (customFillColor || (isArmed ? (isBoth ? 'rgba(245, 158, 11, 0.16)' : 'rgba(236, 64, 122, 0.14)') : 'rgba(236, 64, 122, 0.12)')),
+        borderColor: isArmed ? (isBoth ? '#f59e0b' : '#ec407a') : (customBorderColor || '#ec407a'),
+        borderSize: customBorderSize || (isArmed ? 2 : 1.5)
       };
 
       if (coordinates.length >= 2) {
@@ -599,15 +604,16 @@ function registerCustomOverlays() {
         ];
 
         // Visual In-Box Trend Excursion Vector (Clean Canvas: Red ✕ Anchor & Cyan/Blue Trend Vector)
+        const isSovereignBox = Boolean(overlay?.id?.startsWith('sov_') || overlay?.extendData?.isSovereignBox);
         const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
-        const isThisBoxHidden = Boolean(overlay?.extendData?.hideVolumeOverlay);
+        const isThisBoxHidden = Boolean(overlay?.extendData?.hideVolumeOverlay || isSovereignBox);
 
         if (!isGlobalHidden && !isThisBoxHidden) {
           const dataList = chartInstance?.getDataList?.() || [];
           const m = computeRectangleVolumeMetrics(overlay, dataList);
 
           if (m && m.totalVol > 0) {
-            const isArrowsHidden = Boolean(overlay?.extendData?.hideArrows);
+            const isArrowsHidden = Boolean(overlay?.extendData?.hideArrows || isSovereignBox);
             if (!isArrowsHidden && boxW >= 16 && boxH >= 10) {
               const clampX = (x) => Math.max(minX + 4, Math.min(maxX - 4, x));
               const clampY = (y) => Math.max(minY + 4, Math.min(maxY - 4, y));
