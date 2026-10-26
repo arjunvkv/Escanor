@@ -82,6 +82,7 @@
   "XAUUSD_EVALUATION": {
     "enabled": true,
     "last_updated": "2026-10-26 11:20:00 UTC",
+    "anchor_timestamp": 1792675800000,
     "market_context": "Ascending Triangle Compression at $4,090 - $4,094",
     "paths": [
       {
@@ -94,14 +95,20 @@
         "border": "#e879f9",
         "supporting_type": "breakout_shelf_and_target",
         "trigger_level": 4094.0,
+        "trigger_start_time": 1792668000000,
+        "trigger_end_time": 1792675800000,
         "trigger_label": "TRIGGER: 5M C > $4,094.00",
         "target_box": {
           "top": 4103.5,
           "bottom": 4099.0,
+          "start_time": 1792665000000,
+          "end_time": 1792675800000,
           "label": "TARGET: $4,099 - $4,103.50"
         },
         "vector": {
+          "from_time": 1792672000000,
           "from_price": 4092.5,
+          "to_time": 1792675800000,
           "to_price": 4101.5
         },
         "card": {
@@ -125,10 +132,14 @@
         "supporting_box": {
           "top": 4087.5,
           "bottom": 4083.0,
+          "start_time": 1792671000000,
+          "end_time": 1792675800000,
           "label": "FLOOR: $4,083 - $4,087.50"
         },
         "vector": {
+          "from_time": 1792673100000,
           "from_price": 4092.0,
+          "to_time": 1792675800000,
           "to_price": 4085.0
         },
         "card": {
@@ -150,14 +161,20 @@
         "border": "#fb7185",
         "supporting_type": "tripwire_shelf_and_target",
         "tripwire_level": 4082.5,
+        "tripwire_start_time": 1792670000000,
+        "tripwire_end_time": 1792675800000,
         "tripwire_label": "TRIPWIRE: 5M C < $4,082.50",
         "target_box": {
           "top": 4070.0,
           "bottom": 4066.5,
+          "start_time": 1792673100000,
+          "end_time": 1792675800000,
           "label": "DOWN: $4,066.50 - $4,070"
         },
         "vector": {
+          "from_time": 1792674000000,
           "from_price": 4082.5,
+          "to_time": 1792675800000,
           "to_price": 4068.5
         },
         "card": {
