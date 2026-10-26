@@ -1186,6 +1186,13 @@ async def get_chart_ui():
     return FileResponse(str(chart_index))
 
 
+@app.get("/scratchpad")
+async def get_scratchpad_ui():
+    """Serve the Sovereign Causal Paths & Cyberpunk HUD Scratchpad."""
+    scratchpad_path = BASE_DIR / "frontend" / "chart" / "scratchpad.html"
+    return FileResponse(str(scratchpad_path))
+
+
 @app.get("/")
 async def root_redirect(request: Request):
     """Smart router: Mobile user-agents go to /mobile, desktops go to /chart."""
