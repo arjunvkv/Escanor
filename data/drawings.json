@@ -1,129 +1,174 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1793017958068_1",
+      "id": "sov_box_compression_gate",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792691700000,
-          "value": 4064.6707142857144,
-          "dataIndex": 1476
+          "timestamp": 1792767000000,
+          "value": 4032.5
         },
         {
-          "timestamp": 1792699500000,
-          "value": 4064.6707142857144,
-          "dataIndex": 1502
+          "timestamp": 1792771200000,
+          "value": 4032.5
         },
         {
-          "timestamp": 1792699500000,
-          "value": 4033.611857142857,
-          "dataIndex": 1502
+          "timestamp": 1792771200000,
+          "value": 4028.5
         },
         {
-          "timestamp": 1792691700000,
-          "value": 4033.611857142857,
-          "dataIndex": 1476
+          "timestamp": 1792767000000,
+          "value": 4028.5
         },
         {
-          "timestamp": 1792691700000,
-          "value": 4049.141285714286,
-          "dataIndex": 1476
+          "timestamp": 1792767000000,
+          "value": 4030.5
         },
         {
-          "timestamp": 1792699500000,
-          "value": 4049.141285714286,
-          "dataIndex": 1502
+          "timestamp": 1792771200000,
+          "value": 4030.5
         }
       ],
-      "styles": null,
-      "zLevel": 10,
-      "extendData": {}
+      "styles": {
+        "rect": {
+          "color": "rgba(245, 158, 11, 0.12)",
+          "borderColor": "rgba(245, 158, 11, 0.85)",
+          "borderSize": 1.5
+        }
+      },
+      "zLevel": 29,
+      "extendData": {
+        "label": "Compression Breakout Gate ($4,028.50 - $4,032.50)"
+      }
     },
     {
-      "id": "overlay_1793017968950_1",
+      "id": "sov_box_ascending_base",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1792701300000,
-          "value": 4049.351142857143,
-          "dataIndex": 1508
+          "timestamp": 1792767000000,
+          "value": 4024.5
         },
         {
-          "timestamp": 1792707300000,
-          "value": 4049.351142857143,
-          "dataIndex": 1528
+          "timestamp": 1792771200000,
+          "value": 4024.5
         },
         {
-          "timestamp": 1792707300000,
-          "value": 4024.378142857143,
-          "dataIndex": 1528
+          "timestamp": 1792771200000,
+          "value": 4021.5
         },
         {
-          "timestamp": 1792701300000,
-          "value": 4024.378142857143,
-          "dataIndex": 1508
+          "timestamp": 1792767000000,
+          "value": 4021.5
         },
         {
-          "timestamp": 1792701300000,
-          "value": 4036.864642857143,
-          "dataIndex": 1508
+          "timestamp": 1792767000000,
+          "value": 4023.0
         },
         {
-          "timestamp": 1792707300000,
-          "value": 4036.864642857143,
-          "dataIndex": 1528
+          "timestamp": 1792771200000,
+          "value": 4023.0
         }
       ],
-      "styles": null,
+      "styles": {
+        "rect": {
+          "color": "rgba(0, 229, 255, 0.12)",
+          "borderColor": "#fbbf24",
+          "borderSize": 2
+        }
+      },
+      "zLevel": 48,
+      "extendData": {
+        "label": "Coil Demand Base ($4,021.50 - $4,024.50)"
+      }
+    },
+    {
+      "id": "sov_box_dual_supply_pool",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792761600000,
+          "value": 4052.0
+        },
+        {
+          "timestamp": 1792771200000,
+          "value": 4052.0
+        },
+        {
+          "timestamp": 1792771200000,
+          "value": 4046.0
+        },
+        {
+          "timestamp": 1792761600000,
+          "value": 4046.0
+        },
+        {
+          "timestamp": 1792761600000,
+          "value": 4049.0
+        },
+        {
+          "timestamp": 1792771200000,
+          "value": 4049.0
+        }
+      ],
+      "styles": {
+        "rect": {
+          "color": "rgba(168, 85, 247, 0.12)",
+          "borderColor": "#e879f9",
+          "borderSize": 2
+        }
+      },
       "zLevel": 100,
-      "extendData": {}
+      "extendData": {
+        "label": "Overhead Imbalance Supply Target ($4,046.00 - $4,052.00)"
+      }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 12:25:00 UTC",
-    "anchor_timestamp": 1792700700000,
-    "market_context": "Capitulation Liquidation to $4,034 & Low-Volume Absorption Bounce at $4,044",
+    "last_updated": "2026-10-26 12:35:00 UTC",
+    "anchor_timestamp": 1792771200000,
+    "market_context": "Post-Spring Consolidation Coil between $4,021 and $4,032",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Relief Short-Squeeze",
+        "name": "Path A: Expansion Squeeze",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "#e879f9",
         "supporting_type": "breakout_shelf_and_target",
-        "trigger_level": 4047.0,
-        "trigger_start_time": 1792698600000,
-        "trigger_end_time": 1792700700000,
-        "trigger_label": "TRIGGER: 5M C > $4,047.00",
+        "trigger_level": 4032.5,
+        "trigger_start_time": 1792768800000,
+        "trigger_end_time": 1792771200000,
+        "trigger_label": "TRIGGER: 5M C > $4,032.50",
         "target_box": {
           "id": "sov_box_dual_supply_pool",
-          "top": 4070.0,
-          "bottom": 4064.0,
-          "start_time": 1792695000000,
-          "end_time": 1792700700000,
-          "label": "TARGET: $4,064 - $4,070.00"
+          "top": 4052.0,
+          "bottom": 4046.0,
+          "start_time": 1792761600000,
+          "end_time": 1792771200000,
+          "label": "TARGET: $4,046 - $4,052.00"
         },
         "vector": {
-          "from_time": 1792700100000,
-          "from_price": 4044.5,
-          "to_time": 1792700700000,
-          "to_price": 4067.5
+          "from_time": 1792770600000,
+          "from_price": 4026.5,
+          "to_time": 1792771200000,
+          "to_price": 4049.0
         },
         "card": {
-          "title": "PATH A: RELIEF SHORT-SQUEEZE",
-          "badge": "TARGET: $4,070.00",
-          "body": "A clean 5m candle close <strong>above $4,047.00</strong> clears local breakdown lid, triggering an impulsive short-covering rally into overhead FVG target at <strong>$4,064 \u2013 $4,070</strong>.",
-          "footer_left": "TRIGGER: 5M C > $4,047.00",
-          "footer_right": "+23.0 PT RUNWAY",
+          "title": "PATH A: EXPANSION SQUEEZE",
+          "badge": "TARGET: $4,052.00",
+          "body": "A decisive 5m candle close <strong>above $4,032.50</strong> triggers an impulsive short-squeeze out of the coil into overhead supply target at <strong>$4,046 \u2013 $4,052</strong>.",
+          "footer_left": "TRIGGER: 5M C > $4,032.50",
+          "footer_right": "+19.5 PT RUNWAY",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: Double-Bottom Base Test",
+        "name": "Path B: Demand Shelf Retest",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
@@ -132,58 +177,58 @@
         "supporting_type": "floor_box",
         "supporting_box": {
           "id": "sov_box_ascending_base",
-          "top": 4038.0,
-          "bottom": 4034.0,
-          "start_time": 1792698000000,
-          "end_time": 1792700700000,
-          "label": "FLOOR: $4,034 - $4,038.00"
+          "top": 4024.5,
+          "bottom": 4021.5,
+          "start_time": 1792767000000,
+          "end_time": 1792771200000,
+          "label": "FLOOR: $4,021.50 - $4,024.50"
         },
         "vector": {
-          "from_time": 1792700400000,
-          "from_price": 4044.5,
-          "to_time": 1792700700000,
-          "to_price": 4036.0
+          "from_time": 1792770900000,
+          "from_price": 4026.1,
+          "to_time": 1792771200000,
+          "to_price": 4022.5
         },
         "card": {
-          "title": "PATH B: DOUBLE-BOTTOM BASE TEST",
-          "badge": "FLOOR: $4,034.00",
-          "body": "Rejection below $4,047 rotates price down to test capitulation absorption shelf in <strong>Floor ($4,034 \u2013 $4,038)</strong>. Double-bottom accumulation remains valid while $4,034 holds.",
-          "footer_left": "SUPPORT: $4,034 \u2013 $4,038.00",
-          "footer_right": "ABSORPTION TEST",
+          "title": "PATH B: DEMAND SHELF RETEST",
+          "badge": "FLOOR: $4,021.50",
+          "body": "Rejection beneath $4,032 rotates price back down to test coil absorption floor at <strong>$4,021.50 \u2013 $4,024.50</strong>. Higher-low structure remains intact above $4,021.",
+          "footer_left": "SUPPORT: $4,021.50 \u2013 $4,024.50",
+          "footer_right": "LPS COIL RE-TEST",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Invalidation Floor Cascade",
+        "name": "Path C: Coil Floor Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "#fb7185",
         "supporting_type": "tripwire_shelf_and_target",
-        "tripwire_level": 4033.5,
-        "tripwire_start_time": 1792698000000,
-        "tripwire_end_time": 1792700700000,
-        "tripwire_label": "TRIPWIRE: 5M C < $4,033.50",
+        "tripwire_level": 4019.0,
+        "tripwire_start_time": 1792767000000,
+        "tripwire_end_time": 1792771200000,
+        "tripwire_label": "TRIPWIRE: 5M C < $4,019.00",
         "target_box": {
-          "top": 4020.0,
-          "bottom": 4015.0,
-          "start_time": 1792699800000,
-          "end_time": 1792700700000,
-          "label": "DOWN: $4,015.00 - $4,020"
+          "top": 4005.0,
+          "bottom": 4000.0,
+          "start_time": 1792768800000,
+          "end_time": 1792771200000,
+          "label": "DOWN: $4,000 - $4,005.00"
         },
         "vector": {
-          "from_time": 1792700400000,
-          "from_price": 4033.5,
-          "to_time": 1792700700000,
-          "to_price": 4018.0
+          "from_time": 1792770900000,
+          "from_price": 4019.0,
+          "to_time": 1792771200000,
+          "to_price": 4003.0
         },
         "card": {
-          "title": "TRIPWIRE: BASE FLOOR LIQUIDATION",
-          "badge": "CANCEL: $4,033.50",
-          "body": "A 5m candle body close <strong>below $4,033.50</strong> shatters the double-bottom absorption floor, unleashing an aggressive cascade straight into <strong>Target ($4,015 \u2013 $4,020)</strong>.",
-          "footer_left": "TRIPWIRE: 5M C < $4,033.50",
+          "title": "TRIPWIRE: COIL FLOOR BREAKDOWN",
+          "badge": "CANCEL: $4,019.00",
+          "body": "A 5m candle body close <strong>below $4,019.00</strong> invalidates the accumulation coil, triggering a liquidation slide back toward <strong>Target ($4,000 \u2013 $4,005)</strong>.",
+          "footer_left": "TRIPWIRE: 5M C < $4,019.00",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
         }
