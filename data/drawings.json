@@ -37,9 +37,9 @@
       ],
       "styles": {
         "rect": {
-          "color": "rgba(251, 191, 36, 0.12)",
-          "borderColor": "rgba(251, 191, 36, 0.85)",
-          "borderSize": 1.2
+          "color": "rgba(251, 191, 36, 0.03)",
+          "borderColor": "rgba(251, 191, 36, 0.45)",
+          "borderSize": 1.0
         }
       },
       "zLevel": 48,
@@ -84,9 +84,9 @@
       ],
       "styles": {
         "rect": {
-          "color": "rgba(240, 171, 252, 0.12)",
-          "borderColor": "rgba(240, 171, 252, 0.85)",
-          "borderSize": 1.2
+          "color": "rgba(240, 171, 252, 0.03)",
+          "borderColor": "rgba(240, 171, 252, 0.45)",
+          "borderSize": 1.0
         }
       },
       "zLevel": 100,
