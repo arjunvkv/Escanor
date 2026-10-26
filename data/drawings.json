@@ -6,27 +6,33 @@
       "points": [
         {
           "timestamp": 1793033100000,
-          "value": 3993.5
+          "value": 3993.5,
+          "dataIndex": 1992
         },
         {
           "timestamp": 1793035200000,
-          "value": 3993.5
+          "value": 3993.5,
+          "dataIndex": 1999
         },
         {
           "timestamp": 1793035200000,
-          "value": 3988.5
+          "value": 3988.5,
+          "dataIndex": 1999
         },
         {
           "timestamp": 1793033100000,
-          "value": 3988.5
+          "value": 3988.5,
+          "dataIndex": 1992
         },
         {
           "timestamp": 1793033100000,
-          "value": 3991.0
+          "value": 3991.0,
+          "dataIndex": 1992
         },
         {
           "timestamp": 1793035200000,
-          "value": 3991.0
+          "value": 3991.0,
+          "dataIndex": 1999
         }
       ],
       "styles": {
@@ -36,38 +42,91 @@
           "borderSize": 1.0
         }
       },
-      "zLevel": 25,
+      "zLevel": 100,
       "extendData": {
         "label": "Absorption Sweep Base ($3,988.50 - $3,993.50)"
       }
     },
     {
-      "id": "sov_box_breakdown_shelf",
+      "id": "sov_box_launchpad_shelf",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793032200000,
-          "value": 4008.5
+          "timestamp": 1793034900000,
+          "value": 4014.0,
+          "dataIndex": 1998
         },
         {
-          "timestamp": 1793035500000,
-          "value": 4008.5
+          "timestamp": 1793036400000,
+          "value": 4014.0,
+          "dataIndex": 2003
         },
         {
-          "timestamp": 1793035500000,
-          "value": 4004.5
+          "timestamp": 1793036400000,
+          "value": 4007.0,
+          "dataIndex": 2003
         },
         {
-          "timestamp": 1793032200000,
-          "value": 4004.5
+          "timestamp": 1793034900000,
+          "value": 4007.0,
+          "dataIndex": 1998
         },
         {
-          "timestamp": 1793032200000,
-          "value": 4006.5
+          "timestamp": 1793034900000,
+          "value": 4010.5,
+          "dataIndex": 1998
         },
         {
-          "timestamp": 1793035500000,
-          "value": 4006.5
+          "timestamp": 1793036400000,
+          "value": 4010.5,
+          "dataIndex": 2003
+        }
+      ],
+      "styles": {
+        "rect": {
+          "color": "rgba(148, 163, 184, 0.03)",
+          "borderColor": "rgba(148, 163, 184, 0.45)",
+          "borderSize": 1.0
+        }
+      },
+      "zLevel": 30,
+      "extendData": {
+        "label": "Breakout Launchpad Shelf ($4,007.00 - $4,014.00)"
+      }
+    },
+    {
+      "id": "sov_box_session_climax",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1793036700000,
+          "value": 4026.75,
+          "dataIndex": 2004
+        },
+        {
+          "timestamp": 1793038200000,
+          "value": 4026.75,
+          "dataIndex": 2009
+        },
+        {
+          "timestamp": 1793038200000,
+          "value": 4020.5,
+          "dataIndex": 2009
+        },
+        {
+          "timestamp": 1793036700000,
+          "value": 4020.5,
+          "dataIndex": 2004
+        },
+        {
+          "timestamp": 1793036700000,
+          "value": 4023.6,
+          "dataIndex": 2004
+        },
+        {
+          "timestamp": 1793038200000,
+          "value": 4023.6,
+          "dataIndex": 2009
         }
       ],
       "styles": {
@@ -77,144 +136,103 @@
           "borderSize": 1.0
         }
       },
-      "zLevel": 30,
+      "zLevel": 20,
       "extendData": {
-        "label": "Broken Shelf Resistance ($4,004.50 - $4,008.50)"
-      }
-    },
-    {
-      "id": "sov_box_ascending_base",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793025900000,
-          "value": 4017.5
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4017.5
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4014.5
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4014.5
-        },
-        {
-          "timestamp": 1793025900000,
-          "value": 4016.0
-        },
-        {
-          "timestamp": 1793031000000,
-          "value": 4016.0
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(148, 163, 184, 0.03)",
-          "borderColor": "rgba(148, 163, 184, 0.40)",
-          "borderSize": 1.0
-        }
-      },
-      "zLevel": 15,
-      "extendData": {
-        "label": "Former Demand Shelf ($4,014.50 - $4,017.50)"
+        "label": "Session Climax Bracket ($4,020.50 - $4,026.75)"
       }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 14:17:44 UTC",
-    "anchor_timestamp": 1793034900000,
-    "market_context": "Price testing Broken Shelf Resistance at $4,005 - $4,008 following $3,988 Liquidity Absorption Sweep",
+    "last_updated": "2026-10-26 15:15:38 UTC",
+    "anchor_timestamp": 1793038200000,
+    "market_context": "Auction consolidating at Session High Climax Bracket ($4,020.50 - $4,026.75) following +38pt impulse from $3,988 Sweep Low",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Shelf Breakout Expansion",
+        "name": "Path A: Buy-Stop Runway Expansion",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "rgba(232, 121, 249, 0.45)",
-        "trigger_level": 4008.5,
-        "trigger_start_time": 1793034000000,
-        "trigger_end_time": 1793038500000,
-        "trigger_label": "TRIGGER: 5M C > $4,008.50",
-        "target_level": 4017.5,
-        "target_start_time": 1793034900000,
-        "target_end_time": 1793038500000,
-        "target_label": "TARGET: $4,017.50",
+        "trigger_level": 4027.0,
+        "trigger_start_time": 1793037000000,
+        "trigger_end_time": 1793041200000,
+        "trigger_label": "TRIGGER: 5M C > $4,027.00",
+        "target_level": 4034.0,
+        "target_start_time": 1793038200000,
+        "target_end_time": 1793041200000,
+        "target_label": "TARGET: $4,034.00",
         "vector": {
-          "from_time": 1793034900000,
-          "from_price": 4005.5,
-          "to_time": 1793038500000,
-          "to_price": 4017.5
+          "from_time": 1793038200000,
+          "from_price": 4023.4,
+          "to_time": 1793041200000,
+          "to_price": 4034.0
         },
         "card": {
-          "title": "PATH A: SHELF BREAKOUT EXPANSION",
-          "badge": "TARGET: $4,017.50",
-          "body": "Decisive 5m close <strong>above $4,008.50</strong> shatters the broken shelf resistance, releasing a fast short-squeeze into the upper accumulation floor at <strong>$4,014.50 \u2013 $4,017.50</strong>.",
-          "footer_left": "TRIGGER: 5M C > $4,008.50",
-          "footer_right": "+9.0 PT RUNWAY",
+          "title": "PATH A: BUY-STOP RUNWAY EXPANSION",
+          "badge": "TARGET: $4,034.00",
+          "body": "A decisive 5m close <strong>above $4,027.00</strong> cleans out resting buy-stop liquidity, releasing an impulsive sprint to test the Previous Day High (PDH) at <strong>$4,034.00</strong>.",
+          "footer_left": "TRIGGER: 5M C > $4,027.00",
+          "footer_right": "+7.0 PT RUNWAY",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: Supply Shelf Rotation",
+        "name": "Path B: Mean-Reversion FVG Retest",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
         "border": "rgba(251, 191, 36, 0.45)",
-        "floor_level": 3991.5,
-        "floor_start_time": 1793034000000,
-        "floor_end_time": 1793038500000,
-        "floor_label": "FLOOR: $3,991.50",
+        "floor_level": 4015.5,
+        "floor_start_time": 1793037000000,
+        "floor_end_time": 1793041200000,
+        "floor_label": "FLOOR: $4,015.50",
         "vector": {
-          "from_time": 1793034900000,
-          "from_price": 4005.5,
-          "to_time": 1793038500000,
-          "to_price": 3991.5
+          "from_time": 1793038200000,
+          "from_price": 4023.4,
+          "to_time": 1793040600000,
+          "to_price": 4015.5
         },
         "card": {
-          "title": "PATH B: SUPPLY SHELF ROTATION",
-          "badge": "FLOOR: $3,991.50",
-          "body": "Rejection inside the $4,006 \u2013 $4,008 supply shelf confirms seller defence, rotating price back down to test buyer absorption at the <strong>$3,988.50 \u2013 $3,993.50</strong> sweep base.",
-          "footer_left": "RESISTANCE: $4,006 \u2013 $4,008",
-          "footer_right": "MEAN REVERSION ROLL",
+          "title": "PATH B: MEAN-REVERSION FVG RETEST",
+          "badge": "FLOOR: $4,015.50",
+          "body": "Exhaustion rejection under the $4,026.75 ceiling triggers profit-taking, rotating price back down to test the virgin M15 Bullish FVG and Launchpad floor at <strong>$4,014.00 \u2013 $4,016.00</strong>.",
+          "footer_left": "RESISTANCE: $4,025 \u2013 $4,027",
+          "footer_right": "FVG 50% CE ROTATION",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Sweep Low Breakdown",
+        "name": "Path C: Climax Floor Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "rgba(251, 113, 133, 0.45)",
-        "tripwire_level": 3988.0,
-        "tripwire_start_time": 1793034000000,
-        "tripwire_end_time": 1793038500000,
-        "tripwire_label": "TRIPWIRE: 5M C < $3,988.00",
-        "target_level": 3980.0,
-        "target_start_time": 1793034900000,
-        "target_end_time": 1793038500000,
-        "target_label": "DOWN: $3,980.00",
+        "tripwire_level": 4020.0,
+        "tripwire_start_time": 1793037000000,
+        "tripwire_end_time": 1793042100000,
+        "tripwire_label": "TRIPWIRE: 5M C < $4,020.00",
+        "target_level": 4008.0,
+        "target_start_time": 1793038200000,
+        "target_end_time": 1793042100000,
+        "target_label": "DOWN: $4,008.00",
         "vector": {
-          "from_time": 1793034900000,
-          "from_price": 3988.0,
-          "to_time": 1793038500000,
-          "to_price": 3980.0
+          "from_time": 1793038200000,
+          "from_price": 4020.0,
+          "to_time": 1793042100000,
+          "to_price": 4008.0
         },
         "card": {
-          "title": "TRIPWIRE: SWEEP LOW BREAKDOWN",
-          "badge": "CANCEL: $3,988.00",
-          "body": "A decisive 5m candle body close <strong>below $3,988.00</strong> invalidates the absorption sweep, unleashing a capitulation cascade toward the primary session floor at <strong>$3,978 \u2013 $3,982</strong>.",
-          "footer_left": "TRIPWIRE: 5M C < $3,988.00",
+          "title": "TRIPWIRE: CLIMAX FLOOR BREAKDOWN",
+          "badge": "CANCEL: $4,020.00",
+          "body": "A decisive 5m candle body close <strong>below $4,020.00</strong> breaks the climax shelf floor, triggering an aggressive liquidation sweep back into the $4,008 broken shelf origin.",
+          "footer_left": "TRIPWIRE: 5M C < $4,020.00",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
         }
