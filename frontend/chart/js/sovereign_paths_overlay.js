@@ -129,6 +129,7 @@ export function initSovereignPathsOverlay(chart) {
       isCardsVisible = !isCardsVisible;
       localStorage.setItem('tv_cards_visible', isCardsVisible ? 'true' : 'false');
       btnCards.classList.toggle('active', isCardsVisible);
+      applyVisibilityState();
       showToast(isCardsVisible ? '⚡ Strategy HUD Boxes: ON' : 'Strategy HUD Boxes: OFF');
       requestAnimationFrame(renderSovereignPaths);
     });
@@ -141,6 +142,7 @@ export function initSovereignPathsOverlay(chart) {
       isFvgVisible = !isFvgVisible;
       localStorage.setItem('tv_fvg_visible', isFvgVisible ? 'true' : 'false');
       btnFvg.classList.toggle('active', isFvgVisible);
+      applyVisibilityState();
       showToast(isFvgVisible ? '🎯 50% FVG CE Filament: ON ($4,015.25)' : '50% FVG CE Filament: OFF');
       requestAnimationFrame(renderSovereignPaths);
     });
@@ -153,6 +155,7 @@ export function initSovereignPathsOverlay(chart) {
       isBenchmarksVisible = !isBenchmarksVisible;
       localStorage.setItem('tv_benchmarks_visible', isBenchmarksVisible ? 'true' : 'false');
       btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
+      applyVisibilityState();
       showToast(isBenchmarksVisible ? '📏 Canonical Benchmarks (PDH/PDL): ON' : 'Canonical Benchmarks: OFF');
       requestAnimationFrame(renderSovereignPaths);
     });
@@ -165,6 +168,7 @@ export function initSovereignPathsOverlay(chart) {
       isGammaVisible = !isGammaVisible;
       localStorage.setItem('tv_gamma_visible', isGammaVisible ? 'true' : 'false');
       btnGamma.classList.toggle('active', isGammaVisible);
+      applyVisibilityState();
       showToast(isGammaVisible ? '◆ $25 Gamma Option Strike Pins: ON' : '$25 Gamma Pins: OFF');
       requestAnimationFrame(renderSovereignPaths);
     });
@@ -196,6 +200,54 @@ function showToast(msg) {
 }
 
 /**
+ * Robust Y-pixel projection: Convert price to exact on-screen canvas Y pixel coordinate.
+ * Multi-tier fallback guarantees coordinate retrieval regardless of whether chart has loaded bars or data indices.
+ */
+export function priceToPixelY(chart, price) {
+  if (!chart || typeof price !== 'number' || isNaN(price)) return null;
+  try {
+    // 1. Direct convertToPixel on main candle pane
+    let res = chart.convertToPixel({ value: price });
+    if (Array.isArray(res) && res.length > 0) res = res[0];
+    if (res && typeof res.y === 'number' && !isNaN(res.y)) {
+      return res.y;
+    }
+
+    // 2. Fallback with dataIndex 0
+    let res2 = chart.convertToPixel({ dataIndex: 0, value: price });
+    if (Array.isArray(res2) && res2.length > 0) res2 = res2[0];
+    if (res2 && typeof res2.y === 'number' && !isNaN(res2.y)) {
+      return res2.y;
+    }
+
+    // 3. Fallback with current anchor timestamp
+    if (currentEvalData?.anchor_timestamp) {
+      let res3 = chart.convertToPixel({ timestamp: currentEvalData.anchor_timestamp, value: price });
+      if (Array.isArray(res3) && res3.length > 0) res3 = res3[0];
+      if (res3 && typeof res3.y === 'number' && !isNaN(res3.y)) {
+        return res3.y;
+      }
+    }
+
+    // 4. Fallback with latest candle timestamp
+    const dataList = (typeof chart.getDataList === 'function') ? (chart.getDataList() || []) : [];
+    if (dataList.length > 0) {
+      const lastCandle = dataList[dataList.length - 1];
+      if (lastCandle && lastCandle.timestamp) {
+        let res4 = chart.convertToPixel({ timestamp: lastCandle.timestamp, value: price });
+        if (Array.isArray(res4) && res4.length > 0) res4 = res4[0];
+        if (res4 && typeof res4.y === 'number' && !isNaN(res4.y)) {
+          return res4.y;
+        }
+      }
+    }
+  } catch (e) {
+    console.warn('[Sovereign Paths] priceToPixelY error:', e);
+  }
+  return null;
+}
+
+/**
  * Robust coordinate projection: Convert timestamp and price to exact on-screen canvas pixel coordinates.
  */
 export function pointToPixel(chart, timestamp, price) {
@@ -216,13 +268,18 @@ export function pointToPixel(chart, timestamp, price) {
       return { x: xCoord, y: yCoord };
     }
 
+    // If only price was requested (timestamp null/undefined) and yCoord exists, return it immediately
+    if ((timestamp === null || timestamp === undefined) && yCoord !== null) {
+      return { x: null, y: yCoord };
+    }
+
     // 2. Fallback for Y-coordinate (price) if missing
     if (yCoord === null && typeof price === 'number' && !isNaN(price)) {
-      let resY = chart.convertToPixel({ value: price });
-      if (Array.isArray(resY) && resY.length > 0) resY = resY[0];
-      if (resY && typeof resY.y === 'number' && !isNaN(resY.y)) {
-        yCoord = resY.y;
-      }
+      yCoord = priceToPixelY(chart, price);
+    }
+
+    if ((timestamp === null || timestamp === undefined) && yCoord !== null) {
+      return { x: null, y: yCoord };
     }
 
     // 3. Fallback for X-coordinate (timestamp) via chartStore
@@ -266,6 +323,9 @@ export function pointToPixel(chart, timestamp, price) {
     if (xCoord !== null && yCoord !== null) {
       return { x: xCoord, y: yCoord };
     }
+    if ((timestamp === null || timestamp === undefined) && yCoord !== null) {
+      return { x: null, y: yCoord };
+    }
   } catch (e) {
     console.warn('[Sovereign Paths] pointToPixel error:', e);
   }
@@ -279,12 +339,14 @@ function setupChartInteractionListeners() {
   const chartContainer = document.getElementById('klineChart') || document.querySelector('.tv-chart-viewport');
   if (!chartContainer) return;
 
+  const isAnyActive = () => isOverlayVisible || isFvgVisible || isBenchmarksVisible || isGammaVisible;
+
   const startDrag = () => {
     isDraggingChart = true;
     cancelAnimationFrame(rafId);
     const loop = () => {
       if (!isDraggingChart) return;
-      if (isOverlayVisible && currentEvalData) {
+      if (isAnyActive()) {
         renderSovereignPaths();
       }
       rafId = requestAnimationFrame(loop);
@@ -295,7 +357,7 @@ function setupChartInteractionListeners() {
   const stopDrag = () => {
     isDraggingChart = false;
     cancelAnimationFrame(rafId);
-    if (isOverlayVisible && currentEvalData) {
+    if (isAnyActive()) {
       renderSovereignPaths();
     }
   };
@@ -306,7 +368,7 @@ function setupChartInteractionListeners() {
   window.addEventListener('touchend', stopDrag);
 
   chartContainer.addEventListener('wheel', () => {
-    if (isOverlayVisible && currentEvalData) {
+    if (isAnyActive()) {
       requestAnimationFrame(renderSovereignPaths);
     }
   }, { passive: true });
@@ -314,17 +376,17 @@ function setupChartInteractionListeners() {
   if (chartInstance && typeof chartInstance.subscribeAction === 'function') {
     try {
       chartInstance.subscribeAction('onVisibleRangeChange', () => {
-        if (isOverlayVisible && currentEvalData) {
+        if (isAnyActive()) {
           requestAnimationFrame(renderSovereignPaths);
         }
       });
       chartInstance.subscribeAction('onScroll', () => {
-        if (isOverlayVisible && currentEvalData) {
+        if (isAnyActive()) {
           requestAnimationFrame(renderSovereignPaths);
         }
       });
       chartInstance.subscribeAction('onZoom', () => {
-        if (isOverlayVisible && currentEvalData) {
+        if (isAnyActive()) {
           requestAnimationFrame(renderSovereignPaths);
         }
       });
@@ -336,6 +398,8 @@ function setupChartInteractionListeners() {
  * Toggle visibility of SVG canvas and HUD cards
  */
 function applyVisibilityState() {
+  const isAnyLayerVisible = isOverlayVisible || isCardsVisible || isFvgVisible || isBenchmarksVisible || isGammaVisible;
+
   if (toggleBtn) {
     if (isOverlayVisible) {
       toggleBtn.classList.add('active');
@@ -346,8 +410,13 @@ function applyVisibilityState() {
     }
   }
 
+  if (btnCards) btnCards.classList.toggle('active', isCardsVisible);
+  if (btnFvg) btnFvg.classList.toggle('active', isFvgVisible);
+  if (btnBenchmarks) btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
+  if (btnGamma) btnGamma.classList.toggle('active', isGammaVisible);
+
   if (overlayContainer) {
-    if (isOverlayVisible) {
+    if (isAnyLayerVisible) {
       overlayContainer.classList.remove('hidden');
     } else {
       overlayContainer.classList.add('hidden');
@@ -520,7 +589,7 @@ function isVectorInViewport(vFrom, vTo, viewportW, viewportH) {
  * Strictly data-driven from currentEvalData.
  */
 export function renderSovereignPaths() {
-  if (!overlayContainer || !currentEvalData || !isOverlayVisible || !chartInstance) return;
+  if (!overlayContainer || !chartInstance) return;
 
   const rect = overlayContainer.getBoundingClientRect();
   const width = rect.width || 1024;
@@ -528,23 +597,35 @@ export function renderSovereignPaths() {
 
   if (width < 200 || height < 150) return;
 
-  // Ensure box border colors remain tinted
-  applyBoxBorderOverrides(true);
-
   // Set viewBox to current viewport pixels
   if (svgElement) {
     svgElement.setAttribute('viewBox', `0 0 ${width} ${height}`);
   }
 
-  const paths = currentEvalData.paths || [];
-  const pathAData = paths.find(p => p.id === 'path_a') || paths[0];
-  const pathBData = paths.find(p => p.id === 'path_b') || paths[1];
-  const pathCData = paths.find(p => p.id === 'path_c') || paths[2];
-
   // Safe Airspace Dimensions (Avoid top ribbon and right price-axis scale)
   const rightAxisMargin = 75; // Right price scale width + margin
   const topRibbonMargin = 95; // Top macro ribbon height + margin
   const leftSidebarMargin = 65; // Left toolbar width + margin
+
+  // -------------------------------------------------------------------------
+  // 1, 2, 3: RENDER CAUSAL PATHS & HUD COMMENT CARDS (if active & eval data exists)
+  // -------------------------------------------------------------------------
+  if (!isOverlayVisible || !currentEvalData) {
+    if (groupA) groupA.innerHTML = '';
+    if (groupB) groupB.innerHTML = '';
+    if (groupC) groupC.innerHTML = '';
+    if (cardA) cardA.style.display = 'none';
+    if (cardB) cardB.style.display = 'none';
+    if (cardC) cardC.style.display = 'none';
+    applyBoxBorderOverrides(false);
+  } else {
+    // Ensure box border colors remain tinted
+    applyBoxBorderOverrides(true);
+
+    const paths = currentEvalData.paths || [];
+    const pathAData = paths.find(p => p.id === 'path_a') || paths[0];
+    const pathBData = paths.find(p => p.id === 'path_b') || paths[1];
+    const pathCData = paths.find(p => p.id === 'path_c') || paths[2];
 
   // -------------------------------------------------------------------------
   // 1. RENDER PATH A (Electric Violet Squeeze)
@@ -950,22 +1031,29 @@ function renderFvgCe(width, height) {
     groupFvgCe.innerHTML = '';
     return;
   }
-  const ptFvg = pointToPixel(chartInstance, 1793035200000, 4015.25);
-  const ptY = ptFvg ? ptFvg.y : (pointToPixel(chartInstance, null, 4015.25)?.y ?? null);
+  const fvgPrice = currentEvalData?.fvg_ce || 4015.25;
+  const ptY = priceToPixelY(chartInstance, fvgPrice);
   if (ptY === null || ptY < 0 || ptY > height) {
     groupFvgCe.innerHTML = '';
     return;
   }
-  const startX = ptFvg ? Math.max(10, ptFvg.x) : 65;
+  let startX = 65;
+  try {
+    const ptFvg = pointToPixel(chartInstance, 1793035200000, fvgPrice);
+    if (ptFvg && typeof ptFvg.x === 'number') {
+      startX = Math.max(65, Math.min(width - 120, ptFvg.x));
+    }
+  } catch (_) {}
+
   const endX = width - 75;
   if (startX >= endX) {
-    groupFvgCe.innerHTML = '';
-    return;
+    startX = 65;
   }
   groupFvgCe.innerHTML = `
     <line x1="${startX}" y1="${ptY}" x2="${endX}" y2="${ptY}" stroke="#00e5ff" stroke-width="1.1" stroke-dasharray="4 3" opacity="0.80" />
     <circle cx="${startX}" cy="${ptY}" r="3" fill="#00e5ff" opacity="0.9" />
     <circle cx="${endX}" cy="${ptY}" r="3" fill="#00e5ff" opacity="0.9" />
+    <polygon points="${endX},${ptY} ${endX - 6},${ptY - 4} ${endX - 12},${ptY} ${endX - 6},${ptY + 4}" fill="#00e5ff" opacity="0.95" />
   `;
 }
 
@@ -978,29 +1066,54 @@ function renderBenchmarks(width, height) {
     groupBenchmarks.innerHTML = '';
     return;
   }
-  const ptPdh = pointToPixel(chartInstance, null, 4034.07);
-  const ptPdl = pointToPixel(chartInstance, null, 3975.58);
+  const pdhPrice = window.__liveTelemetry?.pdh || currentEvalData?.pdh || 4034.07;
+  const pdlPrice = window.__liveTelemetry?.pdl || currentEvalData?.pdl || 3975.58;
+
+  const pdhY = priceToPixelY(chartInstance, pdhPrice);
+  const pdlY = priceToPixelY(chartInstance, pdlPrice);
   let markup = '';
   const startX = 65;
   const endX = width - 75;
 
-  if (ptPdh && ptPdh.y >= 0 && ptPdh.y <= height) {
-    markup += `
-      <line x1="${startX}" y1="${ptPdh.y}" x2="${endX}" y2="${ptPdh.y}" stroke="#c084fc" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.55" />
-      <circle cx="${endX}" cy="${ptPdh.y}" r="2.5" fill="#c084fc" opacity="0.8" />
-    `;
+  // 1. PDH Benchmark Line
+  if (pdhY !== null) {
+    if (pdhY >= 0 && pdhY <= height) {
+      markup += `
+        <line x1="${startX}" y1="${pdhY}" x2="${endX}" y2="${pdhY}" stroke="#c084fc" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.75" />
+        <circle cx="${startX}" cy="${pdhY}" r="2.5" fill="#c084fc" opacity="0.9" />
+        <circle cx="${endX}" cy="${pdhY}" r="2.5" fill="#c084fc" opacity="0.9" />
+        <polygon points="${endX},${pdhY} ${endX - 6},${pdhY - 4} ${endX - 12},${pdhY} ${endX - 6},${pdhY + 4}" fill="#c084fc" opacity="0.95" />
+      `;
+    } else if (pdhY < 0) {
+      markup += `
+        <polygon points="${width - 105},13 ${width - 100},5 ${width - 95},13" fill="#c084fc" opacity="0.9" />
+        <line x1="${width - 125}" y1="13" x2="${width - 75}" y2="13" stroke="#c084fc" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.8" />
+      `;
+    }
   }
-  if (ptPdl && ptPdl.y >= 0 && ptPdl.y <= height) {
-    markup += `
-      <line x1="${startX}" y1="${ptPdl.y}" x2="${endX}" y2="${ptPdl.y}" stroke="#10b981" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.50" />
-      <circle cx="${endX}" cy="${ptPdl.y}" r="2.5" fill="#10b981" opacity="0.8" />
-    `;
+
+  // 2. PDL Benchmark Line
+  if (pdlY !== null) {
+    if (pdlY >= 0 && pdlY <= height) {
+      markup += `
+        <line x1="${startX}" y1="${pdlY}" x2="${endX}" y2="${pdlY}" stroke="#10b981" stroke-width="1.0" stroke-dasharray="5 4" opacity="0.70" />
+        <circle cx="${startX}" cy="${pdlY}" r="2.5" fill="#10b981" opacity="0.9" />
+        <circle cx="${endX}" cy="${pdlY}" r="2.5" fill="#10b981" opacity="0.9" />
+        <polygon points="${endX},${pdlY} ${endX - 6},${pdlY - 4} ${endX - 12},${pdlY} ${endX - 6},${pdlY + 4}" fill="#10b981" opacity="0.95" />
+      `;
+    } else if (pdlY > height) {
+      markup += `
+        <polygon points="${width - 105},${height - 13} ${width - 100},${height - 5} ${width - 95},${height - 13}" fill="#10b981" opacity="0.9" />
+        <line x1="${width - 125}" y1="${height - 13}" x2="${width - 75}" y2="${height - 13}" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3 2" opacity="0.8" />
+      `;
+    }
   }
+
   groupBenchmarks.innerHTML = markup;
 }
 
 /**
- * Render $25 Options Gamma Pins ($4,025.00, $4,000.00)
+ * Render $25 Options Gamma Pins ($3,975, $4,000, $4,025, $4,050...)
  */
 function renderGammaPins(width, height) {
   if (!groupGammaPins) return;
@@ -1008,16 +1121,46 @@ function renderGammaPins(width, height) {
     groupGammaPins.innerHTML = '';
     return;
   }
-  const strikes = [4025.0, 4000.0];
+
+  const baselineStrikes = [3950.0, 3975.0, 4000.0, 4025.0, 4050.0, 4075.0];
+  const activeStrikes = new Set(baselineStrikes);
+
+  try {
+    let topPt = (typeof chartInstance.convertFromPixel === 'function')
+      ? chartInstance.convertFromPixel({ x: width * 0.5, y: 10 })
+      : null;
+    if (Array.isArray(topPt) && topPt.length > 0) topPt = topPt[0];
+
+    let bottomPt = (typeof chartInstance.convertFromPixel === 'function')
+      ? chartInstance.convertFromPixel({ x: width * 0.5, y: height - 10 })
+      : null;
+    if (Array.isArray(bottomPt) && bottomPt.length > 0) bottomPt = bottomPt[0];
+
+    if (topPt && bottomPt && typeof topPt.value === 'number' && typeof bottomPt.value === 'number') {
+      const minP = Math.min(topPt.value, bottomPt.value);
+      const maxP = Math.max(topPt.value, bottomPt.value);
+      const startS = Math.floor(minP / 25) * 25;
+      const endS = Math.ceil(maxP / 25) * 25;
+      for (let s = startS; s <= endS; s += 25) {
+        activeStrikes.add(s);
+      }
+    }
+  } catch (_) {}
+
   let markup = '';
-  strikes.forEach(strike => {
-    const pt = pointToPixel(chartInstance, null, strike);
-    if (pt && pt.y >= 0 && pt.y <= height) {
+  const startX = 65;
+  const endX = width - 75;
+
+  activeStrikes.forEach(strike => {
+    const y = priceToPixelY(chartInstance, strike);
+    if (y !== null && y >= 0 && y <= height) {
       markup += `
-        <line x1="${width - 150}" y1="${pt.y}" x2="${width - 75}" y2="${pt.y}" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.45" />
-        <polygon points="${width - 75},${pt.y} ${width - 70},${pt.y - 4} ${width - 65},${pt.y} ${width - 70},${pt.y + 4}" fill="#fbbf24" opacity="0.85" />
+        <line x1="${startX}" y1="${y}" x2="${endX}" y2="${y}" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.45" />
+        <circle cx="${startX}" cy="${y}" r="2" fill="#fbbf24" opacity="0.8" />
+        <polygon points="${endX},${y} ${endX - 5},${y - 4} ${endX - 10},${y} ${endX - 5},${y + 4}" fill="#fbbf24" opacity="0.85" />
       `;
     }
   });
+
   groupGammaPins.innerHTML = markup;
 }

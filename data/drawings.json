@@ -106,6 +106,9 @@
     "last_updated": "2026-10-26 18:40:12 UTC",
     "anchor_timestamp": 1793044800000,
     "market_context": "BULLETPROOF SNIPER EXECUTION: 0-Loss Two-Tier Protocol (50% Scale at POC + Breakeven Lock)",
+    "pdh": 4034.07,
+    "pdl": 3975.58,
+    "fvg_ce": 4015.25,
     "paths": [
       {
         "id": "path_a",
