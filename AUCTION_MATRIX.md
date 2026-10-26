@@ -1,5 +1,5 @@
-# ⚡ AUCTION MATRIX: SOVEREIGN OPERATIONAL MANUAL
-**The Definitive Architecture & Field Manual for the Escanor Multi-Box Auction Engine**
+# ⚡ AUCTION MATRIX: MASTER OPERATIONAL MANUAL
+**The Definitive Architecture & Field Manual for the Escanor Multi-Box Auction Engine & High-Probability Execution System**
 
 ---
 
@@ -9,30 +9,151 @@ The Escanor Box Engine is **NOT** a cosmetic charting ornament, nor is it a gene
 
 It is an **Auction Market Theory (AMT) & Wyckoff Effort-vs-Result (EVR) Structural Engine**. It was engineered to mathematically quantify the **physics of market auctions** by dissecting price discovery into distinct chronological phases, measuring whether institutional capital is accelerating through liquidity vacuums or exhausting into passive limit absorption walls.
 
-### The Core Paradigm:
-In classic technical analysis, traders look at price candles in isolation. In Sovereign Auction Analysis:
-1. **Volume is Effort.** The number of contracts/lots expended over a defined duration.
-2. **Range is Result.** The vertical distance ($ points) the market traversed as a result of that expenditure.
-3. **EVR is Efficiency.** $\text{EVR} = \frac{\text{Total Volume}}{\text{Price Range}} \text{ (Contracts per Point)}$.
-4. **CVD is Aggression.** Cumulative Volume Delta measures whether buyers or sellers are lifting asks or hitting bids.
-
-When properly utilized, the Auction Matrix answers three sovereign questions:
-- *Did this move take massive effort to achieve minimal progress?* (Absorption / Trapped Liquidity / Climax).
-- *Did this move slice through price with low effort?* (Liquidity Vacuum / Initiative Aggression).
-- *Where is value accepted vs where is price rejected?* (High Volume Shelves / Point of Control).
+### The Four Tenets of Auction Market Physics:
+1. **Volume is Effort**: The total contract turnover expended over a defined duration.
+2. **Range is Result**: The vertical distance ($ points) the market traversed as a result of that expenditure.
+3. **EVR is Efficiency**: $\text{EVR} = \frac{\text{Total Volume}}{\text{Price Range}} \text{ (Contracts per Point)}$.
+4. **CVD is Aggression**: Cumulative Volume Delta measures whether buyers or sellers are aggressively crossing the spread or passively absorbing liquidity.
 
 ---
 
-## 2. THE DUAL-LAYER RULE: CHART CANVAS VS DEEP DOSSIER
+## 2. THE CARDINAL RULE OF BOX CONSTRUCTION: CHRONOLOGICAL WAVES VS STATIC STRIPS
 
-To keep the live visual interface pristine, razor-sharp, and institutional while preserving forensic analytical depth, the system operates on a strict **Two-Layer Separation**:
+A fatal mistake when using box tools is drawing static horizontal price strips (e.g., drawing a 2-point box across hours of historical data). Doing this destroys the engine’s mathematical intelligence.
+
+```
+❌ WRONG (STATIC HORIZONTAL STRIPS):
+   Drawing a thin 2-point rectangle across 3 hours of unrelated bars.
+   • Result: Volume is artificially inflated over a narrow slice; EVR reports false extreme friction (+3000%);
+     the in-box excursion vector collapses into a flat stub; chronological sequence shift is broken.
+
+✅ CORRECT (CHRONOLOGICAL STRUCTURAL WAVES):
+   Bounding each box strictly to the exact start (t0, P0) and completion (t1, P1) of a market swing.
+   • Result: Pure Effort-vs-Result calculation; clean diagonal excursion trend vectors; authentic comparative
+     friction across the sequence; pristine visual canvas.
+```
+
+### Unrestricted Box Scaling ($N \ge 2$):
+The engine is **never limited to 3 boxes**. It dynamically accommodates any number of boxes ($N = 2, 3, 4, 5+$) dictated strictly by the structural swings of the session:
+- **Phase 1**: Capitulation Flush / Liquidity Purge (High to Terminal Low)
+- **Phase 2**: Initiative Breakout / Short Squeeze (Low to Impulse Climax)
+- **Phase 3**: Climax Distribution & High Rejection (Climax High to Retrace Low)
+- **Phase 4**: Re-Accumulation Compression Coil (Active Value Area consolidation)
+- **Phase 5+**: Expansion Leg or Redistribution Wave
+
+---
+
+## 3. FULL BOX FEATURE UTILIZATION: VISUAL & MATHEMATICAL ENGINE
+
+When properly bounded, the chart engine automatically computes and renders:
+
+### A. Visual In-Box Trend Excursion Vector
+- **Red ✕ Start Anchor**: Rendered precisely at the initial swing coordinate $(t_0, P_0)$ where the phase originated.
+- **Cyan Diagonal Excursion Ray (`#00e5ff`)**: Traced from $(t_0, P_0)$ to the peak $(t_{\text{peak}}, P_{\text{peak}})$ or trough $(t_{\text{trough}}, P_{\text{trough}})$.
+- **Numeric Point-Yield Badge**: A high-contrast floating badge displaying the exact favourable excursion points achieved (e.g. `+32.5` pts, `+34.9` pts).
+
+### B. Effort-vs-Result (EVR) Classifications
+$$\text{EVR} = \frac{\text{Total Traded Volume}}{\max(0.1, \text{High}_b - \text{Low}_b)} \text{ (Contracts per 1.0 Point)}$$
+
+- **$\text{EVR} < 1,200 \text{ v/pt}$ $\rightarrow$ `CLEAN FLOW ⚡` (Cyan/Bullish)**: Low resistance, liquidity vacuum. Minimal volume moves price large distances. High trend continuation probability.
+- **$1,200 \le \text{EVR} < 2,400 \text{ v/pt}$ $\rightarrow$ `HIGH FRICTION ⚠️` (Warm Amber)**: Building two-way rotation. Two-sided volume entering the market.
+- **$\text{EVR} \ge 2,400 \text{ v/pt}$ $\rightarrow$ `EXTREME BURN 🔥` (Crimson/Bearish)**: Massive contract turnover with minimal vertical progress. Classic institutional limit absorption; imminent reversal or coil breakout.
+
+### C. Comparative Inter-Box Sequence Shift ($\Delta\text{EVR}$)
+$$\Delta\text{EVR} = \frac{\text{EVR}_N - \text{EVR}_1}{\max(1, \text{EVR}_1)} \times 100\%$$
+- **$\Delta\text{EVR} < -30\%$ $\rightarrow$ `VACUUM ACCELERATION ⚡`**: Market entered an air pocket; initiative participants expanded ground effortlessly.
+- **$\Delta\text{EVR} > +40\%$ $\rightarrow$ `FRICTION SPIKE 🔥`**: Market slammed into an absorption barrier; heavy passive resistance entered.
+- **$-30\% \le \Delta\text{EVR} \le +40\%$ $\rightarrow$ `SUSTAINED FLOW ⚖️`**: Balanced, orderly auction turnover.
+
+---
+
+## 4. HIGH-PROBABILITY VS LOW-PROBABILITY SETUPS ACROSS MARKET REGIMES
+
+One of the greatest retail pitfalls is confusing **low-probability breakout chasing** with **high-probability institutional execution**. The Auction Matrix evaluates setups based on **structural location, volume exhaustion, and asymmetric risk-to-reward**.
+
+### The Golden Evaluation Matrix:
+
+| Setup Classification | Win Rate | Risk/Reward | Psychological Trap | Institutional Reality |
+| :--- | :--- | :--- | :--- | :--- |
+| **❌ Chasing Breakouts at Day Highs** | **20% – 35%** | **1:1 or Negative** | "It's pumping, I'm missing the run!" | Retail buys market orders directly into passive limit sell walls after a +30 pt run. |
+| **🏆 Upthrust / Ceiling Sweep Fade** | **75% – 85%** | **1:3 to 1:6+** | "It looks like a breakout!" | Institutions sweep resting retail buy-stops, exhaust, and dump price back to fair value (POC). |
+| **🏆 POC Anchor Value Reload** | **70% – 80%** | **1:2.5 to 1:4+** | "It's pulling back, it might drop." | Institutions reload positions at the high-volume anchor (POC) where smart money accumulated. |
+| **🏆 Terminal Spring Sweep Reclaim** | **80% – 90%** | **1:4 to 1:10+** | "It's breaking down, market is dead!" | Panic liquidation purges retail stops; price immediately reclaims the level, creating a violent squeeze. |
+
+---
+
+## 5. PLAYBOOK: EVALUATING & MARKING HIGH-PROBABILITY SETUPS BY REGIME
+
+Depending on the active market structure, the Auction Matrix instructs you to evaluate and mark specific high-probability setups:
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                 MARKET STRUCTURE SITUATION                                      │
+├───────────────────────────────┬─────────────────────────────────┬───────────────────────────────┤
+│    SITUATION 1: RANGE / CHOP  │    SITUATION 2: STRONG TREND    │ SITUATION 3: DEEP FLUSH/PURGE │
+│  (Bracket / Re-Accumulation)  │   (Vacuum Discovery Expansion)  │    (Capitulation & Spring)    │
+├───────────────────────────────┼─────────────────────────────────┼───────────────────────────────┤
+│ • Setup 1: Ceiling Sweep Fade │ • Setup 1: Pullback to Broken   │ • Setup 1: Terminal Spring    │
+│   (Upthrust fade short)       │   Ceiling (Previous box top     │   Reclaim (Buy immediately on │
+│ • Setup 2: POC Value Reload   │   retested as support)          │   reclaim of swept benchmark) │
+│   (Long at Composite POC/VAL) │ • Setup 2: Coil Expansion Leg   │ • Setup 2: Stop-Run Retest    │
+│ • Setup 3: Range Tripwire     │   (Buy breakout of tight coil   │   (Higher low test of sweep   │
+│   (Short below coil base)     │   BEFORE the extended run)      │   wick base)                  │
+└───────────────────────────────┴─────────────────────────────────┴───────────────────────────────┘
+```
+
+### Situation 1: Range-Bound Bracket / Re-Accumulation Coil (Current Market)
+When price has rallied into an overhead ceiling and formed a multi-bar compression coil:
+1. **The High-Probability Short: Ceiling Sweep & Upthrust Fade**
+   - **Where**: Top boundary of Box 2 / Box 3 (\$4,026.75 – \$4,028.50).
+   - **Trigger**: 5M price spikes above \$4,026.75, fails to sustain, prints an upper rejection wick, and closes back below \$4,026.00.
+   - **Entry**: \$4,026.00 – \$4,026.50 | **SL**: \$4,029.00 (above sweep wick) | **TP**: \$4,018.12 (Composite POC) and \$4,012.80 (Net VWAP).
+   - **Edge**: Trapped breakout buyers are forced to liquidate, accelerating price back to the POC mean.
+2. **The High-Probability Long: POC Anchor Value Reload**
+   - **Where**: High-volume node of Box 4 & Composite POC (\$4,017.50 – \$4,018.50).
+   - **Trigger**: Pullback into \$4,018.00 with volume drying up (Wyckoff "No Supply" test) and a bullish 5M defense candle.
+   - **Entry**: \$4,018.00 – \$4,018.50 | **SL**: \$4,014.00 (below coil base) | **TP**: \$4,026.50 (Ceiling re-test).
+   - **Edge**: Buying at institutional fair-value with the highest-volume inventory shelf at your back.
+3. **The Structural Breakdown: Coil Base Tripwire Short**
+   - **Where**: Bottom boundary of Box 4 (\$4,014.50).
+   - **Trigger**: Decisive 5M candle body close below \$4,014.50.
+   - **Entry**: Breakdown close / retest at \$4,014.50 | **SL**: \$4,017.50 | **TP**: \$4,005.00 (50% Mid-Eq / Value Area Low).
+
+---
+
+### Situation 2: Strong Trend / Discovery Expansion
+When the market breaks out of a multi-hour consolidation and expands in an impulsive trend:
+1. **The Pullback-to-Structure Reload (NEVER Chase the Expansion)**:
+   - Wait for the breakout impulse box to complete.
+   - Mark the **broken ceiling** of the previous accumulation box.
+   - Enter on the **first re-test of that broken ceiling turned support**, targeting the +1.5 standard deviation Fibonacci extension.
+2. **The In-Trend Compression Coil Entry**:
+   - If price pauses and forms a tight 5-to-10 bar coil (like Box 4), enter on the **initial compression breakout bar**, NOT after a 20-point run.
+
+---
+
+### Situation 3: Deep Capitulation Flush & Panic Sweep (The Spring)
+When the market flushes aggressively through major psychological round numbers (like \$4,000):
+1. **The Terminal Sweep Reclaim**:
+   - Box 1 captures the entire flush down to the terminal low (e.g., \$3,988.71).
+   - Watch for climactic volume (Phase 1 printed 40K contracts) with an immediate rejection wick.
+   - **The Sure-Shot Trigger**: The instant a 5M candle closes **back above the swept benchmark (\$4,000.00)**, enter Long.
+   - **SL**: 1.5–2 points below the sweep low (\$3,987.00).
+   - **TP**: Origin of the breakdown (\$4,020.00+).
+   - **Edge**: 1:10+ asymmetric payoff because trapped late shorts are forced to cover simultaneously.
+
+---
+
+## 6. THE DUAL-LAYER RULE: CANVAS VS DEEP DOSSIER
+
+To keep the TradingView chart canvas razor-sharp, institutional, and legible while preserving full analytical depth:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        LAYER 1: LIVE CHART CANVAS                      │
-│  • Auction Phase Boxes (Clean boundaries, distinct chronological waves)│
-│  • Visual In-Box Vectors: Red ✕ Start Anchor, Cyan Trend Ray, +pts Yield│
-│  • Scenario Forecast Vectors: Causal Paths (Path A, B, C)              │
+│  • Chronological Auction Wave Boxes (Clean non-overlapping boundaries) │
+│  • Visual In-Box Vectors: Red ✕ Start Anchor, Cyan Trend Ray, +pts     │
+│  • High-Probability Causal Paths (Path A Fade, Path B Reload, Path C) │
 │  • Tactical Scenario Cards (HUD float cards at the live edge)          │
 │  • Optional Inflection Lines (Ceiling, 50% Eq, VWAP, POC Anchor, Floor)│
 └────────────────────────────────────────────────────────────────────────┘
@@ -40,100 +161,32 @@ To keep the live visual interface pristine, razor-sharp, and institutional while
                                     ▼
 ┌────────────────────────────────────────────────────────────────────────┐
 │                   LAYER 2: DEEP TEXT ANALYSIS DOSSIER                  │
-│  • Latest Live Macro News Wires (Real yields, DXY, Geopolitical flows) │
-│  • Box-by-Box Perspectives:                                            │
-│      - Highest Volume Node (POC / Peak Volume Shelf) of each box       │
-│      - Value Area High (VAH) & Value Area Low (VAL) of each box        │
-│      - Derived Support & Resistance coordinates for each box           │
-│      - Effort-vs-Result (EVR) & Friction classification                │
-│  • Combined Composite Volume Profile across all active boxes           │
-│  • Cumulative Volume Delta (CVD) & Trapped Trader Physics              │
-│  • Sovereign Living Tape Reaction & Invalidation Tripwires             │
+│  • Latest Live Macro News (Yields, DXY, Central Bank Wires, Geopolitics)│
+│  • Box-by-Box Forensic Perspectives:                                   │
+│      - Highest Volume Node (POC) for EACH individual box               │
+│      - Value Area High (VAH) & Value Area Low (VAL) for EACH box       │
+│      - Effort-vs-Result (EVR) & Friction Classifications               │
+│  • Combined Multi-Box Composite Volume Profile (Network POC & VWAP)    │
+│  • Cumulative Volume Delta (CVD) & Trapped Inventory Deconstruction    │
+│  • Living Tape Reaction & Invalidation Tripwires                       │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
-> **Mandate**: Deep structural lines (POCs, VAH/VAL shelves, individual S/R zones) do **NOT** clutter the chart canvas. They are computed mathematically and reported in the textual dossier report. The chart remains clean, showing only the active boxes, their vectors, and causal paths.
+> **Mandate**: Deep structural lines (individual POCs, VAH/VAL shelves, horizontal price grids) do **NOT** clutter the canvas with messy lines. They are computed mathematically, stored in JSON, and presented in the text report. The chart canvas remains clean, showing only the active structural wave boxes and the high-probability causal paths.
 
 ---
 
-## 3. UNRESTRICTED BOX COUNT: SCALING TO MARKET REALITY
-
-The engine is **NOT** limited to 3 boxes. It supports any dynamic number of boxes ($N = 2, 3, 4, 5+$) dictated strictly by the natural rhythm of the market session.
-
-Each box must encapsulate **one single, non-overlapping chronological market wave**:
-
-```
-  Wave Phase 1              Wave Phase 2              Wave Phase 3              Wave Phase 4
-┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-│ Capitulation &   │ ───► │ Initiative       │ ───► │ Climax High &    │ ───► │ Re-Accumulation  │
-│ Liquidity Sweep  │      │ Squeeze Breakout │      │ Absorption Wall  │      │ Compression Coil │
-└──────────────────┘      └──────────────────┘      └──────────────────┘      └──────────────────┘
-  [t0 → t1]                 [t1 → t2]                 [t2 → t3]                 [t3 → t4 (Live)]
-```
-
-### The Cardinal Rule of Box Construction:
-- **NEVER** stretch a box across hours of unrelated market action. Horizontally stretching a box over 25+ bars across multiple swings artificially inflates volume (e.g. 20,000 contracts over a tiny 3-point strip), triggering a false `+3000% FRICTION SPIKE`.
-- **ALWAYS** bound the box tightly from the exact start time ($t_0$) and initial price ($P_0$) of a structural swing to its exact completion time ($t_1$) and terminal price ($P_1$).
-- **Box IDs**: Never prefix custom auction boxes with `sov_` (which suppresses the in-box vector). Use standard structural IDs: `box_phase_1_...`, `box_phase_2_...`, `box_phase_3_...`, etc.
-
----
-
-## 4. ENGINE MATHEMATICS & METRICS CHEAT SHEET
-
-### A. In-Box Visual Excursion Vector
-When properly bounded, the chart engine automatically computes:
-1. **Red ✕ Start Anchor**: Drawn precisely at $(t_0, P_0)$ where the phase began.
-2. **Cyan Diagonal Excursion Vector (`#00e5ff`)**: Traced from $(t_0, P_0)$ to the peak or trough $(t_{\text{peak}}, P_{\text{peak}})$ or $(t_{\text{trough}}, P_{\text{trough}})$.
-3. **Numeric Yield Badge**: Floating coordinate badge displaying the exact favourable excursion points (e.g. `+37.9`).
-
-### B. Effort-vs-Result (EVR) Classifications
-Calculated as:
-$$\text{EVR} = \frac{\text{Total Traded Volume}}{\max(0.1, \text{High}_b - \text{Low}_b)}$$
-
-- **$\text{EVR} < 1,200 \text{ v/pt}$ $\rightarrow$ `CLEAN FLOW ⚡` (Cyan/Bullish)**
-  - Price is gliding effortlessly through a liquidity vacuum. Low volume moves the market substantial distances. Trend continuation is highly probable.
-- **$1,200 \le \text{EVR} < 2,400 \text{ v/pt}$ $\rightarrow$ `HIGH FRICTION ⚠️` (Warm Amber)**
-  - Significant two-way trading. Volume is building relative to price range. Caution warranted.
-- **$\text{EVR} \ge 2,400 \text{ v/pt}$ $\rightarrow$ `EXTREME BURN 🔥` (Crimson/Bearish)**
-  - Massive contract turnover with negligible price displacement. Aggressive market orders are being absorbed by passive institutional limit orders. Imminent reversal or exhaustion.
-
-### C. Sequence Shift ($\Delta\text{EVR}$)
-Measures how friction is evolving across consecutive boxes from Box 1 to Box $N$:
-$$\Delta\text{EVR} = \frac{\text{EVR}_N - \text{EVR}_1}{\max(1, \text{EVR}_1)} \times 100\%$$
-
-- **$\Delta\text{EVR} < -30\%$ $\rightarrow$ `VACUUM ACCELERATION ⚡`**: Market entered an air pocket; initiative buyers/sellers took total control.
-- **$\Delta\text{EVR} > +40\%$ $\rightarrow$ `FRICTION SPIKE 🔥`**: Market hit an institutional roadblock; heavy absorbing friction entered.
-- **$-30\% \le \Delta\text{EVR} \le +40\%$ $\rightarrow$ `SUSTAINED FLOW ⚖️`**: Balanced auction progression.
-
----
-
-## 5. THE 5 STRUCTURAL INFLECTION LINES (`SHOW LINES ON CHART`)
+## 7. THE 5 STRUCTURAL INFLECTION LINES (`SHOW LINES ON CHART`)
 
 The system features an on-demand structural overlay toggled via the interactive modal or Card 3 (`tvToggleInflectionLinesBtn`):
 
 | Line Name | Visual Style | Color | Sovereign Calculation |
 | :--- | :--- | :--- | :--- |
 | **🧱 CEILING** | Dashed (2px) | `#ef4444` Crimson Red | $\max(\text{High}_1, \dots, \text{High}_N)$ across all drawn boxes. The terminal liquidity barrier. |
-| **⚖️ 50% EQ** | Dashed (2px) | `#fbbf24` Warm Yellow | $\frac{\text{Ceiling} + \text{Floor}}{2}$. The fair-value equilibrium dividing premium from discount. |
+| **⚖️ 50% EQ** | Dashed (2px) | `#fbbf24` Warm Yellow | $\frac{\text{Ceiling} + \text{Floor}}{2}$. Fair-value equilibrium dividing premium from discount. |
 | **🌊 NET VWAP** | Dashed (2px) | `#3b82f6` Royal Blue | $\frac{\sum (\text{Typical Price} \times \text{Volume})}{\sum \text{Volume}}$ across all bars inside active boxes. |
 | **🎯 ANCHOR** | Solid (2px) | `#00e5ff` Electric Cyan | The single price coordinate with the highest total volume turnover (Network POC). |
 | **🛡️ FLOOR** | Dashed (2px) | `#10b981` Emerald Green | $\min(\text{Low}_1, \dots, \text{Low}_N)$ across all drawn boxes. The base absorption support. |
-
----
-
-## 6. COMPLETE EVALUATION WORKFLOW (THE 5-STEP PROTOCOL)
-
-1. **Step 1: Ingest Live Telemetry**: Read `data/active_evaluation_view.json` and MT5 live tick. Identify current session bounds and recent swing extrema.
-2. **Step 2: Identify Auction Waves**: Divide the session into $N$ distinct chronological phases (Flush/Absorption, Impulse, Ceiling Test, Compression Coil).
-3. **Step 3: Forensic Mathematical Profiling (Python)**:
-   - For each box: Calculate start/end time, price range, volume, EVR, POC (peak volume shelf), and VAH/VAL.
-   - For composite network: Calculate combined volume profile, network POC, Net VWAP, and $\Delta\text{EVR}$.
-4. **Step 4: Update Chart Overlay (`data/drawings.json`)**:
-   - Write cleanly bounded boxes with standard IDs (`box_phase_1_...`).
-   - Anchor Path A (Initiative Continuation), Path B (Inflection Retest & Rotation), and Path C (Failure/Breakdown) directly to the box boundaries and inflection levels.
-   - Post to `/api/drawings`.
-5. **Step 5: Deliver Sovereign Report**:
-   - Synthesize live macro news, box perspectives (POCs & S/R), composite volume profile, and causal path trade triggers.
 
 ---
 
