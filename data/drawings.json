@@ -1,82 +1,57 @@
 {
   "XAUUSD": [
     {
-      "id": "box_phase_1_flush",
+      "id": "box_high_prob_ceiling_trap",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793030100000,
-          "value": 4021.0
+          "timestamp": 1793037000000,
+          "value": 4028.5
         },
         {
-          "timestamp": 1793033700000,
-          "value": 3988.5
+          "timestamp": 1793046600000,
+          "value": 4026.0
         }
       ],
       "styles": {
         "rect": {
-          "color": "rgba(244, 63, 94, 0.04)",
-          "borderColor": "rgba(244, 63, 94, 0.65)",
-          "borderSize": 1.2
+          "color": "rgba(239, 68, 68, 0.08)",
+          "borderColor": "rgba(239, 68, 68, 0.75)",
+          "borderSize": 1.5
         }
       },
-      "zLevel": 20,
+      "zLevel": 25,
       "extendData": {
-        "label": "Phase 1: Liquidation Flush & Absorption ($3,988.50 - $4,021.00)"
+        "label": "\ud83e\uddf1 HIGH-PROB ZONE 1: Ceiling Sweep & Fade Trap ($4,026.00 - $4,028.50)"
       }
     },
     {
-      "id": "box_phase_2_impulse",
+      "id": "box_high_prob_poc_reload",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793034000000,
-          "value": 4027.0
+          "timestamp": 1793038800000,
+          "value": 4019.25
         },
         {
-          "timestamp": 1793037300000,
-          "value": 3992.5
+          "timestamp": 1793046600000,
+          "value": 4017.0
         }
       ],
       "styles": {
         "rect": {
-          "color": "rgba(0, 229, 255, 0.04)",
-          "borderColor": "rgba(0, 229, 255, 0.65)",
-          "borderSize": 1.2
+          "color": "rgba(0, 229, 255, 0.08)",
+          "borderColor": "rgba(0, 229, 255, 0.75)",
+          "borderSize": 1.5
         }
       },
-      "zLevel": 21,
+      "zLevel": 24,
       "extendData": {
-        "label": "Phase 2: Initiative Squeeze & Impulse ($3,992.50 - $4,027.00)"
+        "label": "\ud83c\udfaf HIGH-PROB ZONE 2: POC Anchor Value Reload ($4,017.00 - $4,019.25)"
       }
     },
     {
-      "id": "box_phase_3_climax",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793037600000,
-          "value": 4026.5
-        },
-        {
-          "timestamp": 1793039400000,
-          "value": 4015.5
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(251, 191, 36, 0.04)",
-          "borderColor": "rgba(251, 191, 36, 0.65)",
-          "borderSize": 1.2
-        }
-      },
-      "zLevel": 22,
-      "extendData": {
-        "label": "Phase 3: Climax Ceiling Test ($4,015.50 - $4,026.50)"
-      }
-    },
-    {
-      "id": "box_phase_4_coil",
+      "id": "box_phase_4_active_coil",
       "name": "rect",
       "points": [
         {
@@ -90,89 +65,114 @@
       ],
       "styles": {
         "rect": {
-          "color": "rgba(168, 85, 247, 0.04)",
-          "borderColor": "rgba(168, 85, 247, 0.65)",
+          "color": "rgba(251, 191, 36, 0.04)",
+          "borderColor": "rgba(251, 191, 36, 0.50)",
+          "borderSize": 1.0
+        }
+      },
+      "zLevel": 22,
+      "extendData": {
+        "label": "Phase 4: Value Compression Coil ($4,014.50 - $4,023.50)"
+      }
+    },
+    {
+      "id": "box_phase_1_historic_spring",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1793030100000,
+          "value": 4001.0
+        },
+        {
+          "timestamp": 1793034000000,
+          "value": 3988.5
+        }
+      ],
+      "styles": {
+        "rect": {
+          "color": "rgba(16, 185, 129, 0.06)",
+          "borderColor": "rgba(16, 185, 129, 0.65)",
           "borderSize": 1.2
         }
       },
-      "zLevel": 23,
+      "zLevel": 20,
       "extendData": {
-        "label": "Phase 4: Re-Accumulation Coil ($4,014.50 - $4,023.50)"
+        "label": "\ud83d\udee1\ufe0f HIGH-PROB ARCHETYPE 3: Terminal Spring Base ($3,988.50 - $4,001.00)"
       }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 17:28:03 UTC",
+    "last_updated": "2026-10-26 17:55:06 UTC",
     "anchor_timestamp": 1793044800000,
-    "market_context": "Auction breaking out of Phase 4 Re-Accumulation Coil ($4,014.50 - $4,023.50) to test Phase 3 Climax Ceiling ($4,026.75)",
+    "market_context": "HIGH PROBABILITY EXECUTION MATRIX: Fading Ceiling Exhaustion ($4,026 - $4,028) vs Reloading at Composite POC ($4,018.12)",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Buy-Stop Runway Expansion",
-        "story_key": "Squeeze",
-        "theme": "violet",
-        "color": "#f0abfc",
-        "accent": "#d946ef",
-        "border": "rgba(232, 121, 249, 0.45)",
-        "trigger_level": 4027.0,
+        "name": "Path A: Ceiling Sweep & Upthrust Fade",
+        "story_key": "SweepFade",
+        "theme": "red",
+        "color": "#f43f5e",
+        "accent": "#ef4444",
+        "border": "rgba(244, 63, 94, 0.55)",
+        "trigger_level": 4026.75,
         "trigger_start_time": 1793043600000,
         "trigger_end_time": 1793048400000,
-        "trigger_label": "TRIGGER: 5M C > $4,027.00",
-        "target_level": 4035.0,
+        "trigger_label": "FADE TRIGGER: WICK > $4,026.75 & C < $4,026",
+        "target_level": 4018.12,
         "target_start_time": 1793044800000,
         "target_end_time": 1793048400000,
-        "target_label": "TARGET: $4,035.00",
+        "target_label": "TARGET: $4,018.12 (POC)",
         "vector": {
           "from_time": 1793044800000,
-          "from_price": 4023.33,
+          "from_price": 4026.5,
           "to_time": 1793048400000,
-          "to_price": 4035.0
+          "to_price": 4018.12
         },
         "card": {
-          "title": "PATH A: BUY-STOP RUNWAY EXPANSION",
-          "badge": "TARGET: $4,035.00",
-          "body": "Decisive 5m close <strong>above $4,027.00</strong> shatters the session high ceiling, triggering a cascade of resting buy-stops straight into PDH at <strong>$4,035.00</strong>.",
-          "footer_left": "TRIGGER: 5M C > $4,027.00",
-          "footer_right": "+8.25 PT RUNWAY",
+          "title": "PATH A: CEILING SWEEP & UPTHRUST FADE",
+          "badge": "TARGET: $4,018.12",
+          "body": "<strong>High-Probability Short:</strong> A liquidity sweep above $4,026.75 with an immediate 5m rejection wick traps breakout buyers, triggering a mean-reversion slide directly to the <strong>$4,018.12 POC Anchor</strong>.",
+          "footer_left": "TRIGGER: WICK > $4,026.75 & C < $4,026",
+          "footer_right": "1:3.5+ RR (FADE SHORT)",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: POC Retest & Rotation",
-        "story_key": "Retest",
-        "theme": "amber",
-        "color": "#fbbf24",
-        "accent": "#f59e0b",
-        "border": "rgba(251, 191, 36, 0.45)",
+        "name": "Path B: POC Anchor Value Reload",
+        "story_key": "PocReload",
+        "theme": "emerald",
+        "color": "#10b981",
+        "accent": "#059669",
+        "border": "rgba(16, 185, 129, 0.55)",
         "floor_level": 4018.0,
         "floor_start_time": 1793043600000,
-        "floor_end_time": 1793047200000,
-        "floor_label": "FLOOR: $4,018.00 (POC ANCHOR)",
+        "floor_end_time": 1793048400000,
+        "floor_label": "RELOAD SHELF: $4,017.50 \u2013 $4,018.50",
         "vector": {
           "from_time": 1793044800000,
-          "from_price": 4023.33,
-          "to_time": 1793047200000,
-          "to_price": 4018.0
+          "from_price": 4018.12,
+          "to_time": 1793048400000,
+          "to_price": 4026.5
         },
         "card": {
-          "title": "PATH B: POC RETEST & ROTATION",
-          "badge": "FLOOR: $4,018.00",
-          "body": "Exhaustion rejection under $4,026.75 caps the immediate impulse, rotating price back to absorb at the <strong>$4,018.12 POC Anchor</strong> before buyers defend and lift toward $4,028.00.",
-          "footer_left": "RESISTANCE: $4,025 - $4,027",
-          "footer_right": "POC ANCHOR RETEST",
+          "title": "PATH B: POC ANCHOR VALUE RELOAD",
+          "badge": "RELOAD: $4,018.00",
+          "body": "<strong>High-Probability Long:</strong> Pullback into the <strong>$4,018.12 POC Anchor</strong> with drying volume confirms institutional absorption. Defending this shelf provides an asymmetric reload targeting <strong>$4,026.50</strong>.",
+          "footer_left": "ENTRY: $4,017.50 \u2013 $4,018.50",
+          "footer_right": "1:2.5+ RR (VALUE BUY)",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Coil Base Breakdown",
+        "name": "Path C: Coil Base Breakdown Tripwire",
         "story_key": "Tripwire",
-        "theme": "red",
-        "color": "#f43f5e",
-        "accent": "#ef4444",
-        "border": "rgba(251, 113, 133, 0.45)",
+        "theme": "amber",
+        "color": "#f59e0b",
+        "accent": "#d97706",
+        "border": "rgba(245, 158, 11, 0.55)",
         "tripwire_level": 4014.5,
         "tripwire_start_time": 1793043600000,
         "tripwire_end_time": 1793048400000,
@@ -188,9 +188,9 @@
           "to_price": 4005.0
         },
         "card": {
-          "title": "TRIPWIRE: COIL BASE BREAKDOWN",
+          "title": "PATH C: COIL BASE BREAKDOWN TRIPWIRE",
           "badge": "CANCEL: $4,014.50",
-          "body": "A decisive 5m candle body close <strong>below $4,014.50</strong> invalidates the accumulation coil, opening a liquidation slide through Net VWAP ($4,012.80) to <strong>$4,005.00</strong>.",
+          "body": "<strong>Structural Failure:</strong> A decisive 5m candle close <strong>below $4,014.50</strong> invalidates the entire re-accumulation coil, opening a liquidation slide through Net VWAP ($4,012.80) down to <strong>$4,005.00</strong>.",
           "footer_left": "TRIPWIRE: 5M C < $4,014.50",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
