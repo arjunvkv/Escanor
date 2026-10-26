@@ -1013,6 +1013,7 @@ export function renderSovereignPaths() {
       `;
     }
   }
+  }
 
   // -------------------------------------------------------------------------
   // 4. RENDER REALITY BUFF FILAMENTS (FVG 50% CE, BENCHMARKS, GAMMA PINS)
