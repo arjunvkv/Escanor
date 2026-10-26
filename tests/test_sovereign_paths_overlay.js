@@ -6,6 +6,10 @@
  * 3. Server-side drawings.json schema containing XAUUSD_EVALUATION.
  * 4. Zero animation / zero bubbles compliance.
  * 5. Distinct non-standard colors for all 3 paths (Electric Violet, Solar Amber, Hazard Red).
+ * 6. ZERO text clutter on chart tape (all text inside HUD cards).
+ * 7. ZERO duplicate box shapes drawn on top of candles; existing boxes tinted via overrideOverlay.
+ * 8. Subtle, delicate vectors (1.6px, opacity 0.65) and leader lines (1.1px, opacity 0.40).
+ * 9. Ultra-readable HUD cards with solid dark pills (.hud-pill-*) and unclipped bottom corners.
  */
 
 const fs = require('fs');
@@ -44,8 +48,11 @@ assert(themeCss.includes('.tv-sovereign-paths-overlay'), '.tv-sovereign-paths-ov
 assert(themeCss.includes('.hud-chamfer-violet'), '.hud-chamfer-violet chamfered card style must exist');
 assert(themeCss.includes('.hud-chamfer-amber'), '.hud-chamfer-amber chamfered card style must exist');
 assert(themeCss.includes('.hud-chamfer-red'), '.hud-chamfer-red chamfered card style must exist');
+assert(themeCss.includes('.hud-pill-violet'), '.hud-pill-violet style must exist');
+assert(themeCss.includes('.hud-pill-amber'), '.hud-pill-amber style must exist');
+assert(themeCss.includes('.hud-pill-red'), '.hud-pill-red style must exist');
 assert(themeCss.includes('clip-path: polygon('), 'Cyberpunk chamfered clip-paths must be defined');
-console.log('✓ CSS Styling: Chamfered cards, cyber hazard accents, and sidebar toggle styling verified');
+console.log('✓ CSS Styling: Chamfered cards, high-contrast pills, and sidebar toggle styling verified');
 
 // 3. Verify drawings.json and XAUUSD_EVALUATION Schema
 const drawingsJsonPath = path.join(BASE_DIR, 'data', 'drawings.json');
@@ -79,10 +86,29 @@ const overlayJs = fs.readFileSync(overlayJsPath, 'utf8');
 assert(overlayJs.includes('export function initSovereignPathsOverlay'), 'initSovereignPathsOverlay must be exported');
 assert(overlayJs.includes('export function updateSovereignPathsData'), 'updateSovereignPathsData must be exported');
 assert(overlayJs.includes('export function renderSovereignPaths'), 'renderSovereignPaths must be exported');
-assert(overlayJs.includes('stroke-dasharray="4 3"'), 'Dotted leader connector lines must be rendered');
+assert(overlayJs.includes('export function applyBoxBorderOverrides'), 'applyBoxBorderOverrides must be exported');
+
+// Clean chart tape checks: ZERO text on chart, ZERO duplicate boxes
+assert(!overlayJs.includes('<text'), 'Must NOT render any <text> tags over the candles or chart lines');
+assert(!overlayJs.includes('<rect x='), 'Must NOT render duplicate <rect> box overlays over the candles');
+assert(overlayJs.includes('sov_box_dual_supply_pool'), 'Must reference existing Box 3 ID to tint border');
+assert(overlayJs.includes('sov_box_ascending_base'), 'Must reference existing Box 1 ID to tint border');
+assert(overlayJs.includes('overrideOverlay'), 'Must call overrideOverlay to tint existing box borders');
+
+// Subtle delicate vectors and leader lines
+assert(overlayJs.includes('stroke-width="1.6"'), 'Arrow vectors must use lighter stroke-width 1.6');
+assert(overlayJs.includes('stroke-width="1.1"'), 'Leader lines must use lighter stroke-width 1.1');
+assert(overlayJs.includes('opacity="0.65"'), 'Arrow vectors must have subtle opacity 0.65');
+assert(overlayJs.includes('opacity="0.40"'), 'Leader lines must have subtle opacity 0.40');
+
+// Ultra-readable HUD badges
+assert(overlayJs.includes('hud-pill-violet'), 'Card A must use .hud-pill-violet for readable footer');
+assert(overlayJs.includes('hud-pill-amber'), 'Card B must use .hud-pill-amber for readable footer');
+assert(overlayJs.includes('hud-pill-red'), 'Card C must use .hud-pill-red for readable footer');
+
 assert(!overlayJs.includes('@keyframes'), 'Strict zero CSS animations in overlay JS');
 assert(!overlayJs.includes('pulse-bubble'), 'Strict zero bubbles in overlay JS');
-console.log('✓ JavaScript Module: sovereign_paths_overlay.js exports, leader lines, and static rendering verified');
+console.log('✓ JavaScript Module: clean tape, zero chart text, zero duplicate boxes, tinted borders, and light vectors verified');
 
 // 5. Verify App.js integration
 const appJsPath = path.join(BASE_DIR, 'frontend', 'chart', 'js', 'app.js');

@@ -1,9 +1,12 @@
 /**
  * Escanor Sovereign Causal Paths & HUD Story Overlay
- * Renders static, crisp architectural path vectors, exact supporting zone boxes,
+ * Renders static, crisp architectural path vectors, exact supporting zone lines,
  * and connected leader lines to chamfered cyberpunk HUD comment cards.
  * 
- * 100% Locked to Real Chart Coordinates:
+ * 100% Clean Chart Tape:
+ * - NO extra duplicate boxes drawn over candles; existing box borders are tinted to match the path story.
+ * - ZERO text inside or around chart lines/boxes (all text is inside the HUD comment cards).
+ * - Subtle, delicate vectors and leader lines (stroke 1.1-1.6px, opacity 0.40-0.65) so live tape is clear.
  * - Anchored to actual candle timestamps and price values via KLineCharts coordinate projection.
  * - Stays 100% fixed to the candles when scrolled, zoomed, or panned (60fps drag loop).
  * - Off-screen clipping: when scrolled away from the setup, off-screen markings and cards hide naturally.
@@ -49,6 +52,7 @@ export function initSovereignPathsOverlay(chart) {
   }
 
   applyVisibilityState();
+  applyBoxBorderOverrides(isOverlayVisible);
 
   // Wire Sidebar Toggle Button
   if (toggleBtn) {
@@ -74,6 +78,7 @@ export function initSovereignPathsOverlay(chart) {
       isOverlayVisible = !isOverlayVisible;
       localStorage.setItem('tv_sovereign_paths_visible', isOverlayVisible ? 'true' : 'false');
       applyVisibilityState();
+      applyBoxBorderOverrides(isOverlayVisible);
       if (isOverlayVisible) {
         renderSovereignPaths();
       }
@@ -215,6 +220,9 @@ function setupChartInteractionListeners() {
   }
 }
 
+/**
+ * Toggle visibility of SVG canvas and HUD cards
+ */
 function applyVisibilityState() {
   if (toggleBtn) {
     if (isOverlayVisible) {
@@ -232,6 +240,60 @@ function applyVisibilityState() {
     } else {
       overlayContainer.classList.add('hidden');
     }
+  }
+}
+
+/**
+ * Change border colors of existing chart boxes to match path story,
+ * without drawing duplicate box shapes on top of candles.
+ */
+export function applyBoxBorderOverrides(isActive) {
+  if (!chartInstance || typeof chartInstance.overrideOverlay !== 'function') return;
+  try {
+    if (isActive) {
+      // Tint Box 3 (Dual-Top Supply Pool at $4,099 - $4,103.50) to Electric Violet
+      chartInstance.overrideOverlay({
+        id: 'sov_box_dual_supply_pool',
+        styles: {
+          rect: {
+            borderColor: '#e879f9',
+            borderSize: 2
+          }
+        }
+      });
+      // Tint Box 1 (Ascending Demand Base at $4,083 - $4,087.50) to Solar Amber
+      chartInstance.overrideOverlay({
+        id: 'sov_box_ascending_base',
+        styles: {
+          rect: {
+            borderColor: '#fbbf24',
+            borderSize: 2
+          }
+        }
+      });
+    } else {
+      // Restore original box borders
+      chartInstance.overrideOverlay({
+        id: 'sov_box_dual_supply_pool',
+        styles: {
+          rect: {
+            borderColor: 'rgba(168, 85, 247, 0.85)',
+            borderSize: 1.5
+          }
+        }
+      });
+      chartInstance.overrideOverlay({
+        id: 'sov_box_ascending_base',
+        styles: {
+          rect: {
+            borderColor: 'rgba(0, 229, 255, 0.85)',
+            borderSize: 1.5
+          }
+        }
+      });
+    }
+  } catch (err) {
+    console.warn('[Sovereign Paths] applyBoxBorderOverrides error:', err);
   }
 }
 
@@ -274,6 +336,7 @@ function setupCardInteractions() {
 export function updateSovereignPathsData(evalData) {
   if (!evalData) return;
   currentEvalData = evalData;
+  applyBoxBorderOverrides(isOverlayVisible);
   if (isOverlayVisible) {
     requestAnimationFrame(renderSovereignPaths);
   }
@@ -300,6 +363,9 @@ export function renderSovereignPaths() {
   const height = rect.height || 576;
 
   if (width < 200 || height < 150) return;
+
+  // Ensure box border colors remain tinted
+  applyBoxBorderOverrides(true);
 
   // Set viewBox to current viewport pixels
   if (svgElement) {
@@ -339,12 +405,10 @@ export function renderSovereignPaths() {
       groupA.innerHTML = '';
       cardA.style.display = 'none';
     } else {
-      // On screen: render exact architectural SVG at candle coordinates!
       const minX = boxTopLeft && boxBottomRight ? Math.min(boxTopLeft.x, boxBottomRight.x) : (trigStart ? trigStart.x : 0);
       const maxX = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.x, boxBottomRight.x) : (trigEnd ? trigEnd.x : 100);
       const minY = boxTopLeft && boxBottomRight ? Math.min(boxTopLeft.y, boxBottomRight.y) : (trigStart ? trigStart.y - 15 : 0);
       const maxY = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.y, boxBottomRight.y) : (trigStart ? trigStart.y + 15 : 30);
-      const boxW = Math.max(40, maxX - minX);
       const boxH = Math.max(12, maxY - minY);
 
       // Card A placement in top-right airspace
@@ -352,7 +416,7 @@ export function renderSovereignPaths() {
       const cardATop = 50;
       const cardALeft = width - cardAW - 25;
 
-      // Leader line connection from Target Box to Card A
+      // Leader line connection from Target Box (Box 3 right edge) to Card A
       const leaderStartX = maxX;
       const leaderStartY = minY + boxH * 0.5;
       const leaderEndX = cardALeft;
@@ -360,39 +424,30 @@ export function renderSovereignPaths() {
 
       let svgMarkup = '';
 
-      // Trigger line
+      // 1. Trigger Level Line at $4,094.00 (Clean, light, no text clutter)
       if (trigStart && trigEnd) {
         svgMarkup += `
-          <line x1="${trigStart.x}" y1="${trigStart.y}" x2="${trigEnd.x}" y2="${trigEnd.y}" stroke="#f0abfc" stroke-width="1.8" stroke-dasharray="3 3" opacity="0.95" />
-          <text x="${trigStart.x + 4}" y="${trigStart.y - 5}" fill="#f5d0fe" font-size="9" font-family="'JetBrains Mono', monospace" font-weight="700">TRIGGER: $4,094.00</text>
+          <line x1="${trigStart.x}" y1="${trigStart.y}" x2="${trigEnd.x}" y2="${trigEnd.y}" stroke="#f0abfc" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.65" />
         `;
       }
 
-      // Target box
-      if (boxTopLeft && boxBottomRight) {
-        svgMarkup += `
-          <rect x="${minX}" y="${minY}" width="${boxW}" height="${boxH}" fill="rgba(217, 70, 239, 0.16)" stroke="#e879f9" stroke-width="1.5" stroke-dasharray="4 2" rx="2" />
-          <text x="${minX + 4}" y="${minY + boxH * 0.72}" fill="#f5d0fe" font-size="8" font-family="'JetBrains Mono', monospace" font-weight="700">TARGET: $4,099-$4,103.50</text>
-        `;
-      }
-
-      // Squeeze vector arrow
+      // 2. Squeeze Vector Arrow (Light & subtle)
       if (vecFrom && vecTo) {
         svgMarkup += `
-          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + (vecTo.x - vecFrom.x) * 0.5} ${vecFrom.y - 4}, ${vecTo.x - 20} ${vecTo.y + 8}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#f0abfc" stroke-width="2.6" marker-end="url(#arrowViolet)" />
+          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + (vecTo.x - vecFrom.x) * 0.5} ${vecFrom.y - 4}, ${vecTo.x - 20} ${vecTo.y + 8}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#f0abfc" stroke-width="1.6" opacity="0.65" marker-end="url(#arrowViolet)" />
         `;
       }
 
-      // Dotted leader line connecting Target Box to Card A
+      // 3. Dotted Leader Line connecting Box 3 to Card A (Light & delicate)
       svgMarkup += `
-        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#e879f9" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.9" />
-        <rect x="${leaderStartX - 3}" y="${leaderStartY - 3}" width="6" height="6" fill="#f0abfc" />
-        <rect x="${leaderEndX - 3}" y="${leaderEndY - 3}" width="6" height="6" fill="#e879f9" />
+        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#e879f9" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+        <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#f0abfc" opacity="0.6" />
+        <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#e879f9" opacity="0.6" />
       `;
 
       groupA.innerHTML = svgMarkup;
 
-      // Update Card A
+      // Update Card A HUD
       const c = pathAData.card || {};
       cardA.style.top = `${cardATop}px`;
       cardA.style.left = `${cardALeft}px`;
@@ -412,7 +467,7 @@ export function renderSovereignPaths() {
           ${c.body || 'A clean 5m candle close <strong>above $4,094.00</strong> breaks compression lid.'}
         </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(217,70,239,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="cyber-stripes-violet" style="padding: 2px 6px; border-radius: 3px; color: #f0abfc; font-weight: 700;">${c.footer_left || 'TRIGGER: 5M C > $4,094.00'}</span>
+          <span class="hud-pill-violet">${c.footer_left || 'TRIGGER: 5M C > $4,094.00'}</span>
           <span style="color: #34d399; font-weight: 800;">${c.footer_right || '+10.5 PT RUNWAY'}</span>
         </div>
       `;
@@ -446,7 +501,6 @@ export function renderSovereignPaths() {
       const maxX = Math.max(floorTopLeft.x, floorBottomRight.x);
       const minY = Math.min(floorTopLeft.y, floorBottomRight.y);
       const maxY = Math.max(floorTopLeft.y, floorBottomRight.y);
-      const boxW = Math.max(40, maxX - minX);
       const boxH = Math.max(12, maxY - minY);
 
       // Card B placement in bottom-left airspace
@@ -454,35 +508,31 @@ export function renderSovereignPaths() {
       const cardBTop = Math.max(60, height - 170);
       const cardBLeft = 35;
 
-      // Leader line connection from Floor Box left edge to Card B
+      // Leader line connection from Box 1 left edge to Card B
       const leaderStartX = minX;
       const leaderStartY = minY + boxH * 0.5;
       const leaderEndX = cardBLeft + cardBW;
       const leaderEndY = cardBTop + 20;
 
-      let svgMarkup = `
-        <!-- 1. Supporting Demand Floor Zone Box ($4,083.00 - $4,087.50) -->
-        <rect x="${minX}" y="${minY}" width="${boxW}" height="${boxH}" fill="rgba(245, 158, 11, 0.18)" stroke="#fbbf24" stroke-width="1.5" rx="2" />
-        <text x="${minX + 4}" y="${minY + boxH * 0.72}" fill="#fef08a" font-size="8" font-family="'JetBrains Mono', monospace" font-weight="700">FLOOR: $4,083-$4,087.50</text>
-      `;
+      let svgMarkup = '';
 
+      // 1. Retest Path Vector (Light & subtle)
       if (vecFrom && vecTo) {
         svgMarkup += `
-          <!-- 2. Retest Path Vector (Clean Solid Arrow) -->
-          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + 10} ${vecFrom.y + 2}, ${vecTo.x - 10} ${vecTo.y - 6}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#fbbf24" stroke-width="2.2" marker-end="url(#arrowAmber)" />
+          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + 10} ${vecFrom.y + 2}, ${vecTo.x - 10} ${vecTo.y - 6}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#fbbf24" stroke-width="1.6" opacity="0.65" marker-end="url(#arrowAmber)" />
         `;
       }
 
+      // 2. Connector Line: Box 1 left edge -> Bottom-Left HUD Card B (Light & delicate)
       svgMarkup += `
-        <!-- 3. Connector Line: Floor Box -> Bottom-Left HUD Card B -->
-        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX - 25},${leaderStartY} ${leaderStartX - 25},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85" />
-        <rect x="${leaderStartX - 3}" y="${leaderStartY - 3}" width="6" height="6" fill="#fde68a" />
-        <rect x="${leaderEndX - 3}" y="${leaderEndY - 3}" width="6" height="6" fill="#fbbf24" />
+        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX - 25},${leaderStartY} ${leaderStartX - 25},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#fbbf24" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+        <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fde68a" opacity="0.6" />
+        <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#fbbf24" opacity="0.6" />
       `;
 
       groupB.innerHTML = svgMarkup;
 
-      // Update Card B
+      // Update Card B HUD (Clean, ultra-readable pill)
       const c = pathBData.card || {};
       cardB.style.top = `${cardBTop}px`;
       cardB.style.left = `${cardBLeft}px`;
@@ -499,10 +549,10 @@ export function renderSovereignPaths() {
           </span>
         </div>
         <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
-          ${c.body || 'Rejection off $4,093.50 rotates price down to test ascending floor shelf in Floor Box.'}
+          ${c.body || 'Rejection off $4,093.50 rotates price down to test ascending floor shelf in Box 1.'}
         </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="cyber-stripes-amber" style="padding: 2px 6px; border-radius: 3px; color: #fef08a; font-weight: 700;">${c.footer_left || 'SUPPORT: $4,083 – $4,087.50'}</span>
+          <span class="hud-pill-amber">${c.footer_left || 'SUPPORT: $4,083 – $4,087.50'}</span>
           <span style="color: #f59e0b; font-weight: 800;">${c.footer_right || 'LPS ACCUMULATION'}</span>
         </div>
       `;
@@ -540,55 +590,52 @@ export function renderSovereignPaths() {
       const maxX = downTopLeft && downBottomRight ? Math.max(downTopLeft.x, downBottomRight.x) : (tripEnd ? tripEnd.x : 100);
       const minY = downTopLeft && downBottomRight ? Math.min(downTopLeft.y, downBottomRight.y) : (tripStart ? tripStart.y + 10 : 0);
       const maxY = downTopLeft && downBottomRight ? Math.max(downTopLeft.y, downBottomRight.y) : (tripStart ? tripStart.y + 25 : 30);
-      const boxW = Math.max(40, maxX - minX);
-      const boxH = Math.max(12, maxY - minY);
+      const downLineY = (minY + maxY) * 0.5;
 
       // Card C placement in bottom-right airspace
       const cardCW = Math.min(340, width * 0.33);
       const cardCTop = Math.max(60, height - 170);
       const cardCLeft = width - cardCW - 25;
 
-      // Leader line connection from Tripwire Line / Downside Target to Card C
+      // Leader line connection from Tripwire Line right coordinate to Card C
       const leaderStartX = tripEnd ? tripEnd.x : maxX;
-      const leaderStartY = tripEnd ? tripEnd.y : minY;
+      const leaderStartY = tripEnd ? tripEnd.y : downLineY;
       const leaderEndX = cardCLeft;
       const leaderEndY = cardCTop + 20;
 
       let svgMarkup = '';
 
+      // 1. Tripwire Level Line at $4,082.50 (Clean line marking, no text clutter)
       if (tripStart && tripEnd) {
         svgMarkup += `
-          <!-- 1. Tripwire Level Line at $4,082.50 -->
-          <line x1="${tripStart.x}" y1="${tripStart.y}" x2="${tripEnd.x}" y2="${tripEnd.y}" stroke="#f43f5e" stroke-width="1.8" stroke-dasharray="4 2" />
-          <text x="${tripStart.x + 2}" y="${tripStart.y - 4}" fill="#fecdd3" font-size="8.5" font-family="'JetBrains Mono', monospace" font-weight="800">TRIPWIRE: $4,082.50</text>
+          <line x1="${tripStart.x}" y1="${tripStart.y}" x2="${tripEnd.x}" y2="${tripEnd.y}" stroke="#f43f5e" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.65" />
         `;
       }
 
+      // 2. Downside Target Level Line at $4,068.50 (Clean line marking instead of extra box)
       if (downTopLeft && downBottomRight) {
         svgMarkup += `
-          <!-- 2. Downside Target Markdown Zone Box ($4,066.50 - $4,070.00) -->
-          <rect x="${minX}" y="${minY}" width="${boxW}" height="${boxH}" fill="rgba(239, 68, 68, 0.2)" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="3 2" rx="2" />
-          <text x="${minX + 4}" y="${minY + boxH * 0.72}" fill="#fecdd3" font-size="7.5" font-family="'JetBrains Mono', monospace" font-weight="700">DOWN: $4,066.50-$4,070</text>
+          <line x1="${minX}" y1="${downLineY}" x2="${maxX}" y2="${downLineY}" stroke="#f43f5e" stroke-width="1.3" stroke-dasharray="4 3" opacity="0.55" />
         `;
       }
 
+      // 3. Breakdown Cascade Vector (Light & subtle)
       if (vecFrom && vecTo) {
         svgMarkup += `
-          <!-- 3. Breakdown Cascade Vector (Clean Solid Arrow) -->
-          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + 15} ${vecFrom.y + 4}, ${vecTo.x - 10} ${vecTo.y - 4}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#f43f5e" stroke-width="2.2" marker-end="url(#arrowRed)" />
+          <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + 15} ${vecFrom.y + 4}, ${vecTo.x - 10} ${vecTo.y - 4}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#f43f5e" stroke-width="1.6" opacity="0.65" marker-end="url(#arrowRed)" />
         `;
       }
 
+      // 4. Connector Line: Tripwire Line -> Bottom-Right HUD Card C (Light & delicate)
       svgMarkup += `
-        <!-- 4. Connector Line: Tripwire Line -> Bottom-Right HUD Card C -->
-        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#f43f5e" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.85" />
-        <rect x="${leaderStartX - 3}" y="${leaderStartY - 3}" width="6" height="6" fill="#fecdd3" />
-        <rect x="${leaderEndX - 3}" y="${leaderEndY - 3}" width="6" height="6" fill="#f43f5e" />
+        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#f43f5e" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+        <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fecdd3" opacity="0.6" />
+        <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#f43f5e" opacity="0.6" />
       `;
 
       groupC.innerHTML = svgMarkup;
 
-      // Update Card C
+      // Update Card C HUD (Clean, ultra-readable pill)
       const c = pathCData.card || {};
       cardC.style.top = `${cardCTop}px`;
       cardC.style.left = `${cardCLeft}px`;
@@ -608,7 +655,7 @@ export function renderSovereignPaths() {
           ${c.body || 'A 5m candle body close below $4,082.50 shatters ascending structure into cascade target.'}
         </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(244,63,94,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="cyber-stripes-red" style="padding: 2px 6px; border-radius: 3px; color: #fecdd3; font-weight: 700;">${c.footer_left || 'TRIPWIRE: 5M C < $4,082.50'}</span>
+          <span class="hud-pill-red">${c.footer_left || 'TRIPWIRE: 5M C < $4,082.50'}</span>
           <span style="color: #fb7185; font-weight: 800;">${c.footer_right || 'FULL CANCELLATION'}</span>
         </div>
       `;

@@ -4747,10 +4747,10 @@ input[type="number"] {
   transition: opacity 0.2s ease;
 }
 
-/* Chamfered Cyber HUD Callout Cards (Static, Crisp, Zero-Overlap) */
+/* Chamfered Cyber HUD Callout Cards (Static, Crisp, Ultra-Legible) */
 .hud-box {
   position: absolute;
-  backdrop-filter: blur(14px);
+  backdrop-filter: blur(16px);
   cursor: pointer;
   z-index: 30;
   transition: border-color 0.15s ease, filter 0.15s ease, transform 0.15s ease, opacity 0.2s ease;
@@ -4758,6 +4758,8 @@ input[type="number"] {
   user-select: none;
   box-sizing: border-box;
   font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  border-radius: 6px;
+  padding: 12px 14px 10px 14px;
 }
 
 .hud-box:hover {
@@ -4768,48 +4770,70 @@ input[type="number"] {
 
 /* Violet Squeeze Box */
 .hud-chamfer-violet {
-  clip-path: polygon(0 14px, 14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px));
-  background: linear-gradient(135deg, rgba(217, 70, 239, 0.22) 0%, rgba(13, 18, 36, 0.96) 100%);
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 0 100%);
+  background: linear-gradient(145deg, rgba(24, 18, 38, 0.98) 0%, rgba(10, 12, 22, 0.98) 100%);
   border: 1.5px solid rgba(232, 121, 249, 0.85);
-  box-shadow: 0 0 16px rgba(217, 70, 239, 0.28);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 14px rgba(217, 70, 239, 0.25);
 }
 .hud-chamfer-violet:hover {
   border-color: #f5d0fe;
-  box-shadow: 0 0 24px rgba(217, 70, 239, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8), 0 0 20px rgba(217, 70, 239, 0.45);
 }
 
 /* Solar Amber Retest Box */
 .hud-chamfer-amber {
-  clip-path: polygon(14px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
-  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(13, 18, 36, 0.96) 100%);
+  clip-path: polygon(14px 0, 100% 0, 100% 100%, 0 100%, 0 14px);
+  background: linear-gradient(145deg, rgba(35, 26, 15, 0.98) 0%, rgba(10, 12, 22, 0.98) 100%);
   border: 1.5px solid rgba(251, 191, 36, 0.85);
-  box-shadow: 0 0 16px rgba(245, 158, 11, 0.28);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 14px rgba(245, 158, 11, 0.25);
 }
 .hud-chamfer-amber:hover {
   border-color: #fef08a;
-  box-shadow: 0 0 24px rgba(245, 158, 11, 0.5);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8), 0 0 20px rgba(245, 158, 11, 0.45);
 }
 
-/* Hazard Red Invalidation Box */
+/* Hazard Red Invalidation Box - Bottom corners unclipped for 100% readable text */
 .hud-chamfer-red {
-  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.24) 0%, rgba(13, 18, 36, 0.96) 100%);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 0 100%);
+  background: linear-gradient(145deg, rgba(38, 16, 22, 0.98) 0%, rgba(10, 12, 22, 0.98) 100%);
   border: 1.5px solid rgba(244, 63, 94, 0.9);
-  box-shadow: 0 0 18px rgba(239, 68, 68, 0.32);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7), 0 0 16px rgba(239, 68, 68, 0.3);
 }
 .hud-chamfer-red:hover {
   border-color: #fecdd3;
-  box-shadow: 0 0 26px rgba(239, 68, 68, 0.55);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.8), 0 0 22px rgba(239, 68, 68, 0.5);
 }
 
-/* Diagonal Cyber Hazard Stripes */
-.cyber-stripes-violet {
-  background: repeating-linear-gradient(45deg, rgba(232, 121, 249, 0.25), rgba(232, 121, 249, 0.25) 4px, transparent 4px, transparent 8px);
+/* Clean, Solid High-Contrast HUD Footer Pills (No Blurry Repeating Stripes) */
+.hud-pill-violet {
+  background: rgba(217, 70, 239, 0.18);
+  border: 1px solid rgba(232, 121, 249, 0.45);
+  color: #fdf4ff;
+  border-radius: 4px;
+  padding: 2.5px 8px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
 }
-.cyber-stripes-amber {
-  background: repeating-linear-gradient(45deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.25) 4px, transparent 4px, transparent 8px);
+.hud-pill-amber {
+  background: rgba(245, 158, 11, 0.18);
+  border: 1px solid rgba(251, 191, 36, 0.45);
+  color: #fef08a;
+  border-radius: 4px;
+  padding: 2.5px 8px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
 }
-.cyber-stripes-red {
-  background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.3) 4px, transparent 4px, transparent 8px);
+.hud-pill-red {
+  background: rgba(239, 68, 68, 0.22);
+  border: 1px solid rgba(244, 63, 94, 0.5);
+  color: #fff1f2;
+  border-radius: 4px;
+  padding: 2.5px 8px;
+  font-weight: 700;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px;
 }
+
 

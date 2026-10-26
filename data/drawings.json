@@ -1,42 +1,38 @@
 {
   "XAUUSD": [
     {
-      "id": "sov_box_ascending_base",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1792673100000,
-          "value": 4087.5
-        },
-        {
-          "timestamp": 1792675800000,
-          "value": 4083.0
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(0, 229, 255, 0.12)",
-          "borderColor": "rgba(0, 229, 255, 0.85)",
-          "borderSize": 1.5
-        }
-      },
-      "zLevel": 40,
-      "fixedZLevel": true,
-      "extendData": {
-        "label": "Ascending Demand Base ($4,083.00 - $4,087.50)"
-      }
-    },
-    {
       "id": "sov_box_compression_gate",
       "name": "rect",
       "points": [
         {
           "timestamp": 1792668000000,
-          "value": 4094.0
+          "value": 4094,
+          "dataIndex": 1405
         },
         {
           "timestamp": 1792675800000,
-          "value": 4090.0
+          "value": 4094,
+          "dataIndex": 1431
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4090,
+          "dataIndex": 1431
+        },
+        {
+          "timestamp": 1792668000000,
+          "value": 4090,
+          "dataIndex": 1405
+        },
+        {
+          "timestamp": 1792668000000,
+          "value": 4092,
+          "dataIndex": 1405
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4092,
+          "dataIndex": 1431
         }
       ],
       "styles": {
@@ -46,10 +42,56 @@
           "borderSize": 1.5
         }
       },
-      "zLevel": 30,
-      "fixedZLevel": true,
+      "zLevel": 29,
       "extendData": {
         "label": "Compression Barrier / Breakout Gate ($4,090.00 - $4,094.00)"
+      }
+    },
+    {
+      "id": "sov_box_ascending_base",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1792673100000,
+          "value": 4087.5,
+          "dataIndex": 1422
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4087.5,
+          "dataIndex": 1431
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4083,
+          "dataIndex": 1431
+        },
+        {
+          "timestamp": 1792673100000,
+          "value": 4083,
+          "dataIndex": 1422
+        },
+        {
+          "timestamp": 1792673100000,
+          "value": 4085.25,
+          "dataIndex": 1422
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4085.25,
+          "dataIndex": 1431
+        }
+      ],
+      "styles": {
+        "rect": {
+          "color": "rgba(0, 229, 255, 0.12)",
+          "borderColor": "rgba(0, 229, 255, 0.85)",
+          "borderSize": 1.5
+        }
+      },
+      "zLevel": 48,
+      "extendData": {
+        "label": "Ascending Demand Base ($4,083.00 - $4,087.50)"
       }
     },
     {
@@ -58,11 +100,33 @@
       "points": [
         {
           "timestamp": 1792659600000,
-          "value": 4103.5
+          "value": 4103.5,
+          "dataIndex": 1377
         },
         {
           "timestamp": 1792675800000,
-          "value": 4099.0
+          "value": 4103.5,
+          "dataIndex": 1431
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4099,
+          "dataIndex": 1431
+        },
+        {
+          "timestamp": 1792659600000,
+          "value": 4099,
+          "dataIndex": 1377
+        },
+        {
+          "timestamp": 1792659600000,
+          "value": 4101.25,
+          "dataIndex": 1377
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4101.25,
+          "dataIndex": 1431
         }
       ],
       "styles": {
@@ -72,8 +136,7 @@
           "borderSize": 1.5
         }
       },
-      "zLevel": 20,
-      "fixedZLevel": true,
+      "zLevel": 100,
       "extendData": {
         "label": "Dual-Top Liquidity Pool ($4,099.00 - $4,103.50)"
       }
@@ -114,7 +177,7 @@
         "card": {
           "title": "PATH A: ASCENDING SQUEEZE",
           "badge": "TARGET: $4,103.50",
-          "body": "A clean 5m candle close <strong>above $4,094.00</strong> breaks the compression lid. Trapped shorts cover immediately, launching an impulsive run through the air pocket straight into the <strong>Target Box ($4,099 – $4,103.50)</strong>.",
+          "body": "A clean 5m candle close <strong>above $4,094.00</strong> breaks the compression lid. Trapped shorts cover immediately, launching an impulsive run through the air pocket straight into the <strong>Target Box ($4,099 \u2013 $4,103.50)</strong>.",
           "footer_left": "TRIGGER: 5M C > $4,094.00",
           "footer_right": "+10.5 PT RUNWAY",
           "position": "top-right"
@@ -145,8 +208,8 @@
         "card": {
           "title": "PATH B: COIL BASE RETEST",
           "badge": "FLOOR: $4,083.00",
-          "body": "Rejection off $4,093.50 rotates price down to test the ascending higher-low shelf in <strong>Floor Box ($4,083 – $4,087.50)</strong>. Bullish triangle thesis remains intact as long as $4,083.00 holds on closing basis.",
-          "footer_left": "SUPPORT: $4,083 – $4,087.50",
+          "body": "Rejection off $4,093.50 rotates price down to test the ascending higher-low shelf in <strong>Floor Box ($4,083 \u2013 $4,087.50)</strong>. Bullish triangle thesis remains intact as long as $4,083.00 holds on closing basis.",
+          "footer_left": "SUPPORT: $4,083 \u2013 $4,087.50",
           "footer_right": "LPS ACCUMULATION",
           "position": "bottom-left"
         }
@@ -180,7 +243,7 @@
         "card": {
           "title": "TRIPWIRE: ASCENDING FLOOR BREACH",
           "badge": "CANCEL: $4,082.50",
-          "body": "A 5m candle body close <strong>below $4,082.50</strong> (clean breach of Box 1) completely shatters the ascending triangle structure and re-opens the downside cascade toward <strong>Target Box ($4,070 – $4,066)</strong>.",
+          "body": "A 5m candle body close <strong>below $4,082.50</strong> (clean breach of Box 1) completely shatters the ascending triangle structure and re-opens the downside cascade toward <strong>Target Box ($4,070 \u2013 $4,066)</strong>.",
           "footer_left": "TRIPWIRE: 5M C < $4,082.50",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
