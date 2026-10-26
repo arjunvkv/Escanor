@@ -3,14 +3,15 @@
  * Renders static, crisp architectural path vectors, exact supporting zone lines,
  * and connected leader lines to chamfered cyberpunk HUD comment cards.
  * 
- * 100% Data-Driven From Evaluation JSON:
+ * 100% Data-Driven & Viewport-Aware:
  * - NO hardcoded setup prices or timestamps; strictly projected from evaluation JSON.
- * - NO extra duplicate box shapes drawn on top of candles; existing boxes are tinted dynamically.
+ * - Robust KLineCharts coordinate projection (works in all panes and viewports).
+ * - Safe Airspace Card Placement: Card A at top-right (clearing top ribbon & right Y-axis),
+ *   Card B at bottom-left (clearing left sidebar), Card C at bottom-right (clearing right Y-axis).
+ * - Off-screen clipping: When setup is scrolled away, markings and cards cleanly hide.
+ * - When setup is in view, lines, arrows, leader lines, and cards render crisply glued to candles.
  * - ZERO text clutter on chart tape (prices, conditions & stories live inside HUD comment cards).
  * - Subtle, delicate vectors and leader lines (stroke 1.1-1.6px, opacity 0.40-0.65).
- * - Anchored to actual candle timestamps and price values via robust KLineCharts coordinate projection.
- * - 60fps drag/scroll requestAnimationFrame loop keeps markings glued to candles.
- * - Off-screen clipping hides markings when scrolled away.
  */
 
 let overlayContainer = null;
@@ -60,7 +61,7 @@ export function initSovereignPathsOverlay(chart) {
       
       // If already active and clicked while setup is off-screen, smoothly jump to setup!
       if (isOverlayVisible && currentEvalData?.anchor_timestamp) {
-        const anchorPt = pointToPixel(chartInstance, currentEvalData.anchor_timestamp, 4045.0);
+        const anchorPt = pointToPixel(chartInstance, currentEvalData.anchor_timestamp, 4020.0);
         const rect = overlayContainer?.getBoundingClientRect();
         const w = rect?.width || window.innerWidth;
         const h = rect?.height || window.innerHeight;
@@ -106,6 +107,8 @@ export function initSovereignPathsOverlay(chart) {
       requestAnimationFrame(renderSovereignPaths);
     }
   });
+
+  window.__renderSovereignPaths = renderSovereignPaths;
 }
 
 /**
@@ -119,7 +122,6 @@ function showToast(msg) {
 
 /**
  * Robust coordinate projection: Convert timestamp and price to exact on-screen canvas pixel coordinates.
- * Works natively with KLineCharts without broken paneId constraints.
  */
 export function pointToPixel(chart, timestamp, price) {
   if (!chart) return null;
@@ -128,8 +130,7 @@ export function pointToPixel(chart, timestamp, price) {
     if (typeof timestamp === 'number' && !isNaN(timestamp)) pt.timestamp = timestamp;
     if (typeof price === 'number' && !isNaN(price)) pt.value = price;
 
-    // 1. Direct KLineCharts convertToPixel call
-    // Do NOT pass a custom paneId; omitting options allows KLineCharts to use the main candle pane.
+    // 1. Direct KLineCharts convertToPixel call on main pane
     let res = chart.convertToPixel(pt);
     if (Array.isArray(res) && res.length > 0) res = res[0];
 
@@ -319,6 +320,42 @@ export function applyBoxBorderOverrides(isActive) {
         });
       } catch (_) {}
     });
+
+    // Also match any user-drawn rect overlay by price coordinates!
+    const allOverlays = (typeof chartInstance.getOverlays === 'function') ? (chartInstance.getOverlays() || []) : [];
+    const rects = allOverlays.filter(ov => ov.name === 'rect');
+    rects.forEach(r => {
+      if (boxOverrides.some(o => o.id === r.id)) return; // already handled by exact ID
+      const pts = r.points || [];
+      if (pts.length < 2) return;
+      const vals = pts.map(p => p.value).filter(v => typeof v === 'number');
+      if (vals.length < 2) return;
+      const rMin = Math.min(...vals);
+      const rMax = Math.max(...vals);
+
+      paths.forEach(p => {
+        const box = p.target_box || p.supporting_box;
+        if (box && typeof box.bottom === 'number' && typeof box.top === 'number') {
+          const bMin = Math.min(box.bottom, box.top);
+          const bMax = Math.max(box.bottom, box.top);
+          const overlap = Math.max(0, Math.min(rMax, bMax) - Math.max(rMin, bMin));
+          const span = Math.min(rMax - rMin, bMax - bMin);
+          if (span > 0 && (overlap / span) >= 0.45) {
+            try {
+              chartInstance.overrideOverlay({
+                id: r.id,
+                styles: {
+                  rect: {
+                    borderColor: isActive ? (p.border || p.color || '#e879f9') : '#ec407a',
+                    borderSize: isActive ? 2 : 1.5
+                  }
+                }
+              });
+            } catch (_) {}
+          }
+        }
+      });
+    });
   } catch (err) {
     console.warn('[Sovereign Paths] applyBoxBorderOverrides error:', err);
   }
@@ -363,6 +400,7 @@ function setupCardInteractions() {
 export function updateSovereignPathsData(evalData) {
   if (!evalData) return;
   currentEvalData = evalData;
+  window.__lastEvaluationData = evalData;
   applyBoxBorderOverrides(isOverlayVisible);
   if (isOverlayVisible) {
     requestAnimationFrame(renderSovereignPaths);
@@ -370,12 +408,30 @@ export function updateSovereignPathsData(evalData) {
 }
 
 /**
- * Check if coordinate point or rectangle is visible within the canvas viewport
+ * Check if coordinate point or rectangle is visible horizontally within the canvas viewport (with 120px tolerance)
+ */
+function isHorizontallyInViewport(minX, maxX, viewportW) {
+  if (maxX < -120 || minX > viewportW + 120) return false;
+  return true;
+}
+
+/**
+ * Check if coordinate rectangle is visible within the canvas viewport
  */
 function isRectInViewport(minX, maxX, minY, maxY, viewportW, viewportH) {
-  if (maxX < -80 || minX > viewportW + 80) return false;
-  if (maxY < -80 || minY > viewportH + 80) return false;
-  return true;
+  return isHorizontallyInViewport(minX, maxX, viewportW);
+}
+
+/**
+ * Check if a vector is in viewport
+ */
+function isVectorInViewport(vFrom, vTo, viewportW, viewportH) {
+  if (!vFrom && !vTo) return false;
+  const x1 = vFrom ? vFrom.x : vTo.x;
+  const x2 = vTo ? vTo.x : vFrom.x;
+  const minX = Math.min(x1, x2);
+  const maxX = Math.max(x1, x2);
+  return isHorizontallyInViewport(minX, maxX, viewportW);
 }
 
 /**
@@ -404,6 +460,11 @@ export function renderSovereignPaths() {
   const pathBData = paths.find(p => p.id === 'path_b') || paths[1];
   const pathCData = paths.find(p => p.id === 'path_c') || paths[2];
 
+  // Safe Airspace Dimensions (Avoid top ribbon and right price-axis scale)
+  const rightAxisMargin = 75; // Right price scale width + margin
+  const topRibbonMargin = 95; // Top macro ribbon height + margin
+  const leftSidebarMargin = 65; // Left toolbar width + margin
+
   // -------------------------------------------------------------------------
   // 1. RENDER PATH A (Electric Violet Squeeze)
   // -------------------------------------------------------------------------
@@ -429,17 +490,20 @@ export function renderSovereignPaths() {
       ? pointToPixel(chartInstance, pathAData.vector.to_time, pathAData.vector.to_price)
       : null;
 
-    const isBoxVisible = boxTopLeft && boxBottomRight && isRectInViewport(
+    const isBoxVisible = boxTopLeft && boxBottomRight && isHorizontallyInViewport(
       Math.min(boxTopLeft.x, boxBottomRight.x),
       Math.max(boxTopLeft.x, boxBottomRight.x),
-      Math.min(boxTopLeft.y, boxBottomRight.y),
-      Math.max(boxTopLeft.y, boxBottomRight.y),
-      width, height
+      width
     );
 
-    const isTrigVisible = trigStart && trigEnd && (trigEnd.x >= -50 && trigStart.x <= width + 50 && trigStart.y >= -50 && trigStart.y <= height + 50);
+    const isTrigVisible = trigStart && trigEnd && isHorizontallyInViewport(
+      Math.min(trigStart.x, trigEnd.x),
+      Math.max(trigStart.x, trigEnd.x),
+      width
+    );
+    const isVecVisible = isVectorInViewport(vecFrom, vecTo, width, height);
 
-    if (!isBoxVisible && !isTrigVisible && !vecTo) {
+    if (!isBoxVisible && !isTrigVisible && !isVecVisible) {
       groupA.innerHTML = '';
       cardA.style.display = 'none';
     } else {
@@ -449,14 +513,15 @@ export function renderSovereignPaths() {
       const maxY = boxTopLeft && boxBottomRight ? Math.max(boxTopLeft.y, boxBottomRight.y) : (trigStart ? trigStart.y + 15 : 30);
       const boxH = Math.max(12, maxY - minY);
 
-      // Card A placement in top-right airspace
-      const cardAW = Math.min(330, width * 0.32);
-      const cardATop = 50;
-      const cardALeft = width - cardAW - 25;
+      // Card A placement in top-right airspace (Clearing top ribbon and right price-axis)
+      const cardAW = Math.min(310, Math.max(260, width * 0.28));
+      const cardATop = topRibbonMargin;
+      const cardALeft = width - cardAW - rightAxisMargin;
 
       // Leader line connection from Target Box (right edge) to Card A
-      const leaderStartX = maxX;
-      const leaderStartY = minY + boxH * 0.5;
+      const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, maxX));
+      const rawStartY = boxTopLeft ? (minY + boxH * 0.5) : (trigEnd ? trigEnd.y : 50);
+      const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardALeft;
       const leaderEndY = cardATop + 20;
 
@@ -477,11 +542,13 @@ export function renderSovereignPaths() {
       }
 
       // 3. Dotted Leader Line connecting Box 3 / Target to Card A (Light & delicate)
-      svgMarkup += `
-        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#e879f9" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
-        <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#f0abfc" opacity="0.6" />
-        <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#e879f9" opacity="0.6" />
-      `;
+      if (isBoxVisible || isTrigVisible) {
+        svgMarkup += `
+          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#e879f9" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+          <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#f0abfc" opacity="0.6" />
+          <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#e879f9" opacity="0.6" />
+        `;
+      }
 
       groupA.innerHTML = svgMarkup;
 
@@ -495,18 +562,18 @@ export function renderSovereignPaths() {
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(217,70,239,0.35); padding-bottom: 6px; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span style="width: 9px; height: 9px; border-radius: 2px; background: #d946ef; display: inline-block;"></span>
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #f0abfc; text-transform: uppercase;">${c.title || 'PATH A: RELIEF SHORT-SQUEEZE'}</span>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #f0abfc; text-transform: uppercase;">${c.title || 'PATH A: EXPANSION SQUEEZE'}</span>
           </div>
           <span style="padding: 2px 6px; font-size: 10px; font-family: monospace; font-weight: 800; background: rgba(217,70,239,0.25); color: #fdf4ff; border: 1px solid rgba(217,70,239,0.45); border-radius: 3px;">
-            ${c.badge || 'TARGET: $4,070.00'}
+            ${c.badge || 'TARGET: $4,052.00'}
           </span>
         </div>
         <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
-          ${c.body || 'A clean 5m close clears local breakdown lid, triggering an impulsive relief short-squeeze.'}
+          ${c.body || 'A clean 5m close triggers an impulsive short-squeeze out of the coil.'}
         </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(217,70,239,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="hud-pill-violet">${c.footer_left || 'TRIGGER: 5M C > $4,047.00'}</span>
-          <span style="color: #34d399; font-weight: 800;">${c.footer_right || '+23.0 PT RUNWAY'}</span>
+          <span class="hud-pill-violet">${c.footer_left || 'TRIGGER: 5M C > $4,032.50'}</span>
+          <span style="color: #34d399; font-weight: 800;">${c.footer_right || '+19.5 PT RUNWAY'}</span>
         </div>
       `;
     }
@@ -530,15 +597,14 @@ export function renderSovereignPaths() {
       ? pointToPixel(chartInstance, pathBData.vector.to_time, pathBData.vector.to_price)
       : null;
 
-    const isFloorVisible = floorTopLeft && floorBottomRight && isRectInViewport(
+    const isFloorVisible = floorTopLeft && floorBottomRight && isHorizontallyInViewport(
       Math.min(floorTopLeft.x, floorBottomRight.x),
       Math.max(floorTopLeft.x, floorBottomRight.x),
-      Math.min(floorTopLeft.y, floorBottomRight.y),
-      Math.max(floorTopLeft.y, floorBottomRight.y),
-      width, height
+      width
     );
+    const isVecVisible = isVectorInViewport(vecFrom, vecTo, width, height);
 
-    if (!isFloorVisible && !vecTo) {
+    if (!isFloorVisible && !isVecVisible) {
       groupB.innerHTML = '';
       cardB.style.display = 'none';
     } else {
@@ -548,14 +614,15 @@ export function renderSovereignPaths() {
       const maxY = floorTopLeft && floorBottomRight ? Math.max(floorTopLeft.y, floorBottomRight.y) : 230;
       const boxH = Math.max(12, maxY - minY);
 
-      // Card B placement in bottom-left airspace
-      const cardBW = Math.min(310, width * 0.30);
-      const cardBTop = Math.max(60, height - 170);
-      const cardBLeft = 35;
+      // Card B placement in bottom-left airspace (Clearing left sidebar)
+      const cardBW = Math.min(300, Math.max(250, width * 0.27));
+      const cardBTop = Math.max(110, height - 185);
+      const cardBLeft = leftSidebarMargin;
 
       // Leader line connection from Floor Box left edge to Card B
-      const leaderStartX = minX;
-      const leaderStartY = minY + boxH * 0.5;
+      const leaderStartX = Math.max(10, Math.min(width - 50, minX));
+      const rawStartY = floorTopLeft ? (minY + boxH * 0.5) : (vecTo ? vecTo.y : height - 100);
+      const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardBLeft + cardBW;
       const leaderEndY = cardBTop + 20;
 
@@ -569,11 +636,13 @@ export function renderSovereignPaths() {
       }
 
       // 2. Connector Line: Box 1 left edge -> Bottom-Left HUD Card B (Light & delicate)
-      svgMarkup += `
-        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX - 25},${leaderStartY} ${leaderStartX - 25},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#fbbf24" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
-        <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fde68a" opacity="0.6" />
-        <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#fbbf24" opacity="0.6" />
-      `;
+      if (isFloorVisible) {
+        svgMarkup += `
+          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX - 25},${leaderStartY} ${leaderStartX - 25},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#fbbf24" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+          <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fde68a" opacity="0.6" />
+          <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#fbbf24" opacity="0.6" />
+        `;
+      }
 
       groupB.innerHTML = svgMarkup;
 
@@ -587,18 +656,18 @@ export function renderSovereignPaths() {
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(245,158,11,0.35); padding-bottom: 6px; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span style="width: 9px; height: 9px; border-radius: 2px; background: #fbbf24; display: inline-block;"></span>
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fde68a; text-transform: uppercase;">${c.title || 'PATH B: DOUBLE-BOTTOM BASE TEST'}</span>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fde68a; text-transform: uppercase;">${c.title || 'PATH B: DEMAND SHELF RETEST'}</span>
           </div>
           <span style="padding: 2px 6px; font-size: 10px; font-family: monospace; font-weight: 800; background: rgba(245,158,11,0.25); color: #fef08a; border: 1px solid rgba(245,158,11,0.45); border-radius: 3px;">
-            ${c.badge || 'FLOOR: $4,034.00'}
+            ${c.badge || 'FLOOR: $4,021.50'}
           </span>
         </div>
         <div style="font-size: 11.5px; line-height: 1.5; color: #cbd5e1; font-weight: 500;">
-          ${c.body || 'Rejection rotates price down to test capitulation absorption shelf in Floor.'}
+          ${c.body || 'Rejection rotates price back down to test coil absorption floor.'}
         </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="hud-pill-amber">${c.footer_left || 'SUPPORT: $4,034 – $4,038.00'}</span>
-          <span style="color: #f59e0b; font-weight: 800;">${c.footer_right || 'ABSORPTION TEST'}</span>
+          <span class="hud-pill-amber">${c.footer_left || 'SUPPORT: $4,021.50 – $4,024.50'}</span>
+          <span style="color: #f59e0b; font-weight: 800;">${c.footer_right || 'LPS COIL RE-TEST'}</span>
         </div>
       `;
     }
@@ -629,16 +698,19 @@ export function renderSovereignPaths() {
       ? pointToPixel(chartInstance, pathCData.vector.to_time, pathCData.vector.to_price)
       : null;
 
-    const isTripVisible = tripStart && tripEnd && (tripEnd.x >= -50 && tripStart.x <= width + 50 && tripStart.y >= -50 && tripStart.y <= height + 50);
-    const isDownVisible = downTopLeft && downBottomRight && isRectInViewport(
+    const isTripVisible = tripStart && tripEnd && isHorizontallyInViewport(
+      Math.min(tripStart.x, tripEnd.x),
+      Math.max(tripStart.x, tripEnd.x),
+      width
+    );
+    const isDownVisible = downTopLeft && downBottomRight && isHorizontallyInViewport(
       Math.min(downTopLeft.x, downBottomRight.x),
       Math.max(downTopLeft.x, downBottomRight.x),
-      Math.min(downTopLeft.y, downBottomRight.y),
-      Math.max(downTopLeft.y, downBottomRight.y),
-      width, height
+      width
     );
+    const isVecVisible = isVectorInViewport(vecFrom, vecTo, width, height);
 
-    if (!isTripVisible && !isDownVisible && !vecTo) {
+    if (!isTripVisible && !isDownVisible && !isVecVisible) {
       groupC.innerHTML = '';
       cardC.style.display = 'none';
     } else {
@@ -648,14 +720,15 @@ export function renderSovereignPaths() {
       const maxY = downTopLeft && downBottomRight ? Math.max(downTopLeft.y, downBottomRight.y) : (tripStart ? tripStart.y + 25 : 30);
       const downLineY = (minY + maxY) * 0.5;
 
-      // Card C placement in bottom-right airspace
-      const cardCW = Math.min(340, width * 0.33);
-      const cardCTop = Math.max(60, height - 170);
-      const cardCLeft = width - cardCW - 25;
+      // Card C placement in bottom-right airspace (Clearing right price axis)
+      const cardCW = Math.min(320, Math.max(260, width * 0.28));
+      const cardCTop = Math.max(110, height - 185);
+      const cardCLeft = width - cardCW - rightAxisMargin;
 
       // Leader line connection from Tripwire Line right coordinate to Card C
-      const leaderStartX = tripEnd ? tripEnd.x : maxX;
-      const leaderStartY = tripEnd ? tripEnd.y : downLineY;
+      const leaderStartX = Math.max(10, Math.min(width - rightAxisMargin, tripEnd ? tripEnd.x : maxX));
+      const rawStartY = tripEnd ? tripEnd.y : downLineY;
+      const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardCLeft;
       const leaderEndY = cardCTop + 20;
 
@@ -683,11 +756,13 @@ export function renderSovereignPaths() {
       }
 
       // 4. Connector Line: Tripwire Line -> Bottom-Right HUD Card C (Light & delicate)
-      svgMarkup += `
-        <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#f43f5e" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
-        <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fecdd3" opacity="0.6" />
-        <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#f43f5e" opacity="0.6" />
-      `;
+      if (isTripVisible || isDownVisible) {
+        svgMarkup += `
+          <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX + 20},${leaderStartY} ${leaderStartX + 20},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#f43f5e" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
+          <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fecdd3" opacity="0.6" />
+          <circle cx="${leaderEndX}" cy="${leaderEndY}" r="2" fill="#f43f5e" opacity="0.6" />
+        `;
+      }
 
       groupC.innerHTML = svgMarkup;
 
@@ -701,17 +776,17 @@ export function renderSovereignPaths() {
         <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(244,63,94,0.35); padding-bottom: 6px; margin-bottom: 8px;">
           <div style="display: flex; align-items: center; gap: 6px;">
             <span style="width: 9px; height: 9px; border-radius: 2px; background: #f43f5e; display: inline-block;"></span>
-            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fecdd3; text-transform: uppercase;">${c.title || 'TRIPWIRE: BASE FLOOR LIQUIDATION'}</span>
+            <span style="font-size: 11px; font-weight: 800; letter-spacing: 0.08em; color: #fecdd3; text-transform: uppercase;">${c.title || 'TRIPWIRE: COIL FLOOR BREAKDOWN'}</span>
           </div>
           <span style="padding: 2px 6px; font-size: 10px; font-family: monospace; font-weight: 800; background: rgba(244,63,94,0.25); color: #fecdd3; border: 1px solid rgba(244,63,94,0.45); border-radius: 3px;">
-            ${c.badge || 'CANCEL: $4,033.50'}
+            ${c.badge || 'CANCEL: $4,019.00'}
           </span>
         </div>
         <div style="font-size: 11.5px; line-height: 1.5; color: #ffe4e6; font-weight: 500;">
-          ${c.body || 'A 5m candle body close below $4,033.50 shatters the double-bottom absorption floor.'}
+          ${c.body || 'A 5m close below $4,019 invalidates coil, triggering a liquidation slide.'}
         </div>
         <div style="margin-top: 8px; border-top: 1px solid rgba(244,63,94,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-family: monospace; color: #94a3b8; padding-top: 6px;">
-          <span class="hud-pill-red">${c.footer_left || 'TRIPWIRE: 5M C < $4,033.50'}</span>
+          <span class="hud-pill-red">${c.footer_left || 'TRIPWIRE: 5M C < $4,019.00'}</span>
           <span style="color: #fb7185; font-weight: 800;">${c.footer_right || 'FULL CANCELLATION'}</span>
         </div>
       `;
