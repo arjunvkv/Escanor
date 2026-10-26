@@ -605,6 +605,13 @@ export function renderSovereignPaths() {
   // 2. RENDER PATH B (Solar Coral Base Retest)
   // -------------------------------------------------------------------------
   if (pathBData && groupB && cardB) {
+    const floorStart = (pathBData.floor_level && pathBData.floor_start_time)
+      ? pointToPixel(chartInstance, pathBData.floor_start_time, pathBData.floor_level)
+      : null;
+    const floorEnd = (pathBData.floor_level && pathBData.floor_end_time)
+      ? pointToPixel(chartInstance, pathBData.floor_end_time, pathBData.floor_level)
+      : null;
+
     const floorTopLeft = (pathBData.supporting_box?.start_time && pathBData.supporting_box?.top)
       ? pointToPixel(chartInstance, pathBData.supporting_box.start_time, pathBData.supporting_box.top)
       : null;
@@ -619,6 +626,11 @@ export function renderSovereignPaths() {
       ? pointToPixel(chartInstance, pathBData.vector.to_time, pathBData.vector.to_price)
       : null;
 
+    const isFloorLineVisible = floorStart && floorEnd && isHorizontallyInViewport(
+      Math.min(floorStart.x, floorEnd.x),
+      Math.max(floorStart.x, floorEnd.x),
+      width
+    );
     const isFloorVisible = floorTopLeft && floorBottomRight && isHorizontallyInViewport(
       Math.min(floorTopLeft.x, floorBottomRight.x),
       Math.max(floorTopLeft.x, floorBottomRight.x),
@@ -626,14 +638,14 @@ export function renderSovereignPaths() {
     );
     const isVecVisible = isVectorInViewport(vecFrom, vecTo, width, height);
 
-    if (!isFloorVisible && !isVecVisible) {
+    if (!isFloorLineVisible && !isFloorVisible && !isVecVisible) {
       groupB.innerHTML = '';
       cardB.style.display = 'none';
     } else {
-      const minX = floorTopLeft && floorBottomRight ? Math.min(floorTopLeft.x, floorBottomRight.x) : 50;
-      const maxX = floorTopLeft && floorBottomRight ? Math.max(floorTopLeft.x, floorBottomRight.x) : 150;
-      const minY = floorTopLeft && floorBottomRight ? Math.min(floorTopLeft.y, floorBottomRight.y) : 200;
-      const maxY = floorTopLeft && floorBottomRight ? Math.max(floorTopLeft.y, floorBottomRight.y) : 230;
+      const minX = floorTopLeft && floorBottomRight ? Math.min(floorTopLeft.x, floorBottomRight.x) : (floorStart ? floorStart.x : 50);
+      const maxX = floorTopLeft && floorBottomRight ? Math.max(floorTopLeft.x, floorBottomRight.x) : (floorEnd ? floorEnd.x : 150);
+      const minY = floorTopLeft && floorBottomRight ? Math.min(floorTopLeft.y, floorBottomRight.y) : (floorStart ? floorStart.y : 200);
+      const maxY = floorTopLeft && floorBottomRight ? Math.max(floorTopLeft.y, floorBottomRight.y) : (floorEnd ? floorEnd.y : 230);
       const boxH = Math.max(12, maxY - minY);
 
       // Card B placement in bottom-left airspace (Clearing left sidebar)
@@ -641,24 +653,31 @@ export function renderSovereignPaths() {
       const cardBTop = Math.max(110, height - 185);
       const cardBLeft = leftSidebarMargin;
 
-      // Leader line connection from Floor Box left edge to Card B
-      const leaderStartX = Math.max(10, Math.min(width - 50, minX));
-      const rawStartY = floorTopLeft ? (minY + boxH * 0.5) : (vecTo ? vecTo.y : height - 100);
+      // Leader line connection from Floor Line / Box left edge to Card B
+      const leaderStartX = Math.max(10, Math.min(width - 50, floorStart ? floorStart.x : minX));
+      const rawStartY = floorTopLeft ? (minY + boxH * 0.5) : (floorStart ? floorStart.y : (vecTo ? vecTo.y : height - 100));
       const leaderStartY = Math.max(15, Math.min(height - 25, rawStartY));
       const leaderEndX = cardBLeft + cardBW;
       const leaderEndY = cardBTop + 20;
 
       let svgMarkup = '';
 
-      // 1. Retest Path Vector (Light & subtle)
+      // 1. Floor Line Marking (Clean dashed line, zero text clutter)
+      if (floorStart && floorEnd) {
+        svgMarkup += `
+          <line x1="${floorStart.x}" y1="${floorStart.y}" x2="${floorEnd.x}" y2="${floorEnd.y}" stroke="#fbbf24" stroke-width="1.2" stroke-dasharray="4 3" opacity="0.65" />
+        `;
+      }
+
+      // 2. Retest Path Vector (Light & subtle)
       if (vecFrom && vecTo) {
         svgMarkup += `
           <path d="M ${vecFrom.x} ${vecFrom.y} C ${vecFrom.x + 10} ${vecFrom.y + 2}, ${vecTo.x - 10} ${vecTo.y - 6}, ${vecTo.x} ${vecTo.y}" fill="none" stroke="#fbbf24" stroke-width="1.6" opacity="0.65" marker-end="url(#arrowAmber)" />
         `;
       }
 
-      // 2. Connector Line: Box 1 left edge -> Bottom-Left HUD Card B (Light & delicate)
-      if (isFloorVisible) {
+      // 3. Connector Line: Box 1 / Floor Line left edge -> Bottom-Left HUD Card B (Light & delicate)
+      if (isFloorVisible || isFloorLineVisible) {
         svgMarkup += `
           <polyline points="${leaderStartX},${leaderStartY} ${leaderStartX - 25},${leaderStartY} ${leaderStartX - 25},${leaderEndY} ${leaderEndX},${leaderEndY}" fill="none" stroke="#fbbf24" stroke-width="1.1" stroke-dasharray="3 3" opacity="0.40" />
           <circle cx="${leaderStartX}" cy="${leaderStartY}" r="2" fill="#fde68a" opacity="0.6" />

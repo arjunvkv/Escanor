@@ -44,7 +44,7 @@
       },
       "zLevel": 48,
       "extendData": {
-        "label": "Demand Shelf Base (,014.50 - ,017.50)"
+        "label": "Demand Shelf Base ($4,014.50 - $4,017.50)"
       }
     },
     {
@@ -91,118 +91,104 @@
       },
       "zLevel": 100,
       "extendData": {
-        "label": "Breakout Gate (,022.00 - ,025.50)"
+        "label": "Breakout Gate ($4,022.00 - $4,025.50)"
       }
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 13:11:18 UTC",
-    "anchor_timestamp": 1793031000000,
-    "market_context": "Active Range Compression between $4,014.50 and $4,025.50 (Live Close $4013.35)",
+    "last_updated": "2026-10-26 14:06:04 UTC",
+    "anchor_timestamp": 1793034000000,
+    "market_context": "Post-Breakdown Relief Mean Reversion & Liquidation Floor Test (Live Price ,996.50)",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Expansion Squeeze",
+        "name": "Path A: Mean Reversion Squeeze",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "rgba(232, 121, 249, 0.45)",
-        "supporting_type": "breakout_shelf_and_target",
-        "trigger_level": 4025.5,
-        "trigger_start_time": 1793025900000,
-        "trigger_end_time": 1793032800000,
-        "trigger_label": "TRIGGER: 5M C > $4,025.50",
+        "trigger_level": 3998.5,
+        "trigger_start_time": 1793033400000,
+        "trigger_end_time": 1793037600000,
+        "trigger_label": "TRIGGER: 5M C > $3,998.50",
+        "target_level": 4008.0,
+        "target_start_time": 1793034000000,
+        "target_end_time": 1793037600000,
+        "target_label": "TARGET: $4,008.00",
         "vector": {
-          "from_time": 1793031000000,
-          "from_price": 4013.35,
-          "to_time": 1793032800000,
-          "to_price": 4038.0
+          "from_time": 1793034000000,
+          "from_price": 3996.5,
+          "to_time": 1793037600000,
+          "to_price": 4008.0
         },
         "card": {
-          "title": "PATH A: EXPANSION SQUEEZE",
-          "badge": "TARGET: $4,038.00",
-          "body": "A clean 5m candle close <strong>above $4,025.50</strong> shatters the compression ceiling, triggering an impulsive short-squeeze straight into overhead supply target at <strong>$4,034 \u2013 $4,040</strong>.",
-          "footer_left": "TRIGGER: 5M C > $4,025.50",
-          "footer_right": "+14.5 PT RUNWAY",
+          "title": "PATH A: MEAN REVERSION SQUEEZE",
+          "badge": "TARGET: $4,008.00",
+          "body": "A clean 5m candle close <strong>above $3,998.50</strong> confirms absorption of the $3,988 sweep, igniting a fast short-covering relief rally back toward session VWAP and the broken shelf underside at <strong>,006 \u2013 ,010</strong>.",
+          "footer_left": "TRIGGER: 5M C > $3,998.50",
+          "footer_right": "+11.5 PT RUNWAY",
           "position": "top-right"
-        },
-        "target_level": 4038.0,
-        "target_start_time": 1793025900000,
-        "target_end_time": 1793032800000,
-        "target_label": "TARGET: ,038.00"
+        }
       },
       {
         "id": "path_b",
-        "name": "Path B: Demand Shelf Retest",
+        "name": "Path B: VWAP Resistance Roll",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
         "border": "rgba(251, 191, 36, 0.45)",
-        "supporting_type": "floor_box",
-        "supporting_box": {
-          "id": "sov_box_ascending_base",
-          "top": 4017.5,
-          "bottom": 4014.5,
-          "start_time": 1793025900000,
-          "end_time": 1793032800000,
-          "label": "FLOOR: $4,014.50 - $4,017.50"
-        },
+        "floor_level": 3988.5,
+        "floor_start_time": 1793033400000,
+        "floor_end_time": 1793037600000,
+        "floor_label": "FLOOR: $3,988.50",
         "vector": {
-          "from_time": 1793031000000,
-          "from_price": 4013.35,
-          "to_time": 1793032800000,
-          "to_price": 4015.5
+          "from_time": 1793034000000,
+          "from_price": 3996.5,
+          "to_time": 1793037600000,
+          "to_price": 3989.5
         },
         "card": {
-          "title": "PATH B: DEMAND SHELF RETEST",
-          "badge": "FLOOR: $4,014.50",
-          "body": "Rejection beneath $4,022 rotates price back down to test coil absorption floor at <strong>$4,014.50 \u2013 $4,017.50</strong>. Higher-low accumulation remains intact while $4,014 holds.",
-          "footer_left": "SUPPORT: $4,014.50 \u2013 $4,017.50",
-          "footer_right": "LPS DEMAND RETEST",
+          "title": "PATH B: VWAP RESISTANCE ROLL",
+          "badge": "FLOOR: $3,988.50",
+          "body": "Rejection beneath $4,002 VWAP confirms broken support has flipped into overhead supply, rotating price back down for a secondary liquidity test of the <strong>,988.50</strong> session low.",
+          "footer_left": "RESISTANCE: ,002 \u2013 ,004",
+          "footer_right": "BEAR CONTINUATION ROLL",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Floor Breakdown Liquidation",
+        "name": "Path C: Session Low Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "rgba(251, 113, 133, 0.45)",
-        "supporting_type": "tripwire_shelf_and_target",
-        "tripwire_level": 4012.0,
-        "tripwire_start_time": 1793025900000,
-        "tripwire_end_time": 1793032800000,
-        "tripwire_label": "TRIPWIRE: 5M C < $4,012.00",
-        "target_box": {
-          "top": 4005.0,
-          "bottom": 3998.0,
-          "start_time": 1793031000000,
-          "end_time": 1793032800000,
-          "label": "DOWN: $3,998 - $4,005.00"
-        },
+        "tripwire_level": 3988.0,
+        "tripwire_start_time": 1793033400000,
+        "tripwire_end_time": 1793037600000,
+        "tripwire_label": "TRIPWIRE: 5M C < $3,988.00",
+        "target_level": 3980.0,
+        "target_start_time": 1793034000000,
+        "target_end_time": 1793037600000,
+        "target_label": "DOWN: $3,980.00",
         "vector": {
-          "from_time": 1793031000000,
-          "from_price": 4012.0,
-          "to_time": 1793032800000,
-          "to_price": 4001.0
+          "from_time": 1793034000000,
+          "from_price": 3988.0,
+          "to_time": 1793037600000,
+          "to_price": 3980.0
         },
         "card": {
-          "title": "TRIPWIRE: FLOOR BREAKDOWN",
-          "badge": "CANCEL: $4,012.00",
-          "body": "A decisive 5m candle body close <strong>below $4,012.00</strong> shatters the accumulation shelf, unleashing a rapid liquidation cascade toward <strong>Target ($3,998 \u2013 $4,005)</strong>.",
-          "footer_left": "TRIPWIRE: 5M C < $4,012.00",
+          "title": "TRIPWIRE: SESSION LOW BREAK",
+          "badge": "CANCEL: $3,988.00",
+          "body": "A decisive 5m candle body close <strong>below $3,988.00</strong> shatters the absorption wick, triggering an unhindered capitulation cascade directly into the primary swing floor at <strong>,978 \u2013 ,982</strong>.",
+          "footer_left": "TRIPWIRE: 5M C < $3,988.00",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
-        },
-        "target_level": 4001.0,
-        "target_start_time": 1793031000000,
-        "target_end_time": 1793032800000,
-        "target_label": "DOWN: ,001.00"
+        }
       }
     ]
   }
