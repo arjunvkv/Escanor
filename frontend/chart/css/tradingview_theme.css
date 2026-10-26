@@ -4655,3 +4655,161 @@ input[type="number"] {
   align-items: center;
   gap: 6px;
 }
+
+/* ========================================================================= */
+/* ⚡ SOVEREIGN CAUSAL PATHS SIDEBAR TOGGLE BUTTON                           */
+/* ========================================================================= */
+.tv-sidebar-paths-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: #161a24;
+  border: 1px solid #2a2e39;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  outline: none;
+  padding: 0;
+  color: #64748b;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  overflow: hidden;
+}
+
+.tv-sidebar-paths-btn:hover {
+  transform: translateY(-1px) scale(1.05);
+  color: #e2e8f0;
+  border-color: rgba(217, 70, 239, 0.6);
+  box-shadow: 0 0 12px rgba(217, 70, 239, 0.35);
+}
+
+.tv-sidebar-paths-btn:active {
+  transform: translateY(1px) scale(0.95);
+}
+
+.tv-sidebar-paths-btn.active {
+  background: radial-gradient(circle at 50% 25%, rgba(217, 70, 239, 0.22) 0%, #0a0e1a 75%);
+  border: 1px solid rgba(232, 121, 249, 0.85);
+  color: #f0abfc;
+  box-shadow: 0 0 12px rgba(217, 70, 239, 0.4), inset 0 0 8px rgba(240, 171, 252, 0.25), 0 3px 8px rgba(0, 0, 0, 0.6);
+}
+
+.tv-sidebar-paths-btn.active:hover {
+  border-color: #f5d0fe;
+  box-shadow: 0 0 18px rgba(217, 70, 239, 0.65), inset 0 0 10px rgba(240, 171, 252, 0.4);
+}
+
+.tv-spaths-svg {
+  display: block;
+  filter: drop-shadow(0 0 4px rgba(217, 70, 239, 0.5));
+  transition: transform 0.2s ease;
+}
+
+.tv-sidebar-paths-btn:hover .tv-spaths-svg {
+  transform: scale(1.08);
+}
+
+/* ========================================================================= */
+/* 🌐 SOVEREIGN CAUSAL PATHS & HUD OVERLAYS LAYER (CRISP & STATIC)           */
+/* ========================================================================= */
+.tv-sovereign-paths-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 24;
+  overflow: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.tv-sovereign-paths-overlay.hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none !important;
+}
+
+.tv-sovereign-paths-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.tv-path-group {
+  transition: opacity 0.2s ease;
+}
+
+/* Chamfered Cyber HUD Callout Cards (Static, Crisp, Zero-Overlap) */
+.hud-box {
+  position: absolute;
+  backdrop-filter: blur(14px);
+  cursor: pointer;
+  z-index: 30;
+  transition: border-color 0.15s ease, filter 0.15s ease, transform 0.15s ease, opacity 0.2s ease;
+  pointer-events: auto;
+  user-select: none;
+  box-sizing: border-box;
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.hud-box:hover {
+  filter: brightness(1.2);
+  z-index: 60;
+  transform: scale(1.02);
+}
+
+/* Violet Squeeze Box */
+.hud-chamfer-violet {
+  clip-path: polygon(0 14px, 14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px));
+  background: linear-gradient(135deg, rgba(217, 70, 239, 0.22) 0%, rgba(13, 18, 36, 0.96) 100%);
+  border: 1.5px solid rgba(232, 121, 249, 0.85);
+  box-shadow: 0 0 16px rgba(217, 70, 239, 0.28);
+}
+.hud-chamfer-violet:hover {
+  border-color: #f5d0fe;
+  box-shadow: 0 0 24px rgba(217, 70, 239, 0.5);
+}
+
+/* Solar Amber Retest Box */
+.hud-chamfer-amber {
+  clip-path: polygon(14px 0, calc(100% - 20px) 0, 100% 20px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.22) 0%, rgba(13, 18, 36, 0.96) 100%);
+  border: 1.5px solid rgba(251, 191, 36, 0.85);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.28);
+}
+.hud-chamfer-amber:hover {
+  border-color: #fef08a;
+  box-shadow: 0 0 24px rgba(245, 158, 11, 0.5);
+}
+
+/* Hazard Red Invalidation Box */
+.hud-chamfer-red {
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 18px 100%, 0 calc(100% - 18px));
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.24) 0%, rgba(13, 18, 36, 0.96) 100%);
+  border: 1.5px solid rgba(244, 63, 94, 0.9);
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.32);
+}
+.hud-chamfer-red:hover {
+  border-color: #fecdd3;
+  box-shadow: 0 0 26px rgba(239, 68, 68, 0.55);
+}
+
+/* Diagonal Cyber Hazard Stripes */
+.cyber-stripes-violet {
+  background: repeating-linear-gradient(45deg, rgba(232, 121, 249, 0.25), rgba(232, 121, 249, 0.25) 4px, transparent 4px, transparent 8px);
+}
+.cyber-stripes-amber {
+  background: repeating-linear-gradient(45deg, rgba(251, 191, 36, 0.25), rgba(251, 191, 36, 0.25) 4px, transparent 4px, transparent 8px);
+}
+.cyber-stripes-red {
+  background: repeating-linear-gradient(45deg, rgba(239, 68, 68, 0.3), rgba(239, 68, 68, 0.3) 4px, transparent 4px, transparent 8px);
+}
+

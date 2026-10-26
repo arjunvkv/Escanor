@@ -1,591 +1,174 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1792937385903_1",
+      "id": "sov_box_ascending_base",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1791843300000,
-          "value": 4177.842876803703,
-          "dataIndex": 255
+          "timestamp": 1792673100000,
+          "value": 4087.5
         },
         {
-          "timestamp": 1791853800000,
-          "value": 4177.842876803703,
-          "dataIndex": 278
-        },
-        {
-          "timestamp": 1791853800000,
-          "value": 4165.2724502005585,
-          "dataIndex": 278
-        },
-        {
-          "timestamp": 1791843300000,
-          "value": 4165.2724502005585,
-          "dataIndex": 255
-        },
-        {
-          "timestamp": 1791843300000,
-          "value": 4171.557663502131,
-          "dataIndex": 255
-        },
-        {
-          "timestamp": 1791853800000,
-          "value": 4171.557663502131,
-          "dataIndex": 278
+          "timestamp": 1792675800000,
+          "value": 4083.0
         }
       ],
-      "styles": null,
-      "zLevel": 10,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937075717_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791825900000,
-          "value": 4173.567391903062,
-          "dataIndex": 197
-        },
-        {
-          "timestamp": 1791832200000,
-          "value": 4173.567391903062,
-          "dataIndex": 218
-        },
-        {
-          "timestamp": 1791832200000,
-          "value": 4157.639646393489,
-          "dataIndex": 218
-        },
-        {
-          "timestamp": 1791825900000,
-          "value": 4157.639646393489,
-          "dataIndex": 197
-        },
-        {
-          "timestamp": 1791825900000,
-          "value": 4165.603519148275,
-          "dataIndex": 197
-        },
-        {
-          "timestamp": 1791832200000,
-          "value": 4165.603519148275,
-          "dataIndex": 218
+      "styles": {
+        "rect": {
+          "color": "rgba(0, 229, 255, 0.12)",
+          "borderColor": "rgba(0, 229, 255, 0.85)",
+          "borderSize": 1.5
         }
-      ],
-      "styles": null,
-      "zLevel": 13,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792938974459_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791819600000,
-          "value": 4175.742135615537,
-          "dataIndex": 176
-        },
-        {
-          "timestamp": 1791823500000,
-          "value": 4175.742135615537,
-          "dataIndex": 189
-        },
-        {
-          "timestamp": 1791823500000,
-          "value": 4155.496437129691,
-          "dataIndex": 189
-        },
-        {
-          "timestamp": 1791819600000,
-          "value": 4155.496437129691,
-          "dataIndex": 176
-        },
-        {
-          "timestamp": 1791819600000,
-          "value": 4165.619286372614,
-          "dataIndex": 176
-        },
-        {
-          "timestamp": 1791823500000,
-          "value": 4165.619286372614,
-          "dataIndex": 189
-        }
-      ],
-      "styles": null,
-      "zLevel": 16,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937064877_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791824400000,
-          "value": 4177.947521918195,
-          "dataIndex": 192
-        },
-        {
-          "timestamp": 1791827400000,
-          "value": 4177.947521918195,
-          "dataIndex": 202
-        },
-        {
-          "timestamp": 1791827400000,
-          "value": 4156.046871842531,
-          "dataIndex": 202
-        },
-        {
-          "timestamp": 1791824400000,
-          "value": 4156.046871842531,
-          "dataIndex": 192
-        },
-        {
-          "timestamp": 1791824400000,
-          "value": 4166.997196880363,
-          "dataIndex": 192
-        },
-        {
-          "timestamp": 1791827400000,
-          "value": 4166.997196880363,
-          "dataIndex": 202
-        }
-      ],
-      "styles": null,
-      "zLevel": 20,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937413617_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791853800000,
-          "value": 4178.44146854671,
-          "dataIndex": 278
-        },
-        {
-          "timestamp": 1791857700000,
-          "value": 4178.44146854671,
-          "dataIndex": 291
-        },
-        {
-          "timestamp": 1791857700000,
-          "value": 4165.5717460720625,
-          "dataIndex": 291
-        },
-        {
-          "timestamp": 1791853800000,
-          "value": 4165.5717460720625,
-          "dataIndex": 278
-        },
-        {
-          "timestamp": 1791853800000,
-          "value": 4172.006607309386,
-          "dataIndex": 278
-        },
-        {
-          "timestamp": 1791857700000,
-          "value": 4172.006607309386,
-          "dataIndex": 291
-        }
-      ],
-      "styles": null,
-      "zLevel": 26,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937303139_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791840900000,
-          "value": 4174.101678409909,
-          "dataIndex": 247
-        },
-        {
-          "timestamp": 1791843900000,
-          "value": 4174.101678409909,
-          "dataIndex": 257
-        },
-        {
-          "timestamp": 1791843900000,
-          "value": 4162.778317938029,
-          "dataIndex": 257
-        },
-        {
-          "timestamp": 1791840900000,
-          "value": 4162.778317938029,
-          "dataIndex": 247
-        },
-        {
-          "timestamp": 1791840900000,
-          "value": 4168.43999817397,
-          "dataIndex": 247
-        },
-        {
-          "timestamp": 1791843900000,
-          "value": 4168.43999817397,
-          "dataIndex": 257
-        }
-      ],
-      "styles": null,
-      "zLevel": 29,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937297184_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791837000000,
-          "value": 4173.203790795399,
-          "dataIndex": 234
-        },
-        {
-          "timestamp": 1791841200000,
-          "value": 4173.203790795399,
-          "dataIndex": 248
-        },
-        {
-          "timestamp": 1791841200000,
-          "value": 4165.222567555308,
-          "dataIndex": 248
-        },
-        {
-          "timestamp": 1791837000000,
-          "value": 4165.222567555308,
-          "dataIndex": 234
-        },
-        {
-          "timestamp": 1791837000000,
-          "value": 4169.213179175354,
-          "dataIndex": 234
-        },
-        {
-          "timestamp": 1791841200000,
-          "value": 4169.213179175354,
-          "dataIndex": 248
-        }
-      ],
-      "styles": null,
-      "zLevel": 32,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937100227_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791829200000,
-          "value": 4173.2687466747575,
-          "dataIndex": 208
-        },
-        {
-          "timestamp": 1791831300000,
-          "value": 4173.2687466747575,
-          "dataIndex": 215
-        },
-        {
-          "timestamp": 1791831300000,
-          "value": 4161.820679589751,
-          "dataIndex": 215
-        },
-        {
-          "timestamp": 1791829200000,
-          "value": 4161.820679589751,
-          "dataIndex": 208
-        },
-        {
-          "timestamp": 1791829200000,
-          "value": 4167.544713132254,
-          "dataIndex": 208
-        },
-        {
-          "timestamp": 1791831300000,
-          "value": 4167.544713132254,
-          "dataIndex": 215
-        }
-      ],
-      "styles": null,
-      "zLevel": 35,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937158293_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791832200000,
-          "value": 4167.793584155842,
-          "dataIndex": 218
-        },
-        {
-          "timestamp": 1791834600000,
-          "value": 4167.793584155842,
-          "dataIndex": 226
-        },
-        {
-          "timestamp": 1791834600000,
-          "value": 4158.436033668967,
-          "dataIndex": 226
-        },
-        {
-          "timestamp": 1791832200000,
-          "value": 4158.436033668967,
-          "dataIndex": 218
-        },
-        {
-          "timestamp": 1791832200000,
-          "value": 4163.114808912404,
-          "dataIndex": 218
-        },
-        {
-          "timestamp": 1791834600000,
-          "value": 4163.114808912404,
-          "dataIndex": 226
-        }
-      ],
-      "styles": null,
-      "zLevel": 39,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937253070_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791834600000,
-          "value": 4169.911536208861,
-          "dataIndex": 226
-        },
-        {
-          "timestamp": 1791836700000,
-          "value": 4169.911536208861,
-          "dataIndex": 233
-        },
-        {
-          "timestamp": 1791836700000,
-          "value": 4159.8851245134965,
-          "dataIndex": 233
-        },
-        {
-          "timestamp": 1791834600000,
-          "value": 4159.8851245134965,
-          "dataIndex": 226
-        },
-        {
-          "timestamp": 1791834600000,
-          "value": 4164.8983303611785,
-          "dataIndex": 226
-        },
-        {
-          "timestamp": 1791836700000,
-          "value": 4164.8983303611785,
-          "dataIndex": 233
-        }
-      ],
-      "styles": null,
-      "zLevel": 42,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937440048_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791857700000,
-          "value": 4176.346397446186,
-          "dataIndex": 291
-        },
-        {
-          "timestamp": 1791858900000,
-          "value": 4176.346397446186,
-          "dataIndex": 295
-        },
-        {
-          "timestamp": 1791858900000,
-          "value": 4166.469633686573,
-          "dataIndex": 295
-        },
-        {
-          "timestamp": 1791857700000,
-          "value": 4166.469633686573,
-          "dataIndex": 291
-        },
-        {
-          "timestamp": 1791857700000,
-          "value": 4171.40801556638,
-          "dataIndex": 291
-        },
-        {
-          "timestamp": 1791858900000,
-          "value": 4171.40801556638,
-          "dataIndex": 295
-        }
-      ],
-      "styles": null,
-      "zLevel": 45,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937263443_1",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1791836400000,
-          "value": 4169.961418854112,
-          "dataIndex": 232
-        },
-        {
-          "timestamp": 1791837600000,
-          "value": 4169.961418854112,
-          "dataIndex": 236
-        },
-        {
-          "timestamp": 1791837600000,
-          "value": 4165.1228022648065,
-          "dataIndex": 236
-        },
-        {
-          "timestamp": 1791836400000,
-          "value": 4165.1228022648065,
-          "dataIndex": 232
-        },
-        {
-          "timestamp": 1791836400000,
-          "value": 4167.54211055946,
-          "dataIndex": 232
-        },
-        {
-          "timestamp": 1791837600000,
-          "value": 4167.54211055946,
-          "dataIndex": 236
-        }
-      ],
-      "styles": null,
-      "zLevel": 48,
+      },
+      "zLevel": 40,
+      "fixedZLevel": true,
       "extendData": {
-        "direction": "BEARISH"
+        "label": "Ascending Demand Base ($4,083.00 - $4,087.50)"
       }
     },
     {
-      "id": "overlay_1792938981863_1",
+      "id": "sov_box_compression_gate",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1791818400000,
-          "value": 4173.188624094801,
-          "dataIndex": 172
+          "timestamp": 1792668000000,
+          "value": 4094.0
         },
         {
-          "timestamp": 1791820500000,
-          "value": 4173.188624094801,
-          "dataIndex": 179
-        },
-        {
-          "timestamp": 1791820500000,
-          "value": 4153.672500329165,
-          "dataIndex": 179
-        },
-        {
-          "timestamp": 1791818400000,
-          "value": 4153.672500329165,
-          "dataIndex": 172
-        },
-        {
-          "timestamp": 1791818400000,
-          "value": 4163.430562211983,
-          "dataIndex": 172
-        },
-        {
-          "timestamp": 1791820500000,
-          "value": 4163.430562211983,
-          "dataIndex": 179
-        }
-      ],
-      "styles": null,
-      "zLevel": 100,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937043239_1",
-      "name": "horizontalStraightLine",
-      "points": [
-        {
-          "value": 4165.006228691666,
-          "timestamp": 1791831000000
+          "timestamp": 1792675800000,
+          "value": 4090.0
         }
       ],
       "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
+        "rect": {
+          "color": "rgba(245, 158, 11, 0.12)",
+          "borderColor": "rgba(245, 158, 11, 0.85)",
+          "borderSize": 1.5
         }
       },
-      "zLevel": 200,
-      "extendData": {}
+      "zLevel": 30,
+      "fixedZLevel": true,
+      "extendData": {
+        "label": "Compression Barrier / Breakout Gate ($4,090.00 - $4,094.00)"
+      }
     },
     {
-      "id": "overlay_1792937048160_1",
-      "name": "horizontalStraightLine",
+      "id": "sov_box_dual_supply_pool",
+      "name": "rect",
       "points": [
         {
-          "value": 4175.35926327289,
-          "timestamp": 1791832200000
+          "timestamp": 1792659600000,
+          "value": 4103.5
+        },
+        {
+          "timestamp": 1792675800000,
+          "value": 4099.0
         }
       ],
       "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
+        "rect": {
+          "color": "rgba(168, 85, 247, 0.12)",
+          "borderColor": "rgba(168, 85, 247, 0.85)",
+          "borderSize": 1.5
         }
       },
-      "zLevel": 200,
-      "extendData": {}
-    },
-    {
-      "id": "overlay_1792937054666_1",
-      "name": "horizontalStraightLine",
-      "points": [
-        {
-          "value": 4154.752742519879,
-          "timestamp": 1791831300000
-        }
-      ],
-      "styles": {
-        "line": {
-          "color": "#94a3b8",
-          "size": 1.5,
-          "style": "solid"
-        },
-        "point": {
-          "color": "#94a3b8",
-          "borderColor": "#94a3b8",
-          "activeColor": "#ffffff",
-          "activeBorderColor": "#ffffff",
-          "radius": 4
-        }
-      },
-      "zLevel": 200,
-      "extendData": {}
+      "zLevel": 20,
+      "fixedZLevel": true,
+      "extendData": {
+        "label": "Dual-Top Liquidity Pool ($4,099.00 - $4,103.50)"
+      }
     }
-  ]
+  ],
+  "XAUUSD_EVALUATION": {
+    "enabled": true,
+    "last_updated": "2026-10-26 11:20:00 UTC",
+    "market_context": "Ascending Triangle Compression at $4,090 - $4,094",
+    "paths": [
+      {
+        "id": "path_a",
+        "name": "Path A: Ascending Squeeze",
+        "story_key": "Squeeze",
+        "theme": "violet",
+        "color": "#f0abfc",
+        "accent": "#d946ef",
+        "border": "#e879f9",
+        "supporting_type": "breakout_shelf_and_target",
+        "trigger_level": 4094.0,
+        "trigger_label": "TRIGGER: 5M C > $4,094.00",
+        "target_box": {
+          "top": 4103.5,
+          "bottom": 4099.0,
+          "label": "TARGET: $4,099 - $4,103.50"
+        },
+        "vector": {
+          "from_price": 4092.5,
+          "to_price": 4101.5
+        },
+        "card": {
+          "title": "PATH A: ASCENDING SQUEEZE",
+          "badge": "TARGET: $4,103.50",
+          "body": "A clean 5m candle close <strong>above $4,094.00</strong> breaks the compression lid. Trapped shorts cover immediately, launching an impulsive run through the air pocket straight into the <strong>Target Box ($4,099 – $4,103.50)</strong>.",
+          "footer_left": "TRIGGER: 5M C > $4,094.00",
+          "footer_right": "+10.5 PT RUNWAY",
+          "position": "top-right"
+        }
+      },
+      {
+        "id": "path_b",
+        "name": "Path B: Coil Base Retest",
+        "story_key": "Retest",
+        "theme": "amber",
+        "color": "#fbbf24",
+        "accent": "#f59e0b",
+        "border": "#fbbf24",
+        "supporting_type": "floor_box",
+        "supporting_box": {
+          "top": 4087.5,
+          "bottom": 4083.0,
+          "label": "FLOOR: $4,083 - $4,087.50"
+        },
+        "vector": {
+          "from_price": 4092.0,
+          "to_price": 4085.0
+        },
+        "card": {
+          "title": "PATH B: COIL BASE RETEST",
+          "badge": "FLOOR: $4,083.00",
+          "body": "Rejection off $4,093.50 rotates price down to test the ascending higher-low shelf in <strong>Floor Box ($4,083 – $4,087.50)</strong>. Bullish triangle thesis remains intact as long as $4,083.00 holds on closing basis.",
+          "footer_left": "SUPPORT: $4,083 – $4,087.50",
+          "footer_right": "LPS ACCUMULATION",
+          "position": "bottom-left"
+        }
+      },
+      {
+        "id": "path_c",
+        "name": "Path C: Tripwire Invalidation",
+        "story_key": "Tripwire",
+        "theme": "red",
+        "color": "#f43f5e",
+        "accent": "#ef4444",
+        "border": "#fb7185",
+        "supporting_type": "tripwire_shelf_and_target",
+        "tripwire_level": 4082.5,
+        "tripwire_label": "TRIPWIRE: 5M C < $4,082.50",
+        "target_box": {
+          "top": 4070.0,
+          "bottom": 4066.5,
+          "label": "DOWN: $4,066.50 - $4,070"
+        },
+        "vector": {
+          "from_price": 4082.5,
+          "to_price": 4068.5
+        },
+        "card": {
+          "title": "TRIPWIRE: ASCENDING FLOOR BREACH",
+          "badge": "CANCEL: $4,082.50",
+          "body": "A 5m candle body close <strong>below $4,082.50</strong> (clean breach of Box 1) completely shatters the ascending triangle structure and re-opens the downside cascade toward <strong>Target Box ($4,070 – $4,066)</strong>.",
+          "footer_left": "TRIPWIRE: 5M C < $4,082.50",
+          "footer_right": "FULL CANCELLATION",
+          "position": "bottom-right"
+        }
+      }
+    ]
+  }
 }

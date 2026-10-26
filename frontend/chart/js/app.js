@@ -6,7 +6,8 @@
 
 import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202610252048';
 import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610252048';
-import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610241430';
+import { fetchServerDrawings, fetchServerDrawingsAndEvaluation, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202610261700';
+import { initSovereignPathsOverlay, updateSovereignPathsData, renderSovereignPaths } from './sovereign_paths_overlay.js?v=202610261700';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
 import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
@@ -192,9 +193,13 @@ async function init() {
   initToolbar(chart, currentSymbol);
   initTrapAlerts();
 
-  // 7. Restore Server-Side Drawings
+  // 7. Initialize Sovereign Paths Overlay & Restore Server-Side Drawings
+  initSovereignPathsOverlay(chart);
   try {
-    const savedDrawings = await fetchServerDrawings(currentSymbol);
+    const { drawings: savedDrawings, evaluation: savedEvaluation } = await fetchServerDrawingsAndEvaluation(currentSymbol);
+    if (savedEvaluation) {
+      updateSovereignPathsData(savedEvaluation);
+    }
     if (savedDrawings && savedDrawings.length > 0) {
       // Check if any drawing has timestamps older than current bars
       let minDrawingTime = Infinity;
@@ -342,12 +347,12 @@ async function init() {
 }
 
 /**
- * Live reload drawings from server (e.g. when AI desk draws new boxes or updates existing ones)
+ * Live reload drawings and evaluation paths from server (e.g. when AI desk draws new boxes or updates existing ones)
  */
 async function reloadChartDrawingsFromServer() {
   if (!chart || window.__isRestoringDrawings) return;
   try {
-    const drawings = await fetchServerDrawings(currentSymbol);
+    const { drawings, evaluation } = await fetchServerDrawingsAndEvaluation(currentSymbol);
     const allOverlays = chart.getOverlays() || [];
     allOverlays.forEach(ov => {
       if (ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_')) {
@@ -355,7 +360,12 @@ async function reloadChartDrawingsFromServer() {
       }
     });
     restoreDrawings(chart, drawings);
-    showChartToast(`🦅 Sovereign Boxes Synchronized (${drawings.length} Zones)`);
+    if (evaluation) {
+      updateSovereignPathsData(evaluation);
+    } else {
+      renderSovereignPaths();
+    }
+    showChartToast(`🦅 Sovereign Boxes & Causal Paths Synchronized (${drawings.length} Zones)`);
   } catch (err) {
     console.warn('[Escanor TV] Reload drawings failed:', err);
   }

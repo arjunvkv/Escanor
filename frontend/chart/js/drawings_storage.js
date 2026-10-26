@@ -10,13 +10,32 @@ export async function fetchServerDrawings(symbol = 'XAUUSD') {
   try {
     const res = await fetch(`/api/drawings?symbol=${symbol}`);
     const data = await res.json();
-    if (data && data.status === 'OK' && Array.isArray(data.drawings)) {
-      return data.drawings;
+    if (data && data.status === 'OK') {
+      fetchServerDrawings._lastEvaluation = data.evaluation || null;
+      if (Array.isArray(data.drawings)) {
+        return data.drawings;
+      }
     }
   } catch (err) {
     console.warn('[Escanor Drawings] Failed to fetch server drawings:', err);
   }
   return [];
+}
+
+export async function fetchServerDrawingsAndEvaluation(symbol = 'XAUUSD') {
+  try {
+    const res = await fetch(`/api/drawings?symbol=${symbol}`);
+    const data = await res.json();
+    if (data && data.status === 'OK') {
+      return {
+        drawings: Array.isArray(data.drawings) ? data.drawings : [],
+        evaluation: data.evaluation || null
+      };
+    }
+  } catch (err) {
+    console.warn('[Escanor Drawings] Failed to fetch server drawings and evaluation:', err);
+  }
+  return { drawings: [], evaluation: null };
 }
 
 export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast = true, immediate = false) {

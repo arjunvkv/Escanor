@@ -224,15 +224,21 @@ async def get_candles_endpoint(symbol: str = "XAUUSD", timeframe: str = "5", cou
 
 @app.get("/api/drawings")
 async def get_drawings(symbol: str = "XAUUSD"):
-    """Fetch saved chart drawings from server-side storage."""
+    """Fetch saved chart drawings and active evaluation paths from server-side storage."""
     if DRAWINGS_PATH.exists():
         try:
             with open(DRAWINGS_PATH, "r", encoding="utf-8") as f:
                 data = json.load(f)
-                return JSONResponse(content={"status": "OK", "drawings": data.get(symbol, [])})
+                drawings = data.get(symbol, [])
+                evaluation = data.get(f"{symbol}_EVALUATION", data.get("evaluation", {}))
+                return JSONResponse(content={
+                    "status": "OK",
+                    "drawings": drawings,
+                    "evaluation": evaluation
+                })
         except Exception as e:
             logger.error(f"Failed to read drawings: {e}")
-    return JSONResponse(content={"status": "OK", "drawings": []})
+    return JSONResponse(content={"status": "OK", "drawings": [], "evaluation": {}})
 
 
 @app.post("/api/drawings")
@@ -242,6 +248,7 @@ async def save_drawings(request: Request):
         body = await request.json()
         symbol = body.get("symbol", config.get("symbol", "XAUUSD"))
         drawings = body.get("drawings", [])
+        evaluation = body.get("evaluation")
         
         all_drawings = {}
         if DRAWINGS_PATH.exists():
@@ -252,6 +259,9 @@ async def save_drawings(request: Request):
                 all_drawings = {}
 
         all_drawings[symbol] = drawings
+        if evaluation is not None:
+            all_drawings[f"{symbol}_EVALUATION"] = evaluation
+            
         with open(DRAWINGS_PATH, "w", encoding="utf-8") as f:
             json.dump(all_drawings, f, indent=2)
 
@@ -261,6 +271,7 @@ async def save_drawings(request: Request):
                 "type": "DRAWINGS_UPDATED",
                 "symbol": symbol,
                 "source": body.get("source", "server_api"),
+                "has_evaluation": evaluation is not None,
                 "timestamp": time.time()
             })
         except Exception as ws_err:
@@ -270,6 +281,60 @@ async def save_drawings(request: Request):
     except Exception as e:
         logger.error(f"Failed to save drawings: {e}")
         return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/chart/evaluation_paths")
+async def get_evaluation_paths(symbol: str = "XAUUSD"):
+    """Fetch active sovereign evaluation paths and story comment overlays."""
+    if DRAWINGS_PATH.exists():
+        try:
+            with open(DRAWINGS_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                eval_data = data.get(f"{symbol}_EVALUATION", data.get("evaluation", {}))
+                return JSONResponse(content={"status": "OK", "symbol": symbol, "evaluation": eval_data})
+        except Exception as e:
+            logger.error(f"Failed to read evaluation paths: {e}")
+    return JSONResponse(content={"status": "OK", "symbol": symbol, "evaluation": {}})
+
+
+@app.post("/api/chart/evaluation_paths")
+async def save_evaluation_paths(request: Request):
+    """Persist active sovereign evaluation paths and broadcast real-time sync to all charts."""
+    try:
+        body = await request.json()
+        symbol = body.get("symbol", config.get("symbol", "XAUUSD"))
+        eval_data = body.get("evaluation", body)
+        if "evaluation" in eval_data:
+            eval_data = eval_data["evaluation"]
+
+        all_drawings = {}
+        if DRAWINGS_PATH.exists():
+            try:
+                with open(DRAWINGS_PATH, "r", encoding="utf-8") as f:
+                    all_drawings = json.load(f)
+            except Exception:
+                all_drawings = {}
+
+        all_drawings[f"{symbol}_EVALUATION"] = eval_data
+        with open(DRAWINGS_PATH, "w", encoding="utf-8") as f:
+            json.dump(all_drawings, f, indent=2)
+
+        try:
+            await broadcast_ws_message({
+                "type": "DRAWINGS_UPDATED",
+                "symbol": symbol,
+                "source": "evaluation_paths_update",
+                "has_evaluation": True,
+                "timestamp": time.time()
+            })
+        except Exception as ws_err:
+            logger.warning(f"Could not broadcast evaluation paths update: {ws_err}")
+
+        return JSONResponse(content={"status": "OK", "message": "Evaluation paths saved and broadcasted", "symbol": symbol})
+    except Exception as e:
+        logger.error(f"Failed to save evaluation paths: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
 
 
 @app.post("/api/chart/evaluate_snapshot")
