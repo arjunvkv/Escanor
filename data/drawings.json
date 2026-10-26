@@ -57,29 +57,29 @@
           "dataIndex": 1998
         },
         {
-          "timestamp": 1793040000000,
+          "timestamp": 1793040600000,
           "value": 4018.5,
-          "dataIndex": 2015
+          "dataIndex": 2017
         },
         {
-          "timestamp": 1793040000000,
-          "value": 4014.0,
-          "dataIndex": 2015
+          "timestamp": 1793040600000,
+          "value": 4013.8,
+          "dataIndex": 2017
         },
         {
           "timestamp": 1793034900000,
-          "value": 4014.0,
+          "value": 4013.8,
           "dataIndex": 1998
         },
         {
           "timestamp": 1793034900000,
-          "value": 4016.25,
+          "value": 4016.15,
           "dataIndex": 1998
         },
         {
-          "timestamp": 1793040000000,
-          "value": 4016.25,
-          "dataIndex": 2015
+          "timestamp": 1793040600000,
+          "value": 4016.15,
+          "dataIndex": 2017
         }
       ],
       "styles": {
@@ -91,7 +91,7 @@
       },
       "zLevel": 35,
       "extendData": {
-        "label": "Demand Shelf & M15 FVG 50% CE ($4,014.00 - $4,018.50)"
+        "label": "VWAP +1\u03c3 & FVG Support Shelf ($4,013.80 - $4,018.50)"
       }
     },
     {
@@ -144,94 +144,94 @@
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
-    "last_updated": "2026-10-26 15:43:46 UTC",
-    "anchor_timestamp": 1793040000000,
-    "market_context": "Auction compressing between M15 FVG 50% CE Floor ($4,015.50) and Supply Wick Cap ($4,019.50 - $4,020.00)",
+    "last_updated": "2026-10-26 15:53:54 UTC",
+    "anchor_timestamp": 1793040600000,
+    "market_context": "Auction defending +1\u03c3 VWAP Band ($4,015.66) & M15 FVG Shelf ($4,013.80 - $4,018.50) following Climax Rejection",
     "paths": [
       {
         "id": "path_a",
-        "name": "Path A: Demand Absorption Expansion",
+        "name": "Path A: VWAP +1\u03c3 Rebound Expansion",
         "story_key": "Squeeze",
         "theme": "violet",
         "color": "#f0abfc",
         "accent": "#d946ef",
         "border": "rgba(232, 121, 249, 0.45)",
-        "trigger_level": 4020.0,
-        "trigger_start_time": 1793038800000,
-        "trigger_end_time": 1793043000000,
-        "trigger_label": "TRIGGER: 5M C > $4,020.00",
+        "trigger_level": 4019.5,
+        "trigger_start_time": 1793039400000,
+        "trigger_end_time": 1793043600000,
+        "trigger_label": "TRIGGER: 5M C > $4,019.50",
         "target_level": 4025.5,
-        "target_start_time": 1793040000000,
-        "target_end_time": 1793043000000,
+        "target_start_time": 1793040600000,
+        "target_end_time": 1793043600000,
         "target_label": "TARGET: $4,025.50",
         "vector": {
-          "from_time": 1793040000000,
-          "from_price": 4018.0,
-          "to_time": 1793043000000,
+          "from_time": 1793040600000,
+          "from_price": 4016.5,
+          "to_time": 1793043600000,
           "to_price": 4025.5
         },
         "card": {
-          "title": "PATH A: DEMAND ABSORPTION EXPANSION",
+          "title": "PATH A: VWAP +1\u03c3 REBOUND EXPANSION",
           "badge": "TARGET: $4,025.50",
-          "body": "Decisive 5m close <strong>above $4,020.00</strong> shatters the immediate wick ceiling, confirming full FVG absorption and unleashing a re-test sprint to the <strong>$4,025.50</strong> ceiling.",
-          "footer_left": "TRIGGER: 5M C > $4,020.00",
-          "footer_right": "+5.5 PT RUNWAY",
+          "body": "Decisive 5m close <strong>above $4,019.50</strong> confirms +1\u03c3 VWAP bounce, releasing an impulsive sprint back to retest the <strong>$4,025.50</strong> ceiling.",
+          "footer_left": "TRIGGER: 5M C > $4,019.50",
+          "footer_right": "+6.0 PT RUNWAY",
           "position": "top-right"
         }
       },
       {
         "id": "path_b",
-        "name": "Path B: FVG Compression Rotation",
+        "name": "Path B: Shelf Base Compression",
         "story_key": "Retest",
         "theme": "amber",
         "color": "#fbbf24",
         "accent": "#f59e0b",
         "border": "rgba(251, 191, 36, 0.45)",
-        "floor_level": 4015.5,
-        "floor_start_time": 1793038800000,
-        "floor_end_time": 1793043000000,
-        "floor_label": "FLOOR: $4,015.50",
+        "floor_level": 4015.0,
+        "floor_start_time": 1793039400000,
+        "floor_end_time": 1793043600000,
+        "floor_label": "FLOOR: $4,015.00",
         "vector": {
-          "from_time": 1793040000000,
-          "from_price": 4018.0,
-          "to_time": 1793042100000,
-          "to_price": 4015.5
+          "from_time": 1793040600000,
+          "from_price": 4016.5,
+          "to_time": 1793042400000,
+          "to_price": 4015.0
         },
         "card": {
-          "title": "PATH B: FVG COMPRESSION ROTATION",
-          "badge": "FLOOR: $4,015.50",
-          "body": "Rejection at $4,019.50 keeps price coiling inside the 50% CE demand pocket, rotating between the <strong>$4,015.50</strong> FVG midpoint and $4,019 supply wick.",
+          "title": "PATH B: SHELF BASE COMPRESSION",
+          "badge": "FLOOR: $4,015.00",
+          "body": "Rejection at $4,019 keeps price coiling inside the support zone, rotating tightly between the <strong>$4,015.00</strong> VWAP band and $4,018.50 local midpoint.",
           "footer_left": "RESISTANCE: $4,019 \u2013 $4,020",
-          "footer_right": "50% CE COMPRESSION",
+          "footer_right": "+1\u03c3 VWAP COIL",
           "position": "bottom-left"
         }
       },
       {
         "id": "path_c",
-        "name": "Path C: Demand Floor Breakdown",
+        "name": "Path C: VWAP +1\u03c3 Failure Breakdown",
         "story_key": "Tripwire",
         "theme": "red",
         "color": "#f43f5e",
         "accent": "#ef4444",
         "border": "rgba(251, 113, 133, 0.45)",
         "tripwire_level": 4013.5,
-        "tripwire_start_time": 1793038800000,
-        "tripwire_end_time": 1793043600000,
+        "tripwire_start_time": 1793039400000,
+        "tripwire_end_time": 1793044200000,
         "tripwire_label": "TRIPWIRE: 5M C < $4,013.50",
-        "target_level": 4005.5,
-        "target_start_time": 1793040000000,
-        "target_end_time": 1793043600000,
-        "target_label": "DOWN: $4,005.50",
+        "target_level": 4004.5,
+        "target_start_time": 1793040600000,
+        "target_end_time": 1793044200000,
+        "target_label": "DOWN: $4,004.50",
         "vector": {
-          "from_time": 1793040000000,
+          "from_time": 1793040600000,
           "from_price": 4013.5,
-          "to_time": 1793043600000,
-          "to_price": 4005.5
+          "to_time": 1793044200000,
+          "to_price": 4004.5
         },
         "card": {
-          "title": "TRIPWIRE: DEMAND FLOOR BREAKDOWN",
+          "title": "TRIPWIRE: VWAP +1\u03c3 FAILURE BREAKDOWN",
           "badge": "CANCEL: $4,013.50",
-          "body": "A decisive 5m candle body close <strong>below $4,013.50</strong> fully invalidates the M15 FVG, unleashing a capitulation cascade toward session VWAP at <strong>$4,005.50</strong>.",
+          "body": "A decisive 5m candle body close <strong>below $4,013.50</strong> confirms loss of the +1\u03c3 VWAP band, triggering a liquidation slide back to Session VWAP at <strong>$4,004.50</strong>.",
           "footer_left": "TRIPWIRE: 5M C < $4,013.50",
           "footer_right": "FULL CANCELLATION",
           "position": "bottom-right"
