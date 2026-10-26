@@ -31,6 +31,15 @@ def execute_market_order(
     if not mt5:
         return {"status": "FAILED", "error": "MetaTrader5 module not available"}
 
+    t_info = mt5.terminal_info()
+    if t_info and not t_info.trade_allowed:
+        return {
+            "status": "FAILED",
+            "symbol": symbol,
+            "error": "AutoTrading is disabled in MetaTrader 5! Press 'Ctrl + E' or click the 'Algo Trading' button at the top of MT5.",
+            "retcode": 10027
+        }
+
     sym_info = mt5.symbol_info(symbol)
     if not sym_info or not sym_info.visible:
         if not mt5.symbol_select(symbol, True):
@@ -106,7 +115,11 @@ def execute_market_order(
             "message": f"Market order filled! Active ticket #{res.order} is live on MT5."
         }
 
-    err = f"MT5 Retcode {getattr(res, 'retcode', 'Unknown')}: {getattr(res, 'comment', 'Failed')}" if res else f"Last error: {mt5.last_error()}"
+    ret = getattr(res, 'retcode', None)
+    if ret == 10027:
+        err = "AutoTrading is disabled in MetaTrader 5! Press 'Ctrl + E' or click the 'Algo Trading' button at the top of MT5."
+    else:
+        err = f"MT5 Retcode {ret or 'Unknown'}: {getattr(res, 'comment', 'Failed')}" if res else f"Last error: {mt5.last_error()}"
     return {"status": "FAILED", "symbol": symbol, "error": err, "retcode": getattr(res, 'retcode', None)}
 
 
@@ -123,6 +136,15 @@ def place_pending_order(
     """Place pending limit/stop order on MT5."""
     if not mt5:
         return {"status": "FAILED", "error": "MetaTrader5 module not available"}
+
+    t_info = mt5.terminal_info()
+    if t_info and not t_info.trade_allowed:
+        return {
+            "status": "FAILED",
+            "symbol": symbol,
+            "error": "AutoTrading is disabled in MetaTrader 5! Press 'Ctrl + E' or click the 'Algo Trading' button at the top of MT5.",
+            "retcode": 10027
+        }
 
     type_map = {
         "BUY_LIMIT": mt5.ORDER_TYPE_BUY_LIMIT,
@@ -165,7 +187,11 @@ def place_pending_order(
             "ticket": res.order,
             "retcode": res.retcode
         }
-    err = f"MT5 Retcode {getattr(res, 'retcode', 'Unknown')}: {getattr(res, 'comment', 'Failed')}" if res else f"Last error: {mt5.last_error()}"
+    ret = getattr(res, 'retcode', None)
+    if ret == 10027:
+        err = "AutoTrading is disabled in MetaTrader 5! Press 'Ctrl + E' or click the 'Algo Trading' button at the top of MT5."
+    else:
+        err = f"MT5 Retcode {ret or 'Unknown'}: {getattr(res, 'comment', 'Failed')}" if res else f"Last error: {mt5.last_error()}"
     return {"status": "FAILED", "error": err, "retcode": getattr(res, 'retcode', None)}
 
 
