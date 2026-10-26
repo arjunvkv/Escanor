@@ -12,6 +12,7 @@ import os
 import sys
 import json
 import time
+import base64
 from datetime import datetime, timedelta
 import asyncio
 import logging
@@ -43,6 +44,8 @@ logger = logging.getLogger("escanor.server")
 CONFIG_PATH = BASE_DIR / "config.json"
 DRAWINGS_PATH = BASE_DIR / "data" / "drawings.json"
 DRAWINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
+EVALUATION_VIEW_PATH = BASE_DIR / "data" / "active_evaluation_view.json"
+EVALUATION_SNAPSHOT_PATH = BASE_DIR / "data" / "active_evaluation_snapshot.png"
 DRAWDOWN_PATH = BASE_DIR / "data" / "drawdown.json"
 
 drawdown_config: Dict[str, Any] = {
@@ -252,10 +255,107 @@ async def save_drawings(request: Request):
         with open(DRAWINGS_PATH, "w", encoding="utf-8") as f:
             json.dump(all_drawings, f, indent=2)
 
+        # Broadcast DRAWINGS_UPDATED so all connected charts sync in real time
+        try:
+            await broadcast_ws_message({
+                "type": "DRAWINGS_UPDATED",
+                "symbol": symbol,
+                "source": body.get("source", "server_api"),
+                "timestamp": time.time()
+            })
+        except Exception as ws_err:
+            logger.warning(f"Could not broadcast drawings update: {ws_err}")
+
         return JSONResponse(content={"status": "OK", "message": "Drawings saved successfully", "count": len(drawings)})
     except Exception as e:
         logger.error(f"Failed to save drawings: {e}")
         return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/chart/evaluate_snapshot")
+async def save_evaluation_snapshot(request: Request):
+    """Receive and persist the visible chart viewport snapshot, candle telemetry, and canvas image for AI sovereign evaluation."""
+    try:
+        body = await request.json()
+        symbol = body.get("symbol", "XAUUSD")
+        timeframe = body.get("timeframe", "5m")
+        candle_count = body.get("candle_count", 0)
+        start_candle = body.get("start_candle", {})
+        end_candle = body.get("end_candle", {})
+        visible_high = body.get("visible_high")
+        visible_low = body.get("visible_low")
+        visible_range_pts = body.get("visible_range_pts")
+        total_volume = body.get("total_volume")
+        visible_bars = body.get("visible_bars", [])
+        view_range = body.get("view_range", {})
+        image_base64 = body.get("image_base64", "")
+
+        saved_image_path = None
+        if image_base64:
+            try:
+                img_data = image_base64
+                if "," in img_data:
+                    img_data = img_data.split(",", 1)[1]
+                img_bytes = base64.b64decode(img_data)
+                EVALUATION_SNAPSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+                with open(EVALUATION_SNAPSHOT_PATH, "wb") as f:
+                    f.write(img_bytes)
+                saved_image_path = str(EVALUATION_SNAPSHOT_PATH)
+                logger.info(f"Saved evaluation snapshot image ({len(img_bytes)} bytes) to {EVALUATION_SNAPSHOT_PATH}")
+            except Exception as img_err:
+                logger.warning(f"Could not decode evaluation snapshot image: {img_err}")
+
+        eval_payload = {
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "captured_at_utc": datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+            "captured_timestamp": int(time.time() * 1000),
+            "candle_count": candle_count or len(visible_bars),
+            "view_range": view_range,
+            "start_candle": start_candle,
+            "end_candle": end_candle,
+            "visible_high": visible_high,
+            "visible_low": visible_low,
+            "visible_range_pts": visible_range_pts,
+            "total_volume": total_volume,
+            "snapshot_image": saved_image_path,
+            "visible_bars": visible_bars
+        }
+
+        EVALUATION_VIEW_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(EVALUATION_VIEW_PATH, "w", encoding="utf-8") as f:
+            json.dump(eval_payload, f, indent=2)
+
+        logger.info(f"Captured active evaluation view for {symbol} ({len(visible_bars)} visible bars: {start_candle.get('utc')} -> {end_candle.get('utc')})")
+
+        return JSONResponse(content={
+            "status": "OK",
+            "message": "Evaluation view and snapshot saved successfully",
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "candle_count": len(visible_bars),
+            "start_time": start_candle.get("utc") or start_candle.get("datetime_utc"),
+            "end_time": end_candle.get("utc") or end_candle.get("datetime_utc"),
+            "visible_high": visible_high,
+            "visible_low": visible_low,
+            "snapshot_image_saved": bool(saved_image_path)
+        })
+    except Exception as e:
+        logger.error(f"Failed to save evaluation snapshot: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/chart/evaluate_snapshot")
+async def get_evaluation_snapshot():
+    """Retrieve the latest captured evaluation snapshot view."""
+    if EVALUATION_VIEW_PATH.exists():
+        try:
+            with open(EVALUATION_VIEW_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                return JSONResponse(content={"status": "OK", "data": data})
+        except Exception as e:
+            return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+    return JSONResponse(content={"status": "EMPTY", "message": "No evaluation snapshot captured yet."})
 
 
 # =========================================================================

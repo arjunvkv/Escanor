@@ -126,6 +126,9 @@ async function init() {
   setTimeout(() => { chartReady = true; }, 1200);
 
   chart.subscribeAction('onVisibleRangeChange', async (range) => {
+    if (range) {
+      window.__lastVisibleRange = range;
+    }
     // 1. Initial lock to ensure chart has rendered and settled
     if (!chartReady || !range) return;
     // 2. Only trigger when user has scrolled near the left edge (within 25 bars of oldest loaded bar)
@@ -332,6 +335,159 @@ async function init() {
   document.getElementById('tvCloseFootprintModalDoneBtn')?.addEventListener('click', closeFootprintLegend);
   fpModal?.addEventListener('click', (e) => {
     if (e.target === fpModal) closeFootprintLegend();
+  });
+
+  // 12. Legendary AI Sovereign Evaluate Button
+  setupEvaluateButton();
+}
+
+/**
+ * Live reload drawings from server (e.g. when AI desk draws new boxes or updates existing ones)
+ */
+async function reloadChartDrawingsFromServer() {
+  if (!chart || window.__isRestoringDrawings) return;
+  try {
+    const drawings = await fetchServerDrawings(currentSymbol);
+    const allOverlays = chart.getOverlays() || [];
+    allOverlays.forEach(ov => {
+      if (ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_')) {
+        chart.removeOverlay(ov.id);
+      }
+    });
+    restoreDrawings(chart, drawings);
+    showChartToast(`🦅 Sovereign Boxes Synchronized (${drawings.length} Zones)`);
+  } catch (err) {
+    console.warn('[Escanor TV] Reload drawings failed:', err);
+  }
+}
+
+/**
+ * 🦅 Legendary AI Sovereign Evaluate Button Click Handler
+ * Extracts visible chart range, candle data, volume, and canvas screenshot,
+ * then dispatches to /api/chart/evaluate_snapshot for AI Sovereign analysis.
+ */
+function setupEvaluateButton() {
+  const evaluateBtn = document.getElementById('tvSidebarEvaluateBtn');
+  if (!evaluateBtn) return;
+
+  evaluateBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (evaluateBtn.classList.contains('evaluating')) return;
+
+    evaluateBtn.classList.add('evaluating');
+    showChartToast('🦅 Scanning Visible Sovereign Structure...');
+
+    try {
+      const dataList = chart?.getDataList?.() || [];
+      if (!dataList || dataList.length === 0) {
+        showChartToast('⚠️ No candle data available to evaluate');
+        return;
+      }
+
+      let range = window.__lastVisibleRange;
+      if (!range || typeof range.from !== 'number' || typeof range.to !== 'number') {
+        range = { from: Math.max(0, dataList.length - 120), to: dataList.length - 1 };
+      }
+
+      const fromIdx = Math.max(0, Math.min(dataList.length - 1, Math.min(range.from, range.to)));
+      const toIdx = Math.max(0, Math.min(dataList.length - 1, Math.max(range.from, range.to)));
+      const visibleBars = dataList.slice(fromIdx, toIdx + 1);
+
+      if (visibleBars.length === 0) {
+        showChartToast('⚠️ No visible bars within viewport range');
+        return;
+      }
+
+      const startBar = visibleBars[0];
+      const endBar = visibleBars[visibleBars.length - 1];
+
+      let visibleHigh = -Infinity;
+      let visibleLow = Infinity;
+      let totalVolume = 0;
+
+      visibleBars.forEach(b => {
+        if (b.high > visibleHigh) visibleHigh = b.high;
+        if (b.low < visibleLow) visibleLow = b.low;
+        totalVolume += (b.volume || 0);
+      });
+
+      const formatDateInfo = (ts) => {
+        const d = new Date(ts);
+        return {
+          timestamp: ts,
+          utc: d.toISOString().replace('T', ' ').substring(0, 19) + ' UTC',
+          local: d.toLocaleString()
+        };
+      };
+
+      // Capture high-res canvas snapshot including all overlays and dark background
+      let pictureUrl = '';
+      try {
+        if (typeof chart.getConvertPictureUrl === 'function') {
+          pictureUrl = chart.getConvertPictureUrl(true, 'png', '#070b16');
+        }
+      } catch (snapErr) {
+        console.warn('[Escanor TV] Snapshot generation error:', snapErr);
+      }
+
+      const tf = window.__currentTimeframeMinutes || currentTimeframeMinutes || 5;
+      const payload = {
+        symbol: currentSymbol,
+        timeframe: `${tf}m`,
+        candle_count: visibleBars.length,
+        view_range: { from_index: fromIdx, to_index: toIdx },
+        start_candle: {
+          ...formatDateInfo(startBar.timestamp),
+          open: startBar.open,
+          high: startBar.high,
+          low: startBar.low,
+          close: startBar.close,
+          volume: startBar.volume
+        },
+        end_candle: {
+          ...formatDateInfo(endBar.timestamp),
+          open: endBar.open,
+          high: endBar.high,
+          low: endBar.low,
+          close: endBar.close,
+          volume: endBar.volume
+        },
+        visible_high: visibleHigh,
+        visible_low: visibleLow,
+        visible_range_pts: Math.round((visibleHigh - visibleLow) * 100) / 100,
+        total_volume: totalVolume,
+        visible_bars: visibleBars.map(b => ({
+          timestamp: b.timestamp,
+          utc: new Date(b.timestamp).toISOString().replace('T', ' ').substring(0, 19),
+          open: b.open,
+          high: b.high,
+          low: b.low,
+          close: b.close,
+          volume: b.volume
+        })),
+        image_base64: pictureUrl
+      };
+
+      const res = await fetch('/api/chart/evaluate_snapshot', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (data && data.status === 'OK') {
+        showChartToast(`🦅 Sovereign View Captured (${visibleBars.length} Bars) — Dispatched to AI Desk`);
+      } else {
+        showChartToast(`⚠️ Snapshot error: ${data?.message || 'Server error'}`);
+      }
+    } catch (err) {
+      console.error('[Escanor TV] Evaluation snapshot failed:', err);
+      showChartToast(`⚠️ Evaluation error: ${err.message}`);
+    } finally {
+      setTimeout(() => {
+        evaluateBtn.classList.remove('evaluating');
+      }, 600);
+    }
   });
 }
 
@@ -1152,6 +1308,13 @@ function connectWebSocket() {
             const cb = window.__pendingWsExecutions.get(data.request_id);
             window.__pendingWsExecutions.delete(data.request_id);
             cb(data.result);
+          }
+          return;
+        }
+
+        if (data && data.type === 'DRAWINGS_UPDATED') {
+          if (data.source !== 'local_chart_user') {
+            reloadChartDrawingsFromServer();
           }
           return;
         }

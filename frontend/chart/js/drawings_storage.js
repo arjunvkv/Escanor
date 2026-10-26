@@ -62,7 +62,7 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
       const res = await fetch('/api/drawings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, drawings: userDrawings })
+        body: JSON.stringify({ symbol, drawings: userDrawings, source: 'local_chart_user' })
       });
       const data = await res.json();
       if (data && data.status === 'OK' && showToast) {
