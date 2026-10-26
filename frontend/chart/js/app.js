@@ -129,6 +129,7 @@ async function init() {
   chart.subscribeAction('onVisibleRangeChange', async (range) => {
     if (range) {
       window.__lastVisibleRange = range;
+      window.__lastDataLength = (chart.getDataList() || []).length;
     }
     // 1. Initial lock to ensure chart has rendered and settled
     if (!chartReady || !range) return;
@@ -402,13 +403,28 @@ function setupEvaluateButton() {
         return;
       }
 
+      const totalBars = dataList.length;
       let range = window.__lastVisibleRange;
       if (!range || typeof range.from !== 'number' || typeof range.to !== 'number') {
-        range = { from: Math.max(0, dataList.length - 120), to: dataList.length - 1 };
+        range = { from: Math.max(0, totalBars - 120), to: totalBars - 1 };
       }
 
-      const fromIdx = Math.max(0, Math.min(dataList.length - 1, Math.min(range.from, range.to)));
-      const toIdx = Math.max(0, Math.min(dataList.length - 1, Math.max(range.from, range.to)));
+      // Check if user was at the live real-time edge when range was captured
+      const lastRecordedDataLen = window.__lastDataLength || totalBars;
+      const wasAtLiveEdge = (range.to >= lastRecordedDataLen - 3) || (range.realTo >= totalBars - 1);
+
+      let fromIdx = Math.max(0, Math.min(range.from, range.to));
+      let toIdx = wasAtLiveEdge ? (totalBars - 1) : Math.min(totalBars - 1, Math.max(range.from, range.to));
+
+      // If user was watching live edge, ensure the viewport window shifts forward to include all live bars
+      if (wasAtLiveEdge && totalBars > lastRecordedDataLen) {
+        const addedBars = totalBars - lastRecordedDataLen;
+        fromIdx = Math.min(totalBars - 1, fromIdx + addedBars);
+      }
+
+      fromIdx = Math.max(0, Math.min(totalBars - 1, fromIdx));
+      toIdx = Math.max(fromIdx, Math.min(totalBars - 1, toIdx));
+
       const visibleBars = dataList.slice(fromIdx, toIdx + 1);
 
       if (visibleBars.length === 0) {
