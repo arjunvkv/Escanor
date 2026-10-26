@@ -288,11 +288,10 @@ export function applyBoxBorderOverrides(isActive) {
   try {
     const paths = currentEvalData?.paths || [];
     
-    // Default box IDs to handle with thin (1px), light, elegant borders
+    // Default box IDs to handle with thin (1.2px), light, elegant borders
     const boxOverrides = [
-      { id: 'sov_box_ascending_base', activeColor: 'rgba(251, 191, 36, 0.50)', defaultColor: 'rgba(0, 229, 255, 0.40)' },
-      { id: 'sov_box_compression_gate', activeColor: 'rgba(240, 171, 252, 0.50)', defaultColor: 'rgba(245, 158, 11, 0.40)' },
-      { id: 'sov_box_dual_supply_pool', activeColor: 'rgba(232, 121, 249, 0.45)', defaultColor: 'rgba(168, 85, 247, 0.40)' }
+      { id: 'sov_box_ascending_base', activeColor: 'rgba(251, 191, 36, 0.85)', defaultColor: 'rgba(0, 229, 255, 0.65)' },
+      { id: 'sov_box_compression_gate', activeColor: 'rgba(240, 171, 252, 0.85)', defaultColor: 'rgba(245, 158, 11, 0.65)' }
     ];
 
     // If paths specify explicit box IDs and colors, dynamically add them
@@ -301,8 +300,8 @@ export function applyBoxBorderOverrides(isActive) {
       if (bId && !boxOverrides.some(o => o.id === bId)) {
         boxOverrides.push({
           id: bId,
-          activeColor: p.border || p.color || 'rgba(232, 121, 249, 0.50)',
-          defaultColor: 'rgba(245, 158, 11, 0.40)'
+          activeColor: p.border || p.color || 'rgba(232, 121, 249, 0.85)',
+          defaultColor: 'rgba(245, 158, 11, 0.65)'
         });
       }
     });
@@ -314,7 +313,7 @@ export function applyBoxBorderOverrides(isActive) {
           styles: {
             rect: {
               borderColor: isActive ? item.activeColor : item.defaultColor,
-              borderSize: 1.0
+              borderSize: 1.2
             }
           }
         });

@@ -247,8 +247,6 @@ async def save_drawings(request: Request):
     try:
         body = await request.json()
         symbol = body.get("symbol", config.get("symbol", "XAUUSD"))
-        drawings = body.get("drawings", [])
-        evaluation = body.get("evaluation")
         
         all_drawings = {}
         if DRAWINGS_PATH.exists():
@@ -257,6 +255,16 @@ async def save_drawings(request: Request):
                     all_drawings = json.load(f)
             except Exception:
                 all_drawings = {}
+
+        drawings = body.get("drawings")
+        if drawings is None and symbol in body:
+            drawings = body[symbol]
+        elif drawings is None:
+            drawings = all_drawings.get(symbol, [])
+
+        evaluation = body.get("evaluation")
+        if evaluation is None and f"{symbol}_EVALUATION" in body:
+            evaluation = body[f"{symbol}_EVALUATION"]
 
         all_drawings[symbol] = drawings
         if evaluation is not None:

@@ -1,5 +1,100 @@
 {
-  "XAUUSD": [],
+  "XAUUSD": [
+    {
+      "id": "sov_box_ascending_base",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1793025900000,
+          "value": 4017.5,
+          "dataIndex": 1973
+        },
+        {
+          "timestamp": 1793031000000,
+          "value": 4017.5,
+          "dataIndex": 1990
+        },
+        {
+          "timestamp": 1793031000000,
+          "value": 4014.5,
+          "dataIndex": 1990
+        },
+        {
+          "timestamp": 1793025900000,
+          "value": 4014.5,
+          "dataIndex": 1973
+        },
+        {
+          "timestamp": 1793025900000,
+          "value": 4016,
+          "dataIndex": 1973
+        },
+        {
+          "timestamp": 1793031000000,
+          "value": 4016,
+          "dataIndex": 1990
+        }
+      ],
+      "styles": {
+        "rect": {
+          "color": "rgba(251, 191, 36, 0.12)",
+          "borderColor": "rgba(251, 191, 36, 0.85)",
+          "borderSize": 1.2
+        }
+      },
+      "zLevel": 48,
+      "extendData": {
+        "label": "Demand Shelf Base (,014.50 - ,017.50)"
+      }
+    },
+    {
+      "id": "sov_box_compression_gate",
+      "name": "rect",
+      "points": [
+        {
+          "timestamp": 1793025900000,
+          "value": 4025.5,
+          "dataIndex": 1973
+        },
+        {
+          "timestamp": 1793031000000,
+          "value": 4025.5,
+          "dataIndex": 1990
+        },
+        {
+          "timestamp": 1793031000000,
+          "value": 4022,
+          "dataIndex": 1990
+        },
+        {
+          "timestamp": 1793025900000,
+          "value": 4022,
+          "dataIndex": 1973
+        },
+        {
+          "timestamp": 1793025900000,
+          "value": 4023.75,
+          "dataIndex": 1973
+        },
+        {
+          "timestamp": 1793031000000,
+          "value": 4023.75,
+          "dataIndex": 1990
+        }
+      ],
+      "styles": {
+        "rect": {
+          "color": "rgba(240, 171, 252, 0.12)",
+          "borderColor": "rgba(240, 171, 252, 0.85)",
+          "borderSize": 1.2
+        }
+      },
+      "zLevel": 100,
+      "extendData": {
+        "label": "Breakout Gate (,022.00 - ,025.50)"
+      }
+    }
+  ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
     "last_updated": "2026-10-26 13:11:18 UTC",
