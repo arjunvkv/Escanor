@@ -1,610 +1,770 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Livermore Sovereign Desk — Automated Anchors & Sovereign Ledger</title>
+  <title>ESCANOR // SOVEREIGN TACTICAL TERMINAL</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&family=Rajdhani:wght@500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700;800&family=Cinzel:wght@600;700;800;900&family=Caveat:wght@600;700&display=swap');
+    :root {
+      --hud-black: #010307;
+      --hud-card: #040812;
+      --hud-card-subtle: #070d1d;
+      --hud-border: rgba(255, 42, 75, 0.22);
+      --hud-border-cyan: rgba(0, 240, 255, 0.22);
+      --hud-red: #ff2a4b;
+      --hud-red-glow: rgba(255, 42, 75, 0.45);
+      --hud-cyan: #00f0ff;
+      --hud-cyan-glow: rgba(0, 240, 255, 0.45);
+      --hud-amber: #f59e0b;
+      --hud-emerald: #10b981;
+    }
 
     body {
-      font-family: 'Rajdhani', sans-serif;
-      background-color: #03050c;
-      color: #e2e8f0;
+      font-family: 'JetBrains Mono', monospace;
+      background-color: var(--hud-black);
+      color: #cbd5e1;
       margin: 0;
       padding: 0;
       overflow-x: hidden;
       user-select: none;
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(255, 42, 75, 0.05) 0%, transparent 60%),
+        linear-gradient(rgba(0, 240, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.015) 1px, transparent 1px);
+      background-size: 100% 100%, 32px 32px, 32px 32px;
     }
 
-    .font-mono-code {
-      font-family: 'JetBrains Mono', monospace;
+    .font-hud-tech {
+      font-family: 'Share Tech Mono', 'JetBrains Mono', monospace;
     }
 
-    .font-serif-title {
-      font-family: 'Cinzel', serif;
+    .font-rajdhani {
+      font-family: 'Rajdhani', sans-serif;
     }
 
-    .font-handwritten {
-      font-family: 'Caveat', cursive;
-    }
-
-    /* Ticker Tape Ribbon */
-    .ticker-ribbon {
-      background: rgba(6, 10, 22, 0.95);
+    /* HUD Corner Crosshairs & Wireframe Decals */
+    .hud-panel {
+      position: relative;
+      background: rgba(4, 8, 18, 0.92);
       border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 8px;
+      backdrop-filter: blur(12px);
+    }
+    .hud-panel::before {
+      content: "";
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 8px;
+      height: 8px;
+      border-top: 2px solid var(--hud-red);
+      border-left: 2px solid var(--hud-red);
+      pointer-events: none;
+    }
+    .hud-panel::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      right: -1px;
+      width: 8px;
+      height: 8px;
+      border-bottom: 2px solid var(--hud-cyan);
+      border-right: 2px solid var(--hud-cyan);
+      pointer-events: none;
     }
 
-    .tape-print {
+    /* Glowing HUD Badges & Accents */
+    .glow-red {
+      box-shadow: 0 0 12px var(--hud-red-glow);
+    }
+    .glow-cyan {
+      box-shadow: 0 0 12px var(--hud-cyan-glow);
+    }
+
+    /* Proximity Alert Row Pulsing Animation (+/- $5.00) */
+    @keyframes proximityPulseRed {
+      0%, 100% {
+        background-color: rgba(255, 42, 75, 0.12);
+        border-color: #ff2a4b;
+        box-shadow: inset 0 0 14px rgba(255, 42, 75, 0.3), 0 0 18px rgba(255, 42, 75, 0.4);
+      }
+      50% {
+        background-color: rgba(255, 42, 75, 0.24);
+        border-color: #ff6b81;
+        box-shadow: inset 0 0 24px rgba(255, 42, 75, 0.5), 0 0 28px rgba(255, 42, 75, 0.6);
+      }
+    }
+
+    .proximity-active-row {
+      animation: proximityPulseRed 1.8s infinite ease-in-out;
+      border: 1px solid #ff2a4b !important;
+    }
+
+    /* Tab Buttons Minimal Sci-Fi */
+    .hud-tab-btn {
+      position: relative;
+      padding: 7px 16px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(10, 16, 28, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: #64748b;
+      transition: all 0.2s ease;
+      clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+      cursor: pointer;
+    }
+    .hud-tab-btn:hover {
+      color: #e2e8f0;
+      background: rgba(20, 30, 50, 0.9);
+      border-color: rgba(0, 240, 255, 0.3);
+    }
+    .hud-tab-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, rgba(255, 42, 75, 0.25) 0%, rgba(10, 16, 28, 0.9) 100%);
+      border-color: var(--hud-red);
+      box-shadow: 0 0 14px rgba(255, 42, 75, 0.3);
+    }
+    .hud-tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: 0;
+      left: 10%;
+      right: 10%;
+      height: 2px;
+      background: var(--hud-red);
+      box-shadow: 0 0 8px var(--hud-red);
+    }
+
+    /* Minimal HUD Toggle Switch */
+    .hud-switch input:checked + .hud-switch-track {
+      background-color: rgba(255, 42, 75, 0.3);
+      border-color: #ff2a4b;
+    }
+    .hud-switch input:checked + .hud-switch-track .hud-switch-thumb {
+      transform: translateX(16px);
+      background-color: #ff2a4b;
+      box-shadow: 0 0 10px #ff2a4b;
+    }
+
+    /* Ticker Tape Ribbon Prints */
+    .tape-print-futuristic {
       display: inline-flex;
       align-items: center;
       gap: 6px;
       padding: 3px 8px;
-      border-radius: 4px;
-      font-family: 'JetBrains Mono', monospace;
+      background: rgba(7, 12, 22, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: 3px;
       font-size: 11px;
-      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
       white-space: nowrap;
-      transition: all 0.15s ease;
     }
-    .tape-print.up {
-      background: rgba(16, 185, 129, 0.12);
-      color: #34d399;
-      border: 1px solid rgba(16, 185, 129, 0.25);
+    .tape-print-futuristic.up {
+      border-left: 2px solid #00f0ff;
+      color: #38bdf8;
     }
-    .tape-print.down {
-      background: rgba(244, 63, 94, 0.12);
-      color: #fb7185;
-      border: 1px solid rgba(244, 63, 94, 0.25);
+    .tape-print-futuristic.down {
+      border-left: 2px solid #ff2a4b;
+      color: #ff6b81;
     }
-    .tape-print.stall {
-      background: rgba(245, 158, 11, 0.18);
+    .tape-print-futuristic.stall {
+      border-left: 2px solid #f59e0b;
+      background: rgba(245, 158, 11, 0.1);
       color: #fbbf24;
-      border: 1px solid rgba(245, 158, 11, 0.45);
-      font-weight: 800;
+      font-weight: 700;
       box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
     }
 
-    /* Control Tabs */
-    .btn-tab {
-      padding: 6px 14px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-      transition: all 0.15s ease;
-      cursor: pointer;
-    }
-    .btn-tab.active {
-      background: #3b82f6;
-      color: #ffffff;
-      box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
-    }
-    .btn-tab.inactive {
-      background: rgba(255, 255, 255, 0.04);
-      color: #94a3b8;
-      border: 1px solid rgba(255, 255, 255, 0.07);
-    }
-    .btn-tab.inactive:hover {
-      background: rgba(255, 255, 255, 0.08);
-      color: #f1f5f9;
-    }
-
-    /* Toggle Switch */
-    .toggle-checkbox:checked {
-      right: 0;
-      border-color: #10b981;
-    }
-    .toggle-checkbox:checked + .toggle-label {
-      background-color: #10b981;
-    }
-
-    /* Proximity Highlighting (+/- 5.0 Points) */
-    .proximity-active-row {
-      background: rgba(245, 158, 11, 0.14) !important;
-      border: 2px solid #fbbf24 !important;
-      box-shadow: 0 0 18px rgba(245, 158, 11, 0.35) !important;
-      animation: pulseProximity 1.8s infinite ease-in-out;
-    }
-
-    @keyframes pulseProximity {
-      0%, 100% { box-shadow: 0 0 12px rgba(245, 158, 11, 0.25); border-color: #f59e0b; }
-      50% { box-shadow: 0 0 24px rgba(245, 158, 11, 0.55); border-color: #fef08a; }
-    }
-
-    /* Vintage Ledger Grid */
-    .ledger-table {
-      border-collapse: collapse;
-      width: 100%;
-    }
-    .ledger-table th {
-      border: 1px solid #1e293b;
-      padding: 8px 6px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .ledger-table td {
-      border: 1px solid #1e293b;
-      padding: 6px 8px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      height: 32px;
-    }
-
-    /* Tooltip Hover Styling */
-    .tooltip-box {
-      visibility: hidden;
-      opacity: 0;
-      transition: opacity 0.2s ease, visibility 0.2s ease;
-    }
-    .has-tooltip:hover .tooltip-box {
-      visibility: visible;
-      opacity: 1;
+    /* Tooltip */
+    .hud-tooltip-trigger:hover .hud-tooltip-content {
+      display: block;
     }
   </style>
 </head>
 <body class="p-3 md:p-6 min-h-screen flex flex-col items-center">
 
-  <!-- Sovereign Header Banner -->
-  <div class="w-full max-w-[1320px] flex flex-col md:flex-row md:items-center justify-between mb-4 border-b border-slate-800 pb-3 gap-3">
-    <div class="flex items-center gap-3">
-      <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
-        ⚖️
+  <!-- TOP HUD TELEMETRY BAR -->
+  <header class="w-full max-w-[1340px] mb-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+    
+    <!-- Left: Tactical Identifier & System Branding -->
+    <div class="flex items-center gap-3.5">
+      <div class="w-10 h-10 bg-black/80 border border-red-500/50 flex items-center justify-center relative glow-red">
+        <span class="text-red-500 font-extrabold text-sm tracking-widest font-hud-tech">ESC</span>
+        <div class="absolute -top-1 -right-1 w-1.5 h-1.5 bg-red-500 animate-ping"></div>
       </div>
       <div>
-        <div class="flex items-center gap-2">
-          <h1 class="text-xl md:text-2xl font-bold tracking-wider font-serif-title text-amber-300">
-            THE LIVERMORE SOVEREIGN OPERATING DESK
+        <div class="flex items-center gap-2.5">
+          <h1 class="text-lg md:text-xl font-bold tracking-wider text-white font-rajdhani uppercase">
+            ESCANOR <span class="text-red-500 font-extrabold">//</span> SOVEREIGN TACTICAL TERMINAL
           </h1>
-          <span class="px-2 py-0.5 text-xs font-bold font-mono-code bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-full">
-            REALITY ENGINE
+          <span class="px-2 py-0.5 text-[9.5px] font-bold tracking-widest bg-red-950/40 text-red-400 border border-red-500/30 rounded">
+            STAT :: 01 ARMED
           </span>
         </div>
-        <p class="text-xs text-slate-400 font-mono-code mt-0.5">
-          Dual-Section Sovereign Ledger • Non-Lying Structural Anchors (1H Auto) • ±$5.00 Laser Proximity Alerting
+        <p class="text-[11px] text-slate-400 tracking-wide font-hud-tech flex items-center gap-2 mt-0.5">
+          <span class="text-cyan-400">RADAR: ±$5.00 PERIMETER</span>
+          <span>•</span>
+          <span>ZERO SYNTHETIC ILLUSIONS</span>
+          <span>•</span>
+          <span class="text-slate-500">PURE LIVERMORE-WYCKOFF REALITY</span>
         </p>
       </div>
     </div>
 
-    <!-- Navigation Tabs -->
-    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
-      <button id="tabScan" class="btn-tab active" onclick="switchSection('scan')">
-        1. Morning Sovereign Scan (IST)
-      </button>
-      <button id="tabLedger" class="btn-tab inactive" onclick="switchSection('ledger')">
-        2. Sovereign Dual Ledger & Alerts
-      </button>
-      <button id="tabTape" class="btn-tab inactive" onclick="switchSection('tape')">
-        3. Digital Tape Execution
-      </button>
-      <button id="tabMacro" class="btn-tab inactive" onclick="switchSection('macro')">
-        4. Macro Campaign Map
-      </button>
-    </div>
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- SECTION 1: THE MORNING SOVEREIGN SCAN TABLE (API PROMPT DRIVEN)           -->
-  <!-- ========================================================================= -->
-  <div id="sectionScan" class="w-full max-w-[1320px] flex flex-col gap-4">
-    
-    <!-- Morning Scan Header Bar with Copy Prompt & Tooltip -->
-    <div class="bg-gradient-to-r from-slate-900 via-blue-950/30 to-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
-      <div>
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
-          <span class="text-xs font-mono-code text-amber-400 font-bold uppercase tracking-wider">DAILY SOVEREIGN DAWN RECONNAISSANCE</span>
+    <!-- Center/Right: Live Telemetry Decals & Spot -->
+    <div class="flex flex-wrap items-center gap-3">
+      <!-- Live Spot Card -->
+      <div class="bg-black/80 border border-cyan-500/30 px-3.5 py-1.5 rounded flex items-center gap-3 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
+        <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+        <div>
+          <span class="text-[9px] uppercase tracking-widest text-slate-400 block font-hud-tech">XAUUSD LIVE SPOT</span>
+          <span id="topSpotDisplay" class="text-sm font-extrabold text-white font-mono tracking-wider">$4,008.50</span>
         </div>
-        <h2 class="text-base md:text-lg font-bold text-slate-100 font-serif-title mt-0.5">
-          The 06:30 AM – 07:30 AM IST Money Market Audit
+      </div>
+
+      <!-- Spread & System Status -->
+      <div class="hidden sm:flex items-center gap-2 bg-black/60 border border-slate-800 px-3 py-1.5 rounded text-[11px] font-hud-tech">
+        <span class="text-slate-500">FEED:</span>
+        <span class="text-emerald-400 font-bold">MT5 REALITY</span>
+        <span class="text-slate-700">|</span>
+        <span class="text-slate-500">SPREAD:</span>
+        <span class="text-slate-200 font-bold">1.2 PTS</span>
+      </div>
+
+      <!-- Minimal Futuristic Tabs Navigation -->
+      <nav class="flex items-center gap-1 bg-black/90 p-1 border border-slate-800 rounded">
+        <button id="tabScan" class="hud-tab-btn active" onclick="switchSection('scan')">
+          01 // SOVEREIGN SCAN
+        </button>
+        <button id="tabLedger" class="hud-tab-btn" onclick="switchSection('ledger')">
+          02 // DUAL LEDGER
+        </button>
+        <button id="tabTape" class="hud-tab-btn" onclick="switchSection('tape')">
+          03 // TAPE vs CANDLE
+        </button>
+        <button id="tabMacro" class="hud-tab-btn" onclick="switchSection('macro')">
+          04 // 24H PROTOCOL
+        </button>
+      </nav>
+    </div>
+
+  </header>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 01: SOVEREIGN DAWN RECONNAISSANCE SCAN (06:30 AM – 07:30 AM IST)     -->
+  <!-- ========================================================================= -->
+  <main id="sectionScan" class="w-full max-w-[1340px] flex flex-col gap-4">
+    
+    <!-- Top Tactical Banner -->
+    <div class="hud-panel rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-red-500/20">
+      <div>
+        <div class="flex items-center gap-2 mb-1">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span class="text-[10px] font-hud-tech text-red-400 tracking-widest uppercase font-bold">
+            OPTIC :: SCAN 01 // DAWN SOVEREIGN AUDIT (06:30 AM – 07:30 AM IST)
+          </span>
+        </div>
+        <h2 class="text-base md:text-lg font-bold text-white uppercase tracking-wider font-rajdhani">
+          SOVEREIGN MONEY MARKET TRANSMISSION VECTOR
         </h2>
-        <p class="text-xs text-slate-400 font-mono-code">
-          Auditing Sovereign Debt Yields, Dollar Transmission, Physical Vault Flows, and High-Impact Gates before market battle.
+        <p class="text-xs text-slate-400 font-hud-tech">
+          Auditing Real Yields (DFII10), DXY Currency Flows, SGE Vault Arbitrage, and NY Fed Liquidity before London Open.
         </p>
       </div>
 
-      <!-- Action Buttons: Copy Prompt + Info Tooltip -->
+      <!-- 1-Click Copy Prompt & Tooltip -->
       <div class="flex items-center gap-3">
-        <!-- Copy Button -->
-        <button id="btnCopyPrompt" onclick="copyMorningScanPrompt()" class="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-mono-code text-xs font-bold rounded-lg transition-all flex items-center gap-2 shadow-[0_0_12px_rgba(59,130,246,0.35)]">
+        <button id="btnCopyPrompt" onclick="copyMorningScanPrompt()" class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold font-hud-tech tracking-wider uppercase rounded border border-red-400/40 shadow-[0_0_14px_rgba(255,42,75,0.4)] flex items-center gap-2 transition-all">
           <span>📋</span>
-          <span id="copyPromptText">Copy Morning Scan Prompt</span>
+          <span id="copyPromptText">COPY PROMPT // JSON INGEST</span>
         </button>
 
-        <!-- Info Tooltip Hover Button -->
-        <div class="relative has-tooltip">
-          <button class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold font-mono-code text-sm border border-slate-700 flex items-center justify-center">
-            ℹ️
+        <!-- Hover Info Card -->
+        <div class="relative hud-tooltip-trigger">
+          <button class="w-8 h-8 rounded bg-black/80 hover:bg-slate-900 border border-slate-700 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center transition-colors">
+            ℹ
           </button>
-          
-          <!-- Tooltip Popup -->
-          <div class="tooltip-box absolute right-0 top-10 w-96 p-3 bg-slate-900 border border-amber-500/40 rounded-xl shadow-2xl z-50 text-xs font-mono-code text-slate-300">
-            <span class="text-amber-400 font-bold block mb-1 uppercase tracking-wider">PROMPT RECONNAISSANCE SCHEMA:</span>
-            <p class="text-[11px] text-slate-400 leading-relaxed mb-2">
-              Clicking <strong>Copy</strong> captures the exact daily prompt to paste into Antigravity at 06:30 AM IST. Antigravity will deep-research the live wires and return pure JSON to update this table.
-            </p>
-            <div class="bg-black/60 p-2 rounded text-[10.5px] text-slate-300 border border-slate-800">
-              <code>Execute 06:30 AM IST Sovereign Money Audit for XAUUSD. Audit FRED DFII10, DXY, SGE physical premium, and Tier-1 gates. Return pure JSON to update morning scan table...</code>
+          <div class="hud-tooltip-content hidden absolute right-0 top-10 w-96 p-3.5 bg-[#030611] border border-cyan-500/40 rounded shadow-2xl z-50 text-xs font-hud-tech text-slate-300">
+            <div class="flex items-center justify-between border-b border-cyan-500/30 pb-1.5 mb-2">
+              <span class="text-cyan-400 font-bold uppercase tracking-wider">DAWN AUDIT JSON CONTRACT</span>
+              <span class="text-[9px] text-slate-500">AUTO-INGEST</span>
             </div>
+            <p class="text-[11px] text-slate-400 leading-relaxed mb-2">
+              Click <strong>Copy Prompt</strong> at 06:30 AM IST. Paste into chat. Antigravity analyzes live FRED yields and wire telemetry, returning pure JSON to populate this scan table.
+            </p>
+            <pre class="bg-black/90 p-2 rounded text-[10px] text-emerald-300 border border-slate-800 overflow-x-auto">{
+  "tips_real_yield_10y": 1.94,
+  "dxy_index": 104.45,
+  "sge_premium_oz": 12.40,
+  "tier1_gate_ist": "18:00 IST ISM PMI"
+}</pre>
           </div>
-        </div>
-
-        <!-- Live Bias Badge -->
-        <div class="hidden lg:flex items-center gap-2.5 bg-black/50 border border-rose-500/40 px-3.5 py-1.5 rounded-lg">
-          <div class="text-right">
-            <span class="text-[9.5px] font-mono-code text-slate-400 block uppercase">MACRO GRAVITY</span>
-            <span class="text-xs font-bold font-mono-code text-rose-400">BEARISH HEADWIND</span>
-          </div>
-          <span class="text-xl">⚡</span>
         </div>
       </div>
     </div>
 
-    <!-- The Sovereign Scan Grid Table -->
-    <div class="bg-[#060914] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
-      <div class="p-3 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
-        <span class="text-xs font-mono-code font-bold text-slate-300 uppercase tracking-wider">
-          SOVEREIGN TRANSMISSION METRICS TABLE (REALITY FEEDS ONLY)
+    <!-- Sovereign Metrics Table -->
+    <div class="hud-panel rounded-lg overflow-hidden border border-slate-800">
+      <div class="p-3 bg-black/60 border-b border-slate-800/80 flex items-center justify-between">
+        <span class="text-[11px] font-bold text-slate-200 tracking-widest uppercase font-hud-tech flex items-center gap-2">
+          <span class="text-cyan-400">SYS :: 01</span> SOVEREIGN LIQUIDITY GAUGES (PHYSICAL REALITY ONLY)
         </span>
-        <span class="text-xs font-mono-code text-slate-500">
-          STATUS: ACTIVE SESSION AUDIT • 06:30 AM IST
-        </span>
+        <span class="text-[10px] text-slate-500 font-hud-tech">CYCLE: 24H DELTA AUDIT</span>
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs font-mono-code">
-          <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800 text-[11px] uppercase">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10.5px] uppercase tracking-wider font-hud-tech">
             <tr>
-              <th class="py-2.5 px-4">Metric / Sovereign Gauge</th>
-              <th class="py-2.5 px-3">Live Value</th>
-              <th class="py-2.5 px-3">24h Net Delta</th>
-              <th class="py-2.5 px-3">Transmission Vector</th>
-              <th class="py-2.5 px-4">Livermore's Deductive Reality</th>
+              <th class="py-2.5 px-4">SOVEREIGN GAUGE</th>
+              <th class="py-2.5 px-3">LIVE METRIC</th>
+              <th class="py-2.5 px-3">24H DELTA</th>
+              <th class="py-2.5 px-3">VECTOR</th>
+              <th class="py-2.5 px-4">LIVERMORE REALITY DEDUCTION</th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-slate-800/80 text-slate-200">
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="py-3 px-4 font-bold text-amber-300 flex items-center gap-2">
+          <tbody class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="py-3 px-4 font-bold text-cyan-300 flex items-center gap-2">
                 <span>📈</span> US 10Y Real Yield (DFII10 / TIPS)
               </td>
               <td class="py-3 px-3 font-extrabold text-white">1.94%</td>
-              <td class="py-3 px-3 text-rose-400 font-bold">+5.2 bps</td>
-              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px]">TIGHTENING CASH</span></td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">Real opportunity cost of Gold is surging. Cash pays higher real return ⟹ <strong>Suppressive pressure on XAUUSD</strong>.</td>
+              <td class="py-3 px-3 text-red-400 font-bold">+5.2 bps</td>
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[9.5px] tracking-wider">
+                  CASH TIGHTENING
+                </span>
+              </td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">
+                Real opportunity cost of Gold is surging. Cash yields rising ⟹ <strong>Suppressive downward gravity on Gold</strong>.
+              </td>
             </tr>
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="py-3 px-4 font-bold text-blue-300 flex items-center gap-2">
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="py-3 px-4 font-bold text-slate-200 flex items-center gap-2">
                 <span>💵</span> US Dollar Index (DXY)
               </td>
               <td class="py-3 px-3 font-extrabold text-white">104.45</td>
-              <td class="py-3 px-3 text-rose-400 font-bold">+0.38%</td>
-              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px]">DOLLAR FIRMING</span></td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">DXY broke above yesterday's high. Currency flow is draining away from commodity hedges into dollar cash.</td>
+              <td class="py-3 px-3 text-red-400 font-bold">+0.38%</td>
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[9.5px] tracking-wider">
+                  DOLLAR FIRMING
+                </span>
+              </td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">
+                DXY expanding upward past prior high. Sovereign flows transferring from bullion hedges into dollar liquidity.
+              </td>
             </tr>
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="py-3 px-4 font-bold text-emerald-300 flex items-center gap-2">
-                <span>🪙</span> Shanghai Gold Physical Premium
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="py-3 px-4 font-bold text-amber-300 flex items-center gap-2">
+                <span>🪙</span> Shanghai Gold Physical Premium (SGE)
               </td>
               <td class="py-3 px-3 font-extrabold text-white">+$12.40 / oz</td>
-              <td class="py-3 px-3 text-amber-400 font-bold">- $4.20 / oz</td>
-              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px]">MODERATE ABSORPTION</span></td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">Asian central bank physical bid remains positive but premium contracted. Not strong enough to overpower yield surge.</td>
+              <td class="py-3 px-3 text-amber-400 font-bold">-$4.20 / oz</td>
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-400 border border-amber-500/30 text-[9.5px] tracking-wider">
+                  MODERATE BID
+                </span>
+              </td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">
+                Asian physical vault premium remains positive but contracting. Not forceful enough to overpower US real yields.
+              </td>
             </tr>
-            <tr class="hover:bg-slate-800/30 transition-colors">
-              <td class="py-3 px-4 font-bold text-cyan-300 flex items-center gap-2">
-                <span>⏱️</span> Next Tier-1 High-Impact Gate
+            <tr class="hover:bg-slate-900/40 transition-colors">
+              <td class="py-3 px-4 font-bold text-emerald-300 flex items-center gap-2">
+                <span>⏱</span> Next High-Impact Event Gate
               </td>
               <td class="py-3 px-3 font-extrabold text-amber-300">06:00 PM IST</td>
-              <td class="py-3 px-3 text-cyan-400 font-bold">11h 30m away</td>
-              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px]">ROADWAY CLEAR</span></td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]"><strong>US ISM Services PMI at 06:00 PM IST</strong>. Clean trading runway for London open (01:30 PM–04:30 PM IST).</td>
+              <td class="py-3 px-3 text-cyan-400 font-bold">11h 30m runway</td>
+              <td class="py-3 px-3">
+                <span class="px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 text-[9.5px] tracking-wider">
+                  RUNWAY CLEAR
+                </span>
+              </td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">
+                <strong>US ISM Services PMI at 06:00 PM IST</strong>. Roadway clear for clean London session structural auction.
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Pocket Note & Target Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="md:col-span-2 bg-[#090e1f] border border-amber-500/30 rounded-xl p-4 shadow-xl">
-        <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-2">
-          <span class="text-xs font-mono-code text-amber-400 font-bold uppercase tracking-wider">
-            📓 LIVERMORE'S PRIVATE POCKET LEDGER NOTE (OCTOBER 27, 2026 • 07:10 AM IST)
+    <!-- Dawn Tactical Field Note & Day Pivot Targets -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 hud-panel rounded-lg p-4 border border-cyan-500/20">
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
+          <span class="text-[10px] font-bold text-cyan-400 tracking-widest uppercase font-hud-tech flex items-center gap-2">
+            <span>G :: GRID</span> LIVERMORE POCKET NOTE PROTOCOL (OCTOBER 27, 2026 • 07:10 AM IST)
           </span>
-          <span class="text-[10px] font-mono-code text-slate-500">HANDWRITTEN IN BLACK INK</span>
+          <span class="text-[9px] text-slate-500 font-hud-tech">CLASSIFIED MEMO</span>
         </div>
-        <p class="font-handwritten text-xl md:text-2xl text-amber-100/90 leading-relaxed tracking-wide">
-          "Real yields pushed above 1.90% with the Dollar firming. The master tide is downward. 
-          Asian trade built a narrow cause between $3,995.00 and $4,012.00. 
-          I have written down $4,012.00 as today's Reversal Pivotal Point. 
-          I shall not anticipate. If London rallies price to poke above $4,012.00 and fails to hold it on the tape, 
-          I will place a 20% feeler probe on the short side. Tripwire risk $1.50. Otherwise, I sit tight."
+        <p class="text-xs text-slate-300 leading-relaxed font-hud-tech tracking-wide">
+          "US Real yields pushed above 1.90% with Dollar firming across G10. Master gravitational vector is downward.
+          Asian auction framed between $3,995.00 and $4,012.00.
+          I establish <span class="text-red-400 font-bold">$4,012.00</span> as today's Reversal Pivotal Point.
+          I will not anticipate. If London rallies price to poke above $4,012.00 and fails to hold on raw tape volume,
+          I place a 20% feeler probe short. Stop loss tripwire $1.50 above wall. Otherwise, I remain entirely cash."
         </p>
       </div>
 
-      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+      <div class="hud-panel rounded-lg p-4 border border-slate-800 flex flex-col justify-between">
         <div>
-          <span class="text-xs font-mono-code text-slate-400 font-bold uppercase tracking-wider block mb-2">
-            TODAY'S 3 PIVOTAL TARGETS
+          <span class="text-[10px] font-bold text-slate-400 tracking-widest uppercase font-hud-tech block mb-2.5">
+            PRIMARY 3 RADAR COORDINATES
           </span>
-          <div class="space-y-2 font-mono-code text-xs">
-            <div class="bg-black/40 p-2 rounded border border-rose-500/30 flex justify-between">
-              <span class="text-slate-400">PIVOTAL HIGH (ASH):</span>
-              <span class="text-rose-400 font-bold">$4,012.00</span>
+          <div class="space-y-2 font-hud-tech text-xs">
+            <div class="bg-black/60 p-2 rounded border border-red-500/30 flex justify-between items-center">
+              <span class="text-slate-400 text-[11px]">PIVOTAL HIGH (ASH):</span>
+              <span class="text-red-400 font-extrabold">$4,012.00</span>
             </div>
-            <div class="bg-black/40 p-2 rounded border border-blue-500/30 flex justify-between">
-              <span class="text-slate-400">PIVOTAL LOW (ASL):</span>
-              <span class="text-blue-400 font-bold">$3,995.00</span>
+            <div class="bg-black/60 p-2 rounded border border-cyan-500/30 flex justify-between items-center">
+              <span class="text-slate-400 text-[11px]">PIVOTAL LOW (ASL):</span>
+              <span class="text-cyan-400 font-extrabold">$3,995.00</span>
             </div>
-            <div class="bg-black/40 p-2 rounded border border-slate-700 flex justify-between">
-              <span class="text-slate-400">WEEKLY OPEN:</span>
-              <span class="text-slate-200 font-bold">$4,008.50</span>
+            <div class="bg-black/60 p-2 rounded border border-slate-800 flex justify-between items-center">
+              <span class="text-slate-400 text-[11px]">WEEKLY OPEN (WO):</span>
+              <span class="text-slate-200 font-extrabold">$4,008.50</span>
             </div>
           </div>
         </div>
-        <div class="mt-3 text-[10px] font-mono-code text-emerald-400 pt-2 border-t border-slate-800">
-          ✓ Posture: STAND ASIDE until $4,012.00 or $3,995.00 is tested.
+        <div class="mt-3 pt-2 border-t border-slate-800 text-[10px] text-emerald-400 font-hud-tech">
+          TACTICAL DIRECTIVE: STAND ASIDE until $4,012.00 or $3,995.00 perimeter breached.
         </div>
       </div>
     </div>
 
-  </div>
+  </main>
 
   <!-- ========================================================================= -->
-  <!-- SECTION 2: THE SOVEREIGN DUAL LEDGER & LASER ALERTS                      -->
+  <!-- TAB 02: SOVEREIGN DUAL LEDGER & INLINE WRITING (THE REQUESTED CORE)       -->
   <!-- ========================================================================= -->
-  <div id="sectionLedger" class="w-full max-w-[1320px] flex flex-col gap-4 hidden">
+  <main id="sectionLedger" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
     
-    <!-- Proximity Alert Controls Bar -->
-    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-3.5 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+    <!-- Proximity Alert Radar Status Bar -->
+    <div class="hud-panel rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 border border-red-500/30 shadow-[0_0_16px_rgba(255,42,75,0.15)]">
       
-      <!-- Left: Live Spot & Nearest Level Proximity Status -->
-      <div class="flex items-center gap-3">
+      <!-- Left: Radar Lock Readout -->
+      <div class="flex items-center gap-3.5">
         <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span class="text-xs font-mono-code text-slate-400">LIVE SPOT:</span>
-          <span id="spotPriceDisplay" class="text-base font-extrabold font-mono-code text-white">$4,008.50</span>
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="text-xs font-hud-tech text-slate-400">SPOT:</span>
+          <span id="ledgerSpotDisplay" class="text-sm font-extrabold text-white font-mono">$4,008.50</span>
         </div>
-        
-        <!-- Proximity Engagement Banner -->
-        <div id="proximityBanner" class="px-2.5 py-1 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-mono-code font-bold flex items-center gap-1.5">
-          <span>⚡</span>
-          <span>ENGAGEMENT ZONE: <strong class="text-white">$3.50</strong> to Asian High ($4,012.00)</span>
+
+        <div id="proximityStatusBanner" class="px-2.5 py-1 rounded bg-red-950/50 text-red-300 border border-red-500/50 text-xs font-hud-tech font-bold flex items-center gap-2 glow-red">
+          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span>TARGET LOCK: <strong class="text-white">+$3.50</strong> to Asian High ($4,012.00)</span>
         </div>
       </div>
 
-      <!-- Right: Multi-Channel Alert Toggles -->
-      <div class="flex items-center gap-4 text-xs font-mono-code">
+      <!-- Right: Alert Configuration Toggles -->
+      <div class="flex items-center gap-4 text-xs font-hud-tech">
         
-        <!-- Toggle 1: Telegram Alert -->
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <span class="text-slate-300 font-bold">📲 Telegram Alert:</span>
-          <div class="relative inline-block w-9 align-middle select-none">
-            <input type="checkbox" id="toggleTelegram" checked onchange="toggleAlertPref('telegram')" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-700 appearance-none cursor-pointer transition-all duration-200">
-            <label for="toggleTelegram" class="toggle-label block overflow-hidden h-4 rounded-full bg-slate-700 cursor-pointer transition-all duration-200"></label>
+        <!-- Telegram Toggle -->
+        <label class="flex items-center gap-2 cursor-pointer select-none hud-switch">
+          <span class="text-slate-300 font-bold uppercase text-[11px]">📲 TELEGRAM ALERT:</span>
+          <div class="relative inline-block w-8 h-4">
+            <input type="checkbox" id="toggleTelegram" checked onchange="toggleAlertPref('telegram')" class="opacity-0 w-0 h-0">
+            <div class="hud-switch-track absolute inset-0 rounded-full bg-slate-800 border border-slate-700 transition-all duration-200 flex items-center px-0.5">
+              <div class="hud-switch-thumb w-3 h-3 rounded-full bg-slate-400 transition-all duration-200"></div>
+            </div>
           </div>
         </label>
 
-        <!-- Toggle 2: PC Audio Chime -->
-        <label class="flex items-center gap-2 cursor-pointer select-none">
-          <span class="text-slate-300 font-bold">🔊 PC Chime:</span>
-          <div class="relative inline-block w-9 align-middle select-none">
-            <input type="checkbox" id="togglePcChime" checked onchange="toggleAlertPref('pc')" class="toggle-checkbox absolute block w-4 h-4 rounded-full bg-white border-2 border-slate-700 appearance-none cursor-pointer transition-all duration-200">
-            <label for="togglePcChime" class="toggle-label block overflow-hidden h-4 rounded-full bg-slate-700 cursor-pointer transition-all duration-200"></label>
+        <!-- PC Audio Chime Toggle -->
+        <label class="flex items-center gap-2 cursor-pointer select-none hud-switch">
+          <span class="text-slate-300 font-bold uppercase text-[11px]">🔊 AUDIO CHIME:</span>
+          <div class="relative inline-block w-8 h-4">
+            <input type="checkbox" id="togglePcChime" checked onchange="toggleAlertPref('pc')" class="opacity-0 w-0 h-0">
+            <div class="hud-switch-track absolute inset-0 rounded-full bg-slate-800 border border-slate-700 transition-all duration-200 flex items-center px-0.5">
+              <div class="hud-switch-thumb w-3 h-3 rounded-full bg-slate-400 transition-all duration-200"></div>
+            </div>
           </div>
         </label>
 
-        <!-- Laser Rule Pill -->
-        <span class="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[11px] font-bold">
-          TRIGGER: ± $5.00 BOUNDARY
+        <!-- Test Chime Button -->
+        <button onclick="playLaserChime()" class="px-2 py-0.5 rounded bg-black/60 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white text-[10px] transition-colors">
+          TEST CHIME
+        </button>
+
+        <span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[10px] font-bold tracking-wider">
+          TRIGGER: ±$5.00 PERIMETER
         </span>
       </div>
+
     </div>
 
-    <!-- SUB-SECTION A: NON-LYING STRUCTURAL ANCHORS (AUTO-NOTED • 1-HOUR REFRESH) -->
-    <div class="bg-[#050814] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
-      <div class="p-3 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-blue-400"></span>
-          <span class="text-xs font-mono-code font-bold text-slate-200 uppercase tracking-wider">
-            SECTION A: NON-LYING STRUCTURAL ANCHORS (AUTO-NOTED FROM MT5)
+    <!-- ======================================================================= -->
+    <!-- SECTION A: NON-LYING STRUCTURAL ANCHORS (AUTO-NOTED FROM MT5 • 1H)     -->
+    <!-- ======================================================================= -->
+    <div class="hud-panel rounded-lg overflow-hidden border border-slate-800">
+      <div class="p-3 bg-black/70 border-b border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+          <span class="text-xs font-hud-tech font-bold text-white tracking-widest uppercase">
+            SECTION A // NON-LYING STRUCTURAL ANCHORS (AUTO-NOTED VIA MT5)
           </span>
-          <span class="text-[10px] font-mono-code text-slate-500 ml-2">
-            Historical price coordinates that cannot lie. Auto-refreshes every 1 hour.
+          <span class="text-[10px] text-slate-500 font-hud-tech hidden md:inline">
+            Settled historical coordinates that cannot lie. Auto-refreshes every 1 hour.
           </span>
         </div>
 
-        <!-- Manual 1-Click Refresh Button -->
-        <div class="flex items-center gap-2">
-          <span id="autoRefreshCountdown" class="text-[10.5px] font-mono-code text-slate-500">
-            Next auto-sync: in 42m
+        <div class="flex items-center gap-2.5">
+          <span id="autoRefreshCountdown" class="text-[10px] font-hud-tech text-slate-500">
+            SYNC IN 42M
           </span>
-          <button onclick="refreshAnchors()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-blue-300 text-xs font-mono-code font-bold rounded border border-slate-700 flex items-center gap-1.5 transition-all">
+          <button onclick="refreshAnchors()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-[10.5px] font-hud-tech font-bold rounded border border-cyan-500/30 flex items-center gap-1.5 transition-all">
             <span id="refreshIcon">↺</span>
-            <span>Refresh Now</span>
+            <span>SYNC NOW</span>
           </button>
         </div>
       </div>
 
-      <!-- Anchors Table -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs font-mono-code">
-          <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800 text-[11px] uppercase">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
             <tr>
-              <th class="py-2.5 px-4">Anchor Name</th>
-              <th class="py-2.5 px-3">Coordinate</th>
-              <th class="py-2.5 px-3">Distance to Spot</th>
-              <th class="py-2.5 px-3">Auction Status</th>
-              <th class="py-2.5 px-3">Alert Status</th>
-              <th class="py-2.5 px-4">Institutional Significance</th>
+              <th class="py-2.5 px-4">ANCHOR COORDINATE</th>
+              <th class="py-2.5 px-3">LEVEL ($)</th>
+              <th class="py-2.5 px-3">DISTANCE TO SPOT</th>
+              <th class="py-2.5 px-3">AUCTION STATUS</th>
+              <th class="py-2.5 px-3">RADAR STATUS</th>
+              <th class="py-2.5 px-4">INSTITUTIONAL PURPOSE</th>
             </tr>
           </thead>
-          <tbody id="anchorsBody" class="divide-y divide-slate-800/80 text-slate-200">
-            <!-- Injected dynamically by JavaScript with Proximity Highlighting -->
+          <tbody id="anchorsBody" class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
+            <!-- Injected dynamically with live proximity radar highlighting -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- VISUAL SEPARATION BAR -->
-    <div class="flex items-center gap-3 my-1">
-      <div class="flex-1 border-t border-slate-800"></div>
-      <span class="text-xs font-mono-code text-amber-400 font-bold uppercase tracking-wider px-3 py-0.5 bg-slate-900 border border-slate-800 rounded-full">
-        ✦ SECTION B: YOUR SOVEREIGN USER LEDGER (RECORDINGS & PIVOTAL OBSERVATIONS) ✦
-      </span>
-      <div class="flex-1 border-t border-slate-800"></div>
-    </div>
-
-    <!-- SUB-SECTION B: USER'S PERSONAL SOVEREIGN LEDGER (INPUT & HISTORICAL RECORDS) -->
-    <div class="bg-[#050814] border border-slate-800 rounded-xl overflow-hidden shadow-2xl p-4 flex flex-col gap-4">
+    <!-- ======================================================================= -->
+    <!-- SECTION B: SOVEREIGN USER LEDGER (WRITE DIRECTLY INTO TABLE ITSELF!)   -->
+    <!-- ======================================================================= -->
+    <div class="hud-panel rounded-lg overflow-hidden border border-red-500/25 shadow-xl flex flex-col">
       
-      <!-- New Entry Input Form -->
-      <div class="bg-slate-900/70 border border-slate-800 p-3 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs font-mono-code">
-        <span class="text-slate-300 font-bold uppercase">LOG NEW PIVOTAL OBSERVATION:</span>
+      <!-- Section B Header with Inline Edit Instruction -->
+      <div class="p-3 bg-gradient-to-r from-red-950/30 via-black to-black border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5">
+          <span class="w-2 h-2 rounded-full bg-red-500"></span>
+          <span class="text-xs font-hud-tech font-bold text-red-400 tracking-widest uppercase">
+            SECTION B // SOVEREIGN USER LEDGER (RECORDINGS & PIVOTAL OBSERVATIONS)
+          </span>
+        </div>
         
-        <div class="flex flex-wrap items-center gap-3">
-          <input type="number" id="inputManualPrice" placeholder="Price (e.g. 4012.00)" step="0.10" class="w-44 bg-slate-800 text-white font-bold px-2.5 py-1.5 rounded border border-slate-700">
-          
-          <select id="selectManualType" class="bg-slate-800 text-slate-200 px-2.5 py-1.5 rounded border border-slate-700 font-mono-code">
-            <option value="Reversal PP">Reversal Pivotal Point (PP High)</option>
-            <option value="Reaction PP">Reaction Pivotal Point (PP Low)</option>
-            <option value="Wyckoff Wall">Wyckoff Absorption Wall</option>
-            <option value="Feeler Probe">20% Feeler Probe Entry</option>
-          </select>
-
-          <input type="text" id="inputManualNote" placeholder="Personal tape note / observation..." class="w-64 bg-slate-800 text-white px-2.5 py-1.5 rounded border border-slate-700">
-
-          <button onclick="addManualLedgerRecord()" class="px-3.5 py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded transition-all shadow-[0_0_10px_rgba(245,158,11,0.3)]">
-            + Write to Ledger
-          </button>
+        <div class="text-[10px] font-hud-tech text-slate-400 flex items-center gap-2">
+          <span class="text-cyan-400 font-bold">✎ DIRECT IN-TABLE WRITING:</span>
+          <span>Type directly in the first row or click any cell to edit in-place. Auto-saved.</span>
         </div>
       </div>
 
-      <!-- User Manual Ledger Table -->
+      <!-- User Manual Ledger Table with Inline Entry Row -->
       <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs font-mono-code">
-          <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800 text-[11px] uppercase">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
             <tr>
-              <th class="py-2 px-3">Date / Time (IST)</th>
-              <th class="py-2 px-3">Logged Price</th>
-              <th class="py-2 px-3">Pivotal Classification</th>
-              <th class="py-2 px-3">Live Distance</th>
-              <th class="py-2 px-4">Personal Tape Note</th>
-              <th class="py-2 px-2 text-center">Action</th>
+              <th class="py-2.5 px-3 w-32">TIMESTAMP (IST)</th>
+              <th class="py-2.5 px-3 w-36">LOGGED PRICE</th>
+              <th class="py-2.5 px-3 w-44">PIVOTAL CLASSIFICATION</th>
+              <th class="py-2.5 px-3 w-32">DISTANCE</th>
+              <th class="py-2.5 px-4">PERSONAL TAPE NOTE / DEDUCTION</th>
+              <th class="py-2.5 px-3 w-24 text-center">ACTIONS</th>
             </tr>
           </thead>
-          <tbody id="userLedgerBody" class="divide-y divide-slate-800/80 text-slate-200">
-            <!-- Populated dynamically -->
+          <tbody id="userLedgerBody" class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
+            <!-- Built dynamically: Row 1 is the seamless INLINE INPUT ROW, followed by saved rows with inline editing -->
           </tbody>
         </table>
       </div>
 
     </div>
 
-  </div>
+  </main>
 
   <!-- ========================================================================= -->
-  <!-- SECTION 3: DIGITAL TAPE EXECUTION & WYCKOFF WALL                          -->
+  <!-- TAB 03: DIGITAL TAPE vs 5-MIN CANDLE DECEPTION                            -->
   <!-- ========================================================================= -->
-  <div id="sectionTape" class="w-full max-w-[1320px] flex flex-col gap-4 hidden">
-    <!-- Ticker ribbon & dual panel canvas -->
+  <main id="sectionTape" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
+    
+    <!-- Time & Sales HUD Ribbon -->
     <div class="w-full">
-      <div class="flex items-center justify-between text-xs font-mono-code text-slate-400 mb-1.5 px-1">
+      <div class="flex items-center justify-between text-xs font-hud-tech text-slate-400 mb-1.5 px-1">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          <span class="font-bold text-slate-200 uppercase tracking-wider">LIVE TICKER TAPE STREAM (TIME & SALES LOG)</span>
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="font-bold text-white uppercase tracking-wider">
+            REC // POS • LIVE TIME & SALES SEQUENTIAL LOG
+          </span>
         </div>
-        <div id="tapeStats" class="text-slate-400">
-          Progress: <span id="tapeStepLabel" class="text-white font-bold">1 / 18</span> Prints
+        <div class="text-slate-400">
+          STREAM PROGRESS: <span id="tapeStepLabel" class="text-white font-bold">18 / 18</span> TICKS
         </div>
       </div>
-      <div class="ticker-ribbon p-2.5 flex items-center gap-2 overflow-x-auto" id="tapeRibbon"></div>
+      <div class="hud-panel p-2.5 rounded flex items-center gap-2 overflow-x-auto border border-slate-800" id="tapeRibbon"></div>
     </div>
 
-    <!-- Main Chart Canvas Area -->
-    <div class="w-full bg-[#070b19] border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative">
-      <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono-code">
+    <!-- Main Oscilloscope Canvas Area -->
+    <div class="hud-panel rounded-lg overflow-hidden border border-slate-800 shadow-2xl relative">
+      
+      <!-- Top Scrubber Controls -->
+      <div class="bg-black/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-hud-tech">
         <div class="flex items-center gap-4">
-          <div><span class="text-slate-500">INSTRUMENT:</span><span class="text-amber-400 font-bold ml-1">XAUUSD</span></div>
-          <div><span class="text-slate-500">PIVOTAL POINT:</span><span class="text-rose-400 font-bold ml-1">$4,012.00 (ASIAN HIGH)</span></div>
-          <div><span class="text-slate-500">CURRENT TAPE:</span><span id="currentTapePrice" class="text-emerald-400 font-bold ml-1">$4,010.50</span></div>
+          <div><span class="text-slate-500">INSTRUMENT:</span> <span class="text-amber-400 font-bold">XAUUSD</span></div>
+          <div><span class="text-slate-500">PIVOTAL POINT:</span> <span class="text-red-400 font-bold">$4,012.00 (ASIAN HIGH)</span></div>
+          <div><span class="text-slate-500">ACTIVE TAPE:</span> <span id="currentTapePrice" class="text-cyan-400 font-bold">$4,010.50</span></div>
         </div>
+
         <div class="flex items-center gap-3">
-          <button id="btnPlay" onclick="togglePlayback()" class="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded font-bold transition-all flex items-center gap-1.5 shadow-[0_0_10px_rgba(59,130,246,0.3)]">
-            <span id="playIcon">▶</span><span id="playText">Play Tape</span>
+          <button id="btnPlay" onclick="togglePlayback()" class="px-3.5 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,42,75,0.4)] transition-all">
+            <span id="playIcon">▶</span>
+            <span id="playText">PLAY TAPE</span>
           </button>
-          <button onclick="resetPlayback()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded font-bold transition-all">↺ Reset</button>
+          <button onclick="resetPlayback()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-slate-300 font-bold rounded border border-slate-700 transition-all">
+            ↺ RESET
+          </button>
           <div class="flex items-center gap-2 ml-2">
             <span class="text-slate-500">SCRUBBER:</span>
-            <input type="range" id="tickScrubber" min="1" max="18" value="18" oninput="onScrub(this.value)" class="w-32 cursor-pointer">
+            <input type="range" id="tickScrubber" min="1" max="18" value="18" oninput="onScrub(this.value)" class="w-32 cursor-pointer accent-red-500">
           </div>
         </div>
       </div>
 
+      <!-- Split Screen: Candle Deception vs Tape Reality -->
       <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800 relative min-h-[440px]">
-        <div class="p-4 flex flex-col relative">
+        
+        <!-- Left: Candle Deception -->
+        <div class="p-4 flex flex-col relative bg-black/40">
           <div class="flex items-center justify-between mb-2">
-            <span class="px-2 py-0.5 text-[11px] font-bold font-mono-code bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded">THE DECEPTIVE VIEW</span>
-            <span class="text-sm font-bold text-slate-300">Standard 5-Minute Candlesticks</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold font-hud-tech bg-red-950/50 text-red-400 border border-red-500/30 rounded">
+              THE DECEPTIVE VIEW
+            </span>
+            <span class="text-xs font-bold text-slate-300 font-hud-tech">Standard 5-Minute Candlesticks</span>
           </div>
-          <div class="relative flex-1 w-full h-[340px] bg-[#04060e] rounded-lg border border-slate-800/80 overflow-hidden">
+          <div class="relative flex-1 w-full h-[340px] bg-black/80 rounded border border-slate-800/80 overflow-hidden">
             <svg id="svgCandle" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none"></svg>
-            <div id="candleCallout" class="absolute bottom-3 left-3 right-3 bg-slate-900/90 border border-slate-700 p-2.5 rounded text-xs font-mono-code text-slate-300 pointer-events-none"></div>
+            <div id="candleCallout" class="absolute bottom-3 left-3 right-3 bg-black/90 border border-slate-700 p-2.5 rounded text-xs font-hud-tech text-slate-300 pointer-events-none"></div>
           </div>
         </div>
-        <div class="p-4 flex flex-col relative">
+
+        <!-- Right: Unvarnished Reality -->
+        <div class="p-4 flex flex-col relative bg-black/40">
           <div class="flex items-center justify-between mb-2">
-            <span class="px-2 py-0.5 text-[11px] font-bold font-mono-code bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded">THE UNVARNISHED REALITY</span>
-            <span class="text-sm font-bold text-emerald-400">Sequential Auction Path & Wyckoff Wall</span>
+            <span class="px-2 py-0.5 text-[10px] font-bold font-hud-tech bg-cyan-950/50 text-cyan-400 border border-cyan-500/30 rounded">
+              THE UNVARNISHED REALITY
+            </span>
+            <span class="text-xs font-bold text-cyan-400 font-hud-tech">Wyckoff Wall & Sequential Trapped Volume</span>
           </div>
-          <div class="relative flex-1 w-full h-[340px] bg-[#04060e] rounded-lg border border-slate-800/80 overflow-hidden">
+          <div class="relative flex-1 w-full h-[340px] bg-black/80 rounded border border-cyan-950/40 overflow-hidden">
             <svg id="svgTape" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none"></svg>
-            <div id="tapeCallout" class="absolute bottom-3 left-3 right-3 bg-slate-900/95 border border-emerald-500/40 p-2.5 rounded text-xs font-mono-code text-slate-200 pointer-events-none shadow-lg"></div>
+            <div id="tapeCallout" class="absolute bottom-3 left-3 right-3 bg-black/95 border border-cyan-500/40 p-2.5 rounded text-xs font-hud-tech text-slate-200 pointer-events-none shadow-lg"></div>
           </div>
         </div>
+
       </div>
+
     </div>
-  </div>
+
+  </main>
 
   <!-- ========================================================================= -->
-  <!-- SECTION 4: MACRO STRUCTURAL CYCLE & IST SCHEDULE                          -->
+  <!-- TAB 04: 24H LIVERMORE-WYCKOFF PROTOCOL (IST TIMELINE)                     -->
   <!-- ========================================================================= -->
-  <div id="sectionMacro" class="w-full max-w-[1320px] flex flex-col gap-4 hidden">
-    <div class="bg-[#070b18] border border-slate-800 rounded-xl p-4 shadow-xl">
+  <main id="sectionMacro" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
+    
+    <!-- Macro Campaign Map -->
+    <div class="hud-panel rounded-lg p-4 border border-slate-800 shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
-        <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wide">
-          The Universal Structural Campaign (Accumulation → Markup → Distribution → Markdown)
+        <h3 class="text-xs font-bold text-white uppercase tracking-wider font-hud-tech flex items-center gap-2">
+          <span class="text-red-500">STAT :: 02</span> THE 4-PHASE MACRO CAMPAIGN (ACCUMULATION → MARKUP → DISTRIBUTION → MARKDOWN)
         </h3>
-        <span class="text-xs font-mono-code text-slate-400">Where Micro Tape Fits into Macro</span>
+        <span class="text-[10px] text-slate-500 font-hud-tech">TACTICAL LIFECYCLE</span>
       </div>
-      <div class="w-full h-[280px] bg-[#030611] rounded-lg border border-slate-800/80 overflow-hidden relative mb-3">
+
+      <div class="w-full h-[280px] bg-black/90 rounded border border-slate-800/80 overflow-hidden relative mb-4">
         <svg class="w-full h-full" viewBox="0 0 1000 280" preserveAspectRatio="none">
-          <rect x="30" y="140" width="220" height="110" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(16, 185, 129, 0.25)" stroke-dasharray="4 4" rx="6" />
-          <text x="140" y="240" fill="#34d399" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 1: ACCUMULATION (THE CAUSE)</text>
-          <rect x="270" y="30" width="230" height="220" fill="rgba(59, 130, 246, 0.04)" stroke="rgba(59, 130, 246, 0.2)" stroke-dasharray="4 4" rx="6" />
-          <text x="385" y="240" fill="#60a5fa" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 2: MARKUP (LINE OF LEAST RESISTANCE)</text>
-          <rect x="520" y="20" width="240" height="110" fill="rgba(244, 63, 94, 0.05)" stroke="rgba(244, 63, 94, 0.25)" stroke-dasharray="4 4" rx="6" />
-          <text x="640" y="125" fill="#fb7185" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 3: DISTRIBUTION (THE TRAP)</text>
-          <rect x="780" y="20" width="190" height="230" fill="rgba(245, 158, 11, 0.04)" stroke="rgba(245, 158, 11, 0.2)" stroke-dasharray="4 4" rx="6" />
-          <text x="875" y="240" fill="#fbbf24" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 4: MARKDOWN (LIQUIDATION)</text>
-          <path d="M 40 170 Q 70 210 100 180 T 150 230 T 180 160 T 210 240 T 235 220 T 260 150" fill="none" stroke="#64748b" stroke-width="2" />
-          <circle cx="210" cy="240" r="5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
-          <text x="210" y="260" fill="#34d399" font-size="10" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">SPRING (SWEEP)</text>
-          <path d="M 260 150 Q 300 130 340 100 T 420 60 T 500 45 T 530 50" fill="none" stroke="#3b82f6" stroke-width="2.5" />
-          <path d="M 530 50 Q 570 35 610 50 T 670 25 T 720 55 T 750 45 T 770 85" fill="none" stroke="#64748b" stroke-width="2" />
-          <circle cx="670" cy="25" r="6" fill="#f43f5e" stroke="#ffffff" stroke-width="1.8" />
-          <text x="670" y="15" fill="#fb7185" font-size="10.5" font-family="JetBrains Mono" font-weight="900" text-anchor="middle">UTAD / PIVOTAL POINT SWEEP</text>
-          <path d="M 770 85 Q 810 145 850 185 T 910 235 T 960 255" fill="none" stroke="#f43f5e" stroke-width="2.5" />
+          <rect x="30" y="140" width="220" height="110" fill="rgba(0, 240, 255, 0.04)" stroke="rgba(0, 240, 255, 0.2)" stroke-dasharray="4 4" rx="4" />
+          <text x="140" y="240" fill="#38bdf8" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 1: ACCUMULATION (THE CAUSE)</text>
+          
+          <rect x="270" y="30" width="230" height="220" fill="rgba(16, 185, 129, 0.04)" stroke="rgba(16, 185, 129, 0.2)" stroke-dasharray="4 4" rx="4" />
+          <text x="385" y="240" fill="#34d399" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 2: MARKUP (LINE OF LEAST RESISTANCE)</text>
+          
+          <rect x="520" y="20" width="240" height="110" fill="rgba(255, 42, 75, 0.04)" stroke="rgba(255, 42, 75, 0.2)" stroke-dasharray="4 4" rx="4" />
+          <text x="640" y="125" fill="#ff6b81" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 3: DISTRIBUTION (THE TRAP)</text>
+          
+          <rect x="780" y="20" width="190" height="230" fill="rgba(245, 158, 11, 0.04)" stroke="rgba(245, 158, 11, 0.2)" stroke-dasharray="4 4" rx="4" />
+          <text x="875" y="240" fill="#fbbf24" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 4: MARKDOWN (LIQUIDATION)</text>
+          
+          <path d="M 40 170 Q 70 210 100 180 T 150 230 T 180 160 T 210 240 T 235 220 T 260 150" fill="none" stroke="#475569" stroke-width="2" />
+          <circle cx="210" cy="240" r="5" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" />
+          <text x="210" y="260" fill="#38bdf8" font-size="9.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">SPRING (SWEEP)</text>
+          
+          <path d="M 260 150 Q 300 130 340 100 T 420 60 T 500 45 T 530 50" fill="none" stroke="#10b981" stroke-width="2.5" />
+          <path d="M 530 50 Q 570 35 610 50 T 670 25 T 720 55 T 750 45 T 770 85" fill="none" stroke="#475569" stroke-width="2" />
+          <circle cx="670" cy="25" r="6" fill="#ff2a4b" stroke="#ffffff" stroke-width="1.8" />
+          <text x="670" y="15" fill="#ff6b81" font-size="10" font-family="JetBrains Mono" font-weight="900" text-anchor="middle">UTAD / PIVOTAL POINT SWEEP</text>
+          
+          <path d="M 770 85 Q 810 145 850 185 T 910 235 T 960 255" fill="none" stroke="#ff2a4b" stroke-width="2.5" />
         </svg>
       </div>
-    </div>
-  </div>
 
-  <!-- Interactive JavaScript Engine -->
+      <!-- 24H Routine Schedule Table in IST -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
+            <tr>
+              <th class="py-2 px-3">WINDOW (IST)</th>
+              <th class="py-2 px-3">TACTICAL PHASE</th>
+              <th class="py-2 px-3">OPERATING DIRECTIVE</th>
+              <th class="py-2 px-4">PRIMARY SCAN TARGET</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
+            <tr class="hover:bg-slate-900/40">
+              <td class="py-2.5 px-3 text-cyan-300 font-bold">06:30 – 07:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 text-[9.5px]">DAWN AUDIT</span></td>
+              <td class="py-2.5 px-3 text-slate-300">Sovereign Money Scan in quiet isolation. No trades.</td>
+              <td class="py-2.5 px-4 text-slate-400">FRED 10Y TIPS, DXY, SGE Premium, SOFR, Tier-1 Gates.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="py-2.5 px-3 text-slate-400 font-bold">07:30 – 11:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-700 text-[9.5px]">ASIAN AUCTION</span></td>
+              <td class="py-2.5 px-3 text-slate-400">Record Asian High (ASH) & Low (ASL). Let cause build.</td>
+              <td class="py-2.5 px-4 text-slate-400">Automated logging into Section A anchors table.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="py-2.5 px-3 text-amber-300 font-bold">13:30 – 16:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-400 border border-amber-500/30 text-[9.5px]">LONDON OPEN</span></td>
+              <td class="py-2.5 px-3 text-slate-200">Primary execution window. Look for ASH/ASL sweep.</td>
+              <td class="py-2.5 px-4 text-slate-400">Watch for 850v absorption walls at pivotal coordinates.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="py-2.5 px-3 text-red-400 font-bold">18:30 – 22:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[9.5px]">NY EXPANSION</span></td>
+              <td class="py-2.5 px-3 text-slate-200">Macro trend expansion or liquidation markdown.</td>
+              <td class="py-2.5 px-4 text-slate-400">Manage open feeler probes or trail behind pivotal stops.</td>
+            </tr>
+            <tr class="hover:bg-slate-900/40">
+              <td class="py-2.5 px-3 text-slate-500 font-bold">23:00 – 23:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800 text-[9.5px]">NIGHT LEDGER</span></td>
+              <td class="py-2.5 px-3 text-slate-400">Update ledger. Clear emotional state before sleep.</td>
+              <td class="py-2.5 px-4 text-slate-400">Log closing pivots & mark tomorrow's tripwires.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT ENGINE & INLINE TABLE EDITING LOGIC                            -->
+  <!-- ========================================================================= -->
   <script>
     // Tab Navigation
     function switchSection(sec) {
@@ -613,26 +773,26 @@
       document.getElementById('sectionTape').classList.add('hidden');
       document.getElementById('sectionMacro').classList.add('hidden');
 
-      document.getElementById('tabScan').className = 'btn-tab inactive';
-      document.getElementById('tabLedger').className = 'btn-tab inactive';
-      document.getElementById('tabTape').className = 'btn-tab inactive';
-      document.getElementById('tabMacro').className = 'btn-tab inactive';
+      document.getElementById('tabScan').className = 'hud-tab-btn';
+      document.getElementById('tabLedger').className = 'hud-tab-btn';
+      document.getElementById('tabTape').className = 'hud-tab-btn';
+      document.getElementById('tabMacro').className = 'hud-tab-btn';
 
       if (sec === 'scan') {
         document.getElementById('sectionScan').classList.remove('hidden');
-        document.getElementById('tabScan').className = 'btn-tab active';
+        document.getElementById('tabScan').className = 'hud-tab-btn active';
       } else if (sec === 'ledger') {
         document.getElementById('sectionLedger').classList.remove('hidden');
-        document.getElementById('tabLedger').className = 'btn-tab active';
+        document.getElementById('tabLedger').className = 'hud-tab-btn active';
         renderAnchorsTable();
         renderUserLedgerTable();
       } else if (sec === 'tape') {
         document.getElementById('sectionTape').classList.remove('hidden');
-        document.getElementById('tabTape').className = 'btn-tab active';
+        document.getElementById('tabTape').className = 'hud-tab-btn active';
         render();
       } else if (sec === 'macro') {
         document.getElementById('sectionMacro').classList.remove('hidden');
-        document.getElementById('tabMacro').className = 'btn-tab active';
+        document.getElementById('tabMacro').className = 'hud-tab-btn active';
       }
     }
 
@@ -654,13 +814,11 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       navigator.clipboard.writeText(promptText).then(() => {
         const btn = document.getElementById('btnCopyPrompt');
         const originalText = document.getElementById('copyPromptText').textContent;
-        document.getElementById('copyPromptText').textContent = "✓ Prompt Copied!";
-        btn.classList.remove('bg-blue-600', 'hover:bg-blue-500');
-        btn.classList.add('bg-emerald-600', 'hover:bg-emerald-500');
+        document.getElementById('copyPromptText').textContent = "✓ COPIED TO CLIPBOARD!";
+        btn.classList.add('glow-cyan', 'border-cyan-400');
         setTimeout(() => {
           document.getElementById('copyPromptText').textContent = originalText;
-          btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
-          btn.classList.add('bg-blue-600', 'hover:bg-blue-500');
+          btn.classList.remove('glow-cyan', 'border-cyan-400');
         }, 2500);
       });
     }
@@ -669,7 +827,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
     // Dual Ledger & Proximity Alerting Engine
     // -------------------------------------------------------------------------
     let currentSpotPrice = 4008.50;
-    const PROXIMITY_THRESHOLD = 5.0; // +/- $5.00 triggers highlight and alert
+    const PROXIMITY_THRESHOLD = 5.0; // +/- $5.00 triggers laser highlight & alert
 
     let alertPrefs = {
       telegram: true,
@@ -679,6 +837,35 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
     function toggleAlertPref(type) {
       if (type === 'telegram') alertPrefs.telegram = document.getElementById('toggleTelegram').checked;
       if (type === 'pc') alertPrefs.pc = document.getElementById('togglePcChime').checked;
+    }
+
+    // Web Audio Synthesizer for High-Tech Chime
+    let audioCtx = null;
+    function playLaserChime() {
+      if (!alertPrefs.pc) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc.type = 'sine';
+        // Sci-Fi chirp: 880Hz to 1320Hz
+        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.12);
+
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.28);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.3);
+      } catch (err) {
+        console.warn("Audio synth error:", err);
+      }
     }
 
     // SECTION A: Non-Lying Structural Anchors
@@ -702,15 +889,15 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
 
         let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
         let alertBadge = isNear 
-          ? `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold text-[10px] animate-pulse">⚡ IN ZONE (±$5)</span>`
+          ? `<span class="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/50 font-bold text-[9.5px] animate-pulse tracking-wider">⚡ IN ZONE (±$5)</span>`
           : `<span class="text-slate-500 text-[10px]">MONITORING</span>`;
 
         html += `
-          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-800/30'} transition-all">
-            <td class="py-2.5 px-4 font-bold ${isNear ? 'text-amber-300' : 'text-slate-200'}">${a.name}</td>
+          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'} transition-all">
+            <td class="py-2.5 px-4 font-bold ${isNear ? 'text-red-400' : 'text-slate-200'}">${a.name}</td>
             <td class="py-2.5 px-3 font-extrabold text-white text-sm">$${a.price.toFixed(2)}</td>
-            <td class="py-2.5 px-3 font-bold ${absDist <= 2.0 ? 'text-rose-400 font-extrabold' : (isNear ? 'text-amber-300' : 'text-slate-400')}">${distText}</td>
-            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-[10px] text-slate-300">${a.status}</span></td>
+            <td class="py-2.5 px-3 font-bold ${absDist <= 2.0 ? 'text-red-400 font-extrabold' : (isNear ? 'text-amber-300' : 'text-slate-400')}">${distText}</td>
+            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-black/60 border border-slate-700 text-[9.5px] text-slate-300">${a.status}</span></td>
             <td class="py-2.5 px-3">${alertBadge}</td>
             <td class="py-2.5 px-4 text-slate-400 text-[11px]">${a.note}</td>
           </tr>
@@ -726,36 +913,132 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       setTimeout(() => {
         icon.classList.remove('animate-spin');
         renderAnchorsTable();
-      }, 600);
+      }, 500);
     }
 
-    // SECTION B: User Sovereign Manual Ledger
-    let userLedgerRecords = [
-      { id: 1, time: "27-Oct 14:15 IST", price: 4012.00, type: "Reversal PP", note: "Livermore Reversal Pivotal Point at Asian High. Watching for failed probe." },
-      { id: 2, time: "27-Oct 09:40 IST", price: 3995.00, type: "Reaction PP", note: "Asian low reaction floor. Demand tested twice." },
-      { id: 3, time: "26-Oct 20:30 IST", price: 4010.50, type: "Wyckoff Wall", note: "Heavy absorption wall traded during NY open." }
+    // -------------------------------------------------------------------------
+    // SECTION B: User Sovereign Manual Ledger (DIRECT IN-TABLE WRITING & EDITING)
+    // -------------------------------------------------------------------------
+    let userLedgerRecords = JSON.parse(localStorage.getItem('escanor_user_ledger') || 'null') || [
+      { id: 1, time: "27-Oct 14:15 IST", price: 4012.00, type: "REVERSAL PP", note: "Livermore Reversal Pivotal Point at Asian High. Watching for failed probe." },
+      { id: 2, time: "27-Oct 09:40 IST", price: 3995.00, type: "REACTION PP", note: "Asian low reaction floor. Demand tested twice." },
+      { id: 3, time: "26-Oct 20:30 IST", price: 4010.50, type: "WYCKOFF WALL", note: "Heavy absorption wall traded during NY open." }
     ];
+
+    function saveUserRecords() {
+      localStorage.setItem('escanor_user_ledger', JSON.stringify(userLedgerRecords));
+    }
 
     function renderUserLedgerTable() {
       const tbody = document.getElementById('userLedgerBody');
       if (!tbody) return;
 
-      let html = '';
-      userLedgerRecords.forEach((r) => {
+      const now = new Date();
+      const defaultTimeStr = `${now.getDate()}-Oct ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} IST`;
+
+      // ROW 1: THE ACTIVE INLINE INPUT ROW (WRITING DIRECTLY INTO THE TABLE!)
+      let html = `
+        <tr class="bg-red-950/20 border-b-2 border-red-500/40">
+          <!-- Time Cell -->
+          <td class="py-2 px-3 text-cyan-400 font-bold text-[10.5px] flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+            <span>${defaultTimeStr}</span>
+          </td>
+
+          <!-- Price Input Cell -->
+          <td class="py-2 px-3">
+            <div class="flex items-center gap-1 bg-black/60 border border-red-500/40 rounded px-1.5 py-0.5 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-400">
+              <span class="text-red-400 font-bold">$</span>
+              <input type="number" id="inlinePrice" placeholder="4012.00" step="0.10" 
+                     onkeydown="handleInlineKeydown(event)"
+                     class="bg-transparent text-white font-extrabold text-sm w-full outline-none font-mono placeholder:text-slate-600">
+            </div>
+          </td>
+
+          <!-- Type Select Cell -->
+          <td class="py-2 px-3">
+            <select id="inlineType" class="bg-black/80 text-amber-300 font-bold text-[10.5px] px-2 py-1 rounded border border-slate-700 outline-none w-full">
+              <option value="REVERSAL PP">REVERSAL PP (HIGH)</option>
+              <option value="REACTION PP">REACTION PP (LOW)</option>
+              <option value="WYCKOFF WALL">WYCKOFF WALL</option>
+              <option value="FEELER PROBE">FEELER PROBE (20%)</option>
+            </select>
+          </td>
+
+          <!-- Distance Placeholder -->
+          <td class="py-2 px-3 text-slate-500 text-[10.5px]">
+            [AUTO-CALC]
+          </td>
+
+          <!-- Note Input Cell -->
+          <td class="py-2 px-4">
+            <input type="text" id="inlineNote" placeholder="Type pivotal note / tape observation directly here... (Press Enter to log)" 
+                   onkeydown="handleInlineKeydown(event)"
+                   class="bg-black/60 text-slate-100 text-xs px-2.5 py-1 rounded border border-slate-700/80 outline-none w-full focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 placeholder:text-slate-600 font-hud-tech">
+          </td>
+
+          <!-- Inline Action Button -->
+          <td class="py-2 px-3 text-center">
+            <button onclick="addInlineRecord()" class="w-full py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] tracking-wider uppercase rounded shadow-[0_0_8px_rgba(255,42,75,0.4)] transition-all cursor-pointer">
+              + LOG
+            </button>
+          </td>
+        </tr>
+      `;
+
+      // SUBSEQUENT ROWS: USER SAVED RECORDS WITH IN-PLACE EDITING
+      userLedgerRecords.forEach((r, idx) => {
         const dist = r.price - currentSpotPrice;
         const absDist = Math.abs(dist);
         const isNear = absDist <= PROXIMITY_THRESHOLD;
         let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
 
         html += `
-          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-800/30'} transition-all">
-            <td class="py-2 px-3 text-slate-400 text-[11px]">${r.time}</td>
-            <td class="py-2 px-3 font-extrabold text-white">$${r.price.toFixed(2)}</td>
-            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px] font-bold">${r.type}</span></td>
-            <td class="py-2 px-3 font-bold ${isNear ? 'text-amber-300' : 'text-slate-400'}">${distText}</td>
-            <td class="py-2 px-4 text-slate-300 text-[11px]">${r.note}</td>
-            <td class="py-2 px-2 text-center">
-              <button onclick="deleteUserRecord(${r.id})" class="text-slate-500 hover:text-rose-400 text-xs transition-colors">✕</button>
+          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'} transition-all group">
+            <!-- Timestamp -->
+            <td class="py-2.5 px-3 text-slate-400 text-[10.5px]">${r.time}</td>
+            
+            <!-- In-Place Editable Price -->
+            <td class="py-2.5 px-3">
+              <div class="flex items-center gap-1 font-extrabold text-white text-sm">
+                <span>$</span>
+                <span contenteditable="true" spellcheck="false"
+                      onblur="updateRecordPrice(${r.id}, this.textContent)"
+                      onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}"
+                      class="outline-none hover:bg-white/5 focus:bg-cyan-950/40 focus:border-b focus:border-cyan-400 px-1 rounded cursor-text">
+                  ${r.price.toFixed(2)}
+                </span>
+              </div>
+            </td>
+
+            <!-- Pivotal Classification -->
+            <td class="py-2.5 px-3">
+              <span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-500/30 text-[9.5px] font-bold tracking-wider">
+                ${r.type}
+              </span>
+            </td>
+
+            <!-- Live Distance & Badge -->
+            <td class="py-2.5 px-3 font-bold ${isNear ? 'text-red-400 font-extrabold' : 'text-slate-400'}">
+              ${distText}
+              ${isNear ? '<span class="ml-1 text-[9px] text-red-400 animate-pulse font-bold">⚡ ZONE</span>' : ''}
+            </td>
+
+            <!-- In-Place Editable Note -->
+            <td class="py-2.5 px-4 text-slate-300 text-xs">
+              <div contenteditable="true" spellcheck="false"
+                   onblur="updateRecordNote(${r.id}, this.textContent)"
+                   onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}"
+                   class="outline-none hover:bg-white/5 focus:bg-cyan-950/40 focus:border-b focus:border-cyan-400 px-1 rounded cursor-text">
+                ${r.note}
+              </div>
+            </td>
+
+            <!-- Delete Action -->
+            <td class="py-2.5 px-3 text-center">
+              <button onclick="deleteUserRecord(${r.id})" class="text-slate-600 hover:text-red-400 text-xs font-bold transition-colors cursor-pointer">
+                ✕ REMOVE
+              </button>
             </td>
           </tr>
         `;
@@ -764,11 +1047,27 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       tbody.innerHTML = html;
     }
 
-    function addManualLedgerRecord() {
-      const p = parseFloat(document.getElementById('inputManualPrice').value);
-      if (isNaN(p) || p <= 0) return;
-      const type = document.getElementById('selectManualType').value;
-      const note = document.getElementById('inputManualNote').value || "Manual Pivotal observation";
+    function handleInlineKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        addInlineRecord();
+      }
+    }
+
+    function addInlineRecord() {
+      const priceInput = document.getElementById('inlinePrice');
+      const noteInput = document.getElementById('inlineNote');
+      const typeSelect = document.getElementById('inlineType');
+
+      const p = parseFloat(priceInput.value);
+      if (isNaN(p) || p <= 0) {
+        priceInput.focus();
+        priceInput.classList.add('border-red-500');
+        return;
+      }
+
+      const note = noteInput.value.trim() || "Observation at pivotal level";
+      const type = typeSelect.value;
 
       const now = new Date();
       const timeStr = `${now.getDate()}-Oct ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} IST`;
@@ -781,13 +1080,38 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         note: note
       });
 
-      document.getElementById('inputManualPrice').value = '';
-      document.getElementById('inputManualNote').value = '';
+      saveUserRecords();
       renderUserLedgerTable();
+
+      // Check proximity for immediate chime
+      if (Math.abs(p - currentSpotPrice) <= PROXIMITY_THRESHOLD) {
+        playLaserChime();
+      }
+    }
+
+    function updateRecordPrice(id, newText) {
+      const val = parseFloat(newText.replace(/[^0-9.]/g, ''));
+      if (!isNaN(val) && val > 0) {
+        const item = userLedgerRecords.find(r => r.id === id);
+        if (item) {
+          item.price = val;
+          saveUserRecords();
+          renderUserLedgerTable();
+        }
+      }
+    }
+
+    function updateRecordNote(id, newText) {
+      const item = userLedgerRecords.find(r => r.id === id);
+      if (item) {
+        item.note = newText.trim() || item.note;
+        saveUserRecords();
+      }
     }
 
     function deleteUserRecord(id) {
       userLedgerRecords = userLedgerRecords.filter(r => r.id !== id);
+      saveUserRecords();
       renderUserLedgerTable();
     }
 
@@ -840,7 +1164,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const el = document.getElementById('currentTapePrice');
       if (el) {
         el.textContent = `$${activePrint.price.toFixed(2)}`;
-        el.className = `font-bold ml-1 ${activePrint.dir === 'up' ? 'text-emerald-400' : (activePrint.dir === 'down' ? 'text-rose-400' : 'text-amber-400')}`;
+        el.className = `font-bold ml-1 ${activePrint.dir === 'up' ? 'text-cyan-400' : (activePrint.dir === 'down' ? 'text-red-400' : 'text-amber-400')}`;
       }
       const label = document.getElementById('tapeStepLabel');
       if (label) label.textContent = `${currentStep} / ${tapeData.length}`;
@@ -856,7 +1180,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         const item = tapeData[i];
         let cls = item.dir;
         let icon = item.dir === 'up' ? '▲' : (item.dir === 'down' ? '▼' : '🧱');
-        html += `<div class="tape-print ${cls}"><span>${item.time}</span><span class="font-bold">$${item.price.toFixed(2)}</span><span class="text-[9.5px] opacity-75">(${item.vol}v)</span><span>${icon}</span></div>`;
+        html += `<div class="tape-print-futuristic ${cls}"><span>${item.time}</span><span class="font-bold">$${item.price.toFixed(2)}</span><span class="text-[9px] opacity-75">(${item.vol}v)</span><span>${icon}</span></div>`;
       }
       container.innerHTML = html;
       container.scrollLeft = container.scrollWidth;
@@ -870,26 +1194,26 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const bar2Data = activeData.slice(12, 18);
 
       let markup = `
-        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="#f43f5e" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8" />
-        <text x="12" y="${priceToY(4012) - 6}" fill="#f43f5e" font-size="10" font-family="JetBrains Mono" font-weight="700">PIVOTAL POINT $4,012.00 (RESISTANCE)</text>
-        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="#334155" stroke-width="0.8" stroke-dasharray="2 4" />
+        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="#ff2a4b" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8" />
+        <text x="12" y="${priceToY(4012) - 6}" fill="#ff2a4b" font-size="10" font-family="JetBrains Mono" font-weight="700">PIVOTAL POINT $4,012.00 (RESISTANCE)</text>
+        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="#1e293b" stroke-width="0.8" stroke-dasharray="2 4" />
       `;
 
       if (bar1Data.length > 0) {
         const o = bar1Data[0].price, c = bar1Data[bar1Data.length - 1].price;
         const h = Math.max(...bar1Data.map(d => d.price)), l = Math.min(...bar1Data.map(d => d.price));
-        const bx = 160, bw = 50, isUp = c >= o, col = isUp ? "#e2e8f0" : "#f43f5e";
-        markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="2" />
-        <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="2" />
-        <text x="${bx}" y="325" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:00 (Bar #1)</text>`;
+        const bx = 160, bw = 50, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
+        markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="1.5" />
+        <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="1" opacity="0.85" />
+        <text x="${bx}" y="325" fill="#64748b" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:00 (Bar #1)</text>`;
       }
       if (bar2Data.length > 0) {
         const o = bar2Data[0].price, c = bar2Data[bar2Data.length - 1].price;
         const h = Math.max(...bar2Data.map(d => d.price)), l = Math.min(...bar2Data.map(d => d.price));
-        const bx = 320, bw = 50, isUp = c >= o, col = isUp ? "#e2e8f0" : "#f43f5e";
-        markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="2" />
-        <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="2" />
-        <text x="${bx}" y="325" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:05 (Bar #2)</text>`;
+        const bx = 320, bw = 50, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
+        markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="1.5" />
+        <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="1" opacity="0.85" />
+        <text x="${bx}" y="325" fill="#64748b" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:05 (Bar #2)</text>`;
       }
       svg.innerHTML = markup;
 
@@ -897,7 +1221,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       if (callout) {
         callout.innerHTML = currentStep <= 8 
           ? `<span class="text-amber-400 font-bold">THE CANDLE HIDES IT:</span> Leaving a long upper wick, but you cannot tell where the exact sell wall sat.`
-          : `<span class="text-rose-400 font-bold">TOO LATE:</span> By the time the candle closes red, price is already down at $4,007.50—you missed the move!`;
+          : `<span class="text-red-400 font-bold">TOO LATE:</span> By the time the candle closes red, price is already down at $4,007.50—you missed the move!`;
       }
     }
 
@@ -908,16 +1232,16 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const resY = priceToY(4012.00);
 
       let markup = `
-        <line x1="0" y1="${resY}" x2="${SVG_W}" y2="${resY}" stroke="#f43f5e" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8" />
-        <text x="12" y="${resY - 6}" fill="#f43f5e" font-size="10" font-family="JetBrains Mono" font-weight="700">PIVOTAL POINT $4,012.00</text>
-        <line x1="0" y1="${priceToY(4010.50)}" x2="${SVG_W}" y2="${priceToY(4010.50)}" stroke="#3b82f6" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.6" />
-        <text x="12" y="${priceToY(4010.50) - 4}" fill="#60a5fa" font-size="9" font-family="JetBrains Mono">STRUCTURAL PIVOT $4,010.50 (ENTRY #2 RETEST)</text>
+        <line x1="0" y1="${resY}" x2="${SVG_W}" y2="${resY}" stroke="#ff2a4b" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8" />
+        <text x="12" y="${resY - 6}" fill="#ff2a4b" font-size="10" font-family="JetBrains Mono" font-weight="700">PIVOTAL POINT $4,012.00</text>
+        <line x1="0" y1="${priceToY(4010.50)}" x2="${SVG_W}" y2="${priceToY(4010.50)}" stroke="#00f0ff" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.6" />
+        <text x="12" y="${priceToY(4010.50) - 4}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">STRUCTURAL PIVOT $4,010.50 (ENTRY #2 RETEST)</text>
       `;
 
       if (activeData.length > 1) {
         let pathD = `M ${indexToX(0)} ${priceToY(activeData[0].price)}`;
         for (let i = 1; i < activeData.length; i++) pathD += ` L ${indexToX(i)} ${priceToY(activeData[i].price)}`;
-        markup += `<path d="${pathD}" fill="none" stroke="#3b82f6" stroke-width="3.5" opacity="0.25" /><path d="${pathD}" fill="none" stroke="#60a5fa" stroke-width="1.8" />`;
+        markup += `<path d="${pathD}" fill="none" stroke="#00f0ff" stroke-width="3.5" opacity="0.2" /><path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="1.6" />`;
       }
 
       activeData.forEach((d, i) => {
@@ -925,11 +1249,11 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         if (d.step === 7) {
           markup += `<circle cx="${x}" cy="${y}" r="8" fill="#f59e0b" fill-opacity="0.3" stroke="#f59e0b" stroke-width="1.5" /><circle cx="${x}" cy="${y}" r="4" fill="#f59e0b" stroke="#ffffff" stroke-width="1.2" /><text x="${x}" y="${y - 12}" fill="#fbbf24" font-size="10" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">850v WALL</text>`;
         } else if (d.step === 8) {
-          markup += `<circle cx="${x}" cy="${y}" r="6" fill="#10b981" stroke="#ffffff" stroke-width="1.5" /><line x1="${x}" y1="${y}" x2="${x + 35}" y2="${y + 25}" stroke="#10b981" stroke-width="1.2" /><rect x="${x + 37}" y="${y + 12}" width="105" height="24" fill="#064e3b" stroke="#10b981" rx="4" /><text x="${x + 43}" y="${y + 28}" fill="#34d399" font-size="9.5" font-family="JetBrains Mono" font-weight="800">ENTRY #1 @ $4,011.60</text>`;
+          markup += `<circle cx="${x}" cy="${y}" r="6" fill="#10b981" stroke="#ffffff" stroke-width="1.5" /><line x1="${x}" y1="${y}" x2="${x + 35}" y2="${y + 25}" stroke="#10b981" stroke-width="1.2" /><rect x="${x + 37}" y="${y + 12}" width="105" height="24" fill="#064e3b" stroke="#10b981" rx="3" /><text x="${x + 43}" y="${y + 28}" fill="#34d399" font-size="9.5" font-family="JetBrains Mono" font-weight="800">ENTRY #1 @ $4,011.60</text>`;
         } else if (d.step === 15) {
-          markup += `<circle cx="${x}" cy="${y}" r="6" fill="#3b82f6" stroke="#ffffff" stroke-width="1.5" /><line x1="${x}" y1="${y}" x2="${x - 30}" y2="${y - 25}" stroke="#3b82f6" stroke-width="1.2" /><rect x="${x - 140}" y="${y - 38}" width="108" height="24" fill="#1e3a8a" stroke="#3b82f6" rx="4" /><text x="${x - 134}" y="${y - 22}" fill="#93c5fd" font-size="9.5" font-family="JetBrains Mono" font-weight="800">ENTRY #2 @ $4,010.40</text>`;
+          markup += `<circle cx="${x}" cy="${y}" r="6" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" /><line x1="${x}" y1="${y}" x2="${x - 30}" y2="${y - 25}" stroke="#00f0ff" stroke-width="1.2" /><rect x="${x - 140}" y="${y - 38}" width="108" height="24" fill="#083344" stroke="#00f0ff" rx="3" /><text x="${x - 134}" y="${y - 22}" fill="#7dd3fc" font-size="9.5" font-family="JetBrains Mono" font-weight="800">ENTRY #2 @ $4,010.40</text>`;
         } else {
-          const nodeColor = d.dir === 'up' ? '#34d399' : (d.dir === 'down' ? '#f43f5e' : '#fbbf24');
+          const nodeColor = d.dir === 'up' ? '#38bdf8' : (d.dir === 'down' ? '#ff2a4b' : '#fbbf24');
           markup += `<circle cx="${x}" cy="${y}" r="${d.vol > 200 ? 3.5 : 2.5}" fill="${nodeColor}" opacity="0.85" />`;
         }
       });
@@ -938,7 +1262,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const activePrint = activeData[activeData.length - 1];
       const callout = document.getElementById('tapeCallout');
       if (callout) {
-        callout.innerHTML = `<div class="flex items-center justify-between"><span class="font-bold text-slate-100">STEP ${activePrint.step}: ${activePrint.time}</span><span class="text-amber-400 font-bold">${activePrint.desc}</span></div>`;
+        callout.innerHTML = `<div class="flex items-center justify-between"><span class="font-bold text-white">STEP ${activePrint.step}: ${activePrint.time}</span><span class="text-cyan-400 font-bold">${activePrint.desc}</span></div>`;
       }
     }
 
@@ -947,7 +1271,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       if (currentStep >= tapeData.length) currentStep = 1;
       isPlaying = true;
       document.getElementById('playIcon').textContent = '⏸';
-      document.getElementById('playText').textContent = 'Pause';
+      document.getElementById('playText').textContent = 'PAUSE';
       playInterval = setInterval(() => {
         if (currentStep < tapeData.length) { currentStep++; render(); } else pausePlayback();
       }, 700);
@@ -956,14 +1280,37 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       isPlaying = false;
       clearInterval(playInterval);
       document.getElementById('playIcon').textContent = '▶';
-      document.getElementById('playText').textContent = 'Play Tape';
+      document.getElementById('playText').textContent = 'PLAY TAPE';
     }
     function resetPlayback() { pausePlayback(); currentStep = 1; render(); }
     function onScrub(val) { pausePlayback(); currentStep = parseInt(val, 10); render(); }
 
+    // WebSocket Auto-Feed Connection for Real-Time Spot
+    function initWebSocket() {
+      try {
+        const ws = new WebSocket('ws://' + window.location.hostname + ':5056');
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.price || data.bid) {
+              const newP = parseFloat(data.price || data.bid);
+              if (!isNaN(newP)) {
+                currentSpotPrice = newP;
+                document.getElementById('topSpotDisplay').textContent = '$' + newP.toFixed(2);
+                document.getElementById('ledgerSpotDisplay').textContent = '$' + newP.toFixed(2);
+                renderAnchorsTable();
+                renderUserLedgerTable();
+              }
+            }
+          } catch(e) {}
+        };
+      } catch (err) {}
+    }
+
     // Initial Execution
     renderAnchorsTable();
     renderUserLedgerTable();
+    initWebSocket();
   </script>
 </body>
 </html>
