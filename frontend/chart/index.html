@@ -298,6 +298,12 @@
           <span id="tvFloatingCloseAllPnl" class="tv-rc-pnl">+$0.00</span>
         </button>
 
+        <!-- Clicked Candle Order Flow VPOC Laser Overlay (Zero-Bloat SVG Layer) -->
+        <svg id="tvCandleVpocSvg" class="tv-candle-vpoc-svg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 18; overflow: hidden;"></svg>
+
+        <!-- Right-Scale Integrated Candle VPOC & Volume Data Pill -->
+        <div id="tvCandleVpocPill" class="tv-candle-vpoc-pill" style="display: none;"></div>
+
         <!-- Canvas Container -->
         <div id="klineChart"></div>
       </main>
@@ -1433,6 +1439,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610261515"></script>
+  <script type="module" src="/chart/js/app.js?v=202610271245"></script>
 </body>
 </html>

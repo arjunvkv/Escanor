@@ -4655,3 +4655,52 @@ input[type="number"] {
   align-items: center;
   gap: 6px;
 }
+
+/* =========================================================================
+   CLICKED CANDLE VPOC LASER LINE & RIGHT-SCALE FLOATING PILL
+   ========================================================================= */
+.tv-candle-vpoc-pill {
+  position: absolute;
+  right: 84px;
+  z-index: 45;
+  width: 215px;
+  padding: 8px 11px;
+  border-radius: 6px;
+  background: linear-gradient(135deg, rgba(13, 18, 30, 0.96) 0%, rgba(6, 10, 18, 0.98) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.55);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 14px rgba(56, 189, 248, 0.25);
+  backdrop-filter: blur(12px);
+  pointer-events: auto;
+  user-select: none;
+  font-family: 'Rajdhani', -apple-system, BlinkMacSystemFont, sans-serif;
+  transition: top 0.15s ease, opacity 0.2s ease, border-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.tv-candle-vpoc-pill.absorption-bull {
+  border-color: rgba(16, 185, 129, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
+.tv-candle-vpoc-pill.absorption-bear {
+  border-color: rgba(244, 63, 94, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 16px rgba(244, 63, 94, 0.35);
+}
+
+.tv-candle-vpoc-pill.initiative {
+  border-color: rgba(251, 191, 36, 0.85);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 16px rgba(251, 191, 36, 0.35);
+}
+
+.tv-vpoc-pill-close {
+  cursor: pointer;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 0 3px;
+  transition: color 0.15s ease;
+}
+.tv-vpoc-pill-close:hover {
+  color: #ffffff;
+}
+
