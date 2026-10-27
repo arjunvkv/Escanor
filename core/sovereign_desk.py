@@ -63,7 +63,14 @@ def get_live_sovereign_anchors(symbol: str = "XAUUSD") -> Dict[str, Any]:
         if rates_w1 is not None and len(rates_w1) >= 1:
             wo = float(rates_w1[-1]["open"])
 
-        # 4. Asian Session Range (03:30 AM – 11:30 AM IST / 22:00 – 06:00 UTC)
+        # Today D1 bar
+        today_high = None
+        today_low = None
+        if rates_d1 is not None and len(rates_d1) >= 1:
+            today_high = float(rates_d1[-1]["high"])
+            today_low = float(rates_d1[-1]["low"])
+
+        # Asian Session Range (03:30 AM – 11:30 AM IST / 22:00 – 06:00 UTC)
         # Approximate from today's M5 rates or compute_telemetry_snapshot
         ash = None
         asl = None
@@ -95,6 +102,22 @@ def get_live_sovereign_anchors(symbol: str = "XAUUSD") -> Dict[str, Any]:
                 "time": "Today (03:30–11:30 IST)",
                 "status": "UNTESTED POOL" if spot_price > asl else "SWEPT / ACTIVE",
                 "note": "Overnight sell-stops resting floor. Primary demand target."
+            })
+        if today_high is not None and (ash is None or abs(today_high - ash) > 0.5):
+            anchors.append({
+                "name": "Current Day High (CDH)",
+                "price": round(today_high, 2),
+                "time": "Today Session",
+                "status": "RESISTANCE",
+                "note": "Current session absolute high auction extreme."
+            })
+        if today_low is not None and (asl is None or abs(today_low - asl) > 0.5):
+            anchors.append({
+                "name": "Current Day Low (CDL)",
+                "price": round(today_low, 2),
+                "time": "Today Session",
+                "status": "SUPPORT",
+                "note": "Current session absolute low absorption floor."
             })
         if pdh is not None:
             anchors.append({
@@ -129,6 +152,31 @@ def get_live_sovereign_anchors(symbol: str = "XAUUSD") -> Dict[str, Any]:
                 "note": "Sovereign weekly battle boundary."
             })
 
+        # Extra live macro metrics from structure engine
+        macro_metrics = {}
+        try:
+            from core.structure_engine import compute_telemetry_snapshot
+            snap = compute_telemetry_snapshot(symbol)
+            if snap:
+                im = snap.get("intermarket", {})
+                dxy = im.get("DXY", {})
+                yld = im.get("YLD", {})
+                xag = im.get("XAG", {})
+                tape = snap.get("tape", {})
+                struct = snap.get("structure", {})
+                macro_metrics = {
+                    "dxy_bid": dxy.get("bid", 102.01),
+                    "dxy_pct": dxy.get("pct", 0.08),
+                    "us10y_yield": yld.get("bid", 4.15),
+                    "silver_bid": xag.get("bid", 53.83),
+                    "silver_pct": xag.get("pct", 0.37),
+                    "cvd_delta": tape.get("cvd_delta", 0),
+                    "tick_velocity": tape.get("tick_velocity", 0),
+                    "vwap": struct.get("vwap", {}).get("vwap", spot_price)
+                }
+        except Exception:
+            pass
+
     except Exception as e:
         logger.error(f"Error fetching live sovereign anchors from MT5: {e}")
         # Robust fallback coordinates
@@ -140,6 +188,7 @@ def get_live_sovereign_anchors(symbol: str = "XAUUSD") -> Dict[str, Any]:
             {"name": "Previous Day Close (PDC)", "price": 4016.70, "time": "Yesterday Close", "status": "SETTLED", "note": "Daily settlement."},
             {"name": "Weekly Open Pivot (WO)", "price": 3998.69, "time": "Monday Open", "status": "CURRENT LEVEL", "note": "Weekly battle boundary."}
         ]
+        macro_metrics = {}
 
     return {
         "status": "OK",
@@ -149,6 +198,7 @@ def get_live_sovereign_anchors(symbol: str = "XAUUSD") -> Dict[str, Any]:
         "ask": ask,
         "spread_pts": spread_pts,
         "anchors": anchors,
+        "macro_metrics": macro_metrics,
         "timestamp_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 

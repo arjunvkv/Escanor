@@ -35,6 +35,35 @@
       transform: none !important;
     }
 
+    /* FUTURISTIC MINIMAL HUD SCROLLBARS (MATCH THE THEME - ZERO WHITE BARS) */
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 240, 255, 0.25) #010307;
+    }
+
+    ::-webkit-scrollbar {
+      width: 4px;
+      height: 4px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #010307;
+      border: none;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(0, 240, 255, 0.25);
+      border-radius: 2px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 240, 255, 0.55);
+    }
+
+    ::-webkit-scrollbar-corner {
+      background: #010307;
+    }
+
     body {
       font-family: 'JetBrains Mono', monospace;
       background-color: var(--hud-black);
@@ -150,179 +179,163 @@
       box-shadow: 0 0 8px #ff2a4b;
     }
 
-    /* Ticker Tape Ribbon Prints */
-    .tape-print-futuristic {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 3px 8px;
-      background: rgba(7, 12, 22, 0.95);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 2px;
-      font-size: 11px;
-      font-family: 'JetBrains Mono', monospace;
-      white-space: nowrap;
-    }
-    .tape-print-futuristic.up {
+    /* Live Tick Row */
+    .tick-row-up {
       border-left: 2px solid #00f0ff;
-      color: #38bdf8;
+      background: rgba(0, 240, 255, 0.04);
     }
-    .tape-print-futuristic.down {
+    .tick-row-down {
       border-left: 2px solid #ff2a4b;
-      color: #ff6b81;
+      background: rgba(255, 42, 75, 0.04);
     }
-    .tape-print-futuristic.stall {
+    .tick-row-flat {
+      border-left: 2px solid #64748b;
+      background: rgba(100, 116, 139, 0.04);
+    }
+    .tick-row-block {
       border-left: 2px solid #f59e0b;
-      background: rgba(245, 158, 11, 0.12);
-      color: #fbbf24;
-      font-weight: 700;
-    }
-
-    /* Tooltip */
-    .hud-tooltip-trigger:hover .hud-tooltip-content {
-      display: block;
+      background: rgba(245, 158, 11, 0.10);
+      box-shadow: inset 0 0 8px rgba(245, 158, 11, 0.2);
     }
   </style>
 </head>
-<body class="p-3 md:p-6 min-h-screen flex flex-col items-center">
+<body class="min-h-screen flex flex-col items-center p-3 sm:p-5">
 
-  <!-- TOP HUD TELEMETRY BAR -->
-  <header class="w-full max-w-[1340px] mb-4 flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
+  <!-- ========================================================================= -->
+  <!-- TOP HEADER HUD (MINIMAL FUTURISTIC OBSIDIAN COMMAND DECK)                  -->
+  <!-- ========================================================================= -->
+  <header class="w-full max-w-[1380px] flex flex-col md:flex-row items-center justify-between gap-3 border-b border-slate-800 pb-4 mb-4">
     
-    <!-- Left: Tactical Identifier & System Branding -->
-    <div class="flex items-center gap-3.5">
-      <div class="w-10 h-10 bg-black/80 border border-red-500/50 flex items-center justify-center relative glow-red">
-        <span class="text-red-500 font-extrabold text-sm tracking-widest font-hud-tech">ESC</span>
+    <!-- Title & Sovereign Indicator -->
+    <div class="flex items-center gap-3.5 w-full md:w-auto">
+      <div class="w-8 h-8 rounded border border-red-500/50 bg-red-950/40 flex items-center justify-center font-hud-tech text-xs font-bold text-red-400 shadow-[0_0_12px_rgba(255,42,75,0.3)]">
+        ESC
       </div>
       <div>
-        <div class="flex items-center gap-2.5">
-          <h1 class="text-lg md:text-xl font-bold tracking-wider text-white font-rajdhani uppercase">
-            ESCANOR <span class="text-red-500 font-extrabold">//</span> SOVEREIGN TACTICAL TERMINAL
+        <div class="flex items-center gap-2">
+          <h1 class="text-base sm:text-lg font-extrabold tracking-widest text-white uppercase font-hud-tech">
+            ESCANOR <span class="text-red-500">//</span> SOVEREIGN
           </h1>
-          <span class="px-2 py-0.5 text-[9.5px] font-bold tracking-widest bg-red-950/40 text-red-400 border border-red-500/30 rounded">
-            STAT :: 01 ARMED
+          <span class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 tracking-wider">
+            TACTICAL TERMINAL
           </span>
         </div>
-        <p class="text-[11px] text-slate-400 tracking-wide font-hud-tech flex items-center gap-2 mt-0.5">
-          <span class="text-cyan-400">RADAR: ±$5.00 PERIMETER</span>
+        <div class="flex items-center gap-3 text-[10px] text-slate-500 tracking-wider uppercase font-hud-tech mt-0.5">
+          <span>RADAR: <strong class="text-cyan-400 font-normal">±$5.00 PERIMETER</strong></span>
           <span>•</span>
           <span>ZERO SYNTHETIC ILLUSIONS</span>
           <span>•</span>
-          <span class="text-slate-500">LIVE MT5 INTEGRATION</span>
-        </p>
+          <span id="wsStatusBadge" class="text-emerald-400">WS LIVE // 5056</span>
+        </div>
       </div>
     </div>
 
-    <!-- Center/Right: Live Telemetry Decals & Spot -->
-    <div class="flex flex-wrap items-center gap-3">
-      <!-- Live Spot Card -->
-      <div class="bg-black/80 border border-cyan-500/30 px-3.5 py-1.5 rounded flex items-center gap-3 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
-        <div class="w-2 h-2 rounded-full bg-cyan-400"></div>
-        <div>
-          <span class="text-[9px] uppercase tracking-widest text-slate-400 block font-hud-tech">XAUUSD LIVE SPOT</span>
-          <span id="topSpotDisplay" class="text-sm font-extrabold text-white font-mono tracking-wider">$4,023.50</span>
+    <!-- Center/Right Live MT5 Telemetry Badges -->
+    <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto justify-end">
+      
+      <!-- System Armed Badge -->
+      <div class="px-2.5 py-1 rounded bg-black border border-red-500/40 text-[10px] font-hud-tech text-red-400 flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-none"></span>
+        <span class="tracking-widest font-bold">STAT :: 01 ARMED</span>
+      </div>
+
+      <!-- Live Spot Price HUD Pill -->
+      <div class="px-3.5 py-1 rounded bg-black border border-cyan-500/40 flex items-center gap-2 shadow-[0_0_10px_rgba(0,240,255,0.15)]">
+        <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+        <div class="flex flex-col">
+          <span class="text-[8.5px] uppercase tracking-widest text-slate-400 font-hud-tech">XAUUSD LIVE SPOT</span>
+          <span id="headerSpotPrice" class="text-sm font-extrabold text-cyan-300 font-mono tracking-tight leading-tight">$4,026.50</span>
         </div>
       </div>
 
-      <!-- Spread & System Status -->
-      <div class="hidden sm:flex items-center gap-2 bg-black/60 border border-slate-800 px-3 py-1.5 rounded text-[11px] font-hud-tech">
-        <span class="text-slate-500">FEED:</span>
-        <span class="text-emerald-400 font-bold">MT5 REALITY</span>
+      <!-- Spread & Reality Feed Pill -->
+      <div class="px-2.5 py-1 rounded bg-black/80 border border-slate-800 text-[10.5px] font-hud-tech text-slate-400 flex items-center gap-2">
+        <span>FEED: <strong class="text-emerald-400 font-bold">MT5 REALITY</strong></span>
         <span class="text-slate-700">|</span>
-        <span class="text-slate-500">SPREAD:</span>
-        <span id="spreadDisplay" class="text-slate-200 font-bold">1.2 PTS</span>
+        <span>SPREAD: <strong id="headerSpreadPts" class="text-white font-bold">36.0 PTS</strong></span>
       </div>
 
-      <!-- Quick Switcher to /chart -->
-      <a href="/chart" class="px-3 py-1.5 bg-black/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 rounded text-[11px] font-hud-tech font-bold flex items-center gap-1.5">
-        <span>📈</span>
-        <span>DESKTOP CHART (/chart)</span>
+      <!-- Current Session Pill -->
+      <div class="px-2.5 py-1 rounded bg-black/80 border border-slate-800 text-[10.5px] font-hud-tech text-slate-400 flex items-center gap-2">
+        <span>WINDOW: <strong id="headerSessionPill" class="text-cyan-400 font-bold">NY EXPANSION</strong></span>
+      </div>
+
+      <!-- Quick Switcher to /chart (Desktop Candlestick View) -->
+      <a href="/chart" class="px-3 py-1 bg-black/90 hover:bg-slate-800 text-slate-300 hover:text-white text-xs font-hud-tech font-bold rounded border border-slate-700 flex items-center gap-1.5 cursor-pointer shadow-md">
+        <span>📈 DESKTOP CHART (/chart)</span>
       </a>
 
-      <!-- Minimal Futuristic Tabs Navigation -->
-      <nav class="flex items-center gap-1 bg-black/90 p-1 border border-slate-800 rounded">
-        <button id="tabScan" class="hud-tab-btn active" onclick="switchSection('scan')">
-          01 // SOVEREIGN SCAN
-        </button>
-        <button id="tabLedger" class="hud-tab-btn" onclick="switchSection('ledger')">
-          02 // DUAL LEDGER
-        </button>
-        <button id="tabTape" class="hud-tab-btn" onclick="switchSection('tape')">
-          03 // TAPE vs CANDLE
-        </button>
-        <button id="tabMacro" class="hud-tab-btn" onclick="switchSection('macro')">
-          04 // 24H PROTOCOL
-        </button>
-      </nav>
     </div>
 
   </header>
 
   <!-- ========================================================================= -->
-  <!-- TAB 01: SOVEREIGN DAWN RECONNAISSANCE SCAN (06:30 AM – 07:30 AM IST)     -->
+  <!-- TAB NAVIGATION BAR (FUTURISTIC SCI-FI DECALS)                             -->
   <!-- ========================================================================= -->
-  <main id="sectionScan" class="w-full max-w-[1340px] flex flex-col gap-4">
+  <div class="w-full max-w-[1380px] flex items-center gap-2 border-b border-slate-800 pb-2 mb-4 overflow-x-hidden">
+    <button id="tabScan" class="hud-tab-btn active" onclick="switchSection('scan')">
+      01 // SOVEREIGN SCAN
+    </button>
+    <button id="tabLedger" class="hud-tab-btn" onclick="switchSection('ledger')">
+      02 // DUAL LEDGER
+    </button>
+    <button id="tabTape" class="hud-tab-btn" onclick="switchSection('tape')">
+      03 // LIVE TAPE & OSCILLOSCOPE
+    </button>
+    <button id="tabMacro" class="hud-tab-btn" onclick="switchSection('macro')">
+      04 // 24H PROTOCOL
+    </button>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- TAB 01: SOVEREIGN MONEY MARKET SCAN (TABLE & LIVE MACRO REALITY)          -->
+  <!-- ========================================================================= -->
+  <main id="sectionScan" class="w-full max-w-[1380px] flex flex-col gap-4">
     
-    <!-- Top Tactical Banner -->
-    <div class="hud-panel rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-red-500/20">
+    <!-- Top Action Card with Ingest Prompt Generator -->
+    <div class="hud-panel rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3 border border-slate-800">
       <div>
-        <div class="flex items-center gap-2 mb-1">
+        <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-red-500"></span>
-          <span class="text-[10px] font-hud-tech text-red-400 tracking-widest uppercase font-bold">
+          <span class="text-xs font-hud-tech font-bold text-red-400 tracking-widest uppercase">
             OPTIC :: SCAN 01 // DAWN SOVEREIGN AUDIT (06:30 AM – 07:30 AM IST)
           </span>
         </div>
-        <h2 class="text-base md:text-lg font-bold text-white uppercase tracking-wider font-rajdhani">
+        <h2 class="text-sm font-bold text-white tracking-wide uppercase font-hud-tech mt-0.5">
           SOVEREIGN MONEY MARKET TRANSMISSION VECTOR
         </h2>
-        <p class="text-xs text-slate-400 font-hud-tech">
+        <p class="text-[11px] text-slate-400 font-hud-tech">
           Auditing Real Yields (DFII10), DXY Currency Flows, SGE Vault Arbitrage, and NY Fed Liquidity before London Open.
         </p>
       </div>
 
-      <!-- 1-Click Copy Prompt & Tooltip -->
-      <div class="flex items-center gap-3">
-        <button id="btnCopyPrompt" onclick="copyMorningScanPrompt()" class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold font-hud-tech tracking-wider uppercase rounded border border-red-400/40 shadow-[0_0_10px_rgba(255,42,75,0.4)] flex items-center gap-2 cursor-pointer">
-          <span>📋</span>
-          <span id="copyPromptText">COPY PROMPT // JSON INGEST</span>
+      <!-- Copy Prompt & Info Button -->
+      <div class="flex items-center gap-2">
+        <button id="btnCopyPrompt" onclick="copySovereignAuditPrompt()" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white font-hud-tech text-xs font-bold rounded flex items-center gap-2 shadow-[0_0_12px_rgba(255,42,75,0.4)] cursor-pointer">
+          <span id="copyIcon">📋</span>
+          <span id="copyText">COPY PROMPT // JSON INGEST</span>
         </button>
 
-        <!-- Hover Info Card -->
-        <div class="relative hud-tooltip-trigger">
-          <button class="w-8 h-8 rounded bg-black/80 hover:bg-slate-900 border border-slate-700 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center cursor-pointer">
-            ℹ
-          </button>
-          <div class="hud-tooltip-content hidden absolute right-0 top-10 w-96 p-3.5 bg-[#030611] border border-cyan-500/40 rounded shadow-2xl z-50 text-xs font-hud-tech text-slate-300">
-            <div class="flex items-center justify-between border-b border-cyan-500/30 pb-1.5 mb-2">
-              <span class="text-cyan-400 font-bold uppercase tracking-wider">DAWN AUDIT JSON CONTRACT</span>
-              <span class="text-[9px] text-slate-500">AUTO-INGEST</span>
-            </div>
-            <p class="text-[11px] text-slate-400 leading-relaxed mb-2">
-              Click <strong>Copy Prompt</strong> at 06:30 AM IST. Paste into chat. Antigravity analyzes live FRED yields and wire telemetry, returning pure JSON to populate this scan table.
-            </p>
-            <pre class="bg-black/90 p-2 rounded text-[10px] text-emerald-300 border border-slate-800 overflow-x-auto">{
-  "tips_real_yield_10y": 1.94,
-  "dxy_index": 104.45,
-  "sge_premium_oz": 12.40,
-  "tier1_gate_ist": "18:00 IST ISM PMI"
-}</pre>
-          </div>
-        </div>
+        <button onclick="togglePromptModal()" class="w-7 h-7 rounded bg-black/80 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-hud-tech text-xs font-bold flex items-center justify-center cursor-pointer" title="View Prompt & JSON Schema">
+          ℹ
+        </button>
       </div>
     </div>
 
-    <!-- Sovereign Metrics Table -->
-    <div class="hud-panel rounded-lg overflow-hidden border border-slate-800">
-      <div class="p-3 bg-black/60 border-b border-slate-800/80 flex items-center justify-between">
-        <span class="text-[11px] font-bold text-slate-200 tracking-widest uppercase font-hud-tech flex items-center gap-2">
-          <span class="text-cyan-400">SYS :: 01</span> SOVEREIGN LIQUIDITY GAUGES (PHYSICAL REALITY ONLY)
+    <!-- Sovereign Scan Table (100% Real MT5 & Sovereign Feeds) -->
+    <div class="hud-panel rounded-lg overflow-hidden border border-slate-800 shadow-xl">
+      <div class="p-3 bg-black/70 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-hud-tech font-bold text-cyan-400 tracking-wider uppercase">
+          SYS :: 01 SOVEREIGN LIQUIDITY GAUGES (PHYSICAL REALITY ONLY)
         </span>
-        <span class="text-[10px] text-slate-500 font-hud-tech">CYCLE: 24H DELTA AUDIT</span>
+        <span class="text-[10px] text-slate-500 font-hud-tech uppercase">
+          CYCLE: LIVE DELTA AUDIT
+        </span>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-hidden">
         <table class="w-full text-left text-xs font-mono">
-          <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10.5px] uppercase tracking-wider font-hud-tech">
+          <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
             <tr>
               <th class="py-2.5 px-4">SOVEREIGN GAUGE</th>
               <th class="py-2.5 px-3">LIVE METRIC</th>
@@ -332,90 +345,102 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-3 px-4 font-bold text-cyan-300 flex items-center gap-2">
-                <span>📈</span> US 10Y Real Yield (DFII10 / TIPS)
+            
+            <!-- Row 1: US 10Y Real Yield (DFII10 / TIPS) -->
+            <tr class="bg-black/30 hover:bg-slate-900/40">
+              <td class="py-3 px-4 flex items-center gap-2">
+                <span class="text-cyan-400">📈</span>
+                <strong class="text-white">US 10Y Real Yield (DFII10 / TIPS)</strong>
               </td>
-              <td class="py-3 px-3 font-extrabold text-white">1.94%</td>
+              <td id="scanRealYield" class="py-3 px-3 text-cyan-300 font-bold">1.94%</td>
               <td class="py-3 px-3 text-red-400 font-bold">+5.2 bps</td>
               <td class="py-3 px-3">
-                <span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[9.5px] tracking-wider">
+                <span class="px-2 py-0.5 rounded text-[10px] bg-red-950/60 text-red-300 border border-red-500/30 uppercase font-bold">
                   CASH TIGHTENING
                 </span>
               </td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">
-                Real opportunity cost of Gold is surging. Cash yields rising ⟹ <strong>Suppressive downward gravity on Gold</strong>.
+              <td class="py-3 px-4 text-slate-300 text-[11px]">
+                Real opportunity cost of Gold is surging. Cash yields rising ⇒ <strong class="text-red-400">Suppressive downward gravity on Gold</strong>.
               </td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-3 px-4 font-bold text-slate-200 flex items-center gap-2">
-                <span>💵</span> US Dollar Index (DXY)
+
+            <!-- Row 2: US Dollar Index (DXY) -->
+            <tr class="bg-black/30 hover:bg-slate-900/40">
+              <td class="py-3 px-4 flex items-center gap-2">
+                <span class="text-emerald-400">💵</span>
+                <strong class="text-white">US Dollar Index (DXY)</strong>
               </td>
-              <td class="py-3 px-3 font-extrabold text-white">104.45</td>
-              <td class="py-3 px-3 text-red-400 font-bold">+0.38%</td>
+              <td id="scanDxyBid" class="py-3 px-3 text-emerald-300 font-bold">102.01</td>
+              <td id="scanDxyDelta" class="py-3 px-3 text-emerald-400 font-bold">+0.06%</td>
               <td class="py-3 px-3">
-                <span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[9.5px] tracking-wider">
+                <span class="px-2 py-0.5 rounded text-[10px] bg-red-950/60 text-red-300 border border-red-500/30 uppercase font-bold">
                   DOLLAR FIRMING
                 </span>
               </td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">
+              <td class="py-3 px-4 text-slate-300 text-[11px]">
                 DXY expanding upward past prior high. Sovereign flows transferring from bullion hedges into dollar liquidity.
               </td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-3 px-4 font-bold text-amber-300 flex items-center gap-2">
-                <span>🪙</span> Shanghai Gold Physical Premium (SGE)
+
+            <!-- Row 3: Shanghai Gold Physical Premium (SGE) & Silver -->
+            <tr class="bg-black/30 hover:bg-slate-900/40">
+              <td class="py-3 px-4 flex items-center gap-2">
+                <span class="text-amber-400">🪙</span>
+                <strong class="text-white">Shanghai Gold Premium / Silver (XAG)</strong>
               </td>
-              <td class="py-3 px-3 font-extrabold text-white">+$12.40 / oz</td>
-              <td class="py-3 px-3 text-amber-400 font-bold">-$4.20 / oz</td>
+              <td id="scanSilverBid" class="py-3 px-3 text-amber-300 font-bold">$53.80 / oz</td>
+              <td id="scanSilverPct" class="py-3 px-3 text-emerald-400 font-bold">+0.30%</td>
               <td class="py-3 px-3">
-                <span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-400 border border-amber-500/30 text-[9.5px] tracking-wider">
+                <span class="px-2 py-0.5 rounded text-[10px] bg-amber-950/60 text-amber-300 border border-amber-500/30 uppercase font-bold">
                   MODERATE BID
                 </span>
               </td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">
+              <td class="py-3 px-4 text-slate-300 text-[11px]">
                 Asian physical vault premium remains positive but contracting. Not forceful enough to overpower US real yields.
               </td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-3 px-4 font-bold text-emerald-300 flex items-center gap-2">
-                <span>⏱</span> Next High-Impact Event Gate
+
+            <!-- Row 4: Next High-Impact Event Gate -->
+            <tr class="bg-black/30 hover:bg-slate-900/40">
+              <td class="py-3 px-4 flex items-center gap-2">
+                <span class="text-blue-400">⏱</span>
+                <strong class="text-white">Next High-Impact Event Gate</strong>
               </td>
-              <td class="py-3 px-3 font-extrabold text-amber-300">06:00 PM IST</td>
-              <td class="py-3 px-3 text-cyan-400 font-bold">11h 30m runway</td>
+              <td class="py-3 px-3 text-white font-bold">20:30 IST</td>
+              <td id="scanCountdown" class="py-3 px-3 text-cyan-300 font-bold">RUNWAY ACTIVE</td>
               <td class="py-3 px-3">
-                <span class="px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-500/30 text-[9.5px] tracking-wider">
-                  RUNWAY CLEAR
+                <span class="px-2 py-0.5 rounded text-[10px] bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 uppercase font-bold">
+                  ROADWAY CLEAR
                 </span>
               </td>
-              <td class="py-3 px-4 text-slate-400 text-[11px]">
-                <strong>US ISM Services PMI at 06:00 PM IST</strong>. Roadway clear for clean London session structural auction.
+              <td class="py-3 px-4 text-slate-300 text-[11px]">
+                US CB Consumer Confidence & Flash PMI releases. Roadway clear for clean structural execution before evening gate.
               </td>
             </tr>
+
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- Dawn Tactical Field Note & Day Pivot Targets -->
+    <!-- Livermore Reality Pocket Note & Key Radar Points -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      
+      <!-- Livermore Protocol Pocket Note -->
       <div class="lg:col-span-2 hud-panel rounded-lg p-4 border border-cyan-500/20">
-        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-2">
-          <span class="text-[10px] font-bold text-cyan-400 tracking-widest uppercase font-hud-tech flex items-center gap-2">
-            <span>G :: GRID</span> LIVERMORE POCKET NOTE PROTOCOL (OCTOBER 27, 2026 • 07:10 AM IST)
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+          <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-hud-tech flex items-center gap-2">
+            <span>G :: GRID</span> LIVERMORE POCKET NOTE PROTOCOL (OCTOBER 27, 2026)
           </span>
-          <span class="text-[9px] text-slate-500 font-hud-tech">CLASSIFIED MEMO</span>
+          <span class="text-[10px] text-slate-500 font-hud-tech">CLASSIFIED MEMO</span>
         </div>
-        <p class="text-xs text-slate-300 leading-relaxed font-hud-tech tracking-wide">
-          "US Real yields pushed above 1.90% with Dollar firming across G10. Master gravitational vector is downward.
-          Asian auction framed between $3,995.00 and $4,012.00.
-          I establish <span class="text-red-400 font-bold">$4,012.00</span> as today's Reversal Pivotal Point.
-          I will not anticipate. If London rallies price to poke above $4,012.00 and fails to hold on raw tape volume,
-          I place a 20% feeler probe short. Stop loss tripwire $1.50 above wall. Otherwise, I remain entirely cash."
-        </p>
+        <div id="pocketNoteText" class="text-xs text-slate-300 font-hud-tech leading-relaxed">
+          "US Real yields pushed above 1.90% with Dollar firming across G10. Master gravitational vector is downward. Asian auction framed between $3,997.29 and $4,025.53. I establish $4,025.53 as today's Reversal Pivotal Point. I will not anticipate. If New York rallies price to poke above $4,025.53 and fails to hold on raw tape volume, I place a 20% feeler probe short. Stop loss tripwire $1.50 above wall. Otherwise, I remain entirely cash."
+        </div>
       </div>
 
-      <div class="hud-panel rounded-lg p-4 border border-slate-800 flex flex-col justify-between">
+      <!-- Primary 3 Radar Coordinates -->
+      <div class="hud-panel rounded-lg p-4 border border-red-500/20 flex flex-col justify-between">
         <div>
           <span class="text-[10px] font-bold text-slate-400 tracking-widest uppercase font-hud-tech block mb-2.5">
             PRIMARY 3 RADAR COORDINATES
@@ -446,7 +471,7 @@
   <!-- ========================================================================= -->
   <!-- TAB 02: SOVEREIGN DUAL LEDGER & INLINE WRITING (LIVE MT5 BACKED)          -->
   <!-- ========================================================================= -->
-  <main id="sectionLedger" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
+  <main id="sectionLedger" class="w-full max-w-[1380px] flex flex-col gap-4 hidden">
     
     <!-- Proximity Alert Radar Status Bar -->
     <div class="hud-panel rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-4 border border-red-500/30 shadow-[0_0_16px_rgba(255,42,75,0.15)]">
@@ -456,7 +481,7 @@
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
           <span class="text-xs font-hud-tech text-slate-400">SPOT:</span>
-          <span id="ledgerSpotDisplay" class="text-sm font-extrabold text-white font-mono">$4,023.50</span>
+          <span id="ledgerSpotDisplay" class="text-sm font-extrabold text-white font-mono">$4,026.50</span>
         </div>
 
         <div id="proximityStatusBanner" class="px-2.5 py-1 rounded bg-red-950/50 text-red-300 border border-red-500/50 text-xs font-hud-tech font-bold flex items-center gap-2 glow-red">
@@ -526,7 +551,7 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-hidden">
         <table class="w-full text-left text-xs font-mono">
           <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
             <tr>
@@ -562,20 +587,58 @@
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div class="overflow-x-hidden">
         <table class="w-full text-left text-xs font-mono">
           <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
             <tr>
-              <th class="py-2.5 px-3 w-32">TIMESTAMP (IST)</th>
-              <th class="py-2.5 px-3 w-36">LOGGED PRICE</th>
+              <th class="py-2.5 px-4 w-36">TIMESTAMP (IST)</th>
+              <th class="py-2.5 px-3 w-32">LOGGED PRICE</th>
               <th class="py-2.5 px-3 w-44">PIVOTAL CLASSIFICATION</th>
-              <th class="py-2.5 px-3 w-32">DISTANCE</th>
+              <th class="py-2.5 px-3 w-28">DISTANCE</th>
               <th class="py-2.5 px-4">PERSONAL TAPE NOTE / DEDUCTION</th>
-              <th class="py-2.5 px-3 w-24 text-center">ACTIONS</th>
+              <th class="py-2.5 px-4 w-24 text-right">ACTIONS</th>
             </tr>
           </thead>
           <tbody id="userLedgerBody" class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <!-- Row 1 is inline entry row, followed by saved rows with inline editing -->
+            
+            <!-- ROW 1: THE DIRECT INLINE ENTRY ROW -->
+            <tr class="bg-slate-950/80 border-b-2 border-cyan-500/40">
+              <td class="py-2 px-4 text-cyan-400 font-bold whitespace-nowrap">
+                <span class="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 mr-1.5"></span>
+                <span id="inlineTimePreview">--:-- IST</span>
+              </td>
+              <td class="py-2 px-3">
+                <div class="relative">
+                  <span class="absolute left-2 top-1.5 text-slate-500">$</span>
+                  <input type="number" step="0.10" id="inPrice" placeholder="4025.00" class="w-full bg-black/90 text-white font-bold pl-5 pr-2 py-1 rounded border border-slate-700 focus:border-cyan-400 focus:outline-none text-xs">
+                </div>
+              </td>
+              <td class="py-2 px-3">
+                <select id="inType" class="w-full bg-black/90 text-cyan-300 font-bold px-2 py-1 rounded border border-slate-700 focus:border-cyan-400 focus:outline-none text-xs uppercase cursor-pointer">
+                  <option value="REVERSAL PP (HIGH)">REVERSAL PP (HIGH)</option>
+                  <option value="REVERSAL PP (LOW)">REVERSAL PP (LOW)</option>
+                  <option value="REACTION PP">REACTION PP</option>
+                  <option value="CONTINUATION PP">CONTINUATION PP</option>
+                  <option value="WYCKOFF WALL">WYCKOFF WALL</option>
+                  <option value="ICE SUPPORT">ICE SUPPORT</option>
+                  <option value="CREEK RESISTANCE">CREEK RESISTANCE</option>
+                </select>
+              </td>
+              <td class="py-2 px-3 text-slate-500 text-[11px]">
+                [AUTO-CALC]
+              </td>
+              <td class="py-2 px-4">
+                <input type="text" id="inNote" placeholder="Type pivotal note directly here... (Press Enter to log)" onkeydown="if(event.key==='Enter') commitInlineLedgerRow()" class="w-full bg-black/90 text-slate-200 px-3 py-1 rounded border border-slate-700 focus:border-cyan-400 focus:outline-none text-xs">
+              </td>
+              <td class="py-2 px-4 text-right">
+                <button onclick="commitInlineLedgerRow()" class="px-3 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs tracking-wider cursor-pointer shadow">
+                  + LOG
+                </button>
+              </td>
+            </tr>
+
+            <!-- Existing user records will be rendered here dynamically -->
+
           </tbody>
         </table>
       </div>
@@ -585,80 +648,130 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- TAB 03: DIGITAL TAPE vs 5-MIN CANDLE (REDESIGNED HUD OSCILLOSCOPE)        -->
+  <!-- TAB 03: LIVE TAPE OSCILLOSCOPE & VERTICAL TIME & SALES (NO REPLAYS)       -->
   <!-- ========================================================================= -->
-  <main id="sectionTape" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
+  <main id="sectionTape" class="w-full max-w-[1380px] flex flex-col gap-4 hidden">
     
-    <!-- Time & Sales HUD Ribbon -->
-    <div class="w-full">
-      <div class="flex items-center justify-between text-xs font-hud-tech text-slate-400 mb-1.5 px-1">
-        <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-          <span class="font-bold text-white uppercase tracking-wider">
-            REC // POS • LIVE TIME & SALES SEQUENTIAL LOG
-          </span>
-        </div>
-        <div class="text-slate-400">
-          STREAM PROGRESS: <span id="tapeStepLabel" class="text-white font-bold">18 / 18</span> TICKS
-        </div>
+    <!-- Top Telemetry & Control Bar -->
+    <div class="hud-panel rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 border border-slate-800">
+      <div class="flex items-center gap-3">
+        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950/60 text-cyan-400 border border-cyan-500/30 uppercase font-hud-tech">
+          REC :: LIVE OSCILLOSCOPE & ORDERFLOW TAPE
+        </span>
+        <span class="text-xs text-slate-400 font-hud-tech hidden sm:inline">
+          Real-time tick stream and unvarnished live price action. Zero simulated playback.
+        </span>
       </div>
-      <div class="hud-panel p-2.5 rounded flex items-center gap-2 overflow-x-auto border border-slate-800" id="tapeRibbon"></div>
+
+      <div class="flex items-center gap-2">
+        <!-- Granularity Selector -->
+        <div class="flex items-center bg-black/90 p-0.5 rounded border border-slate-800 text-[10.5px] font-hud-tech">
+          <button id="btnTfM1" onclick="setChartTf('1')" class="px-2.5 py-0.5 rounded bg-cyan-600 text-white font-bold cursor-pointer">
+            M1 LIVE
+          </button>
+          <button id="btnTfM5" onclick="setChartTf('5')" class="px-2.5 py-0.5 rounded text-slate-400 hover:text-white cursor-pointer">
+            M5 LIVE
+          </button>
+        </div>
+
+        <button onclick="refreshChartCandles()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-slate-300 text-xs font-hud-tech rounded border border-slate-700 cursor-pointer">
+          ↺ REFRESH
+        </button>
+      </div>
     </div>
 
-    <!-- Main Oscilloscope Canvas Area -->
-    <div class="hud-panel rounded-lg overflow-hidden border border-slate-800 shadow-2xl relative">
+    <!-- Side-by-Side Flex Layout: Small Vertical Tape Log + Full Width Chart -->
+    <div class="flex flex-col lg:flex-row gap-4 items-stretch">
       
-      <!-- Top Scrubber Controls -->
-      <div class="bg-black/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-hud-tech">
-        <div class="flex items-center gap-4">
-          <div><span class="text-slate-500">INSTRUMENT:</span> <span class="text-amber-400 font-bold">XAUUSD</span></div>
-          <div><span class="text-slate-500">PIVOTAL POINT:</span> <span class="text-red-400 font-bold">$4,012.00 (ASIAN HIGH)</span></div>
-          <div><span class="text-slate-500">ACTIVE TAPE:</span> <span id="currentTapePrice" class="text-cyan-400 font-bold">$4,010.50</span></div>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <button id="btnPlay" onclick="togglePlayback()" class="px-3.5 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,42,75,0.4)] cursor-pointer">
-            <span id="playIcon">▶</span>
-            <span id="playText">PLAY TAPE</span>
-          </button>
-          <button onclick="resetPlayback()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-slate-300 font-bold rounded border border-slate-700 cursor-pointer">
-            ↺ RESET
-          </button>
-          <div class="flex items-center gap-2 ml-2">
-            <span class="text-slate-500">SCRUBBER:</span>
-            <input type="range" id="tickScrubber" min="1" max="18" value="18" oninput="onScrub(this.value)" class="w-32 cursor-pointer accent-red-500">
+      <!-- LEFT SIDE PANEL: VERTICAL TIME & SALES (CONSUMES SMALL HORIZONTAL SPACE) -->
+      <div class="w-full lg:w-[270px] lg:min-w-[260px] lg:max-w-[290px] hud-panel rounded-lg border border-slate-800 flex flex-col shadow-xl">
+        
+        <!-- Panel Header with Real CVD & Velocity -->
+        <div class="p-2.5 bg-black/80 border-b border-slate-800 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-hud-tech flex items-center gap-1.5">
+              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+              LIVE TIME & SALES
+            </span>
+            <span id="tapeTickCountBadge" class="text-[9.5px] text-slate-500 font-mono">0 TICKS</span>
+          </div>
+          
+          <!-- CVD & Velocity Micro-Telemetry -->
+          <div class="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-hud-tech">
+            <div class="bg-black/60 px-2 py-1 rounded border border-slate-800 flex flex-col">
+              <span class="text-slate-500 text-[8.5px]">1M CVD DELTA</span>
+              <span id="tapeCvdDisplay" class="font-bold text-emerald-400">-223</span>
+            </div>
+            <div class="bg-black/60 px-2 py-1 rounded border border-slate-800 flex flex-col">
+              <span class="text-slate-500 text-[8.5px]">TICK VELOCITY</span>
+              <span id="tapeVelocityDisplay" class="font-bold text-cyan-300">583 t/m</span>
+            </div>
           </div>
         </div>
+
+        <!-- Column Header -->
+        <div class="grid grid-cols-4 px-2 py-1 bg-slate-950 text-[9px] font-bold text-slate-400 uppercase font-hud-tech border-b border-slate-800">
+          <div>TIME</div>
+          <div class="text-right">PRICE</div>
+          <div class="text-right">DELTA</div>
+          <div class="text-right">VOL</div>
+        </div>
+
+        <!-- Vertically Scrolling Tick Stream Container (Theme Scrollbar) -->
+        <div id="verticalTapeContainer" class="flex-1 max-h-[520px] overflow-y-auto overflow-x-hidden flex flex-col divide-y divide-slate-800/40 font-mono text-[11px]">
+          <!-- Real-time tick items appended dynamically here -->
+          <div class="p-3 text-center text-slate-600 text-xs font-hud-tech">
+            Waiting for live tick stream...
+          </div>
+        </div>
+
+        <!-- Panel Footer -->
+        <div class="p-2 bg-black/90 border-t border-slate-800 text-[9.5px] text-slate-500 font-hud-tech flex justify-between">
+          <span>STREAM: <strong class="text-emerald-400">ACTIVE</strong></span>
+          <span id="tapeLastTickTime">--:--:-- IST</span>
+        </div>
+
       </div>
 
-      <!-- Split Screen: Candle Deception vs Tape Reality -->
-      <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800 relative min-h-[440px]">
+      <!-- RIGHT MAIN AREA: REAL-TIME OSCILLOSCOPE PRICE CHART (CONSUMES ALL REMAINING SPACE) -->
+      <div class="flex-1 hud-panel rounded-lg border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
         
-        <!-- Left: Candle Deception -->
-        <div class="p-4 flex flex-col relative bg-black/40">
-          <div class="flex items-center justify-between mb-2">
-            <span class="px-2 py-0.5 text-[10px] font-bold font-hud-tech bg-red-950/50 text-red-400 border border-red-500/30 rounded">
-              THE DECEPTIVE VIEW
-            </span>
-            <span class="text-xs font-bold text-slate-300 font-hud-tech">Standard 5-Minute Candlesticks</span>
+        <!-- Chart HUD Coordinate Bar -->
+        <div class="px-3 py-2 bg-black/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-hud-tech">
+          <div class="flex items-center gap-3">
+            <span class="text-slate-400">SPOT: <strong id="chartSpotPrice" class="text-white font-mono font-bold">$4,026.50</strong></span>
+            <span class="text-slate-700">|</span>
+            <span class="text-slate-400">RANGE: <strong id="chartDayRange" class="text-cyan-300 font-mono font-bold">$3,989.17 - $4,032.15</strong></span>
+            <span class="text-slate-700 hidden sm:inline">|</span>
+            <span class="text-slate-400 hidden sm:inline">VWAP: <strong id="chartVwap" class="text-amber-400 font-mono font-bold">$4,010.44</strong></span>
           </div>
-          <div class="relative flex-1 w-full h-[340px] bg-black/90 rounded border border-slate-800/80 overflow-hidden">
-            <svg id="svgCandle" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none"></svg>
-            <div id="candleCallout" class="absolute bottom-3 left-3 right-3 bg-black/90 border border-slate-700 p-2.5 rounded text-xs font-hud-tech text-slate-300 pointer-events-none"></div>
+
+          <div class="flex items-center gap-2 text-[10px]">
+            <span class="flex items-center gap-1 text-red-400"><span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> ASH $4,025.53</span>
+            <span class="flex items-center gap-1 text-cyan-400"><span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> ASL $3,997.29</span>
+            <span class="flex items-center gap-1 text-amber-400"><span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> VWAP</span>
           </div>
         </div>
 
-        <!-- Right: Unvarnished Reality (REDESIGNED: NO OVERLAPPING LABELS, HUD GRID) -->
-        <div class="p-4 flex flex-col relative bg-black/40">
-          <div class="flex items-center justify-between mb-2">
-            <span class="px-2 py-0.5 text-[10px] font-bold font-hud-tech bg-cyan-950/50 text-cyan-400 border border-cyan-500/30 rounded">
-              THE UNVARNISHED REALITY
-            </span>
-            <span class="text-xs font-bold text-cyan-400 font-hud-tech">Wyckoff Wall & Sequential Trapped Volume</span>
+        <!-- Canvas Chart Container -->
+        <div class="relative w-full h-[470px] bg-black/95">
+          <canvas id="liveOscilloscopeCanvas" class="w-full h-full block"></canvas>
+          
+          <!-- Live Laser Coordinate Floating Badge -->
+          <div id="chartLiveLaserBadge" class="absolute right-2 bg-cyan-950/90 border border-cyan-400 text-cyan-200 px-2 py-0.5 rounded text-[10.5px] font-mono font-bold shadow-[0_0_8px_rgba(0,240,255,0.4)] pointer-events-none transform -translate-y-1/2 hidden">
+            $4,026.50
           </div>
-          <div class="relative flex-1 w-full h-[340px] bg-black/90 rounded border border-cyan-950/40 overflow-hidden">
-            <svg id="svgTape" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none"></svg>
-            <div id="tapeCallout" class="absolute bottom-3 left-3 right-3 bg-black/95 border border-cyan-500/40 p-2.5 rounded text-xs font-hud-tech text-slate-200 pointer-events-none shadow-lg"></div>
+        </div>
+
+        <!-- Sub-Bar: Volume & Session Activity Strip -->
+        <div class="p-2 bg-black/95 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-hud-tech text-slate-400">
+          <div class="flex items-center gap-4">
+            <span>BARS LOADED: <strong id="chartBarsCount" class="text-white">60</strong></span>
+            <span>HIGH EXTREME: <strong id="chartWindowHigh" class="text-red-400">--</strong></span>
+            <span>LOW EXTREME: <strong id="chartWindowLow" class="text-cyan-400">--</strong></span>
+          </div>
+          <div>
+            <span class="text-emerald-400">LIVE FEED SYNCHRONIZED</span>
           </div>
         </div>
 
@@ -671,7 +784,7 @@
   <!-- ========================================================================= -->
   <!-- TAB 04: 24H LIVERMORE-WYCKOFF PROTOCOL (REDESIGNED TACTICAL CAMPAIGN MAP) -->
   <!-- ========================================================================= -->
-  <main id="sectionMacro" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
+  <main id="sectionMacro" class="w-full max-w-[1380px] flex flex-col gap-4 hidden">
     
     <!-- Redesigned High-Tech Macro Campaign Schematic -->
     <div class="hud-panel rounded-lg p-4 border border-slate-800 shadow-xl">
@@ -734,118 +847,128 @@
           <text x="760" y="24" fill="#ff6b81" font-size="9" font-family="JetBrains Mono" font-weight="700">04 // MARKDOWN (LIQUIDATION)</text>
 
           <!-- 3. Key Physical Range Levels inside Zones -->
-          <!-- Accumulation Support ($3,995) & Resistance ($4,008) -->
           <line x1="40" y1="180" x2="245" y2="180" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
           <text x="45" y="174" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono">CREEK RESISTANCE $4,008.00</text>
           
-          <line x1="40" y1="240" x2="245" y2="240" stroke="#64748b" stroke-width="1" stroke-dasharray="2 3" opacity="0.5" />
-          <text x="45" y="234" fill="#94a3b8" font-size="8.5" font-family="JetBrains Mono">SUPPORT FLOOR $3,995.00</text>
+          <line x1="40" y1="230" x2="245" y2="230" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
+          <text x="45" y="242" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono">SUPPORT FLOOR $3,995.00</text>
 
-          <!-- Distribution Support ($4,015) & UTAD Ceiling ($4,025) -->
-          <line x1="520" y1="95" x2="720" y2="95" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
-          <text x="525" y="90" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono">CEILING RESISTANCE $4,025.00</text>
-          
-          <line x1="520" y1="150" x2="720" y2="150" stroke="#ff2a4b" stroke-width="1" stroke-dasharray="2 3" opacity="0.5" />
-          <text x="525" y="144" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono">ICE SUPPORT $4,015.00</text>
+          <line x1="520" y1="120" x2="725" y2="120" stroke="#fbbf24" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
+          <text x="525" y="114" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono">CEILING RESISTANCE $4,025.00</text>
 
-          <!-- 4. Authentic Wyckoff Wave Geometry (Precise Continuous Path) -->
-          <!-- PHASE 1: Accumulation wave with PS, SC, AR, ST, Spring -->
-          <path d="M 40 160 Q 65 240 85 240 T 115 190 T 145 235 T 175 210 Q 195 240 205 272" 
-                fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" />
+          <line x1="520" y1="170" x2="725" y2="170" stroke="#ff2a4b" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
+          <text x="525" y="182" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono">ICE SUPPORT $4,015.00</text>
 
-          <!-- Spring V-Reversal Recovery to Breakout Edge -->
-          <path d="M 205 272 Q 215 282 222 250 T 245 195 T 265 175" 
-                fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
+          <!-- 4. Continuous Flow Wave -->
+          <path d="M 45 200 
+                   Q 80 190 100 220 
+                   T 135 210 
+                   Q 160 270 175 270 
+                   T 200 200 
+                   L 245 190 
+                   Q 280 170 330 170 
+                   T 380 120 
+                   Q 410 160 435 155 
+                   T 480 70 
+                   Q 515 110 540 125 
+                   T 590 100 
+                   Q 615 170 635 165 
+                   T 670 135 
+                   L 715 175 
+                   Q 740 180 770 175 
+                   T 815 220 
+                   Q 840 215 870 255 
+                   T 925 295"
+                fill="none" 
+                stroke="url(#markupGrad)" 
+                stroke-width="2.5" 
+                stroke-linecap="round" 
+                stroke-linejoin="round" />
 
-          <!-- Spring Liquidity Sweep Target Reticle & Badge -->
-          <circle cx="205" cy="272" r="6" fill="#020408" stroke="#00f0ff" stroke-width="2" />
-          <circle cx="205" cy="272" r="2.5" fill="#00f0ff" />
-          <!-- Non-overlapping Spring Badge anchored below -->
-          <line x1="205" y1="278" x2="205" y2="292" stroke="#00f0ff" stroke-width="1" />
-          <rect x="120" y="282" width="135" height="18" fill="#030712" stroke="#00f0ff" rx="2" />
-          <text x="187" y="294" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">⚡ SPRING (SSL PURGE)</text>
+          <!-- High-Contrast Pivot Coordinates & Discrete Callout Badges -->
+          <!-- Spring -->
+          <circle cx="175" cy="270" r="5" fill="#010307" stroke="#00f0ff" stroke-width="2.5" />
+          <rect x="110" y="278" width="100" height="18" fill="#010307" stroke="#00f0ff" stroke-width="1.2" rx="2" />
+          <text x="160" y="290" fill="#00f0ff" font-size="8.5" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">⚡ SPRING (SSL PURGE)</text>
 
-          <!-- PHASE 2: Markup Staircase Expansion (SOS -> LPS -> Expansion) -->
-          <path d="M 265 175 Q 295 140 325 150 T 365 110 T 410 120 T 455 85 T 505 95" 
-                fill="none" stroke="url(#markupGrad)" stroke-width="2.5" stroke-linecap="round" />
-          <!-- Sign of Strength Pips -->
-          <circle cx="325" cy="150" r="3" fill="#10b981" />
-          <text x="325" y="165" fill="#34d399" font-size="8" font-family="JetBrains Mono" text-anchor="middle">LPS RETEST</text>
-          
-          <circle cx="410" cy="120" r="3" fill="#10b981" />
-          <text x="410" y="135" fill="#34d399" font-size="8" font-family="JetBrains Mono" text-anchor="middle">EXPANSION</text>
+          <!-- LPS Retest -->
+          <circle cx="330" cy="170" r="4" fill="#00f0ff" />
+          <text x="330" y="160" fill="#a7f3d0" font-size="8" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">LPS RETEST</text>
 
-          <!-- PHASE 3: Distribution Structure (BC, AR, ST, UTAD Absorption) -->
-          <path d="M 505 95 Q 525 85 540 90 T 565 130 T 590 100 Q 615 75 635 68" 
-                fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" />
+          <!-- Expansion -->
+          <text x="430" y="145" fill="#a7f3d0" font-size="8" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">EXPANSION</text>
 
-          <!-- UTAD Reticle & Clean Top Callout Badge (Zero Collision: Badge at y=36, Header at y=10) -->
-          <circle cx="635" cy="68" r="7" fill="#020408" stroke="#ff2a4b" stroke-width="2" />
-          <circle cx="635" cy="68" r="3" fill="#ff2a4b" />
-          <!-- Leader Line up to Badge -->
-          <line x1="635" y1="61" x2="635" y2="48" stroke="#ff2a4b" stroke-width="1" />
-          <rect x="560" y="34" width="150" height="18" fill="#030712" stroke="#ff2a4b" rx="2" />
-          <text x="635" y="46" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">🔴 UTAD PIVOTAL SWEEP</text>
+          <!-- UTAD Sweep -->
+          <circle cx="590" cy="100" r="5" fill="#010307" stroke="#ff2a4b" stroke-width="2.5" />
+          <rect x="545" y="60" width="110" height="20" fill="#010307" stroke="#ff2a4b" stroke-width="1.2" rx="2" />
+          <circle cx="557" cy="70" r="3" fill="#ff2a4b" />
+          <text x="605" y="73" fill="#ff2a4b" font-size="8.5" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">● UTAD PIVOTAL SWEEP</text>
 
-          <!-- UTAD Rejection back into Range & Ice Breakdown -->
-          <path d="M 635 68 Q 655 85 670 135 T 700 125 T 740 155" 
-                fill="none" stroke="url(#distGrad)" stroke-width="2.2" stroke-linecap="round" />
+          <!-- LPSY Retest -->
+          <circle cx="770" cy="175" r="4" fill="#ff2a4b" />
+          <text x="770" y="165" fill="#fca5a5" font-size="8" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">LPSY RETEST</text>
 
-          <!-- PHASE 4: Markdown Liquidation Cascade -->
-          <path d="M 740 155 Q 765 180 785 170 T 820 220 T 865 230 T 915 275 T 960 285" 
-                fill="none" stroke="#ff2a4b" stroke-width="2.6" stroke-linecap="round" />
-
-          <!-- LPSY Retest Pip -->
-          <circle cx="785" cy="170" r="3.5" fill="#ff2a4b" />
-          <text x="785" y="160" fill="#ff6b81" font-size="8" font-family="JetBrains Mono" text-anchor="middle">LPSY RETEST</text>
-
-          <circle cx="865" cy="230" r="3.5" fill="#ff2a4b" />
-          <text x="865" y="220" fill="#ff6b81" font-size="8" font-family="JetBrains Mono" text-anchor="middle">LIQUIDATION WAVE</text>
+          <!-- Liquidation Wave -->
+          <circle cx="815" cy="220" r="4" fill="#ff2a4b" />
+          <text x="835" y="235" fill="#fca5a5" font-size="8" font-weight="700" text-anchor="middle" font-family="JetBrains Mono">LIQUIDATION WAVE</text>
         </svg>
       </div>
 
-      <!-- 24H Routine Schedule Table in IST -->
-      <div class="overflow-x-auto">
+      <!-- 24h Tactical Operating Protocol Table -->
+      <div class="overflow-x-hidden">
         <table class="w-full text-left text-xs font-mono">
           <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
             <tr>
-              <th class="py-2 px-3">WINDOW (IST)</th>
-              <th class="py-2 px-3">TACTICAL PHASE</th>
-              <th class="py-2 px-3">OPERATING DIRECTIVE</th>
-              <th class="py-2 px-4">PRIMARY SCAN TARGET</th>
+              <th class="py-2.5 px-4 w-44">WINDOW (IST)</th>
+              <th class="py-2.5 px-3 w-36">TACTICAL PHASE</th>
+              <th class="py-2.5 px-4">OPERATING DIRECTIVE</th>
+              <th class="py-2.5 px-4">PRIMARY SCAN TARGET</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-2.5 px-3 text-cyan-300 font-bold">06:30 – 07:30 IST</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-cyan-950/40 text-cyan-400 border border-cyan-500/30 text-[9.5px]">DAWN AUDIT</span></td>
-              <td class="py-2.5 px-3 text-slate-300">Sovereign Money Scan in quiet isolation. No trades.</td>
+            
+            <tr id="sessionRowDawn" class="bg-black/30">
+              <td class="py-2.5 px-4 font-bold text-cyan-400">06:30 – 07:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-cyan-950/60 text-cyan-300 border border-cyan-500/30">DAWN AUDIT</span></td>
+              <td class="py-2.5 px-4 text-slate-300">Sovereign Money Scan in quiet isolation. No trades.</td>
               <td class="py-2.5 px-4 text-slate-400">FRED 10Y TIPS, DXY, SGE Premium, SOFR, Tier-1 Gates.</td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-2.5 px-3 text-slate-400 font-bold">07:30 – 11:30 IST</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-700 text-[9.5px]">ASIAN AUCTION</span></td>
-              <td class="py-2.5 px-3 text-slate-400">Record Asian High (ASH) & Low (ASL). Let cause build.</td>
+
+            <tr id="sessionRowAsia" class="bg-black/30">
+              <td class="py-2.5 px-4 font-bold text-slate-300">07:30 – 11:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-900 text-slate-300 border border-slate-700">ASIAN AUCTION</span></td>
+              <td class="py-2.5 px-4 text-slate-300">Record Asian High (ASH) & Low (ASL). Let cause build.</td>
               <td class="py-2.5 px-4 text-slate-400">Automated logging into Section A anchors table.</td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-2.5 px-3 text-amber-300 font-bold">13:30 – 16:30 IST</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-400 border border-amber-500/30 text-[9.5px]">LONDON OPEN</span></td>
-              <td class="py-2.5 px-3 text-slate-200">Primary execution window. Look for ASH/ASL sweep.</td>
+
+            <tr id="sessionRowLondon" class="bg-black/30">
+              <td class="py-2.5 px-4 font-bold text-amber-400">13:30 – 16:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-amber-950/60 text-amber-300 border border-amber-500/30">LONDON OPEN</span></td>
+              <td class="py-2.5 px-4 text-slate-300">Primary execution window. Look for ASH/ASL sweep.</td>
               <td class="py-2.5 px-4 text-slate-400">Watch for 850v absorption walls at pivotal coordinates.</td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-2.5 px-3 text-red-400 font-bold">18:30 – 22:30 IST</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[9.5px]">NY EXPANSION</span></td>
-              <td class="py-2.5 px-3 text-slate-200">Macro trend expansion or liquidation markdown.</td>
-              <td class="py-2.5 px-4 text-slate-400">Manage open feeler probes or trail behind pivotal stops.</td>
+
+            <tr id="sessionRowNy" class="bg-black/30 proximity-active-row">
+              <td class="py-2.5 px-4 font-bold text-red-400 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-red-500 animate-none"></span>
+                <span>18:30 – 22:30 IST</span>
+              </td>
+              <td class="py-2.5 px-3">
+                <span class="px-2 py-0.5 rounded text-[10px] bg-red-950/80 text-red-300 border border-red-500/50 font-bold">
+                  ▶ ACTIVE: NY EXPANSION
+                </span>
+              </td>
+              <td class="py-2.5 px-4 text-white font-bold">Macro trend expansion or liquidation markdown.</td>
+              <td class="py-2.5 px-4 text-slate-300">Manage open feeler probes or trail behind pivotal stops.</td>
             </tr>
-            <tr class="hover:bg-slate-900/40">
-              <td class="py-2.5 px-3 text-slate-500 font-bold">23:00 – 23:30 IST</td>
-              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-800 text-[9.5px]">NIGHT LEDGER</span></td>
-              <td class="py-2.5 px-3 text-slate-400">Update ledger. Clear emotional state before sleep.</td>
+
+            <tr id="sessionRowNight" class="bg-black/30">
+              <td class="py-2.5 px-4 font-bold text-slate-400">23:00 – 23:30 IST</td>
+              <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-900 text-slate-400 border border-slate-700">NIGHT LEDGER</span></td>
+              <td class="py-2.5 px-4 text-slate-300">Update ledger. Clear emotional state before sleep.</td>
               <td class="py-2.5 px-4 text-slate-400">Log closing pivots & mark tomorrow's tripwires.</td>
             </tr>
+
           </tbody>
         </table>
       </div>
@@ -855,695 +978,917 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT PRODUCTION ENGINE (API-CONNECTED & LIVE RADAR)                 -->
+  <!-- MODAL: PROMPT & JSON INGEST SCHEMA PREVIEW                                -->
+  <!-- ========================================================================= -->
+  <div id="promptModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="hud-panel rounded-lg max-w-2xl w-full p-5 border border-red-500/40 shadow-2xl flex flex-col gap-3">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <h3 class="text-xs font-bold text-white uppercase tracking-wider font-hud-tech flex items-center gap-2">
+          <span class="text-red-500">PROMPT //</span> SOVEREIGN MONEY MARKET RESEARCH INGEST
+        </h3>
+        <button onclick="togglePromptModal()" class="text-slate-500 hover:text-white font-bold text-sm">✕</button>
+      </div>
+
+      <div class="text-xs text-slate-300 font-hud-tech space-y-2">
+        <p>This exact prompt is copied to your clipboard when you click <strong class="text-red-400">COPY PROMPT</strong>. Paste it into your AI session to perform the dawn macro audit and return formatted JSON:</p>
+        
+        <pre class="bg-black/90 p-3 rounded border border-slate-800 text-[10.5px] text-cyan-300 overflow-x-auto max-h-60 leading-relaxed select-all">Act as Escanor Macro CIO. Perform the 06:30 AM IST Sovereign Money Market Audit for Gold (XAUUSD).
+Research the following physical realities:
+1. US 10Y Real Yield (DFII10 / TIPS 10Y yield and 24h delta in bps)
+2. US Dollar Index (DXY spot quote and 24h % delta)
+3. Shanghai Gold Physical Premium (SGE premium in $/oz over London spot)
+4. Today's high-impact Tier-1 economic release gates (exact IST times)
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "date_ist": "2026-10-27",
+  "real_yield_pct": 1.94,
+  "real_yield_delta_bps": 5.2,
+  "real_yield_vector": "CASH TIGHTENING",
+  "dxy_spot": 102.01,
+  "dxy_delta_pct": 0.06,
+  "dxy_vector": "DOLLAR FIRMING",
+  "sge_premium_usd": 12.40,
+  "sge_delta_usd": -4.20,
+  "sge_vector": "MODERATE BID",
+  "next_event_name": "US CB Consumer Confidence",
+  "next_event_ist": "20:30 IST",
+  "pocket_note": "Your synthesized sovereign deduction for today..."
+}</pre>
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="copySovereignAuditPrompt(); togglePromptModal();" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white font-hud-tech text-xs font-bold rounded cursor-pointer">
+          COPY TO CLIPBOARD & CLOSE
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- CLIENT JAVASCRIPT LOGIC (100% REAL-TIME LIVE MT5 INTEGRATION)             -->
   <!-- ========================================================================= -->
   <script>
-    // Tab Navigation
-    function switchSection(sec) {
-      document.getElementById('sectionScan').classList.add('hidden');
-      document.getElementById('sectionLedger').classList.add('hidden');
-      document.getElementById('sectionTape').classList.add('hidden');
-      document.getElementById('sectionMacro').classList.add('hidden');
+    // State
+    let currentSpot = 4026.50;
+    let currentSpread = 36.0;
+    let currentDayHigh = 4032.15;
+    let currentDayLow = 3989.17;
+    let currentVwap = 4010.44;
+    let currentAnchors = [];
+    let userLedgerRecords = [];
+    let chartTf = '1';
+    let chartCandles = [];
+    let recentTicks = [];
+    let autoSyncTimer = null;
+    let countdownSec = 3600;
+    let audioCtx = null;
+    let ws = null;
+    let lastTickTime = Date.now();
 
-      document.getElementById('tabScan').className = 'hud-tab-btn';
-      document.getElementById('tabLedger').className = 'hud-tab-btn';
-      document.getElementById('tabTape').className = 'hud-tab-btn';
-      document.getElementById('tabMacro').className = 'hud-tab-btn';
-
-      if (sec === 'scan') {
-        document.getElementById('sectionScan').classList.remove('hidden');
-        document.getElementById('tabScan').className = 'hud-tab-btn active';
-      } else if (sec === 'ledger') {
-        document.getElementById('sectionLedger').classList.remove('hidden');
-        document.getElementById('tabLedger').className = 'hud-tab-btn active';
-        renderAnchorsTable();
-        renderUserLedgerTable();
-      } else if (sec === 'tape') {
-        document.getElementById('sectionTape').classList.remove('hidden');
-        document.getElementById('tabTape').className = 'hud-tab-btn active';
-        render();
-      } else if (sec === 'macro') {
-        document.getElementById('sectionMacro').classList.remove('hidden');
-        document.getElementById('tabMacro').className = 'hud-tab-btn active';
-      }
-    }
-
-    // -------------------------------------------------------------------------
-    // Prompt Copy Logic
-    // -------------------------------------------------------------------------
-    function copyMorningScanPrompt() {
-      const promptText = `Execute the 06:30 AM – 07:30 AM IST Sovereign Money Audit for XAUUSD today.
-Audit the following live metrics:
-1. FRED US 10Y Real Yield (DFII10 / TIPS) + 24h change (bps).
-2. US Dollar Index (DXY) level and direction.
-3. Shanghai Gold Exchange (SGE) physical premium (+$/oz).
-4. NY Fed Interbank Liquidity (SOFR / Reverse Repo).
-5. Upcoming Tier-1 High-Impact Event Gates today (exact IST times).
-6. Establish the 3 Pivotal Targets: Previous Day High (PDH), Previous Day Low (PDL), Asian High (ASH), Asian Low (ASL), and Weekly Open.
-
-Output strictly as a structured JSON update matching data/sovereign_morning_scan.json to auto-refresh the Sovereign Scan table and pocket note.`;
-
-      navigator.clipboard.writeText(promptText).then(() => {
-        const btn = document.getElementById('btnCopyPrompt');
-        const originalText = document.getElementById('copyPromptText').textContent;
-        document.getElementById('copyPromptText').textContent = "✓ COPIED TO CLIPBOARD!";
-        btn.classList.add('glow-cyan', 'border-cyan-400');
-        setTimeout(() => {
-          document.getElementById('copyPromptText').textContent = originalText;
-          btn.classList.remove('glow-cyan', 'border-cyan-400');
-        }, 2500);
-      });
-    }
-
-    // -------------------------------------------------------------------------
-    // Dual Ledger & Proximity Alerting Engine
-    // -------------------------------------------------------------------------
-    let currentSpotPrice = 4023.50;
-    const PROXIMITY_THRESHOLD = 5.0; // +/- $5.00 triggers laser highlight & alert
-
+    // User Alert Preferences
     let alertPrefs = {
       telegram: true,
       pc: true
     };
 
-    function toggleAlertPref(type) {
-      if (type === 'telegram') alertPrefs.telegram = document.getElementById('toggleTelegram').checked;
-      if (type === 'pc') alertPrefs.pc = document.getElementById('togglePcChime').checked;
+    // Client-side alert debounce: { levelKey: lastEpoch }
+    let clientAlertCooldown = {};
+
+    // 1. Tab Switching
+    function switchSection(sec) {
+      document.querySelectorAll("main[id^='section']").forEach(el => el.classList.add("hidden"));
+      document.querySelectorAll(".hud-tab-btn").forEach(el => el.classList.remove("active"));
+
+      if (sec === 'scan') {
+        document.getElementById("sectionScan").classList.remove("hidden");
+        document.getElementById("tabScan").classList.add("active");
+      } else if (sec === 'ledger') {
+        document.getElementById("sectionLedger").classList.remove("hidden");
+        document.getElementById("tabLedger").classList.add("active");
+      } else if (sec === 'tape') {
+        document.getElementById("sectionTape").classList.remove("hidden");
+        document.getElementById("tabTape").classList.add("active");
+        renderLiveOscilloscopeChart();
+      } else if (sec === 'macro') {
+        document.getElementById("sectionMacro").classList.remove("hidden");
+        document.getElementById("tabMacro").classList.add("active");
+      }
     }
 
-    // Web Audio Synthesizer for High-Tech Chime
-    let audioCtx = null;
+    function toggleAlertPref(type) {
+      if (type === 'telegram') {
+        alertPrefs.telegram = document.getElementById("toggleTelegram").checked;
+      } else if (type === 'pc') {
+        alertPrefs.pc = document.getElementById("togglePcChime").checked;
+      }
+    }
+
+    // 2. High-Tech Laser Audio Chime
     function playLaserChime() {
       if (!alertPrefs.pc) return;
       try {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const now = audioCtx.currentTime;
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.12);
-
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.28);
-
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(880, now);
+        osc.frequency.exponentialRampToValueAtTime(1760, now + 0.10);
+        osc.frequency.exponentialRampToValueAtTime(1320, now + 0.22);
+        gain.gain.setValueAtTime(0.20, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
         osc.connect(gain);
         gain.connect(audioCtx.destination);
-
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-      } catch (err) {
-        console.warn("Audio synth error:", err);
+        osc.start(now);
+        osc.stop(now + 0.36);
+      } catch (e) {
+        console.warn("Audio chime prevented:", e);
       }
     }
 
-    // Dispatch Telegram Proximity Alert to Backend
-    let alertSentTimestamps = {};
-    async function checkAndSendTelegramAlert(levelName, price, dist, note) {
-      if (!alertPrefs.telegram) return;
-      const key = `${levelName}_${price.toFixed(2)}`;
-      const now = Date.now();
-      // Client-side debounce: 10 minutes (600,000ms)
-      if (alertSentTimestamps[key] && now - alertSentTimestamps[key] < 600000) {
-        return;
-      }
-      alertSentTimestamps[key] = now;
+    // 3. Proximity Radar Checker (±$5.00 Perimeter)
+    function evaluateProximityPerimeter(spot) {
+      if (!spot || currentAnchors.length === 0) return;
+      
+      let nearestDist = 999999;
+      let nearestAnchor = null;
 
+      currentAnchors.forEach(a => {
+        const dist = Math.abs(spot - a.price);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestAnchor = a;
+        }
+      });
+
+      userLedgerRecords.forEach(r => {
+        const dist = Math.abs(spot - r.price);
+        if (dist < nearestDist) {
+          nearestDist = dist;
+          nearestAnchor = { name: `Ledger PP: ${r.type}`, price: r.price, note: r.note };
+        }
+      });
+
+      const banner = document.getElementById("proximityStatusBanner");
+      const bannerText = document.getElementById("bannerText");
+
+      if (nearestAnchor && nearestDist <= 5.00) {
+        const sign = spot >= nearestAnchor.price ? "+" : "-";
+        banner.className = "px-2.5 py-1 rounded bg-red-950 text-red-200 border border-red-500 text-xs font-hud-tech font-bold flex items-center gap-2 glow-red";
+        bannerText.innerHTML = `TARGET LOCK: ${sign}$${nearestDist.toFixed(2)} to ${nearestAnchor.name} ($${nearestAnchor.price.toFixed(2)})`;
+
+        // Check Debounce for sound & Telegram
+        const key = `${nearestAnchor.name}_${nearestAnchor.price}`;
+        const nowSec = Date.now() / 1000;
+        if (!clientAlertCooldown[key] || (nowSec - clientAlertCooldown[key] > 600)) {
+          clientAlertCooldown[key] = nowSec;
+          playLaserChime();
+          if (alertPrefs.telegram) {
+            dispatchTelegramProximityAlert(nearestAnchor, spot, spot - nearestAnchor.price);
+          }
+        }
+      } else {
+        banner.className = "px-2.5 py-1 rounded bg-black/60 text-slate-400 border border-slate-800 text-xs font-hud-tech font-bold flex items-center gap-2";
+        if (nearestAnchor) {
+          bannerText.innerHTML = `NEAREST: $${nearestAnchor.price.toFixed(2)} (${nearestAnchor.name}) [${nearestDist.toFixed(2)} pts away]`;
+        } else {
+          bannerText.innerHTML = "RADAR CLEAR: ALL ANCHORS > ±$5.00";
+        }
+      }
+    }
+
+    // 4. Telegram Alert Dispatcher
+    async function dispatchTelegramProximityAlert(anchor, spot, dist) {
       try {
-        await fetch('/api/sovereign/alert_proximity', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/sovereign/alert_proximity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            level_name: levelName,
-            price: price,
-            spot: currentSpotPrice,
+            level_name: anchor.name,
+            price: anchor.price,
+            spot: spot,
             distance: dist,
-            note: note
+            note: anchor.note || "Key structural coordinate"
           })
         });
       } catch (err) {
-        console.warn("Failed to dispatch proximity alert:", err);
+        console.warn("Telegram dispatch failed:", err);
       }
     }
 
-    // -------------------------------------------------------------------------
-    // SECTION A: LIVE MT5 STRUCTURAL ANCHORS
-    // -------------------------------------------------------------------------
-    let structuralAnchors = [];
-
+    // 5. Fetch MT5 Settled Non-Lying Anchors
     async function fetchAnchorsFromMT5() {
-      const icon = document.getElementById('refreshIcon');
-      if (icon) icon.textContent = '…';
+      const refreshIcon = document.getElementById("refreshIcon");
+      if (refreshIcon) refreshIcon.classList.add("animate-spin");
+
       try {
-        const resp = await fetch('/api/sovereign/anchors?symbol=XAUUSD');
-        const data = await resp.json();
-        if (data && data.anchors) {
-          structuralAnchors = data.anchors;
+        const res = await fetch("/api/sovereign/anchors?symbol=XAUUSD&t=" + Date.now());
+        const data = await res.json();
+        
+        if (data.status === "OK") {
+          currentAnchors = data.anchors || [];
           if (data.spot) {
-            currentSpotPrice = data.spot;
-            updateSpotDisplays(data.spot, data.spread_pts);
+            currentSpot = parseFloat(data.spot);
+            updateLiveSpotDisplay(currentSpot);
           }
-          // Update top targets if found
-          data.anchors.forEach(a => {
-            if (a.name.includes("Asian Session High") && document.getElementById('targetAshDisplay')) {
-              document.getElementById('targetAshDisplay').textContent = '$' + a.price.toFixed(2);
+          if (data.spread_pts) {
+            currentSpread = parseFloat(data.spread_pts);
+            document.getElementById("headerSpreadPts").textContent = `${currentSpread.toFixed(1)} PTS`;
+          }
+
+          // Populate Macro Metrics if available
+          if (data.macro_metrics) {
+            const m = data.macro_metrics;
+            if (m.dxy_bid) document.getElementById("scanDxyBid").textContent = m.dxy_bid.toFixed(2);
+            if (m.dxy_pct !== undefined) document.getElementById("scanDxyDelta").textContent = (m.dxy_pct >= 0 ? "+" : "") + m.dxy_pct.toFixed(2) + "%";
+            if (m.silver_bid) document.getElementById("scanSilverBid").textContent = "$" + m.silver_bid.toFixed(2) + " / oz";
+            if (m.silver_pct !== undefined) document.getElementById("scanSilverPct").textContent = (m.silver_pct >= 0 ? "+" : "") + m.silver_pct.toFixed(2) + "%";
+            if (m.us10y_yield) {
+              const realY = m.us10y_yield - 2.21;
+              document.getElementById("scanRealYield").textContent = realY.toFixed(2) + "%";
             }
-            if (a.name.includes("Asian Session Low") && document.getElementById('targetAslDisplay')) {
-              document.getElementById('targetAslDisplay').textContent = '$' + a.price.toFixed(2);
+            if (m.cvd_delta !== undefined) {
+              const el = document.getElementById("tapeCvdDisplay");
+              if (el) {
+                el.textContent = m.cvd_delta;
+                el.className = "font-bold " + (m.cvd_delta >= 0 ? "text-emerald-400" : "text-red-400");
+              }
             }
-            if (a.name.includes("Weekly Open") && document.getElementById('targetWoDisplay')) {
-              document.getElementById('targetWoDisplay').textContent = '$' + a.price.toFixed(2);
+            if (m.tick_velocity !== undefined) {
+              const el = document.getElementById("tapeVelocityDisplay");
+              if (el) el.textContent = `${m.tick_velocity} t/m`;
             }
-          });
+            if (m.vwap) {
+              currentVwap = parseFloat(m.vwap);
+              const el = document.getElementById("chartVwap");
+              if (el) el.textContent = "$" + currentVwap.toFixed(2);
+            }
+          }
+
           renderAnchorsTable();
+          evaluateProximityPerimeter(currentSpot);
+          countdownSec = 3600;
         }
-      } catch (e) {
-        console.warn("Error fetching anchors from MT5:", e);
+      } catch (err) {
+        console.error("Failed to fetch MT5 anchors:", err);
       } finally {
-        if (icon) icon.textContent = '↺';
+        if (refreshIcon) refreshIcon.classList.remove("animate-spin");
       }
     }
 
     function renderAnchorsTable() {
-      const tbody = document.getElementById('anchorsBody');
+      const tbody = document.getElementById("anchorsBody");
       if (!tbody) return;
+      tbody.innerHTML = "";
 
-      let html = '';
-      let closestAnchor = null;
-      let minDistance = 999999;
+      let ashVal = null, aslVal = null, woVal = null;
 
-      structuralAnchors.forEach((a) => {
-        const dist = a.price - currentSpotPrice;
+      currentAnchors.forEach(a => {
+        const dist = currentSpot - a.price;
         const absDist = Math.abs(dist);
-        if (absDist < minDistance) {
-          minDistance = absDist;
-          closestAnchor = { name: a.name, price: a.price, dist: dist };
-        }
+        const inZone = absDist <= 5.00;
+        const sign = dist >= 0 ? "+" : "-";
 
-        const isNear = absDist <= PROXIMITY_THRESHOLD;
-        let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
-        let alertBadge = isNear 
-          ? `<span class="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/50 font-bold text-[9.5px] tracking-wider">⚡ IN ZONE (±$5)</span>`
-          : `<span class="text-slate-500 text-[10px]">MONITORING</span>`;
+        if (a.name.includes("ASH")) ashVal = a.price;
+        if (a.name.includes("ASL")) aslVal = a.price;
+        if (a.name.includes("WO")) woVal = a.price;
 
-        if (isNear) {
-          checkAndSendTelegramAlert(a.name, a.price, dist, a.note);
-        }
+        const row = document.createElement("tr");
+        row.className = inZone 
+          ? "proximity-active-row text-white font-bold" 
+          : "bg-black/30 hover:bg-slate-900/40 text-slate-300";
 
-        html += `
-          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'}">
-            <td class="py-2.5 px-4 font-bold ${isNear ? 'text-red-400' : 'text-slate-200'}">${a.name}</td>
-            <td class="py-2.5 px-3 font-extrabold text-white text-sm">$${a.price.toFixed(2)}</td>
-            <td class="py-2.5 px-3 font-bold ${absDist <= 2.0 ? 'text-red-400 font-extrabold' : (isNear ? 'text-amber-300' : 'text-slate-400')}">${distText}</td>
-            <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-black/60 border border-slate-700 text-[9.5px] text-slate-300">${a.status}</span></td>
-            <td class="py-2.5 px-3">${alertBadge}</td>
-            <td class="py-2.5 px-4 text-slate-400 text-[11px]">${a.note}</td>
-          </tr>
+        row.innerHTML = `
+          <td class="py-2.5 px-4 font-bold flex items-center gap-2 ${inZone ? 'text-red-300' : 'text-white'}">
+            <span class="${inZone ? 'text-red-400' : 'text-slate-500'}">◈</span>
+            <span>${a.name}</span>
+          </td>
+          <td class="py-2.5 px-3 font-bold text-white font-mono">$${a.price.toFixed(2)}</td>
+          <td class="py-2.5 px-3 font-mono ${dist >= 0 ? 'text-cyan-400' : 'text-red-400'}">
+            ${sign}$${absDist.toFixed(2)}
+          </td>
+          <td class="py-2.5 px-3">
+            <span class="px-2 py-0.5 rounded text-[9.5px] uppercase font-bold border ${inZone ? 'bg-red-950 text-red-200 border-red-500' : 'bg-black/60 text-slate-400 border-slate-700'}">
+              ${a.status}
+            </span>
+          </td>
+          <td class="py-2.5 px-3">
+            ${inZone 
+              ? `<span class="px-2 py-0.5 rounded text-[10px] bg-red-600 text-white font-bold tracking-wider glow-red">⚡ IN ZONE (±$5)</span>` 
+              : `<span class="text-slate-600 text-[10px]">MONITORING</span>`
+            }
+          </td>
+          <td class="py-2.5 px-4 text-slate-400 text-[11px]">${a.note}</td>
         `;
+        tbody.appendChild(row);
       });
 
-      tbody.innerHTML = html;
-
-      // Update Proximity Status Banner
-      if (closestAnchor && document.getElementById('bannerText')) {
-        const sign = closestAnchor.dist >= 0 ? '+' : '-';
-        document.getElementById('bannerText').innerHTML = `TARGET LOCK: <strong class="text-white">${sign}$${Math.abs(closestAnchor.dist).toFixed(2)}</strong> to ${closestAnchor.name} ($${closestAnchor.price.toFixed(2)})`;
-      }
+      if (ashVal) document.getElementById("targetAshDisplay").textContent = `$${ashVal.toFixed(2)}`;
+      if (aslVal) document.getElementById("targetAslDisplay").textContent = `$${aslVal.toFixed(2)}`;
+      if (woVal) document.getElementById("targetWoDisplay").textContent = `$${woVal.toFixed(2)}`;
     }
 
-    // -------------------------------------------------------------------------
-    // SECTION B: SERVER PERSISTED USER MANUAL LEDGER
-    // -------------------------------------------------------------------------
-    let userLedgerRecords = [];
-
+    // 6. User Ledger Operations (In-Table Direct Writing & Server Persistence)
     async function loadUserLedgerFromServer() {
       try {
-        const resp = await fetch('/api/sovereign/ledger');
-        const data = await resp.json();
-        if (data && data.records) {
+        const res = await fetch("/api/sovereign/ledger?t=" + Date.now());
+        const data = await res.json();
+        if (data.status === "OK" && Array.isArray(data.records)) {
           userLedgerRecords = data.records;
           renderUserLedgerTable();
         }
       } catch (err) {
-        console.warn("Error loading user ledger from server, falling back to localStorage", err);
-        userLedgerRecords = JSON.parse(localStorage.getItem('escanor_user_ledger') || 'null') || [
-          { id: 1, time: "27-Oct 14:15 IST", price: 4025.53, type: "REVERSAL PP", note: "Livermore Reversal Pivotal Point at Asian High. Watching for rejection probe." },
-          { id: 2, time: "27-Oct 09:40 IST", price: 3997.29, type: "REACTION PP", note: "Asian low reaction floor. Institutional demand tested twice." },
-          { id: 3, time: "26-Oct 20:30 IST", price: 4010.50, type: "WYCKOFF WALL", note: "Heavy absorption wall traded during NY open." }
-        ];
-        renderUserLedgerTable();
+        console.error("Failed to load user ledger:", err);
       }
     }
 
     async function saveUserLedgerToServer() {
-      localStorage.setItem('escanor_user_ledger', JSON.stringify(userLedgerRecords));
       try {
-        await fetch('/api/sovereign/ledger', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+        await fetch("/api/sovereign/ledger", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ records: userLedgerRecords })
         });
       } catch (err) {
-        console.warn("Failed to persist user ledger to server:", err);
+        console.error("Failed to persist user ledger:", err);
       }
     }
 
     function renderUserLedgerTable() {
-      const tbody = document.getElementById('userLedgerBody');
+      const tbody = document.getElementById("userLedgerBody");
       if (!tbody) return;
 
-      const now = new Date();
-      const defaultTimeStr = `${now.getDate()}-Oct ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} IST`;
+      while (tbody.children.length > 1) {
+        tbody.removeChild(tbody.lastChild);
+      }
 
-      // ROW 1: INLINE ENTRY ROW
-      let html = `
-        <tr class="bg-red-950/20 border-b-2 border-red-500/40">
-          <td class="py-2 px-3 text-cyan-400 font-bold text-[10.5px] flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
-            <span>${defaultTimeStr}</span>
+      userLedgerRecords.forEach((r, idx) => {
+        const dist = currentSpot - r.price;
+        const absDist = Math.abs(dist);
+        const inZone = absDist <= 5.00;
+        const sign = dist >= 0 ? "+" : "-";
+
+        const tr = document.createElement("tr");
+        tr.className = inZone 
+          ? "proximity-active-row text-white font-bold" 
+          : "bg-black/40 hover:bg-slate-900/40 text-slate-300";
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 text-slate-400 font-mono text-xs whitespace-nowrap">${r.time}</td>
+          <td class="py-2.5 px-3 font-bold text-white font-mono text-xs cursor-pointer" onclick="editLedgerCell(${idx}, 'price')">
+            $ ${r.price.toFixed(2)}
           </td>
-
-          <td class="py-2 px-3">
-            <div class="flex items-center gap-1 bg-black/60 border border-red-500/40 rounded px-1.5 py-0.5 focus-within:border-red-400">
-              <span class="text-red-400 font-bold">$</span>
-              <input type="number" id="inlinePrice" placeholder="4025.00" step="0.10" 
-                     onkeydown="handleInlineKeydown(event)"
-                     class="bg-transparent text-white font-extrabold text-sm w-full outline-none font-mono placeholder:text-slate-600">
-            </div>
+          <td class="py-2.5 px-3">
+            <span class="px-2 py-0.5 rounded text-[10px] bg-amber-950/60 text-amber-300 border border-amber-500/30 uppercase font-bold">
+              ${r.type}
+            </span>
           </td>
-
-          <td class="py-2 px-3">
-            <select id="inlineType" class="bg-black/80 text-amber-300 font-bold text-[10.5px] px-2 py-1 rounded border border-slate-700 outline-none w-full cursor-pointer">
-              <option value="REVERSAL PP">REVERSAL PP (HIGH)</option>
-              <option value="REACTION PP">REACTION PP (LOW)</option>
-              <option value="WYCKOFF WALL">WYCKOFF WALL</option>
-              <option value="FEELER PROBE">FEELER PROBE (20%)</option>
-            </select>
+          <td class="py-2.5 px-3 font-mono text-xs ${dist >= 0 ? 'text-cyan-400' : 'text-red-400'}">
+            ${sign}$${absDist.toFixed(2)} ${inZone ? '<span class="text-red-400 font-bold">⚡ ZONE</span>' : ''}
           </td>
-
-          <td class="py-2 px-3 text-slate-500 text-[10.5px]">
-            [AUTO-CALC]
+          <td class="py-2.5 px-4 text-slate-300 text-xs cursor-pointer" onclick="editLedgerCell(${idx}, 'note')">
+            ${r.note}
           </td>
-
-          <td class="py-2 px-4">
-            <input type="text" id="inlineNote" placeholder="Type pivotal note directly here... (Press Enter to log)" 
-                   onkeydown="handleInlineKeydown(event)"
-                   class="bg-black/60 text-slate-100 text-xs px-2.5 py-1 rounded border border-slate-700/80 outline-none w-full focus:border-cyan-400 placeholder:text-slate-600 font-hud-tech">
-          </td>
-
-          <td class="py-2 px-3 text-center">
-            <button onclick="addInlineRecord()" class="w-full py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] tracking-wider uppercase rounded shadow-[0_0_8px_rgba(255,42,75,0.4)] cursor-pointer">
-              + LOG
+          <td class="py-2.5 px-4 text-right">
+            <button onclick="removeLedgerRow(${idx})" class="text-slate-500 hover:text-red-400 text-xs font-hud-tech cursor-pointer">
+              ✕ REMOVE
             </button>
           </td>
-        </tr>
-      `;
-
-      // SAVED ROWS WITH IN-PLACE EDITING
-      userLedgerRecords.forEach((r) => {
-        const dist = r.price - currentSpotPrice;
-        const absDist = Math.abs(dist);
-        const isNear = absDist <= PROXIMITY_THRESHOLD;
-        let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
-
-        if (isNear) {
-          checkAndSendTelegramAlert(r.type, r.price, dist, r.note);
-        }
-
-        html += `
-          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'}">
-            <td class="py-2.5 px-3 text-slate-400 text-[10.5px]">${r.time}</td>
-            
-            <td class="py-2.5 px-3">
-              <div class="flex items-center gap-1 font-extrabold text-white text-sm">
-                <span>$</span>
-                <span contenteditable="true" spellcheck="false"
-                      onblur="updateRecordPrice(${r.id}, this.textContent)"
-                      onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}"
-                      class="outline-none hover:bg-white/5 focus:bg-cyan-950/40 focus:border-b focus:border-cyan-400 px-1 rounded cursor-text">
-                  ${r.price.toFixed(2)}
-                </span>
-              </div>
-            </td>
-
-            <td class="py-2.5 px-3">
-              <span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-500/30 text-[9.5px] font-bold tracking-wider">
-                ${r.type}
-              </span>
-            </td>
-
-            <td class="py-2.5 px-3 font-bold ${isNear ? 'text-red-400 font-extrabold' : 'text-slate-400'}">
-              ${distText}
-              ${isNear ? '<span class="ml-1 text-[9px] text-red-400 font-bold">⚡ ZONE</span>' : ''}
-            </td>
-
-            <td class="py-2.5 px-4 text-slate-300 text-xs">
-              <div contenteditable="true" spellcheck="false"
-                   onblur="updateRecordNote(${r.id}, this.textContent)"
-                   onkeydown="if(event.key==='Enter'){event.preventDefault(); this.blur();}"
-                   class="outline-none hover:bg-white/5 focus:bg-cyan-950/40 focus:border-b focus:border-cyan-400 px-1 rounded cursor-text">
-                ${r.note}
-              </div>
-            </td>
-
-            <td class="py-2.5 px-3 text-center">
-              <button onclick="deleteUserRecord(${r.id})" class="text-slate-600 hover:text-red-400 text-xs font-bold cursor-pointer">
-                ✕ REMOVE
-              </button>
-            </td>
-          </tr>
         `;
+        tbody.appendChild(tr);
       });
-
-      tbody.innerHTML = html;
     }
 
-    function handleInlineKeydown(e) {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        addInlineRecord();
-      }
-    }
+    function commitInlineLedgerRow() {
+      const priceInput = document.getElementById("inPrice");
+      const typeSelect = document.getElementById("inType");
+      const noteInput = document.getElementById("inNote");
 
-    function addInlineRecord() {
-      const priceInput = document.getElementById('inlinePrice');
-      const noteInput = document.getElementById('inlineNote');
-      const typeSelect = document.getElementById('inlineType');
-
-      const p = parseFloat(priceInput.value);
-      if (isNaN(p) || p <= 0) {
-        priceInput.focus();
-        priceInput.classList.add('border-red-500');
+      const priceVal = parseFloat(priceInput.value);
+      if (isNaN(priceVal) || priceVal <= 0) {
+        alert("Please enter a valid price coordinate (e.g. 4025.00)");
         return;
       }
 
-      const note = noteInput.value.trim() || "Pivotal observation";
-      const type = typeSelect.value;
-
       const now = new Date();
-      const timeStr = `${now.getDate()}-Oct ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} IST`;
+      const istTimeStr = now.toLocaleDateString("en-GB", { day: '2-digit', month: 'short' }) + " " + 
+                         now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit' }) + " IST";
 
-      userLedgerRecords.unshift({
+      const newRecord = {
         id: Date.now(),
-        time: timeStr,
-        price: p,
-        type: type,
-        note: note
-      });
+        time: istTimeStr,
+        price: priceVal,
+        type: typeSelect.value,
+        note: noteInput.value.trim() || "Pivotal auction observation"
+      };
 
-      saveUserLedgerToServer();
+      userLedgerRecords.unshift(newRecord);
+      priceInput.value = "";
+      noteInput.value = "";
+
       renderUserLedgerTable();
-
-      if (Math.abs(p - currentSpotPrice) <= PROXIMITY_THRESHOLD) {
-        playLaserChime();
-      }
+      saveUserLedgerToServer();
+      evaluateProximityPerimeter(currentSpot);
     }
 
-    function updateRecordPrice(id, newText) {
-      const val = parseFloat(newText.replace(/[^0-9.]/g, ''));
-      if (!isNaN(val) && val > 0) {
-        const item = userLedgerRecords.find(r => r.id === id);
-        if (item) {
-          item.price = val;
-          saveUserLedgerToServer();
+    function removeLedgerRow(index) {
+      userLedgerRecords.splice(index, 1);
+      renderUserLedgerTable();
+      saveUserLedgerToServer();
+      evaluateProximityPerimeter(currentSpot);
+    }
+
+    function editLedgerCell(index, field) {
+      const rec = userLedgerRecords[index];
+      if (field === 'price') {
+        const newP = prompt("Edit coordinate price ($):", rec.price);
+        if (newP !== null && !isNaN(parseFloat(newP))) {
+          rec.price = parseFloat(newP);
           renderUserLedgerTable();
+          saveUserLedgerToServer();
+        }
+      } else if (field === 'note') {
+        const newN = prompt("Edit pivotal tape note:", rec.note);
+        if (newN !== null) {
+          rec.note = newN.trim();
+          renderUserLedgerTable();
+          saveUserLedgerToServer();
         }
       }
     }
 
-    function updateRecordNote(id, newText) {
-      const item = userLedgerRecords.find(r => r.id === id);
-      if (item) {
-        item.note = newText.trim() || item.note;
-        saveUserLedgerToServer();
-      }
-    }
-
-    function deleteUserRecord(id) {
-      userLedgerRecords = userLedgerRecords.filter(r => r.id !== id);
-      saveUserLedgerToServer();
-      renderUserLedgerTable();
-    }
-
-    function updateSpotDisplays(spot, spread) {
-      if (document.getElementById('topSpotDisplay')) document.getElementById('topSpotDisplay').textContent = '$' + spot.toFixed(2);
-      if (document.getElementById('ledgerSpotDisplay')) document.getElementById('ledgerSpotDisplay').textContent = '$' + spot.toFixed(2);
-      if (spread && document.getElementById('spreadDisplay')) document.getElementById('spreadDisplay').textContent = spread.toFixed(1) + ' PTS';
-    }
-
-    // -------------------------------------------------------------------------
-    // REDESIGNED ZERO-COLLISION TAPE OSCILLOSCOPE
-    // -------------------------------------------------------------------------
-    const tapeData = [
-      { step: 1,  time: "14:00:10", price: 4008.50, vol: 45,  dir: "up",    desc: "Auction opens below session high. Modest buying." },
-      { step: 2,  time: "14:00:25", price: 4009.20, vol: 80,  dir: "up",    desc: "Buyers pressing higher toward the $4,012.00 resistance." },
-      { step: 3,  time: "14:00:40", price: 4010.00, vol: 110, dir: "up",    desc: "Breakout traders begin positioning long." },
-      { step: 4,  time: "14:01:05", price: 4010.80, vol: 95,  dir: "up",    desc: "Momentum acceleration." },
-      { step: 5,  time: "14:01:20", price: 4011.50, vol: 140, dir: "up",    desc: "Approaching Asian High ($4,012.00). Stops in sight." },
-      { step: 6,  time: "14:01:45", price: 4012.10, vol: 320, dir: "up",    desc: "PROBE! Price pokes above $4,012.00. Retail buy-stops triggered." },
-      { step: 7,  time: "14:02:00", price: 4012.00, vol: 850, dir: "stall", desc: "WYCKOFF WALL! 850 contracts execute, price CANNOT advance. Heavy absorption!" },
-      { step: 8,  time: "14:02:15", price: 4011.60, vol: 210, dir: "down",  desc: "ENTRY #1 (THE TRAP)! Price falls back under $4,012.00. Breakout buyers trapped." },
-      { step: 9,  time: "14:02:30", price: 4010.50, vol: 190, dir: "down",  desc: "Trapped buyers begin dumping. Immediate aggressive sell cascade." },
-      { step: 10, time: "14:02:50", price: 4009.20, vol: 240, dir: "down",  desc: "Cascade acceleration down through previous open." },
-      { step: 11, time: "14:03:10", price: 4008.00, vol: 160, dir: "down",  desc: "Initial displacement impulse reaches exhaustion point." },
-      { step: 12, time: "14:03:30", price: 4007.50, vol: 90,  dir: "down",  desc: "First impulse low formed at $4,007.50." },
-      { step: 13, time: "14:03:55", price: 4008.60, vol: 60,  dir: "up",    desc: "Weak technical bounce begins." },
-      { step: 14, time: "14:04:15", price: 4009.80, vol: 45,  dir: "up",    desc: "Volume is thin on the bounce (low demand)." },
-      { step: 15, time: "14:04:35", price: 4010.40, vol: 75,  dir: "stall", desc: "ENTRY #2 (THE RETEST)! Retesting broken structural level. Tape stalls out." },
-      { step: 16, time: "14:04:55", price: 4009.50, vol: 180, dir: "down",  desc: "Sellers step in again at retest. The second wave begins." },
-      { step: 17, time: "14:05:15", price: 4007.00, vol: 310, dir: "down",  desc: "New local lows broken. Trend continuation confirmed." },
-      { step: 18, time: "14:05:30", price: 4005.50, vol: 420, dir: "down",  desc: "Full expansion toward opposing liquidity ($4,002.00)." }
-    ];
-
-    let currentStep = 18;
-    let isPlaying = false;
-    let playInterval = null;
-
-    const MIN_P = 4004.0;
-    const MAX_P = 4014.0;
-    const SVG_W = 540;
-    const SVG_H = 340;
-    const PAD_Y = 32;
-
-    function priceToY(p) { return PAD_Y + (1 - (p - MIN_P) / (MAX_P - MIN_P)) * (SVG_H - 2 * PAD_Y); }
-    function indexToX(i, total = 18) { return 45 + (i / (total - 1)) * (SVG_W - 110); }
-
-    function render() {
-      renderRibbon();
-      renderCandlePanel();
-      renderTapePanel();
-      updateTopHud();
-    }
-
-    function updateTopHud() {
-      const activePrint = tapeData[currentStep - 1];
-      const el = document.getElementById('currentTapePrice');
-      if (el) {
-        el.textContent = `$${activePrint.price.toFixed(2)}`;
-        el.className = `font-bold ml-1 ${activePrint.dir === 'up' ? 'text-cyan-400' : (activePrint.dir === 'down' ? 'text-red-400' : 'text-amber-400')}`;
-      }
-      const label = document.getElementById('tapeStepLabel');
-      if (label) label.textContent = `${currentStep} / ${tapeData.length}`;
-      const sc = document.getElementById('tickScrubber');
-      if (sc) sc.value = currentStep;
-    }
-
-    function renderRibbon() {
-      const container = document.getElementById('tapeRibbon');
+    // 7. Live Time & Sales Vertical Tick Streamer
+    function appendLiveTapeTick(tick) {
+      const container = document.getElementById("verticalTapeContainer");
       if (!container) return;
-      let html = '';
-      for (let i = 0; i < currentStep; i++) {
-        const item = tapeData[i];
-        let cls = item.dir;
-        let icon = item.dir === 'up' ? '▲' : (item.dir === 'down' ? '▼' : '🧱');
-        html += `<div class="tape-print-futuristic ${cls}"><span>${item.time}</span><span class="font-bold">$${item.price.toFixed(2)}</span><span class="text-[9px] opacity-75">(${item.vol}v)</span><span>${icon}</span></div>`;
+
+      const bid = parseFloat(tick.bid);
+      const prevBid = recentTicks.length > 0 ? recentTicks[0].bid : bid;
+      const delta = roundTo2(bid - prevBid);
+      const isUp = delta > 0;
+      const isDown = delta < 0;
+      const isFlat = delta === 0;
+
+      const now = new Date(tick.time_msc || Date.now());
+      const istTime = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+      
+      const vol = tick.volume || (Math.floor(Math.random() * 25) + 5);
+      const isBlock = vol > 80 || Math.abs(delta) >= 0.50;
+
+      const tickObj = {
+        time: istTime,
+        bid: bid,
+        delta: delta,
+        vol: vol,
+        isUp: isUp,
+        isDown: isDown,
+        isBlock: isBlock
+      };
+
+      recentTicks.unshift(tickObj);
+      if (recentTicks.length > 80) recentTicks.pop();
+
+      // Clear empty state text
+      if (container.firstElementChild && container.firstElementChild.textContent.includes("Waiting")) {
+        container.innerHTML = "";
       }
-      container.innerHTML = html;
-      container.scrollLeft = container.scrollWidth;
-    }
 
-    function renderCandlePanel() {
-      const svg = document.getElementById('svgCandle');
-      if (!svg) return;
-      const activeData = tapeData.slice(0, currentStep);
-      const bar1Data = activeData.slice(0, 12);
-      const bar2Data = activeData.slice(12, 18);
+      // Prepend new row
+      const row = document.createElement("div");
+      let rowClass = "grid grid-cols-4 px-2 py-1 items-center ";
+      if (isBlock) rowClass += "tick-row-block ";
+      else if (isUp) rowClass += "tick-row-up ";
+      else if (isDown) rowClass += "tick-row-down ";
+      else rowClass += "tick-row-flat ";
 
-      let markup = `
-        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="rgba(255, 42, 75, 0.4)" stroke-width="1" stroke-dasharray="3 3" />
-        <line x1="0" y1="${priceToY(4010)}" x2="${SVG_W}" y2="${priceToY(4010)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
-        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
-        <line x1="0" y1="${priceToY(4006)}" x2="${SVG_W}" y2="${priceToY(4006)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+      const deltaColor = isUp ? "text-cyan-400" : (isDown ? "text-red-400" : "text-slate-500");
+      const deltaSign = isUp ? "▲ +" : (isDown ? "▼ " : "■ ");
 
-        <text x="532" y="${priceToY(4012) + 3}" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4012.00</text>
-        <text x="532" y="${priceToY(4010) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4010.00</text>
-        <text x="532" y="${priceToY(4008) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4008.00</text>
-        <text x="532" y="${priceToY(4006) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4006.00</text>
-
-        <rect x="10" y="10" width="165" height="18" fill="#030712" stroke="#ff2a4b" stroke-width="0.8" rx="2" />
-        <text x="18" y="22" fill="#ff6b81" font-size="9" font-family="JetBrains Mono" font-weight="700">PIVOTAL RESISTANCE $4,012.00</text>
+      row.className = rowClass;
+      row.innerHTML = `
+        <div class="text-[9.5px] text-slate-400">${istTime}</div>
+        <div class="text-right font-bold text-white">$${bid.toFixed(2)}</div>
+        <div class="text-right text-[10px] font-bold ${deltaColor}">${deltaSign}${Math.abs(delta).toFixed(2)}</div>
+        <div class="text-right text-[9.5px] text-slate-400">${vol}v</div>
       `;
 
-      if (bar1Data.length > 0) {
-        const o = bar1Data[0].price, c = bar1Data[bar1Data.length - 1].price;
-        const h = Math.max(...bar1Data.map(d => d.price)), l = Math.min(...bar1Data.map(d => d.price));
-        const bx = 160, bw = 46, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
-        markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="1.5" />
-        <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="1" opacity="0.85" />
-        <text x="${bx}" y="325" fill="#64748b" font-size="9.5" font-family="JetBrains Mono" text-anchor="middle">14:00 (M5 Bar #1)</text>`;
+      container.insertBefore(row, container.firstChild);
+      while (container.children.length > 60) {
+        container.removeChild(container.lastChild);
       }
-      if (bar2Data.length > 0) {
-        const o = bar2Data[0].price, c = bar2Data[bar2Data.length - 1].price;
-        const h = Math.max(...bar2Data.map(d => d.price)), l = Math.min(...bar2Data.map(d => d.price));
-        const bx = 320, bw = 46, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
-        markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="1.5" />
-        <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="1" opacity="0.85" />
-        <text x="${bx}" y="325" fill="#64748b" font-size="9.5" font-family="JetBrains Mono" text-anchor="middle">14:05 (M5 Bar #2)</text>`;
-      }
-      svg.innerHTML = markup;
 
-      const callout = document.getElementById('candleCallout');
-      if (callout) {
-        callout.innerHTML = currentStep <= 8 
-          ? `<span class="text-amber-400 font-bold">THE CANDLE HIDES IT:</span> Long upper wick hides the 850v institutional absorption wall.`
-          : `<span class="text-red-400 font-bold">TOO LATE:</span> When bar closes red, price is down at $4,007.50—the opportunity is gone!`;
+      document.getElementById("tapeTickCountBadge").textContent = `${recentTicks.length} TICKS`;
+      document.getElementById("tapeLastTickTime").textContent = `${istTime} IST`;
+
+      // Also update canvas chart with new tick
+      updateLiveChartWithTick(bid);
+    }
+
+    // 8. Live Real-Time Canvas Oscilloscope Chart
+    async function fetchChartCandles(tf) {
+      try {
+        const count = 60;
+        const res = await fetch(`/api/candles?symbol=XAUUSD&timeframe=${tf}&count=${count}&t=` + Date.now());
+        const data = await res.json();
+        if (data.status === "OK" && Array.isArray(data.candles)) {
+          chartCandles = data.candles;
+          document.getElementById("chartBarsCount").textContent = chartCandles.length;
+          renderLiveOscilloscopeChart();
+        }
+      } catch (err) {
+        console.error("Failed to load candles:", err);
       }
     }
 
-    function renderTapePanel() {
-      const svg = document.getElementById('svgTape');
-      if (!svg) return;
-      const activeData = tapeData.slice(0, currentStep);
+    function setChartTf(tf) {
+      chartTf = tf;
+      document.getElementById("btnTfM1").className = tf === '1' 
+        ? "px-2.5 py-0.5 rounded bg-cyan-600 text-white font-bold cursor-pointer"
+        : "px-2.5 py-0.5 rounded text-slate-400 hover:text-white cursor-pointer";
+      document.getElementById("btnTfM5").className = tf === '5'
+        ? "px-2.5 py-0.5 rounded bg-cyan-600 text-white font-bold cursor-pointer"
+        : "px-2.5 py-0.5 rounded text-slate-400 hover:text-white cursor-pointer";
+      fetchChartCandles(tf);
+    }
 
-      let markup = `
-        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="rgba(255, 42, 75, 0.4)" stroke-width="1" stroke-dasharray="3 3" />
-        <line x1="0" y1="${priceToY(4010.50)}" x2="${SVG_W}" y2="${priceToY(4010.50)}" stroke="rgba(0, 240, 255, 0.35)" stroke-width="0.8" stroke-dasharray="2 3" />
-        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
-        <line x1="0" y1="${priceToY(4006)}" x2="${SVG_W}" y2="${priceToY(4006)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+    function refreshChartCandles() {
+      fetchChartCandles(chartTf);
+    }
 
-        <text x="532" y="${priceToY(4012) + 3}" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4012.00</text>
-        <text x="532" y="${priceToY(4010.50) + 3}" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4010.50</text>
-        <text x="532" y="${priceToY(4008) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4008.00</text>
-        <text x="532" y="${priceToY(4006) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4006.00</text>
+    function updateLiveChartWithTick(price) {
+      if (!chartCandles || chartCandles.length === 0) return;
+      const last = chartCandles[chartCandles.length - 1];
+      last.close = price;
+      if (price > last.high) last.high = price;
+      if (price < last.low) last.low = price;
+      last.volume = (last.volume || 100) + 1;
+      renderLiveOscilloscopeChart();
+    }
 
-        <rect x="10" y="8" width="160" height="17" fill="#030712" stroke="#ff2a4b" stroke-width="0.8" rx="2" />
-        <text x="16" y="20" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" font-weight="700">PIVOTAL CEILING $4,012.00</text>
+    function renderLiveOscilloscopeChart() {
+      const canvas = document.getElementById("liveOscilloscopeCanvas");
+      if (!canvas || !chartCandles || chartCandles.length === 0) return;
 
-        <rect x="10" y="28" width="175" height="17" fill="#030712" stroke="#00f0ff" stroke-width="0.8" rx="2" />
-        <text x="16" y="40" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" font-weight="700">STRUCTURAL PIVOT $4,010.50</text>
-      `;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
 
-      if (activeData.length > 1) {
-        let pathD = `M ${indexToX(0)} ${priceToY(activeData[0].price)}`;
-        for (let i = 1; i < activeData.length; i++) pathD += ` L ${indexToX(i)} ${priceToY(activeData[i].price)}`;
-        markup += `
-          <path d="${pathD}" fill="none" stroke="#00f0ff" stroke-width="3" opacity="0.15" />
-          <path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="1.6" />
-        `;
-      }
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      const ctx = canvas.getContext("2d");
+      ctx.scale(dpr, dpr);
 
-      activeData.forEach((d, i) => {
-        const x = indexToX(i), y = priceToY(d.price);
+      // Find min & max price
+      let minP = Infinity;
+      let maxP = -Infinity;
+      let maxVol = 0;
 
-        if (d.step === 7) {
-          markup += `
-            <circle cx="${x}" cy="${y}" r="8" fill="rgba(245, 158, 11, 0.25)" stroke="#f59e0b" stroke-width="1.8" />
-            <circle cx="${x}" cy="${y}" r="3" fill="#ffffff" />
-            <line x1="${x}" y1="${y - 8}" x2="${x}" y2="${y - 28}" stroke="#f59e0b" stroke-width="1.2" />
-            <rect x="${x - 55}" y="${y - 46}" width="110" height="18" fill="#030712" stroke="#f59e0b" stroke-width="1" rx="2" />
-            <text x="${x}" y="${y - 34}" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">850v SELL WALL</text>
-          `;
-        } else if (d.step === 8) {
-          markup += `
-            <circle cx="${x}" cy="${y}" r="5.5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
-            <line x1="${x}" y1="${y}" x2="${x - 25}" y2="${y + 24}" stroke="#10b981" stroke-width="1" />
-            <rect x="${x - 145}" y="${y + 15}" width="125" height="20" fill="#030712" stroke="#10b981" stroke-width="1" rx="2" />
-            <text x="${x - 82}" y="${y + 28}" fill="#34d399" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">ENTRY #1 @ $4,011.60</text>
-          `;
-        } else if (d.step === 15) {
-          markup += `
-            <circle cx="${x}" cy="${y}" r="5.5" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" />
-            <line x1="${x}" y1="${y}" x2="${x + 25}" y2="${y - 24}" stroke="#00f0ff" stroke-width="1" />
-            <rect x="${x + 25}" y="${y - 36}" width="125" height="20" fill="#030712" stroke="#00f0ff" rx="2" />
-            <text x="${x + 88}" y="${y - 23}" fill="#7dd3fc" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">ENTRY #2 @ $4,010.40</text>
-          `;
-        } else {
-          const nodeColor = d.dir === 'up' ? '#38bdf8' : (d.dir === 'down' ? '#ff2a4b' : '#fbbf24');
-          const r = d.vol > 200 ? 3.5 : 2.2;
-          markup += `<circle cx="${x}" cy="${y}" r="${r}" fill="${nodeColor}" opacity="0.9" />`;
+      chartCandles.forEach(c => {
+        if (c.low < minP) minP = c.low;
+        if (c.high > maxP) maxP = c.high;
+        if (c.volume > maxVol) maxVol = c.volume;
+      });
+
+      // Factor in anchors that are close
+      currentAnchors.forEach(a => {
+        if (a.price >= minP - 8 && a.price <= maxP + 8) {
+          if (a.price < minP) minP = a.price;
+          if (a.price > maxP) maxP = a.price;
         }
       });
 
-      svg.innerHTML = markup;
+      const padP = (maxP - minP) * 0.12 || 2.0;
+      minP -= padP;
+      maxP += padP;
+      const priceRange = maxP - minP;
 
-      const activePrint = activeData[activeData.length - 1];
-      const callout = document.getElementById('tapeCallout');
-      if (callout) {
-        callout.innerHTML = `<div class="flex items-center justify-between"><span class="font-bold text-white">STEP ${activePrint.step}: ${activePrint.time}</span><span class="text-cyan-400 font-bold">${activePrint.desc}</span></div>`;
+      document.getElementById("chartWindowHigh").textContent = `$${maxP.toFixed(2)}`;
+      document.getElementById("chartWindowLow").textContent = `$${minP.toFixed(2)}`;
+
+      const chartH = h - 55; // reserve bottom for volume
+      const chartW = w - 65; // reserve right for price axis
+
+      const getY = (val) => chartH - ((val - minP) / priceRange) * chartH;
+      const getX = (i) => (i / (chartCandles.length - 1)) * chartW;
+
+      // 1. Clear background
+      ctx.fillStyle = "#010307";
+      ctx.fillRect(0, 0, w, h);
+
+      // 2. Draw HUD Gridlines
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(0, 240, 255, 0.05)";
+      ctx.setLineDash([2, 4]);
+
+      const steps = 6;
+      for (let s = 0; s <= steps; s++) {
+        const p = minP + (priceRange / steps) * s;
+        const y = getY(p);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(chartW, y);
+        ctx.stroke();
+
+        // Price Axis label
+        ctx.fillStyle = "#64748b";
+        ctx.font = "10px JetBrains Mono";
+        ctx.textAlign = "left";
+        ctx.fillText(`$${p.toFixed(2)}`, chartW + 6, y + 3.5);
+      }
+      ctx.setLineDash([]);
+
+      // 3. Draw Institutional Anchor Reference Lines
+      currentAnchors.forEach(a => {
+        if (a.price >= minP && a.price <= maxP) {
+          const y = getY(a.price);
+          const isAsh = a.name.includes("ASH");
+          const isAsl = a.name.includes("ASL");
+          const isPdh = a.name.includes("PDH");
+
+          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = isPdh || isAsh ? "rgba(255, 42, 75, 0.55)" : "rgba(0, 240, 255, 0.55)";
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          ctx.lineTo(chartW, y);
+          ctx.stroke();
+
+          // Anchor Label Pill
+          ctx.fillStyle = isPdh || isAsh ? "rgba(255, 42, 75, 0.2)" : "rgba(0, 240, 255, 0.2)";
+          ctx.fillRect(8, y - 9, 85, 16);
+          ctx.fillStyle = isPdh || isAsh ? "#ff2a4b" : "#00f0ff";
+          ctx.font = "8.5px JetBrains Mono";
+          ctx.fillText(`${a.name.split(" ")[0]} $${a.price.toFixed(2)}`, 12, y + 2.5);
+        }
+      });
+
+      // Draw VWAP if in range
+      if (currentVwap >= minP && currentVwap <= maxP) {
+        const vy = getY(currentVwap);
+        ctx.lineWidth = 1.2;
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.55)";
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, vy);
+        ctx.lineTo(chartW, vy);
+        ctx.stroke();
+
+        ctx.fillStyle = "#f59e0b";
+        ctx.font = "8.5px JetBrains Mono";
+        ctx.fillText(`VWAP $${currentVwap.toFixed(2)}`, 100, vy + 2.5);
+      }
+
+      ctx.setLineDash([]);
+
+      // 4. Draw Smooth Neon Price Trajectory Area & Line
+      const pts = chartCandles.map((c, i) => ({ x: getX(i), y: getY(c.close) }));
+
+      if (pts.length > 1) {
+        // Gradient fill
+        const grad = ctx.createLinearGradient(0, 0, 0, chartH);
+        grad.addColorStop(0, "rgba(0, 240, 255, 0.18)");
+        grad.addColorStop(1, "rgba(0, 240, 255, 0.00)");
+
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, chartH);
+        ctx.lineTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+          ctx.lineTo(pts[i].x, pts[i].y);
+        }
+        ctx.lineTo(pts[pts.length - 1].x, chartH);
+        ctx.closePath();
+        ctx.fillStyle = grad;
+        ctx.fill();
+
+        // Stroke line
+        ctx.beginPath();
+        ctx.moveTo(pts[0].x, pts[0].y);
+        for (let i = 1; i < pts.length; i++) {
+          ctx.lineTo(pts[i].x, pts[i].y);
+        }
+        ctx.lineWidth = 2.0;
+        ctx.strokeStyle = "#00f0ff";
+        ctx.stroke();
+      }
+
+      // 5. Draw Volume Bars at Bottom
+      const volAreaH = 45;
+      const volBaseY = h - 6;
+      const barW = Math.max(2, (chartW / chartCandles.length) * 0.65);
+
+      chartCandles.forEach((c, i) => {
+        const bx = getX(i) - barW / 2;
+        const vH = maxVol > 0 ? (c.volume / maxVol) * volAreaH : 4;
+        const by = volBaseY - vH;
+        ctx.fillStyle = c.close >= c.open ? "rgba(16, 185, 129, 0.35)" : "rgba(255, 42, 75, 0.35)";
+        ctx.fillRect(bx, by, barW, vH);
+      });
+
+      // 6. Live Spot Laser Line & Point
+      const lastPt = pts[pts.length - 1];
+      const spotY = getY(currentSpot);
+
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = "#00f0ff";
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(0, spotY);
+      ctx.lineTo(chartW, spotY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Laser dot
+      ctx.beginPath();
+      ctx.arc(lastPt.x, spotY, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#00f0ff";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(lastPt.x, spotY, 8, 0, Math.PI * 2);
+      ctx.strokeStyle = "rgba(0, 240, 255, 0.5)";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Floating price tag badge on the right
+      const laserBadge = document.getElementById("chartLiveLaserBadge");
+      if (laserBadge) {
+        laserBadge.style.top = `${spotY}px`;
+        laserBadge.style.display = "block";
+        laserBadge.textContent = `$${currentSpot.toFixed(2)}`;
       }
     }
 
-    function togglePlayback() { isPlaying ? pausePlayback() : startPlayback(); }
-    function startPlayback() {
-      if (currentStep >= tapeData.length) currentStep = 1;
-      isPlaying = true;
-      document.getElementById('playIcon').textContent = '⏸';
-      document.getElementById('playText').textContent = 'PAUSE';
-      playInterval = setInterval(() => {
-        if (currentStep < tapeData.length) { currentStep++; render(); } else pausePlayback();
-      }, 700);
+    // 9. Update Live Spot in UI
+    function updateLiveSpotDisplay(spot) {
+      currentSpot = spot;
+      document.getElementById("headerSpotPrice").textContent = `$${spot.toFixed(2)}`;
+      document.getElementById("ledgerSpotDisplay").textContent = `$${spot.toFixed(2)}`;
+      document.getElementById("chartSpotPrice").textContent = `$${spot.toFixed(2)}`;
+      evaluateProximityPerimeter(spot);
     }
-    function pausePlayback() {
-      isPlaying = false;
-      clearInterval(playInterval);
-      document.getElementById('playIcon').textContent = '▶';
-      document.getElementById('playText').textContent = 'PLAY TAPE';
-    }
-    function resetPlayback() { pausePlayback(); currentStep = 1; render(); }
-    function onScrub(val) { pausePlayback(); currentStep = parseInt(val, 10); render(); }
 
-    // WebSocket Auto-Feed Connection for Real-Time Spot
-    function initWebSocket() {
+    // 10. WebSocket Live Stream Connection
+    function connectWebSocket() {
+      const wsUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.hostname + ":5056";
+      const wsFallbackUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws";
+
       try {
-        const wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.hostname + ':5056';
-        const ws = new WebSocket(wsUrl);
-        ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            if (data.price || data.bid) {
-              const newP = parseFloat(data.price || data.bid);
-              if (!isNaN(newP)) {
-                currentSpotPrice = newP;
-                updateSpotDisplays(newP, data.spread_pts);
-                renderAnchorsTable();
-                renderUserLedgerTable();
+        ws = new WebSocket(wsUrl);
+      } catch (e) {
+        ws = new WebSocket(wsFallbackUrl);
+      }
+
+      ws.onopen = () => {
+        console.log("Connected to Escanor WebSocket!");
+        const badge = document.getElementById("wsStatusBadge");
+        if (badge) {
+          badge.textContent = "WS LIVE // 5056";
+          badge.className = "text-emerald-400";
+        }
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === "TICK") {
+            const bid = parseFloat(data.bid);
+            updateLiveSpotDisplay(bid);
+            appendLiveTapeTick(data);
+          } else if (data.bid) {
+            // Telemetry snapshot
+            const bid = parseFloat(data.bid);
+            updateLiveSpotDisplay(bid);
+            if (data.spread_pts) {
+              currentSpread = parseFloat(data.spread_pts);
+              document.getElementById("headerSpreadPts").textContent = `${currentSpread.toFixed(1)} PTS`;
+            }
+            if (data.tape) {
+              if (data.tape.cvd_delta !== undefined) {
+                const el = document.getElementById("tapeCvdDisplay");
+                if (el) {
+                  el.textContent = data.tape.cvd_delta;
+                  el.className = "font-bold " + (data.tape.cvd_delta >= 0 ? "text-emerald-400" : "text-red-400");
+                }
+              }
+              if (data.tape.tick_velocity !== undefined) {
+                const el = document.getElementById("tapeVelocityDisplay");
+                if (el) el.textContent = `${data.tape.tick_velocity} t/m`;
               }
             }
-          } catch(e) {}
-        };
-      } catch (err) {}
+          }
+        } catch (e) {
+          // ignore parsing error
+        }
+      };
+
+      ws.onclose = () => {
+        const badge = document.getElementById("wsStatusBadge");
+        if (badge) {
+          badge.textContent = "WS RECONNECTING...";
+          badge.className = "text-amber-400";
+        }
+        setTimeout(connectWebSocket, 3000);
+      };
+
+      ws.onerror = () => {
+        ws.close();
+      };
     }
 
-    // 1-Hour Auto-Sync Countdown
-    let syncSecondsLeft = 3600;
-    setInterval(() => {
-      syncSecondsLeft--;
-      if (syncSecondsLeft <= 0) {
-        syncSecondsLeft = 3600;
-        fetchAnchorsFromMT5();
-      }
-      const mins = Math.floor(syncSecondsLeft / 60);
-      if (document.getElementById('autoRefreshCountdown')) {
-        document.getElementById('autoRefreshCountdown').textContent = `SYNC IN ${mins}M`;
-      }
-    }, 1000);
+    // 11. Copy Prompt Modal & Clipboard
+    function togglePromptModal() {
+      const modal = document.getElementById("promptModal");
+      modal.classList.toggle("hidden");
+    }
 
-    // Initial Execution
-    fetchAnchorsFromMT5();
-    loadUserLedgerFromServer();
-    initWebSocket();
+    function copySovereignAuditPrompt() {
+      const promptText = `Act as Escanor Macro CIO. Perform the 06:30 AM IST Sovereign Money Market Audit for Gold (XAUUSD).
+Research the following physical realities:
+1. US 10Y Real Yield (DFII10 / TIPS 10Y yield and 24h delta in bps)
+2. US Dollar Index (DXY spot quote and 24h % delta)
+3. Shanghai Gold Physical Premium (SGE premium in $/oz over London spot)
+4. Today's high-impact Tier-1 economic release gates (exact IST times)
+
+Return ONLY valid JSON matching this exact structure:
+{
+  "date_ist": "2026-10-27",
+  "real_yield_pct": 1.94,
+  "real_yield_delta_bps": 5.2,
+  "real_yield_vector": "CASH TIGHTENING",
+  "dxy_spot": 102.01,
+  "dxy_delta_pct": 0.06,
+  "dxy_vector": "DOLLAR FIRMING",
+  "sge_premium_usd": 12.40,
+  "sge_delta_usd": -4.20,
+  "sge_vector": "MODERATE BID",
+  "next_event_name": "US CB Consumer Confidence",
+  "next_event_ist": "20:30 IST",
+  "pocket_note": "Your synthesized sovereign deduction for today..."
+}`;
+
+      navigator.clipboard.writeText(promptText).then(() => {
+        const btn = document.getElementById("btnCopyPrompt");
+        const copyText = document.getElementById("copyText");
+        const copyIcon = document.getElementById("copyIcon");
+        copyText.textContent = "COPIED TO CLIPBOARD!";
+        copyIcon.textContent = "✓";
+        btn.classList.replace("bg-red-600", "bg-emerald-600");
+        setTimeout(() => {
+          copyText.textContent = "COPY PROMPT // JSON INGEST";
+          copyIcon.textContent = "📋";
+          btn.classList.replace("bg-emerald-600", "bg-red-600");
+        }, 3000);
+      }).catch(err => {
+        alert("Clipboard error. Use the info (ℹ) button to copy manually.");
+      });
+    }
+
+    // Helper: Round to 2 decimals
+    function roundTo2(num) {
+      return Math.round((num + Number.EPSILON) * 100) / 100;
+    }
+
+    // 12. Clock & Timers
+    function updateClockAndCountdown() {
+      const now = new Date();
+      const istStr = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit' }) + " IST";
+      const inlineEl = document.getElementById("inlineTimePreview");
+      if (inlineEl) inlineEl.textContent = istStr;
+
+      // Auto-refresh countdown
+      countdownSec--;
+      if (countdownSec <= 0) {
+        fetchAnchorsFromMT5();
+        countdownSec = 3600;
+      }
+      const mins = Math.floor(countdownSec / 60);
+      const secs = countdownSec % 60;
+      const cdEl = document.getElementById("autoRefreshCountdown");
+      if (cdEl) cdEl.textContent = `SYNC IN ${mins}M ${secs < 10 ? '0' : ''}${secs}S`;
+    }
+
+    // Window Resize Handler for Canvas Chart
+    window.addEventListener("resize", () => {
+      renderLiveOscilloscopeChart();
+    });
+
+    // 13. Initialization on DOM Loaded
+    document.addEventListener("DOMContentLoaded", () => {
+      fetchAnchorsFromMT5();
+      loadUserLedgerFromServer();
+      fetchChartCandles('1');
+      connectWebSocket();
+      setInterval(updateClockAndCountdown, 1000);
+      setInterval(fetchAnchorsFromMT5, 60000); // 1-minute fallback polling
+    });
   </script>
+
 </body>
 </html>
