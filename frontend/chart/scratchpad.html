@@ -726,6 +726,41 @@
           </div>
         </div>
 
+        <!-- 2 PINNED SUMMARY ITEMS: TOP & LOW RECORDINGS (USER REQUEST) -->
+        <div class="grid grid-cols-2 gap-1.5 p-2 bg-black/90 border-b border-slate-800 flex-shrink-0 text-[10px] font-hud-tech">
+          <!-- Top Extreme Recording -->
+          <div class="bg-red-950/20 border border-red-500/35 rounded p-1.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-[8px] text-red-400 font-bold uppercase tracking-wider">
+              <span class="flex items-center gap-1">▲ TOP RECORD</span>
+              <span id="tapeTopTime" class="text-slate-400 font-mono font-normal">--:--:--</span>
+            </div>
+            <div class="flex items-baseline justify-between mt-1">
+              <span id="tapeTopPrice" class="text-xs font-mono font-bold text-white">$----.--</span>
+              <span id="tapeTopVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
+            </div>
+            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-red-500/20 pt-0.5">
+              <span class="text-slate-500 uppercase">TO SPOT:</span>
+              <span id="tapeTopDist" class="font-mono text-red-300 font-bold">-- pts</span>
+            </div>
+          </div>
+
+          <!-- Low Extreme Recording -->
+          <div class="bg-cyan-950/20 border border-cyan-500/35 rounded p-1.5 flex flex-col justify-between">
+            <div class="flex items-center justify-between text-[8px] text-cyan-400 font-bold uppercase tracking-wider">
+              <span class="flex items-center gap-1">▼ LOW RECORD</span>
+              <span id="tapeLowTime" class="text-slate-400 font-mono font-normal">--:--:--</span>
+            </div>
+            <div class="flex items-baseline justify-between mt-1">
+              <span id="tapeLowPrice" class="text-xs font-mono font-bold text-white">$----.--</span>
+              <span id="tapeLowVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
+            </div>
+            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-cyan-500/20 pt-0.5">
+              <span class="text-slate-500 uppercase">TO SPOT:</span>
+              <span id="tapeLowDist" class="font-mono text-cyan-300 font-bold">-- pts</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Column Header -->
         <div class="grid grid-cols-4 px-2 py-1 bg-slate-950 text-[9px] font-bold text-slate-400 uppercase font-hud-tech border-b border-slate-800 flex-shrink-0">
           <div>TIME</div>
@@ -1198,10 +1233,24 @@ Return ONLY valid JSON matching this exact structure:
     let lastTickTime = Date.now();
 
     // Tape Stream Settings (Authentic Livermore Tape Reading)
-    let tapeFilterMode = 'smart'; // 'smart' (>= $0.08 or block), 'blocks' (>= 35v), 'raw'
+    let tapeFilterMode = 'smart'; // 'smart' (PIVOTAL), 'blocks' (BLOCKS), 'raw' (RAW)
     let isTapeFrozen = false;
     let lastLoggedPrice = 0.0;
     let lastLoggedTimeSec = 0;
+
+    // Running Extreme State (Top & Low Recordings)
+    let runningTopPrice = null;
+    let runningTopTime = "--:--:--";
+    let runningTopVol = 0;
+    let runningLowPrice = null;
+    let runningLowTime = "--:--:--";
+    let runningLowVol = 0;
+
+    // Cluster accumulation state for PIVOTAL & BLOCKS
+    let activeShelfPrice = null;
+    let activeShelfVol = 0;
+    let activeShelfDelta = 0.0;
+    let activeShelfStartTime = "";
 
     // User Alert Preferences
     let alertPrefs = {
@@ -1723,6 +1772,134 @@ Return ONLY valid JSON matching this exact structure:
       bSmart.className = mode === 'smart' ? activeClass : inactiveClass;
       bBlocks.className = mode === 'blocks' ? activeClass : inactiveClass;
       bRaw.className = mode === 'raw' ? activeClass : inactiveClass;
+
+      // Reset active shelf accumulator on filter switch
+      activeShelfPrice = null;
+      activeShelfVol = 0;
+      activeShelfDelta = 0.0;
+    }
+
+    // Helper: Update Pinned Top & Low Extreme HUD (Dynamic Running Values)
+    function updateExtremeRecordingsUI(spot) {
+      if (runningTopPrice !== null) {
+        const elPrice = document.getElementById("tapeTopPrice");
+        const elTime = document.getElementById("tapeTopTime");
+        const elVol = document.getElementById("tapeTopVol");
+        const elDist = document.getElementById("tapeTopDist");
+        if (elPrice) elPrice.textContent = `$${runningTopPrice.toFixed(2)}`;
+        if (elTime) elTime.textContent = runningTopTime;
+        if (elVol) elVol.textContent = `${runningTopVol}v`;
+        if (elDist && spot) {
+          const dist = spot - runningTopPrice;
+          const pts = Math.abs(dist) * 10;
+          const sign = dist >= 0 ? "+" : "-";
+          elDist.textContent = `${sign}$${Math.abs(dist).toFixed(2)} (${pts.toFixed(1)}p)`;
+          elDist.className = "font-mono font-bold " + (dist >= 0 ? "text-emerald-400" : "text-red-400");
+        }
+      }
+      if (runningLowPrice !== null) {
+        const elPrice = document.getElementById("tapeLowPrice");
+        const elTime = document.getElementById("tapeLowTime");
+        const elVol = document.getElementById("tapeLowVol");
+        const elDist = document.getElementById("tapeLowDist");
+        if (elPrice) elPrice.textContent = `$${runningLowPrice.toFixed(2)}`;
+        if (elTime) elTime.textContent = runningLowTime;
+        if (elVol) elVol.textContent = `${runningLowVol}v`;
+        if (elDist && spot) {
+          const dist = spot - runningLowPrice;
+          const pts = Math.abs(dist) * 10;
+          const sign = dist >= 0 ? "+" : "-";
+          elDist.textContent = `${sign}$${Math.abs(dist).toFixed(2)} (${pts.toFixed(1)}p)`;
+          elDist.className = "font-mono font-bold " + (dist >= 0 ? "text-cyan-400" : "text-red-400");
+        }
+      }
+    }
+
+    // Helper: Initialize Running High/Low from Candles
+    function initExtremesFromCandles(candles) {
+      if (!candles || candles.length === 0) return;
+      let topCandle = candles[0];
+      let lowCandle = candles[0];
+      for (const c of candles) {
+        if (c.high > topCandle.high) topCandle = c;
+        if (c.low < lowCandle.low) lowCandle = c;
+      }
+      if (runningTopPrice === null || topCandle.high > runningTopPrice) {
+        runningTopPrice = topCandle.high;
+        const d = new Date((topCandle.time || Date.now() / 1000) * 1000);
+        runningTopTime = d.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        runningTopVol = Math.round(topCandle.volume || 1);
+      }
+      if (runningLowPrice === null || lowCandle.low < runningLowPrice) {
+        runningLowPrice = lowCandle.low;
+        const d = new Date((lowCandle.time || Date.now() / 1000) * 1000);
+        runningLowTime = d.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        runningLowVol = Math.round(lowCandle.volume || 1);
+      }
+      updateExtremeRecordingsUI(currentSpot);
+    }
+
+    function insertTapeRow(container, istTime, price, delta, vol, isBlock, shelfPriceKey = null) {
+      if (container.firstElementChild && container.firstElementChild.textContent.includes("Waiting")) {
+        container.innerHTML = "";
+      }
+
+      const isUp = delta > 0;
+      const isDown = delta < 0;
+      const absDelta = Math.abs(delta);
+
+      const row = document.createElement("div");
+      if (shelfPriceKey !== null) {
+        row.dataset.shelfPrice = shelfPriceKey;
+      }
+
+      let rowClass = "grid grid-cols-4 px-2 py-1 items-center ";
+      if (isBlock) rowClass += "tick-row-block ";
+      else if (isUp) rowClass += "tick-row-up ";
+      else if (isDown) rowClass += "tick-row-down ";
+      else rowClass += "tick-row-flat ";
+
+      const deltaColor = isUp ? "text-cyan-400" : (isDown ? "text-red-400" : "text-slate-500");
+      const deltaSign = isUp ? "▲ +" : (isDown ? "▼ " : "■ ");
+
+      row.className = rowClass;
+      row.innerHTML = `
+        <div class="text-[9.5px] text-slate-400">${istTime}</div>
+        <div class="text-right font-bold text-white">$${price.toFixed(2)}</div>
+        <div class="text-right text-[10px] font-bold ${deltaColor}">${deltaSign}${absDelta.toFixed(2)}</div>
+        <div class="text-right text-[9.5px] text-slate-300 font-bold">${vol}v</div>
+      `;
+
+      container.insertBefore(row, container.firstChild);
+      while (container.children.length > 50) {
+        container.removeChild(container.lastChild);
+      }
+    }
+
+    function updateFirstTapeRow(row, price, delta, vol) {
+      if (!row) return;
+      const isUp = delta > 0;
+      const isDown = delta < 0;
+      const absDelta = Math.abs(delta);
+      const isBlock = vol >= 35 || absDelta >= 0.35;
+
+      let rowClass = "grid grid-cols-4 px-2 py-1 items-center ";
+      if (isBlock) rowClass += "tick-row-block ";
+      else if (isUp) rowClass += "tick-row-up ";
+      else if (isDown) rowClass += "tick-row-down ";
+      else rowClass += "tick-row-flat ";
+      row.className = rowClass;
+
+      const deltaColor = isUp ? "text-cyan-400" : (isDown ? "text-red-400" : "text-slate-500");
+      const deltaSign = isUp ? "▲ +" : (isDown ? "▼ " : "■ ");
+
+      const cells = row.children;
+      if (cells.length === 4) {
+        cells[1].textContent = `$${price.toFixed(2)}`;
+        cells[2].className = `text-right text-[10px] font-bold ${deltaColor}`;
+        cells[2].textContent = `${deltaSign}${absDelta.toFixed(2)}`;
+        cells[3].textContent = `${vol}v`;
+      }
     }
 
     function appendLiveTapeTick(tick) {
@@ -1737,67 +1914,96 @@ Return ONLY valid JSON matching this exact structure:
       const absDelta = Math.abs(delta);
       const nowSec = Date.now() / 1000;
       
-      const vol = tick.volume || (Math.floor(Math.random() * 25) + 5);
-      const isBlock = vol >= 35 || absDelta >= 0.35;
-
-      // Anti-River Filter Logic (Livermore Authentic Tape Reader)
-      if (tapeFilterMode === 'smart') {
-        // In smart mode: only log when price changes by at least $0.08 OR is a block trade OR at a PP test!
-        const isNearAnchor = currentAnchors.some(a => Math.abs(bid - a.price) <= 1.50);
-        if (absDelta < 0.08 && !isBlock && !isNearAnchor && (nowSec - lastLoggedTimeSec < 0.6)) {
-          // If within 600ms and sub-penny jitter, accumulate volume on top row instead of spamming rows!
-          if (container.firstElementChild && container.firstElementChild.lastElementChild) {
-            const volEl = container.firstElementChild.lastElementChild;
-            const curV = parseInt(volEl.textContent) || 0;
-            volEl.textContent = `${curV + vol}v`;
-          }
-          return;
-        }
-      } else if (tapeFilterMode === 'blocks') {
-        if (!isBlock) return;
-      }
-
-      lastLoggedPrice = bid;
-      lastLoggedTimeSec = nowSec;
-
-      const isUp = delta > 0;
-      const isDown = delta < 0;
+      // True physical MT5 step volume broadcast from server fast_tick_stream_loop
+      const stepVol = Math.max(1, parseInt(tick.volume) || 1);
 
       const now = new Date(tick.time_msc || Date.now());
       const istTime = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-      // Clear initial placeholder
-      if (container.firstElementChild && container.firstElementChild.textContent.includes("Waiting")) {
-        container.innerHTML = "";
+      // Dynamic Running Top & Low Extremes (True Physical Records)
+      if (runningTopPrice === null || bid > runningTopPrice) {
+        runningTopPrice = bid;
+        runningTopTime = istTime;
+        runningTopVol = stepVol;
+      } else if (Math.abs(bid - runningTopPrice) <= 0.05) {
+        runningTopVol += stepVol;
       }
 
-      // Prepend discrete print row
-      const row = document.createElement("div");
-      let rowClass = "grid grid-cols-4 px-2 py-1 items-center ";
-      if (isBlock) rowClass += "tick-row-block ";
-      else if (isUp) rowClass += "tick-row-up ";
-      else if (isDown) rowClass += "tick-row-down ";
-      else rowClass += "tick-row-flat ";
+      if (runningLowPrice === null || bid < runningLowPrice) {
+        runningLowPrice = bid;
+        runningLowTime = istTime;
+        runningLowVol = stepVol;
+      } else if (Math.abs(bid - runningLowPrice) <= 0.05) {
+        runningLowVol += stepVol;
+      }
 
-      const deltaColor = isUp ? "text-cyan-400" : (isDown ? "text-red-400" : "text-slate-500");
-      const deltaSign = isUp ? "▲ +" : (isDown ? "▼ " : "■ ");
+      updateExtremeRecordingsUI(bid);
 
-      row.className = rowClass;
-      row.innerHTML = `
-        <div class="text-[9.5px] text-slate-400">${istTime}</div>
-        <div class="text-right font-bold text-white">$${bid.toFixed(2)}</div>
-        <div class="text-right text-[10px] font-bold ${deltaColor}">${deltaSign}${absDelta.toFixed(2)}</div>
-        <div class="text-right text-[9.5px] text-slate-300 font-bold">${vol}v</div>
-      `;
+      // Authentic Livermore Anti-River Logic (Zero Synthetic Numbers)
+      if (tapeFilterMode === 'raw') {
+        // ⚡ RAW MODE: Pure tick-by-tick tape prints with exact physical step volume
+        lastLoggedPrice = bid;
+        lastLoggedTimeSec = nowSec;
+        insertTapeRow(container, istTime, bid, delta, stepVol, stepVol >= 35 || absDelta >= 0.35);
+      } 
+      else if (tapeFilterMode === 'smart') {
+        // 🎯 PIVOTAL MODE: Accumulate true step volume at current price shelf, commit on displacement >= $0.08
+        const isNearAnchor = currentAnchors.some(a => Math.abs(bid - a.price) <= 1.50);
+        
+        if (activeShelfPrice === null) {
+          activeShelfPrice = bid;
+          activeShelfVol = stepVol;
+          activeShelfDelta = delta;
+          activeShelfStartTime = istTime;
+          lastLoggedPrice = bid;
+          lastLoggedTimeSec = nowSec;
+          insertTapeRow(container, istTime, bid, delta, stepVol, false);
+        } else if (Math.abs(bid - activeShelfPrice) < 0.08 && !isNearAnchor) {
+          // Within same micro-shelf: accumulate true physical volume into topmost row
+          activeShelfVol += stepVol;
+          activeShelfDelta = roundTo2(bid - lastLoggedPrice);
+          if (container.firstElementChild && !container.firstElementChild.textContent.includes("Waiting")) {
+            updateFirstTapeRow(container.firstElementChild, activeShelfPrice, activeShelfDelta, activeShelfVol);
+          }
+        } else {
+          // Displaced by >= $0.08 or touched key pivotal coordinate: commit new discrete shelf!
+          activeShelfPrice = bid;
+          activeShelfVol = stepVol;
+          activeShelfDelta = delta;
+          activeShelfStartTime = istTime;
+          lastLoggedPrice = bid;
+          lastLoggedTimeSec = nowSec;
+          const isBlock = activeShelfVol >= 35 || absDelta >= 0.35;
+          insertTapeRow(container, istTime, bid, delta, stepVol, isBlock);
+        }
+      }
+      else if (tapeFilterMode === 'blocks') {
+        // 🧱 BLOCKS MODE: Accumulate shelf volume, display only when accumulated volume >= 20v or move >= $0.35
+        if (activeShelfPrice === null || Math.abs(bid - activeShelfPrice) >= 0.12) {
+          activeShelfPrice = bid;
+          activeShelfVol = stepVol;
+          activeShelfDelta = delta;
+          activeShelfStartTime = istTime;
+        } else {
+          activeShelfVol += stepVol;
+          activeShelfDelta = roundTo2(bid - (lastLoggedPrice || bid));
+        }
 
-      container.insertBefore(row, container.firstChild);
-      while (container.children.length > 50) {
-        container.removeChild(container.lastChild);
+        const isBlockThreshold = activeShelfVol >= 20 || absDelta >= 0.35;
+        if (isBlockThreshold) {
+          lastLoggedPrice = bid;
+          lastLoggedTimeSec = nowSec;
+          if (container.firstElementChild && container.firstElementChild.dataset && container.firstElementChild.dataset.shelfPrice == activeShelfPrice) {
+            updateFirstTapeRow(container.firstElementChild, activeShelfPrice, activeShelfDelta, activeShelfVol);
+          } else {
+            insertTapeRow(container, istTime, activeShelfPrice, activeShelfDelta, activeShelfVol, true, activeShelfPrice);
+          }
+        }
       }
 
       document.getElementById("tapeLastTickTime").textContent = `${istTime} IST`;
 
-      // Also update canvas chart with new tick
+      // Update canvas chart with new tick
       updateLiveChartWithTick(bid);
     }
 
@@ -1810,6 +2016,7 @@ Return ONLY valid JSON matching this exact structure:
         if (data.status === "OK" && Array.isArray(data.candles)) {
           chartCandles = data.candles;
           document.getElementById("chartBarsCount").textContent = chartCandles.length;
+          initExtremesFromCandles(chartCandles);
           renderLiveOscilloscopeChart();
         }
       } catch (err) {
@@ -2028,6 +2235,7 @@ Return ONLY valid JSON matching this exact structure:
       document.getElementById("ledgerSpotDisplay").textContent = `$${spot.toFixed(2)}`;
       document.getElementById("chartSpotPrice").textContent = `$${spot.toFixed(2)}`;
       evaluateProximityPerimeter(spot);
+      updateExtremeRecordingsUI(spot);
     }
 
     // 11. WebSocket Live Stream Connection

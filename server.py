@@ -1568,6 +1568,8 @@ async def fast_tick_stream_loop():
     sym = config.get("symbol", "XAUUSD")
     last_bid = 0.0
     last_ask = 0.0
+    last_tv = 0
+    last_bar_time = 0
     while True:
         try:
             if mt5_mod:
@@ -1577,6 +1579,23 @@ async def fast_tick_stream_loop():
                     ask = float(tick.ask)
                     # Broadcast immediately whenever bid or ask changes
                     if bid != last_bid or ask != last_ask:
+                        # Extract physical tick volume from current M1 bar
+                        step_vol = 1
+                        try:
+                            r = mt5_mod.copy_rates_from_pos(sym, mt5_mod.TIMEFRAME_M1, 0, 1)
+                            if r is not None and len(r) > 0:
+                                cur_tv = int(r[0]["tick_volume"])
+                                cur_time = int(r[0]["time"])
+                                if cur_time != last_bar_time:
+                                    last_bar_time = cur_time
+                                    last_tv = cur_tv
+                                    step_vol = 1
+                                else:
+                                    step_vol = max(1, cur_tv - last_tv)
+                                    last_tv = cur_tv
+                        except Exception:
+                            step_vol = 1
+
                         last_bid = bid
                         last_ask = ask
                         payload = json.dumps({
@@ -1584,6 +1603,7 @@ async def fast_tick_stream_loop():
                             "symbol": sym,
                             "bid": bid,
                             "ask": ask,
+                            "volume": step_vol,
                             "time_msc": int(getattr(tick, "time_msc", 0) or (time.time() * 1000))
                         })
                         dead = set()
