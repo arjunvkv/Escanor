@@ -186,7 +186,7 @@ app.add_middleware(
 async def add_no_cache_headers(request: Request, call_next):
     response = await call_next(request)
     path = request.url.path
-    if path.endswith((".js", ".css", ".html")) or path in ("/mobile", "/chart", "/", "/mobile_app"):
+    if path.endswith((".js", ".css", ".html")) or path in ("/mobile", "/chart", "/", "/mobile_app", "/terminal", "/ledger", "/desk", "/scratchpad"):
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
         response.headers["Pragma"] = "no-cache"
         response.headers["Expires"] = "0"
@@ -1151,6 +1151,103 @@ async def send_telegram_alert(req: Request):
 
 
 # =========================================================================
+# 🏛️ SOVEREIGN DESK & DUAL LEDGER REST API
+# =========================================================================
+
+@app.get("/api/sovereign/anchors")
+async def get_sovereign_anchors_endpoint(symbol: str = "XAUUSD"):
+    """Fetch live MT5 non-lying structural anchors (ASH, ASL, PDH, PDL, PDC, WO)."""
+    try:
+        from core.sovereign_desk import get_live_sovereign_anchors
+        data = get_live_sovereign_anchors(symbol)
+        return JSONResponse(content=data)
+    except Exception as e:
+        logger.error(f"Error getting sovereign anchors: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/sovereign/ledger")
+async def get_sovereign_ledger_endpoint():
+    """Fetch user-recorded pivotal observations and sovereign ledger records."""
+    try:
+        from core.sovereign_desk import load_sovereign_ledger
+        records = load_sovereign_ledger()
+        return JSONResponse(content={"status": "OK", "records": records})
+    except Exception as e:
+        logger.error(f"Error loading sovereign ledger: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/sovereign/ledger")
+async def save_sovereign_ledger_endpoint(req: Request):
+    """Persist user-recorded pivotal observations to server storage."""
+    try:
+        body = await req.json()
+        records = body.get("records", [])
+        from core.sovereign_desk import save_sovereign_ledger
+        ok = save_sovereign_ledger(records)
+        return JSONResponse(content={"status": "OK" if ok else "ERROR"})
+    except Exception as e:
+        logger.error(f"Error saving sovereign ledger: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/sovereign/alert_proximity")
+async def dispatch_sovereign_proximity_alert_endpoint(req: Request):
+    """Debounced dispatch of Telegram alert when price approaches within ±$5.00 of a level."""
+    try:
+        body = await req.json()
+        level_name = body.get("level_name", "Pivotal Coordinate")
+        price = body.get("price", 0.0)
+        spot = body.get("spot", 0.0)
+        dist = body.get("distance", 0.0)
+        note = body.get("note", "")
+
+        from core.sovereign_desk import should_dispatch_proximity_alert
+        key = f"{level_name}_{price:.2f}"
+        if not should_dispatch_proximity_alert(key):
+            return JSONResponse(content={"status": "DEBOUNCED", "message": f"Alert for {key} recently dispatched"})
+
+        # Format Telegram alert message
+        sign = "+" if dist >= 0 else "-"
+        ist_time = time.strftime('%d-%b %H:%M:%S IST', time.gmtime(time.time() + 19800))
+        msg = (
+            f"⚡ <b>ESCANOR // SOVEREIGN RADAR PROXIMITY ALERT</b>\n\n"
+            f"🎯 <b>Level:</b> {level_name} (<code>${price:.2f}</code>)\n"
+            f"📈 <b>Live Spot:</b> <code>${spot:.2f}</code>\n"
+            f"📏 <b>Perimeter Distance:</b> <code>{sign}${abs(dist):.2f}</code> (Within ±$5.00)\n"
+            f"📝 <b>Note:</b> {note or 'Structural auction test imminent.'}\n\n"
+            f"<i>Time: {ist_time}</i>"
+        )
+
+        bot_token = DEFAULT_TELEGRAM_BOT_TOKEN
+        chat_id = DEFAULT_TELEGRAM_CHAT_ID
+
+        def _send():
+            import urllib.request
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": msg,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req_tg = urllib.request.Request(
+                url, data=data_bytes, headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req_tg, timeout=8) as resp:
+                return resp.read().decode()
+
+        loop = asyncio.get_event_loop()
+        res_text = await loop.run_in_executor(None, _send)
+        return JSONResponse(content={"status": "OK", "telegram_response": json.loads(res_text)})
+    except Exception as e:
+        logger.error(f"Error dispatching proximity alert: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+# =========================================================================
 # 🌐 UI STATIC ROUTES
 # =========================================================================
 
@@ -1186,10 +1283,23 @@ async def get_chart_ui():
     return FileResponse(str(chart_index))
 
 
+@app.get("/terminal")
+@app.get("/ledger")
+@app.get("/desk")
+async def get_sovereign_terminal_ui():
+    """Serve Escanor Sovereign Tactical Terminal & Dual Ledger (different endpoint from /chart)."""
+    terminal_path = BASE_DIR / "frontend" / "terminal" / "index.html"
+    if not terminal_path.exists():
+        terminal_path = BASE_DIR / "frontend" / "chart" / "scratchpad.html"
+    return FileResponse(str(terminal_path))
+
+
 @app.get("/scratchpad")
 async def get_scratchpad_ui():
     """Serve the Sovereign Causal Paths & Cyberpunk HUD Scratchpad."""
-    scratchpad_path = BASE_DIR / "frontend" / "chart" / "scratchpad.html"
+    scratchpad_path = BASE_DIR / "frontend" / "terminal" / "index.html"
+    if not scratchpad_path.exists():
+        scratchpad_path = BASE_DIR / "frontend" / "chart" / "scratchpad.html"
     return FileResponse(str(scratchpad_path))
 
 

@@ -23,7 +23,7 @@
       --hud-emerald: #10b981;
     }
 
-    /* GLOBAL RULE: ABSOLUTELY NO HOVER ANIMATIONS OR TRANSITIONS */
+    /* ZERO HOVER ANIMATIONS OR TRANSITIONS */
     *, *::before, *::after {
       transition: none !important;
       animation-duration: 0s !important;
@@ -208,7 +208,7 @@
           <span>•</span>
           <span>ZERO SYNTHETIC ILLUSIONS</span>
           <span>•</span>
-          <span class="text-slate-500">PURE LIVERMORE-WYCKOFF REALITY</span>
+          <span class="text-slate-500">LIVE MT5 INTEGRATION</span>
         </p>
       </div>
     </div>
@@ -220,7 +220,7 @@
         <div class="w-2 h-2 rounded-full bg-cyan-400"></div>
         <div>
           <span class="text-[9px] uppercase tracking-widest text-slate-400 block font-hud-tech">XAUUSD LIVE SPOT</span>
-          <span id="topSpotDisplay" class="text-sm font-extrabold text-white font-mono tracking-wider">$4,008.50</span>
+          <span id="topSpotDisplay" class="text-sm font-extrabold text-white font-mono tracking-wider">$4,023.50</span>
         </div>
       </div>
 
@@ -230,8 +230,14 @@
         <span class="text-emerald-400 font-bold">MT5 REALITY</span>
         <span class="text-slate-700">|</span>
         <span class="text-slate-500">SPREAD:</span>
-        <span class="text-slate-200 font-bold">1.2 PTS</span>
+        <span id="spreadDisplay" class="text-slate-200 font-bold">1.2 PTS</span>
       </div>
+
+      <!-- Quick Switcher to /chart -->
+      <a href="/chart" class="px-3 py-1.5 bg-black/80 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 rounded text-[11px] font-hud-tech font-bold flex items-center gap-1.5">
+        <span>📈</span>
+        <span>DESKTOP CHART (/chart)</span>
+      </a>
 
       <!-- Minimal Futuristic Tabs Navigation -->
       <nav class="flex items-center gap-1 bg-black/90 p-1 border border-slate-800 rounded">
@@ -417,20 +423,20 @@
           <div class="space-y-2 font-hud-tech text-xs">
             <div class="bg-black/60 p-2 rounded border border-red-500/30 flex justify-between items-center">
               <span class="text-slate-400 text-[11px]">PIVOTAL HIGH (ASH):</span>
-              <span class="text-red-400 font-extrabold">$4,012.00</span>
+              <span id="targetAshDisplay" class="text-red-400 font-extrabold">$4,025.53</span>
             </div>
             <div class="bg-black/60 p-2 rounded border border-cyan-500/30 flex justify-between items-center">
               <span class="text-slate-400 text-[11px]">PIVOTAL LOW (ASL):</span>
-              <span class="text-cyan-400 font-extrabold">$3,995.00</span>
+              <span id="targetAslDisplay" class="text-cyan-400 font-extrabold">$3,997.29</span>
             </div>
             <div class="bg-black/60 p-2 rounded border border-slate-800 flex justify-between items-center">
               <span class="text-slate-400 text-[11px]">WEEKLY OPEN (WO):</span>
-              <span class="text-slate-200 font-extrabold">$4,008.50</span>
+              <span id="targetWoDisplay" class="text-slate-200 font-extrabold">$3,998.69</span>
             </div>
           </div>
         </div>
         <div class="mt-3 pt-2 border-t border-slate-800 text-[10px] text-emerald-400 font-hud-tech">
-          TACTICAL DIRECTIVE: STAND ASIDE until $4,012.00 or $3,995.00 perimeter breached.
+          TACTICAL DIRECTIVE: STAND ASIDE until primary perimeter is tested on tape.
         </div>
       </div>
     </div>
@@ -438,7 +444,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- TAB 02: SOVEREIGN DUAL LEDGER & INLINE WRITING                            -->
+  <!-- TAB 02: SOVEREIGN DUAL LEDGER & INLINE WRITING (LIVE MT5 BACKED)          -->
   <!-- ========================================================================= -->
   <main id="sectionLedger" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
     
@@ -450,12 +456,12 @@
         <div class="flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
           <span class="text-xs font-hud-tech text-slate-400">SPOT:</span>
-          <span id="ledgerSpotDisplay" class="text-sm font-extrabold text-white font-mono">$4,008.50</span>
+          <span id="ledgerSpotDisplay" class="text-sm font-extrabold text-white font-mono">$4,023.50</span>
         </div>
 
         <div id="proximityStatusBanner" class="px-2.5 py-1 rounded bg-red-950/50 text-red-300 border border-red-500/50 text-xs font-hud-tech font-bold flex items-center gap-2 glow-red">
           <span class="w-2 h-2 rounded-full bg-red-500"></span>
-          <span>TARGET LOCK: <strong class="text-white">+$3.50</strong> to Asian High ($4,012.00)</span>
+          <span id="bannerText">SCANNING PROXIMITY PERIMETERS...</span>
         </div>
       </div>
 
@@ -496,7 +502,7 @@
 
     </div>
 
-    <!-- SECTION A: NON-LYING STRUCTURAL ANCHORS -->
+    <!-- SECTION A: NON-LYING STRUCTURAL ANCHORS (AUTO-FETCHED FROM MT5) -->
     <div class="hud-panel rounded-lg overflow-hidden border border-slate-800">
       <div class="p-3 bg-black/70 border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
@@ -511,9 +517,9 @@
 
         <div class="flex items-center gap-2.5">
           <span id="autoRefreshCountdown" class="text-[10px] font-hud-tech text-slate-500">
-            SYNC IN 42M
+            SYNC IN 59M
           </span>
-          <button onclick="refreshAnchors()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-[10.5px] font-hud-tech font-bold rounded border border-cyan-500/30 flex items-center gap-1.5 cursor-pointer">
+          <button onclick="fetchAnchorsFromMT5()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-[10.5px] font-hud-tech font-bold rounded border border-cyan-500/30 flex items-center gap-1.5 cursor-pointer">
             <span id="refreshIcon">↺</span>
             <span>SYNC NOW</span>
           </button>
@@ -533,13 +539,13 @@
             </tr>
           </thead>
           <tbody id="anchorsBody" class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <!-- Dynamic rows -->
+            <!-- Dynamic rows fetched live from /api/sovereign/anchors -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- SECTION B: SOVEREIGN USER LEDGER (DIRECT IN-TABLE WRITING) -->
+    <!-- SECTION B: SOVEREIGN USER LEDGER (DIRECT IN-TABLE WRITING & SERVER PERSISTENCE) -->
     <div class="hud-panel rounded-lg overflow-hidden border border-red-500/25 shadow-xl flex flex-col">
       
       <div class="p-3 bg-gradient-to-r from-red-950/30 via-black to-black border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
@@ -552,7 +558,7 @@
         
         <div class="text-[10px] font-hud-tech text-slate-400 flex items-center gap-2">
           <span class="text-cyan-400 font-bold">✎ DIRECT IN-TABLE WRITING:</span>
-          <span>Type directly in the first row or click any cell to edit in-place. Auto-saved.</span>
+          <span>Type directly in Row 1 or click any cell to edit in-place. Server-synced.</span>
         </div>
       </div>
 
@@ -849,7 +855,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT ENGINE & REDESIGNED ZERO-COLLISION TAPE OSCILLOSCOPE           -->
+  <!-- JAVASCRIPT PRODUCTION ENGINE (API-CONNECTED & LIVE RADAR)                 -->
   <!-- ========================================================================= -->
   <script>
     // Tab Navigation
@@ -912,7 +918,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
     // -------------------------------------------------------------------------
     // Dual Ledger & Proximity Alerting Engine
     // -------------------------------------------------------------------------
-    let currentSpotPrice = 4008.50;
+    let currentSpotPrice = 4023.50;
     const PROXIMITY_THRESHOLD = 5.0; // +/- $5.00 triggers laser highlight & alert
 
     let alertPrefs = {
@@ -953,29 +959,98 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       }
     }
 
-    // SECTION A: Non-Lying Structural Anchors
-    let structuralAnchors = [
-      { name: "Asian Session High (ASH)", price: 4012.00, time: "11:30 AM IST", status: "UNTESTED POOL", note: "Overnight liquidity resting ceiling. Primary short target." },
-      { name: "Asian Session Low (ASL)", price: 3995.00, time: "11:30 AM IST", status: "UNTESTED POOL", note: "Overnight sell-stops resting floor. Primary long target." },
-      { name: "Previous Day High (PDH)", price: 4024.50, time: "Yesterday", status: "UNTESTED", note: "Macro 24h rejection high established yesterday." },
-      { name: "Previous Day Low (PDL)", price: 3978.00, time: "Yesterday", status: "UNTESTED", note: "Macro 24h absorption floor established yesterday." },
-      { name: "Weekly Open Pivot (WO)", price: 4008.50, time: "Monday 03:30 AM IST", status: "CURRENT LEVEL", note: "Sovereign institutional weekly battle boundary." }
-    ];
+    // Dispatch Telegram Proximity Alert to Backend
+    let alertSentTimestamps = {};
+    async function checkAndSendTelegramAlert(levelName, price, dist, note) {
+      if (!alertPrefs.telegram) return;
+      const key = `${levelName}_${price.toFixed(2)}`;
+      const now = Date.now();
+      // Client-side debounce: 10 minutes (600,000ms)
+      if (alertSentTimestamps[key] && now - alertSentTimestamps[key] < 600000) {
+        return;
+      }
+      alertSentTimestamps[key] = now;
+
+      try {
+        await fetch('/api/sovereign/alert_proximity', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            level_name: levelName,
+            price: price,
+            spot: currentSpotPrice,
+            distance: dist,
+            note: note
+          })
+        });
+      } catch (err) {
+        console.warn("Failed to dispatch proximity alert:", err);
+      }
+    }
+
+    // -------------------------------------------------------------------------
+    // SECTION A: LIVE MT5 STRUCTURAL ANCHORS
+    // -------------------------------------------------------------------------
+    let structuralAnchors = [];
+
+    async function fetchAnchorsFromMT5() {
+      const icon = document.getElementById('refreshIcon');
+      if (icon) icon.textContent = '…';
+      try {
+        const resp = await fetch('/api/sovereign/anchors?symbol=XAUUSD');
+        const data = await resp.json();
+        if (data && data.anchors) {
+          structuralAnchors = data.anchors;
+          if (data.spot) {
+            currentSpotPrice = data.spot;
+            updateSpotDisplays(data.spot, data.spread_pts);
+          }
+          // Update top targets if found
+          data.anchors.forEach(a => {
+            if (a.name.includes("Asian Session High") && document.getElementById('targetAshDisplay')) {
+              document.getElementById('targetAshDisplay').textContent = '$' + a.price.toFixed(2);
+            }
+            if (a.name.includes("Asian Session Low") && document.getElementById('targetAslDisplay')) {
+              document.getElementById('targetAslDisplay').textContent = '$' + a.price.toFixed(2);
+            }
+            if (a.name.includes("Weekly Open") && document.getElementById('targetWoDisplay')) {
+              document.getElementById('targetWoDisplay').textContent = '$' + a.price.toFixed(2);
+            }
+          });
+          renderAnchorsTable();
+        }
+      } catch (e) {
+        console.warn("Error fetching anchors from MT5:", e);
+      } finally {
+        if (icon) icon.textContent = '↺';
+      }
+    }
 
     function renderAnchorsTable() {
       const tbody = document.getElementById('anchorsBody');
       if (!tbody) return;
 
       let html = '';
+      let closestAnchor = null;
+      let minDistance = 999999;
+
       structuralAnchors.forEach((a) => {
         const dist = a.price - currentSpotPrice;
         const absDist = Math.abs(dist);
-        const isNear = absDist <= PROXIMITY_THRESHOLD;
+        if (absDist < minDistance) {
+          minDistance = absDist;
+          closestAnchor = { name: a.name, price: a.price, dist: dist };
+        }
 
+        const isNear = absDist <= PROXIMITY_THRESHOLD;
         let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
         let alertBadge = isNear 
           ? `<span class="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/50 font-bold text-[9.5px] tracking-wider">⚡ IN ZONE (±$5)</span>`
           : `<span class="text-slate-500 text-[10px]">MONITORING</span>`;
+
+        if (isNear) {
+          checkAndSendTelegramAlert(a.name, a.price, dist, a.note);
+        }
 
         html += `
           <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'}">
@@ -990,22 +1065,49 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       });
 
       tbody.innerHTML = html;
+
+      // Update Proximity Status Banner
+      if (closestAnchor && document.getElementById('bannerText')) {
+        const sign = closestAnchor.dist >= 0 ? '+' : '-';
+        document.getElementById('bannerText').innerHTML = `TARGET LOCK: <strong class="text-white">${sign}$${Math.abs(closestAnchor.dist).toFixed(2)}</strong> to ${closestAnchor.name} ($${closestAnchor.price.toFixed(2)})`;
+      }
     }
 
-    function refreshAnchors() {
-      const icon = document.getElementById('refreshIcon');
-      renderAnchorsTable();
+    // -------------------------------------------------------------------------
+    // SECTION B: SERVER PERSISTED USER MANUAL LEDGER
+    // -------------------------------------------------------------------------
+    let userLedgerRecords = [];
+
+    async function loadUserLedgerFromServer() {
+      try {
+        const resp = await fetch('/api/sovereign/ledger');
+        const data = await resp.json();
+        if (data && data.records) {
+          userLedgerRecords = data.records;
+          renderUserLedgerTable();
+        }
+      } catch (err) {
+        console.warn("Error loading user ledger from server, falling back to localStorage", err);
+        userLedgerRecords = JSON.parse(localStorage.getItem('escanor_user_ledger') || 'null') || [
+          { id: 1, time: "27-Oct 14:15 IST", price: 4025.53, type: "REVERSAL PP", note: "Livermore Reversal Pivotal Point at Asian High. Watching for rejection probe." },
+          { id: 2, time: "27-Oct 09:40 IST", price: 3997.29, type: "REACTION PP", note: "Asian low reaction floor. Institutional demand tested twice." },
+          { id: 3, time: "26-Oct 20:30 IST", price: 4010.50, type: "WYCKOFF WALL", note: "Heavy absorption wall traded during NY open." }
+        ];
+        renderUserLedgerTable();
+      }
     }
 
-    // SECTION B: User Sovereign Manual Ledger (DIRECT IN-TABLE WRITING & EDITING)
-    let userLedgerRecords = JSON.parse(localStorage.getItem('escanor_user_ledger') || 'null') || [
-      { id: 1, time: "27-Oct 14:15 IST", price: 4012.00, type: "REVERSAL PP", note: "Livermore Reversal Pivotal Point at Asian High. Watching for failed probe." },
-      { id: 2, time: "27-Oct 09:40 IST", price: 3995.00, type: "REACTION PP", note: "Asian low reaction floor. Demand tested twice." },
-      { id: 3, time: "26-Oct 20:30 IST", price: 4010.50, type: "WYCKOFF WALL", note: "Heavy absorption wall traded during NY open." }
-    ];
-
-    function saveUserRecords() {
+    async function saveUserLedgerToServer() {
       localStorage.setItem('escanor_user_ledger', JSON.stringify(userLedgerRecords));
+      try {
+        await fetch('/api/sovereign/ledger', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ records: userLedgerRecords })
+        });
+      } catch (err) {
+        console.warn("Failed to persist user ledger to server:", err);
+      }
     }
 
     function renderUserLedgerTable() {
@@ -1026,7 +1128,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
           <td class="py-2 px-3">
             <div class="flex items-center gap-1 bg-black/60 border border-red-500/40 rounded px-1.5 py-0.5 focus-within:border-red-400">
               <span class="text-red-400 font-bold">$</span>
-              <input type="number" id="inlinePrice" placeholder="4012.00" step="0.10" 
+              <input type="number" id="inlinePrice" placeholder="4025.00" step="0.10" 
                      onkeydown="handleInlineKeydown(event)"
                      class="bg-transparent text-white font-extrabold text-sm w-full outline-none font-mono placeholder:text-slate-600">
             </div>
@@ -1059,12 +1161,16 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         </tr>
       `;
 
-      // SAVED ROWS
+      // SAVED ROWS WITH IN-PLACE EDITING
       userLedgerRecords.forEach((r) => {
         const dist = r.price - currentSpotPrice;
         const absDist = Math.abs(dist);
         const isNear = absDist <= PROXIMITY_THRESHOLD;
         let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
+
+        if (isNear) {
+          checkAndSendTelegramAlert(r.type, r.price, dist, r.note);
+        }
 
         html += `
           <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'}">
@@ -1133,7 +1239,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         return;
       }
 
-      const note = noteInput.value.trim() || "Observation at pivotal level";
+      const note = noteInput.value.trim() || "Pivotal observation";
       const type = typeSelect.value;
 
       const now = new Date();
@@ -1147,7 +1253,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         note: note
       });
 
-      saveUserRecords();
+      saveUserLedgerToServer();
       renderUserLedgerTable();
 
       if (Math.abs(p - currentSpotPrice) <= PROXIMITY_THRESHOLD) {
@@ -1161,7 +1267,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         const item = userLedgerRecords.find(r => r.id === id);
         if (item) {
           item.price = val;
-          saveUserRecords();
+          saveUserLedgerToServer();
           renderUserLedgerTable();
         }
       }
@@ -1171,14 +1277,20 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const item = userLedgerRecords.find(r => r.id === id);
       if (item) {
         item.note = newText.trim() || item.note;
-        saveUserRecords();
+        saveUserLedgerToServer();
       }
     }
 
     function deleteUserRecord(id) {
       userLedgerRecords = userLedgerRecords.filter(r => r.id !== id);
-      saveUserRecords();
+      saveUserLedgerToServer();
       renderUserLedgerTable();
+    }
+
+    function updateSpotDisplays(spot, spread) {
+      if (document.getElementById('topSpotDisplay')) document.getElementById('topSpotDisplay').textContent = '$' + spot.toFixed(2);
+      if (document.getElementById('ledgerSpotDisplay')) document.getElementById('ledgerSpotDisplay').textContent = '$' + spot.toFixed(2);
+      if (spread && document.getElementById('spreadDisplay')) document.getElementById('spreadDisplay').textContent = spread.toFixed(1) + ' PTS';
     }
 
     // -------------------------------------------------------------------------
@@ -1260,19 +1372,16 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const bar2Data = activeData.slice(12, 18);
 
       let markup = `
-        <!-- Background Grid -->
         <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="rgba(255, 42, 75, 0.4)" stroke-width="1" stroke-dasharray="3 3" />
         <line x1="0" y1="${priceToY(4010)}" x2="${SVG_W}" y2="${priceToY(4010)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
         <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
         <line x1="0" y1="${priceToY(4006)}" x2="${SVG_W}" y2="${priceToY(4006)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
 
-        <!-- Price Ticks on Right Margin -->
         <text x="532" y="${priceToY(4012) + 3}" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4012.00</text>
         <text x="532" y="${priceToY(4010) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4010.00</text>
         <text x="532" y="${priceToY(4008) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4008.00</text>
         <text x="532" y="${priceToY(4006) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4006.00</text>
 
-        <!-- Resistance Badge at Top Left -->
         <rect x="10" y="10" width="165" height="18" fill="#030712" stroke="#ff2a4b" stroke-width="0.8" rx="2" />
         <text x="18" y="22" fill="#ff6b81" font-size="9" font-family="JetBrains Mono" font-weight="700">PIVOTAL RESISTANCE $4,012.00</text>
       `;
@@ -1303,26 +1412,22 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       }
     }
 
-    // REDESIGNED TAPE PANEL WITH ZERO OVERLAPS
     function renderTapePanel() {
       const svg = document.getElementById('svgTape');
       if (!svg) return;
       const activeData = tapeData.slice(0, currentStep);
 
       let markup = `
-        <!-- Background Precision Grid -->
         <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="rgba(255, 42, 75, 0.4)" stroke-width="1" stroke-dasharray="3 3" />
         <line x1="0" y1="${priceToY(4010.50)}" x2="${SVG_W}" y2="${priceToY(4010.50)}" stroke="rgba(0, 240, 255, 0.35)" stroke-width="0.8" stroke-dasharray="2 3" />
         <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
         <line x1="0" y1="${priceToY(4006)}" x2="${SVG_W}" y2="${priceToY(4006)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
 
-        <!-- Price Ticks on Right Margin (Never Collides with Lines) -->
         <text x="532" y="${priceToY(4012) + 3}" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4012.00</text>
         <text x="532" y="${priceToY(4010.50) + 3}" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4010.50</text>
         <text x="532" y="${priceToY(4008) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4008.00</text>
         <text x="532" y="${priceToY(4006) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4006.00</text>
 
-        <!-- Clean Docked Badges at Top Left (Never Collides with Nodes) -->
         <rect x="10" y="8" width="160" height="17" fill="#030712" stroke="#ff2a4b" stroke-width="0.8" rx="2" />
         <text x="16" y="20" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" font-weight="700">PIVOTAL CEILING $4,012.00</text>
 
@@ -1330,7 +1435,6 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         <text x="16" y="40" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" font-weight="700">STRUCTURAL PIVOT $4,010.50</text>
       `;
 
-      // Draw Oscilloscope Vector Polyline
       if (activeData.length > 1) {
         let pathD = `M ${indexToX(0)} ${priceToY(activeData[0].price)}`;
         for (let i = 1; i < activeData.length; i++) pathD += ` L ${indexToX(i)} ${priceToY(activeData[i].price)}`;
@@ -1340,12 +1444,10 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         `;
       }
 
-      // Draw Nodes & Non-Overlapping Callout Badges
       activeData.forEach((d, i) => {
         const x = indexToX(i), y = priceToY(d.price);
 
         if (d.step === 7) {
-          // 850v Absorption Wall at $4,012.00: Leader line UP to Top Badge
           markup += `
             <circle cx="${x}" cy="${y}" r="8" fill="rgba(245, 158, 11, 0.25)" stroke="#f59e0b" stroke-width="1.8" />
             <circle cx="${x}" cy="${y}" r="3" fill="#ffffff" />
@@ -1354,7 +1456,6 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
             <text x="${x}" y="${y - 34}" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">850v SELL WALL</text>
           `;
         } else if (d.step === 8) {
-          // Entry #1 at $4,011.60: Leader line DOWN-LEFT to Bottom-Left Badge
           markup += `
             <circle cx="${x}" cy="${y}" r="5.5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
             <line x1="${x}" y1="${y}" x2="${x - 25}" y2="${y + 24}" stroke="#10b981" stroke-width="1" />
@@ -1362,11 +1463,10 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
             <text x="${x - 82}" y="${y + 28}" fill="#34d399" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">ENTRY #1 @ $4,011.60</text>
           `;
         } else if (d.step === 15) {
-          // Entry #2 at $4,010.40: Leader line UP-RIGHT to Top-Right Badge
           markup += `
             <circle cx="${x}" cy="${y}" r="5.5" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" />
             <line x1="${x}" y1="${y}" x2="${x + 25}" y2="${y - 24}" stroke="#00f0ff" stroke-width="1" />
-            <rect x="${x + 25}" y="${y - 36}" width="125" height="20" fill="#030712" stroke="#00f0ff" stroke-width="1" rx="2" />
+            <rect x="${x + 25}" y="${y - 36}" width="125" height="20" fill="#030712" stroke="#00f0ff" rx="2" />
             <text x="${x + 88}" y="${y - 23}" fill="#7dd3fc" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">ENTRY #2 @ $4,010.40</text>
           `;
         } else {
@@ -1407,7 +1507,8 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
     // WebSocket Auto-Feed Connection for Real-Time Spot
     function initWebSocket() {
       try {
-        const ws = new WebSocket('ws://' + window.location.hostname + ':5056');
+        const wsUrl = (window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.hostname + ':5056';
+        const ws = new WebSocket(wsUrl);
         ws.onmessage = (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -1415,8 +1516,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
               const newP = parseFloat(data.price || data.bid);
               if (!isNaN(newP)) {
                 currentSpotPrice = newP;
-                document.getElementById('topSpotDisplay').textContent = '$' + newP.toFixed(2);
-                document.getElementById('ledgerSpotDisplay').textContent = '$' + newP.toFixed(2);
+                updateSpotDisplays(newP, data.spread_pts);
                 renderAnchorsTable();
                 renderUserLedgerTable();
               }
@@ -1426,9 +1526,23 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       } catch (err) {}
     }
 
+    // 1-Hour Auto-Sync Countdown
+    let syncSecondsLeft = 3600;
+    setInterval(() => {
+      syncSecondsLeft--;
+      if (syncSecondsLeft <= 0) {
+        syncSecondsLeft = 3600;
+        fetchAnchorsFromMT5();
+      }
+      const mins = Math.floor(syncSecondsLeft / 60);
+      if (document.getElementById('autoRefreshCountdown')) {
+        document.getElementById('autoRefreshCountdown').textContent = `SYNC IN ${mins}M`;
+      }
+    }, 1000);
+
     // Initial Execution
-    renderAnchorsTable();
-    renderUserLedgerTable();
+    fetchAnchorsFromMT5();
+    loadUserLedgerFromServer();
     initWebSocket();
   </script>
 </body>

@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "time": "27-Oct 14:15 IST",
+    "price": 4019.94,
+    "type": "REVERSAL PP",
+    "note": "Livermore Reversal Pivotal Point at Asian High. Watching for rejection probe."
+  },
+  {
+    "id": 2,
+    "time": "27-Oct 09:40 IST",
+    "price": 4003.75,
+    "type": "REACTION PP",
+    "note": "Asian low reaction floor. Institutional demand tested twice."
+  },
+  {
+    "id": 3,
+    "time": "26-Oct 20:30 IST",
+    "price": 4010.5,
+    "type": "WYCKOFF WALL",
+    "note": "Heavy absorption wall traded during NY open."
+  }
+]
