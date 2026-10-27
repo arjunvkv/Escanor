@@ -28,7 +28,7 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
       const allOverlays = chart.getOverlays() || [];
       // Filter out temporary measure boxes, structural levels, session timeline, or system markers
       const userDrawings = allOverlays
-        .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_'))
+        .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_') && !ov.id?.startsWith('box_fulcrum_') && !ov.id?.startsWith('box_vacuum_'))
         .map(ov => {
           // Strictly clean points: NEVER persist volatile in-memory dataIndex to server!
           // Points must be cleanly anchored by real timestamp and price value only.

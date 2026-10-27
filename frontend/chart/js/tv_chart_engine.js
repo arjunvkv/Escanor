@@ -2287,6 +2287,9 @@ export function updateExtensionSeriesRibbon(chart) {
     if (typeof syncStructuralInflectionLines === 'function') {
       syncStructuralInflectionLines(c);
     }
+    if (typeof syncBoxFulcrumAndVacuumLines === 'function') {
+      syncBoxFulcrumAndVacuumLines(c);
+    }
     return;
   }
 
@@ -2688,6 +2691,9 @@ export function updateExtensionSeriesRibbon(chart) {
 
   if (typeof syncStructuralInflectionLines === 'function') {
     syncStructuralInflectionLines(c);
+  }
+  if (typeof syncBoxFulcrumAndVacuumLines === 'function') {
+    syncBoxFulcrumAndVacuumLines(c);
   }
 }
 window.__updateExtensionSeriesRibbon = updateExtensionSeriesRibbon;
@@ -4556,8 +4562,20 @@ export function openExtensionNetworkModal(chart = null) {
       }
       toggleStructuralInflectionLines(c);
     };
-  }
   updateInflectionLinesButtonUI();
+
+  // Wire Box Fulcrum & Vacuum Lines Toggle Button
+  const toggleBoxFulcrumBtn = document.getElementById('tvToggleBoxFulcrumLinesBtn');
+  if (toggleBoxFulcrumBtn) {
+    toggleBoxFulcrumBtn.onclick = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      toggleBoxFulcrumLines(c);
+    };
+  }
+  updateBoxFulcrumButtonUI();
 
   // Wire Close Buttons & Escape key
   const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
@@ -4856,3 +4874,312 @@ export function startCandleCountdown(timeframeMinutes = 5) {
   clearInterval(window.__countdownTimerInterval);
   window.__countdownTimerInterval = setInterval(tick, 1000);
 }
+
+/**
+ * =========================================================================
+ * BOX RETEST FULCRUM & ZERO-INTEREST VACUUM ENGINE
+ * =========================================================================
+ * Calculates the exact price points inside a drawn box:
+ * 1. fulcrumPrice (Retest Inflexion Axis): Price candles repeatedly tested,
+ *    bounced off, launched from, and flipped between support and resistance.
+ * 2. vacuumPrice (Zero-Interest Line): Price with minimal dwell time and minimal
+ *    volume where large displacement candles crossed straight through without interest.
+ */
+export function computeBoxFulcrumAndVacuum(overlay, dataList) {
+  if (!overlay || !overlay.points || overlay.points.length < 2 || !dataList || dataList.length === 0) {
+    return null;
+  }
+  const validPoints = overlay.points.filter(p => p && typeof p.value === 'number' && !isNaN(p.value));
+  if (validPoints.length < 2) return null;
+
+  const values = validPoints.map(p => p.value);
+  const topPrice = Math.max(...values);
+  const bottomPrice = Math.min(...values);
+  const priceRange = topPrice - bottomPrice;
+  if (priceRange <= 0.05) return null;
+
+  const timestamps = validPoints.map(p => p.timestamp).filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
+  let leftTime = 0, rightTime = Infinity;
+  if (timestamps.length >= 2) {
+    leftTime = Math.min(...timestamps);
+    rightTime = Math.max(...timestamps);
+  } else if (timestamps.length === 1) {
+    leftTime = timestamps[0];
+    rightTime = leftTime + 30 * 60 * 1000;
+  } else {
+    return null;
+  }
+
+  const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
+  const barMs = tfMins * 60 * 1000;
+
+  // 1. Gather all bars in horizontal time window of box
+  const bars = [];
+  for (let i = 0; i < dataList.length; i++) {
+    const b = dataList[i];
+    if (!b || typeof b.timestamp !== 'number') continue;
+    if (b.timestamp + barMs < leftTime) continue;
+    if (b.timestamp > rightTime + barMs) continue;
+    bars.push(b);
+  }
+
+  if (bars.length < 2) return null;
+
+  // 2. Discretize box vertical range into fine $0.05-$0.10 steps
+  const numSteps = Math.min(80, Math.max(30, Math.round(priceRange / 0.10)));
+  const step = priceRange / numSteps;
+  const tol = Math.max(0.08, step * 1.15);
+
+  let bestFulcrumPrice = (topPrice + bottomPrice) / 2;
+  let maxFulcrumScore = -1;
+  let bestFulcrumDetails = { retests: 0, flips: 0, launchpads: 0 };
+
+  let minVacuumVolume = Infinity;
+  let bestVacuumPrice = (topPrice + bottomPrice) / 2;
+
+  // Pre-calculate candle geometries
+  const candleProps = bars.map(b => {
+    const bodyTop = Math.max(b.open, b.close);
+    const bodyBottom = Math.min(b.open, b.close);
+    const isBull = b.close >= b.open;
+    const bodySize = bodyTop - bodyBottom;
+    const fullRange = Math.max(0.01, b.high - b.low);
+    const upperWick = b.high - bodyTop;
+    const lowerWick = bodyBottom - b.low;
+    return {
+      high: b.high,
+      low: b.low,
+      open: b.open,
+      close: b.close,
+      bodyTop,
+      bodyBottom,
+      isBull,
+      bodySize,
+      fullRange,
+      upperWick,
+      lowerWick,
+      vol: b.volume || 1
+    };
+  });
+
+  for (let s = 0; s <= numSteps; s++) {
+    const p = bottomPrice + s * step;
+    let fulcrumScore = 0;
+    let retests = 0;
+    let upperRejections = 0;
+    let lowerRejections = 0;
+    let launchpads = 0;
+    let dwellVol = 0;
+    let crossingBodies = 0;
+
+    for (let i = 0; i < candleProps.length; i++) {
+      const c = candleProps[i];
+
+      // A. Upper Wick Rejection: High reached p, but closed back below p
+      if (Math.abs(c.high - p) <= tol && c.bodyTop < p - 0.04) {
+        fulcrumScore += 3.5;
+        upperRejections++;
+        retests++;
+      }
+
+      // B. Lower Wick Rejection: Low reached p, but closed back above p
+      if (Math.abs(c.low - p) <= tol && c.bodyBottom > p + 0.04) {
+        fulcrumScore += 3.5;
+        lowerRejections++;
+        retests++;
+      }
+
+      // C. Launchpad Displacement: Candle opened near p and produced large expansion body
+      if (Math.abs(c.open - p) <= tol && c.bodySize >= 0.80) {
+        fulcrumScore += 3.0;
+        launchpads++;
+      }
+
+      // D. Clustered Open / Close touch
+      if (Math.abs(c.open - p) <= tol * 0.7 || Math.abs(c.close - p) <= tol * 0.7) {
+        fulcrumScore += 1.5;
+      }
+
+      // Track dwell volume and fast crossings for Vacuum
+      if (p >= c.low && p <= c.high) {
+        const fraction = 1 / Math.max(1, Math.round(c.fullRange / step));
+        dwellVol += c.vol * fraction;
+
+        // If candle sliced straight through with large body and minimal wicks
+        if (p >= c.bodyBottom && p <= c.bodyTop && c.bodySize >= 0.80) {
+          crossingBodies++;
+        }
+      }
+    }
+
+    // Role Flips bonus: if price acted as ceiling for some bars and floor for others
+    const flips = Math.min(upperRejections, lowerRejections);
+    fulcrumScore += flips * 5.0;
+
+    if (fulcrumScore > maxFulcrumScore) {
+      maxFulcrumScore = fulcrumScore;
+      bestFulcrumPrice = p;
+      bestFulcrumDetails = { retests, flips, launchpads, score: fulcrumScore };
+    }
+
+    // Vacuum calculation (inner 75% of box)
+    const relPos = (p - bottomPrice) / priceRange;
+    if (relPos >= 0.12 && relPos <= 0.88) {
+      const adjustedDwell = dwellVol / Math.max(1, crossingBodies * 2.5);
+      if (adjustedDwell < minVacuumVolume) {
+        minVacuumVolume = adjustedDwell;
+        bestVacuumPrice = p;
+      }
+    }
+  }
+
+  // Ensure vacuum is visually distinguishable from fulcrum
+  if (Math.abs(bestVacuumPrice - bestFulcrumPrice) < 0.40) {
+    if (bestFulcrumPrice - bottomPrice > topPrice - bestFulcrumPrice) {
+      bestVacuumPrice = Math.max(bottomPrice + 0.25, bestFulcrumPrice - priceRange * 0.38);
+    } else {
+      bestVacuumPrice = Math.min(topPrice - 0.25, bestFulcrumPrice + priceRange * 0.38);
+    }
+  }
+
+  return {
+    fulcrumPrice: Math.round(bestFulcrumPrice * 100) / 100,
+    vacuumPrice: Math.round(bestVacuumPrice * 100) / 100,
+    retestCount: bestFulcrumDetails.retests,
+    flipCount: bestFulcrumDetails.flips,
+    topPrice,
+    bottomPrice,
+    leftTime,
+    rightTime
+  };
+}
+window.__computeBoxFulcrumAndVacuum = computeBoxFulcrumAndVacuum;
+
+/**
+ * Synchronizes Retest Fulcrum (Cyan Solid) and Vacuum Void (Amber Dashed) lines
+ * across the chart for all drawn boxes.
+ */
+export function syncBoxFulcrumAndVacuumLines(chart) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  if (!c || typeof c.getOverlays !== 'function') return;
+
+  const isEnabled = !!(typeof window !== 'undefined' && window.__boxFulcrumLinesEnabled);
+
+  // Clean up any existing fulcrum / vacuum overlays
+  const existing = c.getOverlays() || [];
+  existing.forEach(o => {
+    if (o.id && (o.id.startsWith('box_fulcrum_') || o.id.startsWith('box_vacuum_'))) {
+      try { c.removeOverlay({ id: o.id }); } catch (_) {}
+    }
+  });
+
+  if (!isEnabled) return;
+
+  const dataList = c.getDataList?.() || [];
+  if (!dataList || dataList.length === 0) return;
+
+  const rects = existing.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+  if (rects.length === 0) return;
+
+  const lastBar = dataList[dataList.length - 1];
+  const lastTs = lastBar?.timestamp || Date.now();
+
+  rects.forEach((rect, idx) => {
+    const boxNum = idx + 1;
+    const res = computeBoxFulcrumAndVacuum(rect, dataList);
+    if (!res) return;
+
+    // 1. Retest Fulcrum Line (Solid Neon Cyan Line)
+    const fulcrumId = `box_fulcrum_${rect.id || idx}`;
+    try {
+      c.createOverlay({
+        id: fulcrumId,
+        name: 'structuralLevel',
+        points: [{ timestamp: lastTs, value: res.fulcrumPrice }],
+        lock: true,
+        extendData: {
+          key: fulcrumId,
+          title: `★ B${boxNum} RETEST AXIS ($${res.fulcrumPrice.toFixed(2)}) — ${res.retestCount}x Bounce/Flip`,
+          yLabel: `B${boxNum} FULCRUM $${res.fulcrumPrice.toFixed(2)}`,
+          color: '#00f0ff',
+          lineStyle: 'solid',
+          lineSize: 2.0,
+          opacity: 0.95
+        }
+      });
+    } catch (e) {
+      console.warn('[syncBoxFulcrumAndVacuumLines] Fulcrum create error:', e);
+    }
+
+    // 2. Zero-Interest Vacuum Line (Dashed Amber/Orange Line)
+    const vacuumId = `box_vacuum_${rect.id || idx}`;
+    try {
+      c.createOverlay({
+        id: vacuumId,
+        name: 'structuralLevel',
+        points: [{ timestamp: lastTs, value: res.vacuumPrice }],
+        lock: true,
+        extendData: {
+          key: vacuumId,
+          title: `░ B${boxNum} VACUUM VOID ($${res.vacuumPrice.toFixed(2)}) — Zero Interest / Fast Transit`,
+          yLabel: `B${boxNum} VACUUM $${res.vacuumPrice.toFixed(2)}`,
+          color: '#f59e0b',
+          lineStyle: 'dashed',
+          lineSize: 1.5,
+          opacity: 0.85
+        }
+      });
+    } catch (e) {
+      console.warn('[syncBoxFulcrumAndVacuumLines] Vacuum create error:', e);
+    }
+  });
+}
+window.__syncBoxFulcrumAndVacuumLines = syncBoxFulcrumAndVacuumLines;
+
+/**
+ * Updates UI of the single Toggle Box Fulcrum & Vacuum Lines button.
+ */
+export function updateBoxFulcrumButtonUI() {
+  const btn = document.getElementById('tvToggleBoxFulcrumLinesBtn');
+  const btnText = document.getElementById('tvToggleBoxFulcrumLinesBtnText');
+  const isActive = !!(typeof window !== 'undefined' && window.__boxFulcrumLinesEnabled);
+
+  if (btn) {
+    if (isActive) {
+      btn.classList.add('active');
+      btn.style.background = 'rgba(239, 68, 68, 0.16)';
+      btn.style.border = '1px solid #ef4444';
+      btn.style.color = '#ef4444';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'rgba(0, 240, 255, 0.12)';
+      btn.style.border = '1px solid #00f0ff';
+      btn.style.color = '#00f0ff';
+    }
+  }
+
+  if (btnText) {
+    btnText.textContent = isActive ? 'HIDE FULCRUM & VACUUM' : 'SHOW FULCRUM & VACUUM';
+  }
+}
+window.__updateBoxFulcrumButtonUI = updateBoxFulcrumButtonUI;
+
+/**
+ * Single button handler that toggles BOTH the Retest Fulcrum and the Vacuum Void lines.
+ */
+export function toggleBoxFulcrumLines(chart, forceState = null) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  if (typeof window !== 'undefined') {
+    const curr = !!window.__boxFulcrumLinesEnabled;
+    window.__boxFulcrumLinesEnabled = (forceState !== null) ? !!forceState : !curr;
+  }
+  syncBoxFulcrumAndVacuumLines(c);
+  updateBoxFulcrumButtonUI();
+
+  const isNowActive = !!(typeof window !== 'undefined' && window.__boxFulcrumLinesEnabled);
+  if (typeof showChartToast === 'function') {
+    showChartToast(isNowActive ? '🎯 Box Fulcrum & Vacuum Lines Plotted' : '🎯 Box Fulcrum & Vacuum Lines Hidden');
+  }
+}
+window.__toggleBoxFulcrumLines = toggleBoxFulcrumLines;
+
