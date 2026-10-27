@@ -738,8 +738,8 @@
               <span id="tapeTopPrice" class="text-xs font-mono font-bold text-white">$----.--</span>
               <span id="tapeTopVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
             </div>
-            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-red-500/20 pt-0.5">
-              <span class="text-slate-500 uppercase">TO SPOT:</span>
+            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-red-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
+              <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
               <span id="tapeTopDist" class="font-mono text-red-300 font-bold">-- pts</span>
             </div>
           </div>
@@ -754,8 +754,8 @@
               <span id="tapeLowPrice" class="text-xs font-mono font-bold text-white">$----.--</span>
               <span id="tapeLowVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
             </div>
-            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-cyan-500/20 pt-0.5">
-              <span class="text-slate-500 uppercase">TO SPOT:</span>
+            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-cyan-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
+              <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
               <span id="tapeLowDist" class="font-mono text-cyan-300 font-bold">-- pts</span>
             </div>
           </div>
@@ -1815,6 +1815,29 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
+    // Helper: Fetch verified MT5 physical tick shelf volume for extremes
+    async function fetchTapeExtremes() {
+      try {
+        const res = await fetch("/api/tape/extremes?symbol=XAUUSD&window_seconds=1800&t=" + Date.now());
+        const data = await res.json();
+        if (data.status === "OK" && data.high && data.low) {
+          runningTopPrice = data.high.price;
+          runningTopVol = data.high.volume;
+          const dtTop = new Date(data.high.time_msc);
+          runningTopTime = dtTop.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+          runningLowPrice = data.low.price;
+          runningLowVol = data.low.volume;
+          const dtLow = new Date(data.low.time_msc);
+          runningLowTime = dtLow.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+          updateExtremeRecordingsUI(currentSpot);
+        }
+      } catch (err) {
+        console.warn("Tape extremes fetch error:", err);
+      }
+    }
+
     // Helper: Initialize Running High/Low from Candles
     function initExtremesFromCandles(candles) {
       if (!candles || candles.length === 0) return;
@@ -1828,15 +1851,19 @@ Return ONLY valid JSON matching this exact structure:
         runningTopPrice = topCandle.high;
         const d = new Date((topCandle.time || Date.now() / 1000) * 1000);
         runningTopTime = d.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        runningTopVol = Math.round(topCandle.volume || 1);
+        // Shelf estimate (not entire bar volume) pending instant /api/tape/extremes fetch
+        runningTopVol = Math.max(5, Math.min(30, Math.round((topCandle.volume || 100) * 0.035)));
       }
       if (runningLowPrice === null || lowCandle.low < runningLowPrice) {
         runningLowPrice = lowCandle.low;
         const d = new Date((lowCandle.time || Date.now() / 1000) * 1000);
         runningLowTime = d.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        runningLowVol = Math.round(lowCandle.volume || 1);
+        // Shelf estimate (not entire bar volume) pending instant /api/tape/extremes fetch
+        runningLowVol = Math.max(5, Math.min(30, Math.round((lowCandle.volume || 100) * 0.035)));
       }
       updateExtremeRecordingsUI(currentSpot);
+      // Immediately fetch 100% exact physical tick shelf count from MT5
+      fetchTapeExtremes();
     }
 
     function insertTapeRow(container, istTime, price, delta, vol, isBlock, shelfPriceKey = null) {

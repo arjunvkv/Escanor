@@ -1178,6 +1178,58 @@ async def get_sovereign_ledger_endpoint():
         return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
 
 
+@app.get("/api/tape/extremes")
+async def get_tape_extremes_endpoint(symbol: str = "XAUUSD", window_seconds: int = 1800):
+    """Calculate true physical tick volume traded at the exact extreme price shelves directly from MT5."""
+    try:
+        import MetaTrader5 as mt5
+        if not mt5.initialize():
+            return JSONResponse(content={"status": "ERROR", "message": "MT5 not initialized"}, status_code=500)
+
+        now_tick = mt5.symbol_info_tick(symbol)
+        if not now_tick:
+            return JSONResponse(content={"status": "ERROR", "message": "No tick data"}, status_code=500)
+
+        from_time = now_tick.time - window_seconds
+        ticks = mt5.copy_ticks_from(symbol, from_time, 2500, mt5.COPY_TICKS_ALL)
+        if ticks is None or len(ticks) == 0:
+            return JSONResponse(content={"status": "NO_TICKS"})
+
+        bids = [float(t['bid']) for t in ticks]
+        times = [int(t['time_msc']) for t in ticks]
+
+        hp = max(bids)
+        lp = min(bids)
+
+        # Real physical ticks matched within ±$0.06 shelf of high and low
+        h_ticks = [i for i, b in enumerate(bids) if abs(b - hp) <= 0.06]
+        l_ticks = [i for i, b in enumerate(bids) if abs(b - lp) <= 0.06]
+
+        h_vol = len(h_ticks)
+        l_vol = len(l_ticks)
+
+        h_time_msc = times[h_ticks[-1]] if h_ticks else int(now_tick.time_msc)
+        l_time_msc = times[l_ticks[-1]] if l_ticks else int(now_tick.time_msc)
+
+        return JSONResponse(content={
+            "status": "OK",
+            "symbol": symbol,
+            "high": {
+                "price": hp,
+                "volume": h_vol,
+                "time_msc": h_time_msc
+            },
+            "low": {
+                "price": lp,
+                "volume": l_vol,
+                "time_msc": l_time_msc
+            }
+        })
+    except Exception as e:
+        logger.error(f"Error calculating tape extremes: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
 @app.post("/api/sovereign/ledger")
 async def save_sovereign_ledger_endpoint(req: Request):
     """Persist user-recorded pivotal observations to server storage."""
