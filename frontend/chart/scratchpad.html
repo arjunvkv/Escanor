@@ -194,8 +194,8 @@
     }
     .tick-row-block {
       border-left: 2px solid #f59e0b;
-      background: rgba(245, 158, 11, 0.10);
-      box-shadow: inset 0 0 8px rgba(245, 158, 11, 0.2);
+      background: rgba(245, 158, 11, 0.12);
+      box-shadow: inset 0 0 8px rgba(245, 158, 11, 0.25);
     }
   </style>
 </head>
@@ -273,13 +273,13 @@
   <!-- TAB NAVIGATION BAR (FUTURISTIC SCI-FI DECALS)                             -->
   <!-- ========================================================================= -->
   <div class="w-full max-w-[1380px] flex items-center gap-2 border-b border-slate-800 pb-2 mb-4 overflow-x-hidden">
-    <button id="tabScan" class="hud-tab-btn active" onclick="switchSection('scan')">
+    <button id="tabScan" class="hud-tab-btn" onclick="switchSection('scan')">
       01 // SOVEREIGN SCAN
     </button>
     <button id="tabLedger" class="hud-tab-btn" onclick="switchSection('ledger')">
       02 // DUAL LEDGER
     </button>
-    <button id="tabTape" class="hud-tab-btn" onclick="switchSection('tape')">
+    <button id="tabTape" class="hud-tab-btn active" onclick="switchSection('tape')">
       03 // LIVE TAPE & OSCILLOSCOPE
     </button>
     <button id="tabMacro" class="hud-tab-btn" onclick="switchSection('macro')">
@@ -290,7 +290,7 @@
   <!-- ========================================================================= -->
   <!-- TAB 01: SOVEREIGN MONEY MARKET SCAN (TABLE & LIVE MACRO REALITY)          -->
   <!-- ========================================================================= -->
-  <main id="sectionScan" class="w-full max-w-[1380px] flex flex-col gap-4">
+  <main id="sectionScan" class="w-full max-w-[1380px] flex flex-col gap-4 hidden">
     
     <!-- Top Action Card with Ingest Prompt Generator -->
     <div class="hud-panel rounded-lg p-3.5 flex flex-wrap items-center justify-between gap-3 border border-slate-800">
@@ -648,9 +648,9 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- TAB 03: LIVE TAPE OSCILLOSCOPE & VERTICAL TIME & SALES (NO REPLAYS)       -->
+  <!-- TAB 03: LIVE TAPE OSCILLOSCOPE & LIVERMORE PROBING CONSOLE                -->
   <!-- ========================================================================= -->
-  <main id="sectionTape" class="w-full max-w-[1380px] flex flex-col gap-4 hidden">
+  <main id="sectionTape" class="w-full max-w-[1380px] flex flex-col gap-4">
     
     <!-- Top Telemetry & Control Bar -->
     <div class="hud-panel rounded-lg p-3 flex flex-wrap items-center justify-between gap-3 border border-slate-800">
@@ -680,24 +680,28 @@
       </div>
     </div>
 
-    <!-- Side-by-Side Flex Layout: Small Vertical Tape Log + Full Width Chart -->
+    <!-- Side-by-Side Flex Layout: Small Vertical Tape Log + Full Width Chart (MATCHED HEIGHT) -->
     <div class="flex flex-col lg:flex-row gap-4 items-stretch">
       
-      <!-- LEFT SIDE PANEL: VERTICAL TIME & SALES (CONSUMES SMALL HORIZONTAL SPACE) -->
-      <div class="w-full lg:w-[270px] lg:min-w-[260px] lg:max-w-[290px] hud-panel rounded-lg border border-slate-800 flex flex-col shadow-xl">
+      <!-- LEFT SIDE PANEL: VERTICAL TIME & SALES (CONSUMES SMALL HORIZONTAL SPACE, SMART THROTTLED) -->
+      <div class="w-full lg:w-[270px] lg:min-w-[260px] lg:max-w-[290px] hud-panel rounded-lg border border-slate-800 flex flex-col shadow-xl h-[540px]">
         
-        <!-- Panel Header with Real CVD & Velocity -->
-        <div class="p-2.5 bg-black/80 border-b border-slate-800 flex flex-col gap-1.5">
+        <!-- Panel Header with Real CVD, Velocity & Filter Controls -->
+        <div class="p-2.5 bg-black/80 border-b border-slate-800 flex flex-col gap-1.5 flex-shrink-0">
           <div class="flex items-center justify-between">
             <span class="text-xs font-bold text-cyan-400 uppercase tracking-wider font-hud-tech flex items-center gap-1.5">
               <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
-              LIVE TIME & SALES
+              TIME & SALES
             </span>
-            <span id="tapeTickCountBadge" class="text-[9.5px] text-slate-500 font-mono">0 TICKS</span>
+            <!-- Tape Freeze Toggle -->
+            <button id="btnFreezeTape" onclick="toggleTapeFreeze()" class="px-2 py-0.5 rounded bg-black/80 hover:bg-slate-800 border border-slate-700 text-[9.5px] font-hud-tech text-slate-300 cursor-pointer flex items-center gap-1">
+              <span id="freezeIcon">⏸</span>
+              <span id="freezeText">PAUSE</span>
+            </button>
           </div>
           
           <!-- CVD & Velocity Micro-Telemetry -->
-          <div class="grid grid-cols-2 gap-1.5 pt-1 text-[10px] font-hud-tech">
+          <div class="grid grid-cols-2 gap-1.5 pt-0.5 text-[10px] font-hud-tech">
             <div class="bg-black/60 px-2 py-1 rounded border border-slate-800 flex flex-col">
               <span class="text-slate-500 text-[8.5px]">1M CVD DELTA</span>
               <span id="tapeCvdDisplay" class="font-bold text-emerald-400">-223</span>
@@ -707,37 +711,50 @@
               <span id="tapeVelocityDisplay" class="font-bold text-cyan-300">583 t/m</span>
             </div>
           </div>
+
+          <!-- Tape Reading Mode Selector (Livermore Anti-River Filtering) -->
+          <div class="grid grid-cols-3 gap-1 pt-1 text-[9px] font-hud-tech font-bold">
+            <button id="filterBtnSmart" onclick="setTapeFilterMode('smart')" class="px-1 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 cursor-pointer text-center">
+              🎯 PIVOTAL
+            </button>
+            <button id="filterBtnBlocks" onclick="setTapeFilterMode('blocks')" class="px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center">
+              🧱 BLOCKS
+            </button>
+            <button id="filterBtnRaw" onclick="setTapeFilterMode('raw')" class="px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center">
+              ⚡ RAW
+            </button>
+          </div>
         </div>
 
         <!-- Column Header -->
-        <div class="grid grid-cols-4 px-2 py-1 bg-slate-950 text-[9px] font-bold text-slate-400 uppercase font-hud-tech border-b border-slate-800">
+        <div class="grid grid-cols-4 px-2 py-1 bg-slate-950 text-[9px] font-bold text-slate-400 uppercase font-hud-tech border-b border-slate-800 flex-shrink-0">
           <div>TIME</div>
           <div class="text-right">PRICE</div>
           <div class="text-right">DELTA</div>
           <div class="text-right">VOL</div>
         </div>
 
-        <!-- Vertically Scrolling Tick Stream Container (Theme Scrollbar) -->
-        <div id="verticalTapeContainer" class="flex-1 max-h-[520px] overflow-y-auto overflow-x-hidden flex flex-col divide-y divide-slate-800/40 font-mono text-[11px]">
+        <!-- Vertically Scrolling Tick Stream Container (Theme Scrollbar, No Gap) -->
+        <div id="verticalTapeContainer" class="flex-1 overflow-y-auto overflow-x-hidden flex flex-col divide-y divide-slate-800/40 font-mono text-[11px]">
           <!-- Real-time tick items appended dynamically here -->
           <div class="p-3 text-center text-slate-600 text-xs font-hud-tech">
-            Waiting for live tick stream...
+            Waiting for pivotal tape prints...
           </div>
         </div>
 
         <!-- Panel Footer -->
-        <div class="p-2 bg-black/90 border-t border-slate-800 text-[9.5px] text-slate-500 font-hud-tech flex justify-between">
-          <span>STREAM: <strong class="text-emerald-400">ACTIVE</strong></span>
+        <div class="p-2 bg-black/90 border-t border-slate-800 text-[9.5px] text-slate-500 font-hud-tech flex justify-between flex-shrink-0">
+          <span>STREAM: <strong id="tapeStreamStatus" class="text-emerald-400">ACTIVE</strong></span>
           <span id="tapeLastTickTime">--:--:-- IST</span>
         </div>
 
       </div>
 
-      <!-- RIGHT MAIN AREA: REAL-TIME OSCILLOSCOPE PRICE CHART (CONSUMES ALL REMAINING SPACE) -->
-      <div class="flex-1 hud-panel rounded-lg border border-slate-800 flex flex-col overflow-hidden shadow-2xl">
+      <!-- RIGHT MAIN AREA: REAL-TIME OSCILLOSCOPE PRICE CHART (ZERO VOLUME BARS, ZERO DEAD SPACE) -->
+      <div class="flex-1 hud-panel rounded-lg border border-slate-800 flex flex-col overflow-hidden shadow-2xl h-[540px]">
         
         <!-- Chart HUD Coordinate Bar -->
-        <div class="px-3 py-2 bg-black/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-hud-tech">
+        <div class="px-3 py-2 bg-black/90 border-b border-slate-800 flex flex-wrap items-center justify-between gap-3 text-xs font-hud-tech flex-shrink-0">
           <div class="flex items-center gap-3">
             <span class="text-slate-400">SPOT: <strong id="chartSpotPrice" class="text-white font-mono font-bold">$4,026.50</strong></span>
             <span class="text-slate-700">|</span>
@@ -753,8 +770,8 @@
           </div>
         </div>
 
-        <!-- Canvas Chart Container -->
-        <div class="relative w-full h-[470px] bg-black/95">
+        <!-- Canvas Chart Container: FLEX-1 FILLS ENTIRE SPACE DOWN TO STRIP (ZERO EMPTY BLACK GAP) -->
+        <div class="relative w-full flex-1 bg-black/95 min-h-[440px]">
           <canvas id="liveOscilloscopeCanvas" class="w-full h-full block"></canvas>
           
           <!-- Live Laser Coordinate Floating Badge -->
@@ -763,15 +780,149 @@
           </div>
         </div>
 
-        <!-- Sub-Bar: Volume & Session Activity Strip -->
-        <div class="p-2 bg-black/95 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-hud-tech text-slate-400">
+        <!-- Sub-Bar: Clean status strip flush at bottom -->
+        <div class="p-2 bg-black/95 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-hud-tech text-slate-400 flex-shrink-0">
           <div class="flex items-center gap-4">
             <span>BARS LOADED: <strong id="chartBarsCount" class="text-white">60</strong></span>
             <span>HIGH EXTREME: <strong id="chartWindowHigh" class="text-red-400">--</strong></span>
             <span>LOW EXTREME: <strong id="chartWindowLow" class="text-cyan-400">--</strong></span>
           </div>
           <div>
-            <span class="text-emerald-400">LIVE FEED SYNCHRONIZED</span>
+            <span class="text-emerald-400">PURE PRICE ACTION TAPE</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- LIVERMORE PIVOTAL PROBING & TESTING CONSOLE (AUTHENTIC 3-TRANCHE RISK DESK) -->
+    <!-- ========================================================================= -->
+    <div class="hud-panel rounded-lg p-4 border border-cyan-500/30 shadow-2xl flex flex-col gap-3">
+      
+      <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-2.5 gap-2">
+        <div class="flex items-center gap-2.5">
+          <div class="w-2 h-2 rounded-full bg-cyan-400"></div>
+          <h3 class="text-xs font-bold text-white uppercase tracking-wider font-hud-tech">
+            HUD :: 03 LIVERMORE PIVOTAL PROBING & POSITION TESTING PROTOCOL
+          </h3>
+          <span class="px-2 py-0.5 rounded text-[9.5px] font-bold bg-red-950/70 text-red-300 border border-red-500/40 uppercase font-hud-tech">
+            AUTHENTIC TAPE DISCIPLINE // ZERO GAMBLING
+          </span>
+        </div>
+
+        <!-- Live Target Lock Badge -->
+        <div id="probeTargetLockBadge" class="text-xs font-hud-tech font-bold text-cyan-300 flex items-center gap-2">
+          <span>TARGET ANCHOR:</span>
+          <span id="probeAnchorName" class="text-white">Current Day High (CDH)</span>
+          <span id="probeAnchorPrice" class="text-red-400 font-mono font-extrabold">$4,037.72</span>
+          <span id="probeAnchorDist" class="text-slate-400">(-$3.51)</span>
+        </div>
+      </div>
+
+      <!-- 3-Column Interactive Testing Matrix -->
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 font-hud-tech text-xs">
+        
+        <!-- Column 1: Live Tape Inflexion Verdict -->
+        <div class="bg-black/60 p-3 rounded border border-slate-800 flex flex-col justify-between">
+          <div>
+            <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1.5">
+              01 // LIVE TAPE INFLEXION VERDICT
+            </span>
+            <div id="probeTapeVerdictBadge" class="p-2 rounded bg-red-950/40 border border-red-500/40 text-red-300 font-bold text-xs mb-2 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-red-500"></span>
+              <span id="probeTapeVerdictText">ABSORPTION WALL CANDIDATE</span>
+            </div>
+            <p id="probeTapeDeductionText" class="text-[11px] text-slate-400 leading-relaxed">
+              Volume clustering near pivotal boundary. Price stalling on raw tape volume. High probability of institutional capping order. Look for initial 20% feeler probe.
+            </p>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 mt-2 text-[10px] text-slate-500 flex justify-between">
+            <span>VERDICT CONFIDENCE:</span>
+            <strong id="probeConfidence" class="text-cyan-400">HIGH (85%)</strong>
+          </div>
+        </div>
+
+        <!-- Column 2: Authentic Livermore 3-Tranche Geometry -->
+        <div class="bg-black/60 p-3 rounded border border-slate-800 flex flex-col justify-between">
+          <div>
+            <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1.5">
+              02 // 3-TRANCHE PROBING GEOMETRY
+            </span>
+            
+            <div class="space-y-1.5 text-[11px]">
+              <!-- Tranche 1: Feeler -->
+              <div class="p-1.5 rounded bg-cyan-950/40 border border-cyan-500/30 flex justify-between items-center text-cyan-200">
+                <div>
+                  <strong class="text-cyan-400">TRANCHE 1: 20% FEELER PROBE</strong>
+                  <div class="text-[9.5px] text-slate-400">Tight $1.50 tripwire stop. Scratch if wrong.</div>
+                </div>
+                <span class="px-1.5 py-0.5 rounded bg-cyan-600/30 text-cyan-300 font-bold text-[10px]">0.10 LOT</span>
+              </div>
+
+              <!-- Tranche 2: Confirm -->
+              <div class="p-1.5 rounded bg-black/40 border border-slate-800 flex justify-between items-center text-slate-400">
+                <div>
+                  <strong class="text-slate-300">TRANCHE 2: 30% CONFIRMATION ADD</strong>
+                  <div class="text-[9.5px] text-slate-500">Only on sub-pivot breakdown + move SL to BE.</div>
+                </div>
+                <span class="text-slate-500 font-bold text-[10px]">0.15 LOT</span>
+              </div>
+
+              <!-- Tranche 3: Campaign -->
+              <div class="p-1.5 rounded bg-black/40 border border-slate-800 flex justify-between items-center text-slate-400">
+                <div>
+                  <strong class="text-slate-300">TRANCHE 3: 50% CAMPAIGN EXPAND</strong>
+                  <div class="text-[9.5px] text-slate-500">Only after full market structure validation.</div>
+                </div>
+                <span class="text-slate-500 font-bold text-[10px]">0.25 LOT</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-800/80 mt-2 text-[10px] text-slate-500">
+            RULE: <span class="text-slate-300">Never average a loser. Never enter full size at once.</span>
+          </div>
+        </div>
+
+        <!-- Column 3: Actionable Arming & One-Click Telegram Proposal -->
+        <div class="bg-black/60 p-3 rounded border border-red-500/30 flex flex-col justify-between">
+          <div>
+            <span class="text-[10px] text-slate-500 uppercase tracking-widest font-bold block mb-1.5">
+              03 // ACTIONABLE FEELER PROBE ARMING
+            </span>
+            
+            <div class="space-y-1 text-[11px] font-mono">
+              <div class="flex justify-between text-slate-400">
+                <span>DIRECTION:</span>
+                <strong id="probeSide" class="text-red-400 font-bold">SELL FEELER PROBE</strong>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>ENTRY COORDINATE:</span>
+                <strong id="probeEntryPrice" class="text-white font-bold">$4,037.50</strong>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>TRIPWIRE STOP LOSS:</span>
+                <strong id="probeSlPrice" class="text-red-400 font-bold">$4,039.20 (+$1.70)</strong>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>ESTIMATED FEELER RISK:</span>
+                <strong id="probeRiskDollars" class="text-emerald-400 font-bold">-$17.00 (SCRATCH)</strong>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>PRIMARY TARGET (TP):</span>
+                <strong id="probeTpPrice" class="text-cyan-300 font-bold">$4,025.50 (ASH Floor)</strong>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-2 mt-2">
+            <button id="btnDispatchProbe" onclick="dispatchLivermoreFeelerAlert()" class="w-full py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded text-xs tracking-wider font-hud-tech flex items-center justify-center gap-2 shadow-[0_0_12px_rgba(255,42,75,0.4)] cursor-pointer">
+              <span id="probeAlertIcon">📲</span>
+              <span id="probeAlertText">DISPATCH FEELER PROPOSAL TO TELEGRAM</span>
+            </button>
           </div>
         </div>
 
@@ -1046,6 +1197,12 @@ Return ONLY valid JSON matching this exact structure:
     let ws = null;
     let lastTickTime = Date.now();
 
+    // Tape Stream Settings (Authentic Livermore Tape Reading)
+    let tapeFilterMode = 'smart'; // 'smart' (>= $0.08 or block), 'blocks' (>= 35v), 'raw'
+    let isTapeFrozen = false;
+    let lastLoggedPrice = 0.0;
+    let lastLoggedTimeSec = 0;
+
     // User Alert Preferences
     let alertPrefs = {
       telegram: true,
@@ -1069,7 +1226,7 @@ Return ONLY valid JSON matching this exact structure:
       } else if (sec === 'tape') {
         document.getElementById("sectionTape").classList.remove("hidden");
         document.getElementById("tabTape").classList.add("active");
-        renderLiveOscilloscopeChart();
+        setTimeout(renderLiveOscilloscopeChart, 50);
       } else if (sec === 'macro') {
         document.getElementById("sectionMacro").classList.remove("hidden");
         document.getElementById("tabMacro").classList.add("active");
@@ -1161,9 +1318,116 @@ Return ONLY valid JSON matching this exact structure:
           bannerText.innerHTML = "RADAR CLEAR: ALL ANCHORS > ±$5.00";
         }
       }
+
+      // Update Livermore Feeler Console with nearest anchor
+      updateLivermoreProbeConsole(spot, nearestAnchor, nearestDist);
     }
 
-    // 4. Telegram Alert Dispatcher
+    // 4. Update Livermore Feeler Console
+    function updateLivermoreProbeConsole(spot, anchor, dist) {
+      if (!anchor) return;
+
+      document.getElementById("probeAnchorName").textContent = anchor.name;
+      document.getElementById("probeAnchorPrice").textContent = `$${anchor.price.toFixed(2)}`;
+      const sign = spot >= anchor.price ? "+" : "-";
+      document.getElementById("probeAnchorDist").textContent = `(${sign}$${dist.toFixed(2)})`;
+
+      const isHighSide = spot >= anchor.price || anchor.name.includes("High") || anchor.name.includes("ASH") || anchor.name.includes("PDH") || anchor.name.includes("CDH");
+      
+      const sideEl = document.getElementById("probeSide");
+      const entryEl = document.getElementById("probeEntryPrice");
+      const slEl = document.getElementById("probeSlPrice");
+      const riskEl = document.getElementById("probeRiskDollars");
+      const tpEl = document.getElementById("probeTpPrice");
+      const verdictText = document.getElementById("probeTapeVerdictText");
+      const verdictBadge = document.getElementById("probeTapeVerdictBadge");
+
+      if (isHighSide) {
+        sideEl.textContent = "SELL FEELER PROBE (20%)";
+        sideEl.className = "text-red-400 font-bold";
+        entryEl.textContent = `$${anchor.price.toFixed(2)}`;
+        const sl = anchor.price + 1.70;
+        slEl.textContent = `$${sl.toFixed(2)} (+$1.70 Wall)`;
+        riskEl.textContent = "-$17.00 (SCRATCH LOSS)";
+        tpEl.textContent = `$${(anchor.price - 12.00).toFixed(2)} (Pivotal Floor)`;
+
+        if (dist <= 1.50) {
+          verdictBadge.className = "p-2 rounded bg-red-950/60 border border-red-500 text-red-200 font-bold text-xs mb-2 flex items-center gap-2 glow-red";
+          verdictText.textContent = "🛡️ PIVOTAL CEILING WALL TEST ACTIVE";
+        } else {
+          verdictBadge.className = "p-2 rounded bg-black/60 border border-slate-800 text-slate-300 font-bold text-xs mb-2 flex items-center gap-2";
+          verdictText.textContent = "APPROACHING PIVOTAL CEILING";
+        }
+      } else {
+        sideEl.textContent = "BUY FEELER PROBE (20%)";
+        sideEl.className = "text-cyan-400 font-bold";
+        entryEl.textContent = `$${anchor.price.toFixed(2)}`;
+        const sl = anchor.price - 1.70;
+        slEl.textContent = `$${sl.toFixed(2)} (-$1.70 Floor)`;
+        riskEl.textContent = "-$17.00 (SCRATCH LOSS)";
+        tpEl.textContent = `$${(anchor.price + 12.00).toFixed(2)} (Pivotal Ceiling)`;
+
+        if (dist <= 1.50) {
+          verdictBadge.className = "p-2 rounded bg-cyan-950/60 border border-cyan-500 text-cyan-200 font-bold text-xs mb-2 flex items-center gap-2 glow-cyan";
+          verdictText.textContent = "⚓ DEMAND FLOOR TEST ACTIVE";
+        } else {
+          verdictBadge.className = "p-2 rounded bg-black/60 border border-slate-800 text-slate-300 font-bold text-xs mb-2 flex items-center gap-2";
+          verdictText.textContent = "APPROACHING PIVOTAL FLOOR";
+        }
+      }
+    }
+
+    // Dispatch Livermore Feeler Proposal to Telegram
+    async function dispatchLivermoreFeelerAlert() {
+      const btn = document.getElementById("btnDispatchProbe");
+      const icon = document.getElementById("probeAlertIcon");
+      const text = document.getElementById("probeAlertText");
+
+      icon.textContent = "⏳";
+      text.textContent = "DISPATCHING...";
+
+      try {
+        const anchorName = document.getElementById("probeAnchorName").textContent;
+        const anchorPrice = document.getElementById("probeAnchorPrice").textContent;
+        const side = document.getElementById("probeSide").textContent;
+        const entry = document.getElementById("probeEntryPrice").textContent;
+        const sl = document.getElementById("probeSlPrice").textContent;
+        const tp = document.getElementById("probeTpPrice").textContent;
+
+        const isSell = side.includes("SELL");
+        const orderType = isSell ? "SELL_LIMIT" : "BUY_LIMIT";
+
+        const res = await fetch("/api/sovereign/alert_proximity", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            level_name: `LIVERMORE TRANCHE 1 FEELER: ${anchorName}`,
+            price: parseFloat(anchorPrice.replace("$", "")),
+            spot: currentSpot,
+            distance: currentSpot - parseFloat(anchorPrice.replace("$", "")),
+            note: `${side} | Entry: ${entry} | SL: ${sl} | TP: ${tp} | Risk: -$17 (Scratch) | Sizing: 0.10 lot (20% Feeler). If stopped, scratch loss. If validated, add Tranche 2.`
+          })
+        });
+
+        icon.textContent = "✓";
+        text.textContent = "PROPOSAL DISPATCHED TO TELEGRAM!";
+        btn.classList.replace("bg-red-600", "bg-emerald-600");
+        setTimeout(() => {
+          icon.textContent = "📲";
+          text.textContent = "DISPATCH FEELER PROPOSAL TO TELEGRAM";
+          btn.classList.replace("bg-emerald-600", "bg-red-600");
+        }, 3000);
+      } catch (err) {
+        icon.textContent = "✕";
+        text.textContent = "DISPATCH FAILED";
+        setTimeout(() => {
+          icon.textContent = "📲";
+          text.textContent = "DISPATCH FEELER PROPOSAL TO TELEGRAM";
+        }, 3000);
+      }
+    }
+
+    // 5. Telegram Alert Dispatcher
     async function dispatchTelegramProximityAlert(anchor, spot, dist) {
       try {
         await fetch("/api/sovereign/alert_proximity", {
@@ -1182,7 +1446,7 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // 5. Fetch MT5 Settled Non-Lying Anchors
+    // 6. Fetch MT5 Settled Non-Lying Anchors
     async function fetchAnchorsFromMT5() {
       const refreshIcon = document.getElementById("refreshIcon");
       if (refreshIcon) refreshIcon.classList.add("animate-spin");
@@ -1294,7 +1558,7 @@ Return ONLY valid JSON matching this exact structure:
       if (woVal) document.getElementById("targetWoDisplay").textContent = `$${woVal.toFixed(2)}`;
     }
 
-    // 6. User Ledger Operations (In-Table Direct Writing & Server Persistence)
+    // 7. User Ledger Operations (In-Table Direct Writing & Server Persistence)
     async function loadUserLedgerFromServer() {
       try {
         const res = await fetch("/api/sovereign/ledger?t=" + Date.now());
@@ -1423,43 +1687,91 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // 7. Live Time & Sales Vertical Tick Streamer
+    // 8. Live Time & Sales Tape (Authentic Livermore Tape Filtering - Anti-River)
+    function toggleTapeFreeze() {
+      isTapeFrozen = !isTapeFrozen;
+      const btn = document.getElementById("btnFreezeTape");
+      const icon = document.getElementById("freezeIcon");
+      const text = document.getElementById("freezeText");
+      const streamStatus = document.getElementById("tapeStreamStatus");
+
+      if (isTapeFrozen) {
+        icon.textContent = "▶";
+        text.textContent = "RESUME";
+        btn.classList.add("bg-amber-950", "border-amber-500", "text-amber-300");
+        streamStatus.textContent = "FROZEN";
+        streamStatus.className = "text-amber-400 font-bold";
+      } else {
+        icon.textContent = "⏸";
+        text.textContent = "PAUSE";
+        btn.classList.remove("bg-amber-950", "border-amber-500", "text-amber-300");
+        streamStatus.textContent = "ACTIVE";
+        streamStatus.className = "text-emerald-400 font-bold";
+      }
+    }
+
+    function setTapeFilterMode(mode) {
+      tapeFilterMode = mode;
+      
+      const bSmart = document.getElementById("filterBtnSmart");
+      const bBlocks = document.getElementById("filterBtnBlocks");
+      const bRaw = document.getElementById("filterBtnRaw");
+
+      const activeClass = "px-1 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 cursor-pointer text-center";
+      const inactiveClass = "px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center";
+
+      bSmart.className = mode === 'smart' ? activeClass : inactiveClass;
+      bBlocks.className = mode === 'blocks' ? activeClass : inactiveClass;
+      bRaw.className = mode === 'raw' ? activeClass : inactiveClass;
+    }
+
     function appendLiveTapeTick(tick) {
+      if (isTapeFrozen) return; // Frozen by user to inspect prints
+
       const container = document.getElementById("verticalTapeContainer");
       if (!container) return;
 
       const bid = parseFloat(tick.bid);
-      const prevBid = recentTicks.length > 0 ? recentTicks[0].bid : bid;
+      const prevBid = lastLoggedPrice > 0 ? lastLoggedPrice : bid;
       const delta = roundTo2(bid - prevBid);
+      const absDelta = Math.abs(delta);
+      const nowSec = Date.now() / 1000;
+      
+      const vol = tick.volume || (Math.floor(Math.random() * 25) + 5);
+      const isBlock = vol >= 35 || absDelta >= 0.35;
+
+      // Anti-River Filter Logic (Livermore Authentic Tape Reader)
+      if (tapeFilterMode === 'smart') {
+        // In smart mode: only log when price changes by at least $0.08 OR is a block trade OR at a PP test!
+        const isNearAnchor = currentAnchors.some(a => Math.abs(bid - a.price) <= 1.50);
+        if (absDelta < 0.08 && !isBlock && !isNearAnchor && (nowSec - lastLoggedTimeSec < 0.6)) {
+          // If within 600ms and sub-penny jitter, accumulate volume on top row instead of spamming rows!
+          if (container.firstElementChild && container.firstElementChild.lastElementChild) {
+            const volEl = container.firstElementChild.lastElementChild;
+            const curV = parseInt(volEl.textContent) || 0;
+            volEl.textContent = `${curV + vol}v`;
+          }
+          return;
+        }
+      } else if (tapeFilterMode === 'blocks') {
+        if (!isBlock) return;
+      }
+
+      lastLoggedPrice = bid;
+      lastLoggedTimeSec = nowSec;
+
       const isUp = delta > 0;
       const isDown = delta < 0;
-      const isFlat = delta === 0;
 
       const now = new Date(tick.time_msc || Date.now());
       const istTime = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      
-      const vol = tick.volume || (Math.floor(Math.random() * 25) + 5);
-      const isBlock = vol > 80 || Math.abs(delta) >= 0.50;
 
-      const tickObj = {
-        time: istTime,
-        bid: bid,
-        delta: delta,
-        vol: vol,
-        isUp: isUp,
-        isDown: isDown,
-        isBlock: isBlock
-      };
-
-      recentTicks.unshift(tickObj);
-      if (recentTicks.length > 80) recentTicks.pop();
-
-      // Clear empty state text
+      // Clear initial placeholder
       if (container.firstElementChild && container.firstElementChild.textContent.includes("Waiting")) {
         container.innerHTML = "";
       }
 
-      // Prepend new row
+      // Prepend discrete print row
       const row = document.createElement("div");
       let rowClass = "grid grid-cols-4 px-2 py-1 items-center ";
       if (isBlock) rowClass += "tick-row-block ";
@@ -1474,23 +1786,22 @@ Return ONLY valid JSON matching this exact structure:
       row.innerHTML = `
         <div class="text-[9.5px] text-slate-400">${istTime}</div>
         <div class="text-right font-bold text-white">$${bid.toFixed(2)}</div>
-        <div class="text-right text-[10px] font-bold ${deltaColor}">${deltaSign}${Math.abs(delta).toFixed(2)}</div>
-        <div class="text-right text-[9.5px] text-slate-400">${vol}v</div>
+        <div class="text-right text-[10px] font-bold ${deltaColor}">${deltaSign}${absDelta.toFixed(2)}</div>
+        <div class="text-right text-[9.5px] text-slate-300 font-bold">${vol}v</div>
       `;
 
       container.insertBefore(row, container.firstChild);
-      while (container.children.length > 60) {
+      while (container.children.length > 50) {
         container.removeChild(container.lastChild);
       }
 
-      document.getElementById("tapeTickCountBadge").textContent = `${recentTicks.length} TICKS`;
       document.getElementById("tapeLastTickTime").textContent = `${istTime} IST`;
 
       // Also update canvas chart with new tick
       updateLiveChartWithTick(bid);
     }
 
-    // 8. Live Real-Time Canvas Oscilloscope Chart
+    // 9. Live Real-Time Canvas Oscilloscope Chart (ZERO GREEN/RED CANDLES, ZERO DEAD SPACE)
     async function fetchChartCandles(tf) {
       try {
         const count = 60;
@@ -1527,7 +1838,6 @@ Return ONLY valid JSON matching this exact structure:
       last.close = price;
       if (price > last.high) last.high = price;
       if (price < last.low) last.low = price;
-      last.volume = (last.volume || 100) + 1;
       renderLiveOscilloscopeChart();
     }
 
@@ -1548,15 +1858,13 @@ Return ONLY valid JSON matching this exact structure:
       // Find min & max price
       let minP = Infinity;
       let maxP = -Infinity;
-      let maxVol = 0;
 
       chartCandles.forEach(c => {
         if (c.low < minP) minP = c.low;
         if (c.high > maxP) maxP = c.high;
-        if (c.volume > maxVol) maxVol = c.volume;
       });
 
-      // Factor in anchors that are close
+      // Factor in anchors that are in view
       currentAnchors.forEach(a => {
         if (a.price >= minP - 8 && a.price <= maxP + 8) {
           if (a.price < minP) minP = a.price;
@@ -1564,7 +1872,7 @@ Return ONLY valid JSON matching this exact structure:
         }
       });
 
-      const padP = (maxP - minP) * 0.12 || 2.0;
+      const padP = (maxP - minP) * 0.10 || 2.0;
       minP -= padP;
       maxP += padP;
       const priceRange = maxP - minP;
@@ -1572,7 +1880,8 @@ Return ONLY valid JSON matching this exact structure:
       document.getElementById("chartWindowHigh").textContent = `$${maxP.toFixed(2)}`;
       document.getElementById("chartWindowLow").textContent = `$${minP.toFixed(2)}`;
 
-      const chartH = h - 55; // reserve bottom for volume
+      // PURE PRICE ACTION: FULL HEIGHT UTILIZATION (NO VOLUME BARS AT BOTTOM, NO EMPTY SPACE)
+      const chartH = h - 20; 
       const chartW = w - 65; // reserve right for price axis
 
       const getY = (val) => chartH - ((val - minP) / priceRange) * chartH;
@@ -1611,9 +1920,10 @@ Return ONLY valid JSON matching this exact structure:
           const isAsh = a.name.includes("ASH");
           const isAsl = a.name.includes("ASL");
           const isPdh = a.name.includes("PDH");
+          const isCdh = a.name.includes("CDH");
 
           ctx.lineWidth = 1.2;
-          ctx.strokeStyle = isPdh || isAsh ? "rgba(255, 42, 75, 0.55)" : "rgba(0, 240, 255, 0.55)";
+          ctx.strokeStyle = isPdh || isAsh || isCdh ? "rgba(255, 42, 75, 0.55)" : "rgba(0, 240, 255, 0.55)";
           ctx.setLineDash([4, 4]);
           ctx.beginPath();
           ctx.moveTo(0, y);
@@ -1621,9 +1931,9 @@ Return ONLY valid JSON matching this exact structure:
           ctx.stroke();
 
           // Anchor Label Pill
-          ctx.fillStyle = isPdh || isAsh ? "rgba(255, 42, 75, 0.2)" : "rgba(0, 240, 255, 0.2)";
+          ctx.fillStyle = isPdh || isAsh || isCdh ? "rgba(255, 42, 75, 0.2)" : "rgba(0, 240, 255, 0.2)";
           ctx.fillRect(8, y - 9, 85, 16);
-          ctx.fillStyle = isPdh || isAsh ? "#ff2a4b" : "#00f0ff";
+          ctx.fillStyle = isPdh || isAsh || isCdh ? "#ff2a4b" : "#00f0ff";
           ctx.font = "8.5px JetBrains Mono";
           ctx.fillText(`${a.name.split(" ")[0]} $${a.price.toFixed(2)}`, 12, y + 2.5);
         }
@@ -1678,20 +1988,7 @@ Return ONLY valid JSON matching this exact structure:
         ctx.stroke();
       }
 
-      // 5. Draw Volume Bars at Bottom
-      const volAreaH = 45;
-      const volBaseY = h - 6;
-      const barW = Math.max(2, (chartW / chartCandles.length) * 0.65);
-
-      chartCandles.forEach((c, i) => {
-        const bx = getX(i) - barW / 2;
-        const vH = maxVol > 0 ? (c.volume / maxVol) * volAreaH : 4;
-        const by = volBaseY - vH;
-        ctx.fillStyle = c.close >= c.open ? "rgba(16, 185, 129, 0.35)" : "rgba(255, 42, 75, 0.35)";
-        ctx.fillRect(bx, by, barW, vH);
-      });
-
-      // 6. Live Spot Laser Line & Point
+      // 5. Live Spot Laser Line & Point
       const lastPt = pts[pts.length - 1];
       const spotY = getY(currentSpot);
 
@@ -1724,7 +2021,7 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // 9. Update Live Spot in UI
+    // 10. Update Live Spot in UI
     function updateLiveSpotDisplay(spot) {
       currentSpot = spot;
       document.getElementById("headerSpotPrice").textContent = `$${spot.toFixed(2)}`;
@@ -1733,7 +2030,7 @@ Return ONLY valid JSON matching this exact structure:
       evaluateProximityPerimeter(spot);
     }
 
-    // 10. WebSocket Live Stream Connection
+    // 11. WebSocket Live Stream Connection
     function connectWebSocket() {
       const wsUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.hostname + ":5056";
       const wsFallbackUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws";
@@ -1802,7 +2099,7 @@ Return ONLY valid JSON matching this exact structure:
       };
     }
 
-    // 11. Copy Prompt Modal & Clipboard
+    // 12. Copy Prompt Modal & Clipboard
     function togglePromptModal() {
       const modal = document.getElementById("promptModal");
       modal.classList.toggle("hidden");
@@ -1855,7 +2152,7 @@ Return ONLY valid JSON matching this exact structure:
       return Math.round((num + Number.EPSILON) * 100) / 100;
     }
 
-    // 12. Clock & Timers
+    // 13. Clock & Timers
     function updateClockAndCountdown() {
       const now = new Date();
       const istStr = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit' }) + " IST";
@@ -1879,7 +2176,7 @@ Return ONLY valid JSON matching this exact structure:
       renderLiveOscilloscopeChart();
     });
 
-    // 13. Initialization on DOM Loaded
+    // 14. Initialization on DOM Loaded
     document.addEventListener("DOMContentLoaded", () => {
       fetchAnchorsFromMT5();
       loadUserLedgerFromServer();
