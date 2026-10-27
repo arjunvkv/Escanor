@@ -82,30 +82,22 @@ One of the greatest retail pitfalls is confusing **low-probability breakout chas
 
 ---
 
-## 5. THE 4 HEAVYWEIGHT REALITY BUFFS (NO LIARS / 100% REALITY FILTER)
+## 5. SOVEREIGN REALITY EXECUTION FRAMEWORK (ZERO SYNTHETIC LIARS)
 
-To filter out fake retail setups and ensure every trade either resolves in profit or a clean breakeven with zero losses, 4 institutional buffs are integrated:
+To filter out speculative retail dogmas and synthetic artifacts (such as arbitrary $25 option pins or 50% FVG CE midpoints that price ignores or sweeps against), execution is anchored exclusively to **real physical auction structure and canonical liquidity pools**:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   THE 4 REALITY BUFFS FRAMEWORK                                 │
+│                              SOVEREIGN AUCTION REALITY FRAMEWORK                                │
 ├─────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ 1. 🎯 FVG 50% CE FILAMENT:                                                                      │
-│    • Consequent Encroachment (CE) of the impulsive imbalance wave ($4,015.25).                  │
-│    • Exact coordinate where drying volume retests fair-value before continuation.               │
+│ 1. 📏 CANONICAL MULTI-TIMEFRAME BENCHMARKS:                                                     │
+│    • Previous Day High ($4,029.85) & Previous Day Low ($3,988.71) reference tracks.             │
+│    • Identifies external liquidity pools where institutions hunt resting retail liquidity.       │
 │                                                                                                 │
-│ 2. 📏 CANONICAL MULTI-TIMEFRAME BENCHMARKS:                                                     │
-│    • Previous Day High ($4,034.07) & Previous Day Low ($3,975.58) reference tracks.             │
-│    • Identifies external liquidity pools where institutions hunt retail stop runs.              │
-│                                                                                                 │
-│ 3. ◆ $25 ROUND INSTITUTIONAL OPTIONS GAMMA PINS:                                                │
-│    • Major psychological and option open interest strikes ($4,000.00, $4,025.00, $4,050.00).    │
-│    • Market makers pin price around these coordinates during expiration cycles.                 │
-│                                                                                                 │
-│ 4. 🛡️ TWO-TIER ZERO-LOSS SCALE-OUT PROTOCOL:                                                    │
-│    • Tier 1: Bank 50% lot size at TP1 (+7 to +8 pts) ➔ Advance SL to Entry +0.50 pt (BE Lock).  │
+│ 2. 🛡️ TWO-TIER ZERO-LOSS SCALE-OUT PROTOCOL:                                                    │
+│    • Tier 1: Bank 50% lot size at TP1 (+6 to +8 pts) ➔ Advance SL to Entry +0.50 pt (BE Lock).  │
 │    • Tier 2: Let remaining 50% ride to terminal runner target (TP2).                            │
-│    • Math Guarantee: Trade is 100% risk-free the instant TP1 hits. Net loss = $0.00.           │
+│    • Mathematical Guarantee: Trade is 100% risk-free the instant TP1 hits. Net loss = $0.00.    │
 └─────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -119,13 +111,11 @@ To ensure the candle tape remains clean and unburdened, all features are indepen
 | :--- | :--- | :--- | :--- |
 | `#tvSidebarPathsToggleBtn` | Fork Vector (⚡) | Electric Violet (`#d946ef`) | Causal Trade Path Vectors & Trigger Rays (Paths A, B, C) |
 | `#tvSidebarCardsToggleBtn` | HUD Card Panel (🗂️) | Sky Blue (`#38bdf8`) | Strategy HUD Comment Boxes (Cards A, B, C) |
-| `#tvSidebarFvgBtn` | Crosshair / Target (🎯) | Cyan (`#00e5ff`) | 50% FVG CE Imbalance Filament ($4,015.25) |
-| `#tvSidebarBenchmarksBtn` | Dual Level Track (📏) | Purple & Emerald | Canonical Benchmarks (PDH $4,034 / PDL $3,975) |
-| `#tvSidebarGammaBtn` | Glowing Diamond (◆) | Solar Amber (`#fbbf24`) | $25 Institutional Options Gamma Strike Pins |
+| `#tvSidebarBenchmarksBtn` | Dual Level Track (📏) | Purple & Emerald | Canonical Benchmarks (PDH / PDL Reference Tracks) |
 | `#tvSidebarEvaluateBtn` | Gold Sovereign Shield | Gold Amber Gradient | Trigger AI Sovereign Structural Evaluation |
 | `#tvSidebarHudPill` | Lightning Bolt Pill | Charcoal Pill | Line Trading Touch-Trigger Execution HUD |
 
-> **State Persistence**: Every button persists its toggle state in `localStorage` (`tv_sovereign_paths_visible`, `tv_cards_visible`, `tv_fvg_visible`, `tv_benchmarks_visible`, `tv_gamma_visible`).
+> **State Persistence**: Every button persists its toggle state in `localStorage` (`tv_sovereign_paths_visible`, `tv_cards_visible`, `tv_benchmarks_visible`).
 
 ---
 
@@ -141,13 +131,13 @@ Cards avoid verbose fluff and display pure, high-density actionable telemetry in
 
 ```
 ┌────────────────────────────────────────────────────────┐
-│ PATH B: POC / FVG RELOAD (ZERO-LOSS LONG)  [TP1: $4,023.50] │
+│ PATH B: VALUE AREA POC RELOAD (ZERO-LOSS) [TP1: $4,025]│
 ├────────────────────────────────────────────────────────┤
-│ Entry: $4,018.00 POC / $4,015.25 FVG CE (Dry Vol)      │
-│ SL: $4,013.75 (1.5 pt) | TP1: $4,023.50 (50% + BE Lock)│
-│ TP2: $4,026.50 (Coil Top Runner)                       │
+│ Entry: $4,018.50 POC (Absorption Confirmation)         │
+│ SL: $4,015.00 (3.5 pt) | TP1: $4,025.00 (50% + BE Lock)│
+│ TP2: $4,029.85 (PDH Liquidity Runner)                  │
 ├────────────────────────────────────────────────────────┤
-│ ENTRY: $4,018.00 | SL: $4,013.75   1:7+ RR ASYMMETRY 🛡️ │
+│ ENTRY: $4,018.50 | SL: $4,015.00   1:5+ RR ASYMMETRY 🛡️ │
 └────────────────────────────────────────────────────────┘
 ```
 

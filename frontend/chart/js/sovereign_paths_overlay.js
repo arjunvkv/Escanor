@@ -19,24 +19,18 @@ let svgElement = null;
 let groupA = null;
 let groupB = null;
 let groupC = null;
-let groupFvgCe = null;
 let groupBenchmarks = null;
-let groupGammaPins = null;
 let cardA = null;
 let cardB = null;
 let cardC = null;
 let toggleBtn = null;
 let btnCards = null;
-let btnFvg = null;
 let btnBenchmarks = null;
-let btnGamma = null;
 let chartInstance = null;
 let currentEvalData = null;
 let isOverlayVisible = true;
 let isCardsVisible = true;
-let isFvgVisible = true;
 let isBenchmarksVisible = true;
-let isGammaVisible = true;
 let isDraggingChart = false;
 let rafId = null;
 
@@ -50,17 +44,13 @@ export function initSovereignPathsOverlay(chart) {
   groupA = document.getElementById('svgGroupPathA');
   groupB = document.getElementById('svgGroupPathB');
   groupC = document.getElementById('svgGroupPathC');
-  groupFvgCe = document.getElementById('svgGroupFvgCe');
   groupBenchmarks = document.getElementById('svgGroupBenchmarks');
-  groupGammaPins = document.getElementById('svgGroupGammaPins');
   cardA = document.getElementById('hudCardPathA');
   cardB = document.getElementById('hudCardPathB');
   cardC = document.getElementById('hudCardPathC');
   toggleBtn = document.getElementById('tvSidebarPathsToggleBtn');
   btnCards = document.getElementById('tvSidebarCardsToggleBtn');
-  btnFvg = document.getElementById('tvSidebarFvgBtn');
   btnBenchmarks = document.getElementById('tvSidebarBenchmarksBtn');
-  btnGamma = document.getElementById('tvSidebarGammaBtn');
 
   // Load saved visibility states from localStorage (defaults: true)
   const savedState = localStorage.getItem('tv_sovereign_paths_visible');
@@ -69,14 +59,8 @@ export function initSovereignPathsOverlay(chart) {
   const savedCards = localStorage.getItem('tv_cards_visible');
   isCardsVisible = (savedCards !== null) ? (savedCards === 'true') : true;
 
-  const savedFvg = localStorage.getItem('tv_fvg_visible');
-  isFvgVisible = (savedFvg !== null) ? (savedFvg === 'true') : true;
-
   const savedBenchmarks = localStorage.getItem('tv_benchmarks_visible');
   isBenchmarksVisible = (savedBenchmarks !== null) ? (savedBenchmarks === 'true') : true;
-
-  const savedGamma = localStorage.getItem('tv_gamma_visible');
-  isGammaVisible = (savedGamma !== null) ? (savedGamma === 'true') : true;
 
   applyVisibilityState();
 
@@ -135,19 +119,6 @@ export function initSovereignPathsOverlay(chart) {
     });
   }
 
-  if (btnFvg) {
-    btnFvg.classList.toggle('active', isFvgVisible);
-    btnFvg.addEventListener('click', (e) => {
-      e.stopPropagation();
-      isFvgVisible = !isFvgVisible;
-      localStorage.setItem('tv_fvg_visible', isFvgVisible ? 'true' : 'false');
-      btnFvg.classList.toggle('active', isFvgVisible);
-      applyVisibilityState();
-      showToast(isFvgVisible ? '🎯 50% FVG CE Filament: ON ($4,015.25)' : '50% FVG CE Filament: OFF');
-      requestAnimationFrame(renderSovereignPaths);
-    });
-  }
-
   if (btnBenchmarks) {
     btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
     btnBenchmarks.addEventListener('click', (e) => {
@@ -157,19 +128,6 @@ export function initSovereignPathsOverlay(chart) {
       btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
       applyVisibilityState();
       showToast(isBenchmarksVisible ? '📏 Canonical Benchmarks (PDH/PDL): ON' : 'Canonical Benchmarks: OFF');
-      requestAnimationFrame(renderSovereignPaths);
-    });
-  }
-
-  if (btnGamma) {
-    btnGamma.classList.toggle('active', isGammaVisible);
-    btnGamma.addEventListener('click', (e) => {
-      e.stopPropagation();
-      isGammaVisible = !isGammaVisible;
-      localStorage.setItem('tv_gamma_visible', isGammaVisible ? 'true' : 'false');
-      btnGamma.classList.toggle('active', isGammaVisible);
-      applyVisibilityState();
-      showToast(isGammaVisible ? '◆ $25 Gamma Option Strike Pins: ON' : '$25 Gamma Pins: OFF');
       requestAnimationFrame(renderSovereignPaths);
     });
   }
@@ -339,7 +297,7 @@ function setupChartInteractionListeners() {
   const chartContainer = document.getElementById('klineChart') || document.querySelector('.tv-chart-viewport');
   if (!chartContainer) return;
 
-  const isAnyActive = () => isOverlayVisible || isFvgVisible || isBenchmarksVisible || isGammaVisible;
+  const isAnyActive = () => isOverlayVisible || isBenchmarksVisible;
 
   const startDrag = () => {
     isDraggingChart = true;
@@ -398,7 +356,7 @@ function setupChartInteractionListeners() {
  * Toggle visibility of SVG canvas and HUD cards
  */
 function applyVisibilityState() {
-  const isAnyLayerVisible = isOverlayVisible || isCardsVisible || isFvgVisible || isBenchmarksVisible || isGammaVisible;
+  const isAnyLayerVisible = isOverlayVisible || isCardsVisible || isBenchmarksVisible;
 
   if (toggleBtn) {
     if (isOverlayVisible) {
@@ -411,9 +369,7 @@ function applyVisibilityState() {
   }
 
   if (btnCards) btnCards.classList.toggle('active', isCardsVisible);
-  if (btnFvg) btnFvg.classList.toggle('active', isFvgVisible);
   if (btnBenchmarks) btnBenchmarks.classList.toggle('active', isBenchmarksVisible);
-  if (btnGamma) btnGamma.classList.toggle('active', isGammaVisible);
 
   if (overlayContainer) {
     if (isAnyLayerVisible) {
@@ -867,7 +823,7 @@ export function renderSovereignPaths() {
           </span>
         </div>
         <div style="font-size: 11px; line-height: 1.45; color: #cbd5e1; font-weight: 500;">
-          ${c.body || 'Entry: $4,018.00 POC / $4,015.25 FVG CE (Dry Vol)'}
+          ${c.body || 'Entry: $4,018.00 POC (Dry Vol)'}
         </div>
         <div style="margin-top: 6px; border-top: 1px solid rgba(245,158,11,0.25); display: flex; align-items: center; justify-content: space-between; font-size: 9.5px; font-family: monospace; color: #94a3b8; padding-top: 5px; gap: 8px;">
           <span class="hud-pill-amber" style="white-space: nowrap;">${c.footer_left || 'ENTRY: $4,018.00 | SL: $4,013.75'}</span>
@@ -1016,46 +972,9 @@ export function renderSovereignPaths() {
   }
 
   // -------------------------------------------------------------------------
-  // 4. RENDER REALITY BUFF FILAMENTS (FVG 50% CE, BENCHMARKS, GAMMA PINS)
+  // 4. RENDER CANONICAL BENCHMARKS (PDH / PDL)
   // -------------------------------------------------------------------------
-  renderFvgCe(width, height);
   renderBenchmarks(width, height);
-  renderGammaPins(width, height);
-}
-
-/**
- * Render FVG 50% CE Magnet Level ($4,015.25)
- */
-function renderFvgCe(width, height) {
-  if (!groupFvgCe) return;
-  if (!isFvgVisible) {
-    groupFvgCe.innerHTML = '';
-    return;
-  }
-  const fvgPrice = currentEvalData?.fvg_ce || 4015.25;
-  const ptY = priceToPixelY(chartInstance, fvgPrice);
-  if (ptY === null || ptY < 0 || ptY > height) {
-    groupFvgCe.innerHTML = '';
-    return;
-  }
-  let startX = 65;
-  try {
-    const ptFvg = pointToPixel(chartInstance, 1793035200000, fvgPrice);
-    if (ptFvg && typeof ptFvg.x === 'number') {
-      startX = Math.max(65, Math.min(width - 120, ptFvg.x));
-    }
-  } catch (_) {}
-
-  const endX = width - 75;
-  if (startX >= endX) {
-    startX = 65;
-  }
-  groupFvgCe.innerHTML = `
-    <line x1="${startX}" y1="${ptY}" x2="${endX}" y2="${ptY}" stroke="#00e5ff" stroke-width="1.1" stroke-dasharray="4 3" opacity="0.80" />
-    <circle cx="${startX}" cy="${ptY}" r="3" fill="#00e5ff" opacity="0.9" />
-    <circle cx="${endX}" cy="${ptY}" r="3" fill="#00e5ff" opacity="0.9" />
-    <polygon points="${endX},${ptY} ${endX - 6},${ptY - 4} ${endX - 12},${ptY} ${endX - 6},${ptY + 4}" fill="#00e5ff" opacity="0.95" />
-  `;
 }
 
 /**
@@ -1111,57 +1030,4 @@ function renderBenchmarks(width, height) {
   }
 
   groupBenchmarks.innerHTML = markup;
-}
-
-/**
- * Render $25 Options Gamma Pins ($3,975, $4,000, $4,025, $4,050...)
- */
-function renderGammaPins(width, height) {
-  if (!groupGammaPins) return;
-  if (!isGammaVisible) {
-    groupGammaPins.innerHTML = '';
-    return;
-  }
-
-  const baselineStrikes = [3950.0, 3975.0, 4000.0, 4025.0, 4050.0, 4075.0];
-  const activeStrikes = new Set(baselineStrikes);
-
-  try {
-    let topPt = (typeof chartInstance.convertFromPixel === 'function')
-      ? chartInstance.convertFromPixel({ x: width * 0.5, y: 10 })
-      : null;
-    if (Array.isArray(topPt) && topPt.length > 0) topPt = topPt[0];
-
-    let bottomPt = (typeof chartInstance.convertFromPixel === 'function')
-      ? chartInstance.convertFromPixel({ x: width * 0.5, y: height - 10 })
-      : null;
-    if (Array.isArray(bottomPt) && bottomPt.length > 0) bottomPt = bottomPt[0];
-
-    if (topPt && bottomPt && typeof topPt.value === 'number' && typeof bottomPt.value === 'number') {
-      const minP = Math.min(topPt.value, bottomPt.value);
-      const maxP = Math.max(topPt.value, bottomPt.value);
-      const startS = Math.floor(minP / 25) * 25;
-      const endS = Math.ceil(maxP / 25) * 25;
-      for (let s = startS; s <= endS; s += 25) {
-        activeStrikes.add(s);
-      }
-    }
-  } catch (_) {}
-
-  let markup = '';
-  const startX = 65;
-  const endX = width - 75;
-
-  activeStrikes.forEach(strike => {
-    const y = priceToPixelY(chartInstance, strike);
-    if (y !== null && y >= 0 && y <= height) {
-      markup += `
-        <line x1="${startX}" y1="${y}" x2="${endX}" y2="${y}" stroke="#fbbf24" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.45" />
-        <circle cx="${startX}" cy="${y}" r="2" fill="#fbbf24" opacity="0.8" />
-        <polygon points="${endX},${y} ${endX - 5},${y - 4} ${endX - 10},${y} ${endX - 5},${y + 4}" fill="#fbbf24" opacity="0.85" />
-      `;
-    }
-  });
-
-  groupGammaPins.innerHTML = markup;
 }

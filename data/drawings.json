@@ -1,202 +1,57 @@
 {
   "XAUUSD": [
     {
-      "id": "box_phase_1_flush",
+      "id": "overlay_1793076653990_1",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793030100000,
-          "value": 4021,
-          "dataIndex": 1825
+          "timestamp": 1793079300000,
+          "value": 4025.9947028073852,
+          "dataIndex": 1976
         },
         {
-          "timestamp": 1793033700000,
-          "value": 4021,
-          "dataIndex": 1837
+          "timestamp": 1793085600000,
+          "value": 4025.9947028073852,
+          "dataIndex": 1997
         },
         {
-          "timestamp": 1793033700000,
-          "value": 3988.5,
-          "dataIndex": 1837
+          "timestamp": 1793085600000,
+          "value": 4005.631932967686,
+          "dataIndex": 1997
         },
         {
-          "timestamp": 1793030100000,
-          "value": 3988.5,
-          "dataIndex": 1825
+          "timestamp": 1793079300000,
+          "value": 4005.631932967686,
+          "dataIndex": 1976
         },
         {
-          "timestamp": 1793030100000,
-          "value": 4004.75,
-          "dataIndex": 1825
+          "timestamp": 1793079300000,
+          "value": 4015.813317887536,
+          "dataIndex": 1976
         },
         {
-          "timestamp": 1793033700000,
-          "value": 4004.75,
-          "dataIndex": 1837
+          "timestamp": 1793085600000,
+          "value": 4015.813317887536,
+          "dataIndex": 1997
         }
       ],
       "styles": {
         "rect": {
-          "color": "rgba(244, 63, 94, 0.03)",
-          "borderColor": "rgba(244, 63, 94, 0.65)",
+          "borderColor": "rgba(236, 64, 122, 0.40)",
           "borderSize": 1
         }
       },
-      "zLevel": 10,
-      "extendData": {
-        "label": "Phase 1: Liquidation Flush & Absorption ($3,988.50 - $4,021.00)"
-      }
-    },
-    {
-      "id": "box_phase_2_impulse",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793034000000,
-          "value": 4027,
-          "dataIndex": 1838
-        },
-        {
-          "timestamp": 1793037300000,
-          "value": 4027,
-          "dataIndex": 1849
-        },
-        {
-          "timestamp": 1793037300000,
-          "value": 3992.5,
-          "dataIndex": 1849
-        },
-        {
-          "timestamp": 1793034000000,
-          "value": 3992.5,
-          "dataIndex": 1838
-        },
-        {
-          "timestamp": 1793034000000,
-          "value": 4009.75,
-          "dataIndex": 1838
-        },
-        {
-          "timestamp": 1793037300000,
-          "value": 4009.75,
-          "dataIndex": 1849
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(0, 229, 255, 0.03)",
-          "borderColor": "rgba(0, 229, 255, 0.65)",
-          "borderSize": 1
-        }
-      },
-      "zLevel": 23,
-      "extendData": {
-        "label": "Phase 2: Initiative Squeeze & Impulse ($3,992.50 - $4,027.00)"
-      }
-    },
-    {
-      "id": "box_phase_4_coil",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793039700000,
-          "value": 4023.5,
-          "dataIndex": 1857
-        },
-        {
-          "timestamp": 1793044800000,
-          "value": 4023.5,
-          "dataIndex": 1874
-        },
-        {
-          "timestamp": 1793044800000,
-          "value": 4014.5,
-          "dataIndex": 1874
-        },
-        {
-          "timestamp": 1793039700000,
-          "value": 4014.5,
-          "dataIndex": 1857
-        },
-        {
-          "timestamp": 1793039700000,
-          "value": 4019,
-          "dataIndex": 1857
-        },
-        {
-          "timestamp": 1793044800000,
-          "value": 4019,
-          "dataIndex": 1874
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(168, 85, 247, 0.03)",
-          "borderColor": "rgba(168, 85, 247, 0.65)",
-          "borderSize": 1
-        }
-      },
-      "zLevel": 35,
-      "extendData": {
-        "label": "Phase 4: Value Compression Coil ($4,014.50 - $4,023.50)"
-      }
-    },
-    {
-      "id": "box_phase_3_climax",
-      "name": "rect",
-      "points": [
-        {
-          "timestamp": 1793037600000,
-          "value": 4026.75,
-          "dataIndex": 1850
-        },
-        {
-          "timestamp": 1793039400000,
-          "value": 4026.75,
-          "dataIndex": 1856
-        },
-        {
-          "timestamp": 1793039400000,
-          "value": 4015.5,
-          "dataIndex": 1856
-        },
-        {
-          "timestamp": 1793037600000,
-          "value": 4015.5,
-          "dataIndex": 1850
-        },
-        {
-          "timestamp": 1793037600000,
-          "value": 4021.125,
-          "dataIndex": 1850
-        },
-        {
-          "timestamp": 1793039400000,
-          "value": 4021.125,
-          "dataIndex": 1856
-        }
-      ],
-      "styles": {
-        "rect": {
-          "color": "rgba(251, 191, 36, 0.03)",
-          "borderColor": "rgba(251, 191, 36, 0.65)",
-          "borderSize": 1
-        }
-      },
-      "zLevel": 48,
-      "extendData": {
-        "label": "Phase 3: Climax Ceiling Test & Rejection ($4,015.50 - $4,026.75)"
-      }
+      "zLevel": 100,
+      "extendData": {}
     }
   ],
   "XAUUSD_EVALUATION": {
     "enabled": true,
     "last_updated": "2026-10-27 07:30:00 UTC",
     "anchor_timestamp": 1793085600000,
-    "market_context": "AUCTION MATRIX SNIPER: -73.5% EVR Vacuum Acceleration into $4,025.00 Gamma Pin",
+    "market_context": "AUCTION MATRIX SNIPER: -73.5% EVR Vacuum Acceleration into $4,025.00 Resistance",
     "pdh": 4029.85,
     "pdl": 3988.71,
-    "fvg_ce": 4015.65,
     "paths": [
       {
         "id": "path_a",
@@ -209,7 +64,7 @@
         "trigger_level": 4025.0,
         "trigger_start_time": 1793085600000,
         "trigger_end_time": 1793091000000,
-        "trigger_label": "ENTRY: $4,024.50 (PIN SWEEP REJECT)",
+        "trigger_label": "ENTRY: $4,024.50 (SWEEP REJECT)",
         "target_level": 4018.0,
         "target_start_time": 1793086200000,
         "target_end_time": 1793091000000,
@@ -229,7 +84,7 @@
         "card": {
           "title": "PATH A: CEILING SWEEP FADE (ZERO-LOSS SHORT)",
           "badge": "TP1: $4,018.00 | BE LOCK",
-          "body": "<strong>Trigger:</strong> Sweep $4,025.53 \u2794 M5 Close &lt; $4,024.50<br><strong>SL:</strong> $4,027.00 (2.5 pt) | <strong>TP1:</strong> $4,018.00 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,015.65 (50% FVG CE Runner)",
+          "body": "<strong>Trigger:</strong> Sweep $4,025.53 \u2794 M5 Close &lt; $4,024.50<br><strong>SL:</strong> $4,027.00 (2.5 pt) | <strong>TP1:</strong> $4,018.00 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,015.00 (Value Area Low Runner)",
           "footer_left": "ENTRY: $4,024.50 | SL: $4,027.00",
           "footer_right": "0-LOSS PROTOCOL \ud83d\udee1\ufe0f",
           "position": "top-right"
@@ -237,7 +92,7 @@
       },
       {
         "id": "path_b",
-        "name": "Path B: Value Area POC / FVG Reload (Zero-Loss Long)",
+        "name": "Path B: Value Area POC Reload (Zero-Loss Long)",
         "story_key": "BaseRetest",
         "theme": "amber",
         "color": "#fbbf24",
@@ -251,7 +106,7 @@
           "start_time": 1793085600000,
           "end_time": 1793091000000,
           "top": 4019.5,
-          "bottom": 4015.65
+          "bottom": 4015.00
         },
         "vector": {
           "from_time": 1793086200000,
@@ -260,9 +115,9 @@
           "to_price": 4029.85
         },
         "card": {
-          "title": "PATH B: POC / FVG RELOAD (ZERO-LOSS LONG)",
+          "title": "PATH B: VALUE AREA POC RELOAD (ZERO-LOSS LONG)",
           "badge": "TP1: $4,025.00 | BE LOCK",
-          "body": "<strong>Entry:</strong> $4,018.50 POC / $4,015.65 FVG CE (Absorption)<br><strong>SL:</strong> $4,015.00 (3.5 pt) | <strong>TP1:</strong> $4,025.00 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,029.85 (PDH Liquidity Runner)",
+          "body": "<strong>Entry:</strong> $4,018.50 POC (Absorption)<br><strong>SL:</strong> $4,015.00 (3.5 pt) | <strong>TP1:</strong> $4,025.00 (50% Bank + BE Lock)<br><strong>TP2:</strong> $4,029.85 (PDH Liquidity Runner)",
           "footer_left": "ENTRY: $4,018.50 | SL: $4,015.00",
           "footer_right": "1:5+ RR ASYMMETRY \ud83d\udee1\ufe0f",
           "position": "bottom-left"
@@ -279,7 +134,7 @@
         "tripwire_level": 4014.5,
         "tripwire_start_time": 1793085600000,
         "tripwire_end_time": 1793091000000,
-        "tripwire_label": "TRIPWIRE: $4,014.50 (FVG CE BREAK)",
+        "tripwire_label": "TRIPWIRE: $4,014.50 (VAL BREAK)",
         "target_level": 4008.0,
         "target_start_time": 1793086800000,
         "target_end_time": 1793091000000,
