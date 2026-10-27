@@ -294,11 +294,12 @@ export function renderVpocOverlay() {
       </linearGradient>
     </defs>
 
-    <!-- Thin Vertical Guide Line through Selected Candle -->
+    <!-- Vertical Column Scanner Beam over selected candle -->
     ${candleX >= 0 && candleX <= width ? `
-      <line x1="${candleX}" y1="5" x2="${candleX}" y2="${height - 5}" stroke="${d.color}" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.65" />
+      <rect x="${candleX - 10}" y="10" width="20" height="${height - 20}" fill="${d.color}" fill-opacity="0.07" rx="3" />
+      <line x1="${candleX}" y1="10" x2="${candleX}" y2="${height - 20}" stroke="${d.color}" stroke-width="0.8" stroke-dasharray="2 3" opacity="0.35" />
       <!-- Anchor Dot at exact VPOC tick -->
-      <circle cx="${candleX}" cy="${vpocY}" r="4.0" fill="${d.color}" stroke="#ffffff" stroke-width="1.2" />
+      <circle cx="${candleX}" cy="${vpocY}" r="4.5" fill="${d.color}" stroke="#ffffff" stroke-width="1.5" />
     ` : ''}
 
     <!-- Glow Ray Underneath -->
