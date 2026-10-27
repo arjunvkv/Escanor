@@ -4562,6 +4562,7 @@ export function openExtensionNetworkModal(chart = null) {
       }
       toggleStructuralInflectionLines(c);
     };
+  }
   updateInflectionLinesButtonUI();
 
   // Wire Box Fulcrum & Vacuum Lines Toggle Button
