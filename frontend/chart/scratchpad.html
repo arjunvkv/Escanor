@@ -23,6 +23,18 @@
       --hud-emerald: #10b981;
     }
 
+    /* GLOBAL RULE: ABSOLUTELY NO HOVER ANIMATIONS OR TRANSITIONS */
+    *, *::before, *::after {
+      transition: none !important;
+      animation-duration: 0s !important;
+    }
+
+    *:hover {
+      transition: none !important;
+      animation: none !important;
+      transform: none !important;
+    }
+
     body {
       font-family: 'JetBrains Mono', monospace;
       background-color: var(--hud-black);
@@ -32,7 +44,7 @@
       overflow-x: hidden;
       user-select: none;
       background-image: 
-        radial-gradient(circle at 50% 0%, rgba(255, 42, 75, 0.05) 0%, transparent 60%),
+        radial-gradient(circle at 50% 0%, rgba(255, 42, 75, 0.04) 0%, transparent 60%),
         linear-gradient(rgba(0, 240, 255, 0.015) 1px, transparent 1px),
         linear-gradient(90deg, rgba(0, 240, 255, 0.015) 1px, transparent 1px);
       background-size: 100% 100%, 32px 32px, 32px 32px;
@@ -49,7 +61,7 @@
     /* HUD Corner Crosshairs & Wireframe Decals */
     .hud-panel {
       position: relative;
-      background: rgba(4, 8, 18, 0.92);
+      background: rgba(4, 8, 18, 0.94);
       border: 1px solid rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(12px);
     }
@@ -78,29 +90,17 @@
 
     /* Glowing HUD Badges & Accents */
     .glow-red {
-      box-shadow: 0 0 12px var(--hud-red-glow);
+      box-shadow: 0 0 10px var(--hud-red-glow);
     }
     .glow-cyan {
-      box-shadow: 0 0 12px var(--hud-cyan-glow);
+      box-shadow: 0 0 10px var(--hud-cyan-glow);
     }
 
-    /* Proximity Alert Row Pulsing Animation (+/- $5.00) */
-    @keyframes proximityPulseRed {
-      0%, 100% {
-        background-color: rgba(255, 42, 75, 0.12);
-        border-color: #ff2a4b;
-        box-shadow: inset 0 0 14px rgba(255, 42, 75, 0.3), 0 0 18px rgba(255, 42, 75, 0.4);
-      }
-      50% {
-        background-color: rgba(255, 42, 75, 0.24);
-        border-color: #ff6b81;
-        box-shadow: inset 0 0 24px rgba(255, 42, 75, 0.5), 0 0 28px rgba(255, 42, 75, 0.6);
-      }
-    }
-
+    /* Proximity Alert Row (Active State Only - Static & Razor Sharp) */
     .proximity-active-row {
-      animation: proximityPulseRed 1.8s infinite ease-in-out;
       border: 1px solid #ff2a4b !important;
+      background-color: rgba(255, 42, 75, 0.18) !important;
+      box-shadow: inset 0 0 16px rgba(255, 42, 75, 0.35) !important;
     }
 
     /* Tab Buttons Minimal Sci-Fi */
@@ -111,23 +111,22 @@
       font-weight: 700;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      background: rgba(10, 16, 28, 0.8);
+      background: rgba(10, 16, 28, 0.85);
       border: 1px solid rgba(255, 255, 255, 0.08);
       color: #64748b;
-      transition: all 0.2s ease;
       clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
       cursor: pointer;
     }
     .hud-tab-btn:hover {
       color: #e2e8f0;
-      background: rgba(20, 30, 50, 0.9);
-      border-color: rgba(0, 240, 255, 0.3);
+      background: rgba(20, 30, 50, 0.95);
+      border-color: rgba(0, 240, 255, 0.4);
     }
     .hud-tab-btn.active {
       color: #ffffff;
-      background: linear-gradient(135deg, rgba(255, 42, 75, 0.25) 0%, rgba(10, 16, 28, 0.9) 100%);
+      background: linear-gradient(135deg, rgba(255, 42, 75, 0.3) 0%, rgba(10, 16, 28, 0.95) 100%);
       border-color: var(--hud-red);
-      box-shadow: 0 0 14px rgba(255, 42, 75, 0.3);
+      box-shadow: 0 0 12px rgba(255, 42, 75, 0.3);
     }
     .hud-tab-btn.active::after {
       content: "";
@@ -137,18 +136,18 @@
       right: 10%;
       height: 2px;
       background: var(--hud-red);
-      box-shadow: 0 0 8px var(--hud-red);
+      box-shadow: 0 0 6px var(--hud-red);
     }
 
     /* Minimal HUD Toggle Switch */
     .hud-switch input:checked + .hud-switch-track {
-      background-color: rgba(255, 42, 75, 0.3);
+      background-color: rgba(255, 42, 75, 0.35);
       border-color: #ff2a4b;
     }
     .hud-switch input:checked + .hud-switch-track .hud-switch-thumb {
       transform: translateX(16px);
       background-color: #ff2a4b;
-      box-shadow: 0 0 10px #ff2a4b;
+      box-shadow: 0 0 8px #ff2a4b;
     }
 
     /* Ticker Tape Ribbon Prints */
@@ -157,9 +156,9 @@
       align-items: center;
       gap: 6px;
       padding: 3px 8px;
-      background: rgba(7, 12, 22, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 3px;
+      background: rgba(7, 12, 22, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 2px;
       font-size: 11px;
       font-family: 'JetBrains Mono', monospace;
       white-space: nowrap;
@@ -174,10 +173,9 @@
     }
     .tape-print-futuristic.stall {
       border-left: 2px solid #f59e0b;
-      background: rgba(245, 158, 11, 0.1);
+      background: rgba(245, 158, 11, 0.12);
       color: #fbbf24;
       font-weight: 700;
-      box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
     }
 
     /* Tooltip */
@@ -195,7 +193,6 @@
     <div class="flex items-center gap-3.5">
       <div class="w-10 h-10 bg-black/80 border border-red-500/50 flex items-center justify-center relative glow-red">
         <span class="text-red-500 font-extrabold text-sm tracking-widest font-hud-tech">ESC</span>
-        <div class="absolute -top-1 -right-1 w-1.5 h-1.5 bg-red-500 animate-ping"></div>
       </div>
       <div>
         <div class="flex items-center gap-2.5">
@@ -220,7 +217,7 @@
     <div class="flex flex-wrap items-center gap-3">
       <!-- Live Spot Card -->
       <div class="bg-black/80 border border-cyan-500/30 px-3.5 py-1.5 rounded flex items-center gap-3 shadow-[0_0_12px_rgba(0,240,255,0.15)]">
-        <div class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></div>
+        <div class="w-2 h-2 rounded-full bg-cyan-400"></div>
         <div>
           <span class="text-[9px] uppercase tracking-widest text-slate-400 block font-hud-tech">XAUUSD LIVE SPOT</span>
           <span id="topSpotDisplay" class="text-sm font-extrabold text-white font-mono tracking-wider">$4,008.50</span>
@@ -264,7 +261,7 @@
     <div class="hud-panel rounded-lg p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border border-red-500/20">
       <div>
         <div class="flex items-center gap-2 mb-1">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-red-500"></span>
           <span class="text-[10px] font-hud-tech text-red-400 tracking-widest uppercase font-bold">
             OPTIC :: SCAN 01 // DAWN SOVEREIGN AUDIT (06:30 AM – 07:30 AM IST)
           </span>
@@ -279,14 +276,14 @@
 
       <!-- 1-Click Copy Prompt & Tooltip -->
       <div class="flex items-center gap-3">
-        <button id="btnCopyPrompt" onclick="copyMorningScanPrompt()" class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold font-hud-tech tracking-wider uppercase rounded border border-red-400/40 shadow-[0_0_14px_rgba(255,42,75,0.4)] flex items-center gap-2 transition-all">
+        <button id="btnCopyPrompt" onclick="copyMorningScanPrompt()" class="px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold font-hud-tech tracking-wider uppercase rounded border border-red-400/40 shadow-[0_0_10px_rgba(255,42,75,0.4)] flex items-center gap-2 cursor-pointer">
           <span>📋</span>
           <span id="copyPromptText">COPY PROMPT // JSON INGEST</span>
         </button>
 
         <!-- Hover Info Card -->
         <div class="relative hud-tooltip-trigger">
-          <button class="w-8 h-8 rounded bg-black/80 hover:bg-slate-900 border border-slate-700 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center transition-colors">
+          <button class="w-8 h-8 rounded bg-black/80 hover:bg-slate-900 border border-slate-700 text-cyan-400 font-bold font-mono text-xs flex items-center justify-center cursor-pointer">
             ℹ
           </button>
           <div class="hud-tooltip-content hidden absolute right-0 top-10 w-96 p-3.5 bg-[#030611] border border-cyan-500/40 rounded shadow-2xl z-50 text-xs font-hud-tech text-slate-300">
@@ -329,7 +326,7 @@
             </tr>
           </thead>
           <tbody class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <tr class="hover:bg-slate-900/40 transition-colors">
+            <tr class="hover:bg-slate-900/40">
               <td class="py-3 px-4 font-bold text-cyan-300 flex items-center gap-2">
                 <span>📈</span> US 10Y Real Yield (DFII10 / TIPS)
               </td>
@@ -344,7 +341,7 @@
                 Real opportunity cost of Gold is surging. Cash yields rising ⟹ <strong>Suppressive downward gravity on Gold</strong>.
               </td>
             </tr>
-            <tr class="hover:bg-slate-900/40 transition-colors">
+            <tr class="hover:bg-slate-900/40">
               <td class="py-3 px-4 font-bold text-slate-200 flex items-center gap-2">
                 <span>💵</span> US Dollar Index (DXY)
               </td>
@@ -359,7 +356,7 @@
                 DXY expanding upward past prior high. Sovereign flows transferring from bullion hedges into dollar liquidity.
               </td>
             </tr>
-            <tr class="hover:bg-slate-900/40 transition-colors">
+            <tr class="hover:bg-slate-900/40">
               <td class="py-3 px-4 font-bold text-amber-300 flex items-center gap-2">
                 <span>🪙</span> Shanghai Gold Physical Premium (SGE)
               </td>
@@ -374,7 +371,7 @@
                 Asian physical vault premium remains positive but contracting. Not forceful enough to overpower US real yields.
               </td>
             </tr>
-            <tr class="hover:bg-slate-900/40 transition-colors">
+            <tr class="hover:bg-slate-900/40">
               <td class="py-3 px-4 font-bold text-emerald-300 flex items-center gap-2">
                 <span>⏱</span> Next High-Impact Event Gate
               </td>
@@ -441,7 +438,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- TAB 02: SOVEREIGN DUAL LEDGER & INLINE WRITING (THE REQUESTED CORE)       -->
+  <!-- TAB 02: SOVEREIGN DUAL LEDGER & INLINE WRITING                            -->
   <!-- ========================================================================= -->
   <main id="sectionLedger" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
     
@@ -451,13 +448,13 @@
       <!-- Left: Radar Lock Readout -->
       <div class="flex items-center gap-3.5">
         <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
           <span class="text-xs font-hud-tech text-slate-400">SPOT:</span>
           <span id="ledgerSpotDisplay" class="text-sm font-extrabold text-white font-mono">$4,008.50</span>
         </div>
 
         <div id="proximityStatusBanner" class="px-2.5 py-1 rounded bg-red-950/50 text-red-300 border border-red-500/50 text-xs font-hud-tech font-bold flex items-center gap-2 glow-red">
-          <span class="w-2 h-2 rounded-full bg-red-500 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-red-500"></span>
           <span>TARGET LOCK: <strong class="text-white">+$3.50</strong> to Asian High ($4,012.00)</span>
         </div>
       </div>
@@ -470,8 +467,8 @@
           <span class="text-slate-300 font-bold uppercase text-[11px]">📲 TELEGRAM ALERT:</span>
           <div class="relative inline-block w-8 h-4">
             <input type="checkbox" id="toggleTelegram" checked onchange="toggleAlertPref('telegram')" class="opacity-0 w-0 h-0">
-            <div class="hud-switch-track absolute inset-0 rounded-full bg-slate-800 border border-slate-700 transition-all duration-200 flex items-center px-0.5">
-              <div class="hud-switch-thumb w-3 h-3 rounded-full bg-slate-400 transition-all duration-200"></div>
+            <div class="hud-switch-track absolute inset-0 rounded-full bg-slate-800 border border-slate-700 flex items-center px-0.5">
+              <div class="hud-switch-thumb w-3 h-3 rounded-full bg-slate-400"></div>
             </div>
           </div>
         </label>
@@ -481,14 +478,14 @@
           <span class="text-slate-300 font-bold uppercase text-[11px]">🔊 AUDIO CHIME:</span>
           <div class="relative inline-block w-8 h-4">
             <input type="checkbox" id="togglePcChime" checked onchange="toggleAlertPref('pc')" class="opacity-0 w-0 h-0">
-            <div class="hud-switch-track absolute inset-0 rounded-full bg-slate-800 border border-slate-700 transition-all duration-200 flex items-center px-0.5">
-              <div class="hud-switch-thumb w-3 h-3 rounded-full bg-slate-400 transition-all duration-200"></div>
+            <div class="hud-switch-track absolute inset-0 rounded-full bg-slate-800 border border-slate-700 flex items-center px-0.5">
+              <div class="hud-switch-thumb w-3 h-3 rounded-full bg-slate-400"></div>
             </div>
           </div>
         </label>
 
         <!-- Test Chime Button -->
-        <button onclick="playLaserChime()" class="px-2 py-0.5 rounded bg-black/60 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white text-[10px] transition-colors">
+        <button onclick="playLaserChime()" class="px-2 py-0.5 rounded bg-black/60 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white text-[10px] cursor-pointer">
           TEST CHIME
         </button>
 
@@ -499,9 +496,7 @@
 
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- SECTION A: NON-LYING STRUCTURAL ANCHORS (AUTO-NOTED FROM MT5 • 1H)     -->
-    <!-- ======================================================================= -->
+    <!-- SECTION A: NON-LYING STRUCTURAL ANCHORS -->
     <div class="hud-panel rounded-lg overflow-hidden border border-slate-800">
       <div class="p-3 bg-black/70 border-b border-slate-800 flex items-center justify-between">
         <div class="flex items-center gap-2.5">
@@ -518,7 +513,7 @@
           <span id="autoRefreshCountdown" class="text-[10px] font-hud-tech text-slate-500">
             SYNC IN 42M
           </span>
-          <button onclick="refreshAnchors()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-[10.5px] font-hud-tech font-bold rounded border border-cyan-500/30 flex items-center gap-1.5 transition-all">
+          <button onclick="refreshAnchors()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-cyan-400 hover:text-cyan-300 text-[10.5px] font-hud-tech font-bold rounded border border-cyan-500/30 flex items-center gap-1.5 cursor-pointer">
             <span id="refreshIcon">↺</span>
             <span>SYNC NOW</span>
           </button>
@@ -538,18 +533,15 @@
             </tr>
           </thead>
           <tbody id="anchorsBody" class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <!-- Injected dynamically with live proximity radar highlighting -->
+            <!-- Dynamic rows -->
           </tbody>
         </table>
       </div>
     </div>
 
-    <!-- ======================================================================= -->
-    <!-- SECTION B: SOVEREIGN USER LEDGER (WRITE DIRECTLY INTO TABLE ITSELF!)   -->
-    <!-- ======================================================================= -->
+    <!-- SECTION B: SOVEREIGN USER LEDGER (DIRECT IN-TABLE WRITING) -->
     <div class="hud-panel rounded-lg overflow-hidden border border-red-500/25 shadow-xl flex flex-col">
       
-      <!-- Section B Header with Inline Edit Instruction -->
       <div class="p-3 bg-gradient-to-r from-red-950/30 via-black to-black border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
         <div class="flex items-center gap-2.5">
           <span class="w-2 h-2 rounded-full bg-red-500"></span>
@@ -564,7 +556,6 @@
         </div>
       </div>
 
-      <!-- User Manual Ledger Table with Inline Entry Row -->
       <div class="overflow-x-auto">
         <table class="w-full text-left text-xs font-mono">
           <thead class="bg-black/90 text-slate-400 border-b border-slate-800 text-[10px] uppercase font-hud-tech tracking-wider">
@@ -578,7 +569,7 @@
             </tr>
           </thead>
           <tbody id="userLedgerBody" class="divide-y divide-slate-800/60 text-slate-200 font-hud-tech">
-            <!-- Built dynamically: Row 1 is the seamless INLINE INPUT ROW, followed by saved rows with inline editing -->
+            <!-- Row 1 is inline entry row, followed by saved rows with inline editing -->
           </tbody>
         </table>
       </div>
@@ -588,7 +579,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- TAB 03: DIGITAL TAPE vs 5-MIN CANDLE DECEPTION                            -->
+  <!-- TAB 03: DIGITAL TAPE vs 5-MIN CANDLE (REDESIGNED HUD OSCILLOSCOPE)        -->
   <!-- ========================================================================= -->
   <main id="sectionTape" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
     
@@ -596,7 +587,7 @@
     <div class="w-full">
       <div class="flex items-center justify-between text-xs font-hud-tech text-slate-400 mb-1.5 px-1">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+          <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
           <span class="font-bold text-white uppercase tracking-wider">
             REC // POS • LIVE TIME & SALES SEQUENTIAL LOG
           </span>
@@ -620,11 +611,11 @@
         </div>
 
         <div class="flex items-center gap-3">
-          <button id="btnPlay" onclick="togglePlayback()" class="px-3.5 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,42,75,0.4)] transition-all">
+          <button id="btnPlay" onclick="togglePlayback()" class="px-3.5 py-1 bg-red-600 hover:bg-red-500 text-white font-bold rounded flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,42,75,0.4)] cursor-pointer">
             <span id="playIcon">▶</span>
             <span id="playText">PLAY TAPE</span>
           </button>
-          <button onclick="resetPlayback()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-slate-300 font-bold rounded border border-slate-700 transition-all">
+          <button onclick="resetPlayback()" class="px-2.5 py-1 bg-black/80 hover:bg-slate-800 text-slate-300 font-bold rounded border border-slate-700 cursor-pointer">
             ↺ RESET
           </button>
           <div class="flex items-center gap-2 ml-2">
@@ -645,13 +636,13 @@
             </span>
             <span class="text-xs font-bold text-slate-300 font-hud-tech">Standard 5-Minute Candlesticks</span>
           </div>
-          <div class="relative flex-1 w-full h-[340px] bg-black/80 rounded border border-slate-800/80 overflow-hidden">
+          <div class="relative flex-1 w-full h-[340px] bg-black/90 rounded border border-slate-800/80 overflow-hidden">
             <svg id="svgCandle" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none"></svg>
             <div id="candleCallout" class="absolute bottom-3 left-3 right-3 bg-black/90 border border-slate-700 p-2.5 rounded text-xs font-hud-tech text-slate-300 pointer-events-none"></div>
           </div>
         </div>
 
-        <!-- Right: Unvarnished Reality -->
+        <!-- Right: Unvarnished Reality (REDESIGNED: NO OVERLAPPING LABELS, HUD GRID) -->
         <div class="p-4 flex flex-col relative bg-black/40">
           <div class="flex items-center justify-between mb-2">
             <span class="px-2 py-0.5 text-[10px] font-bold font-hud-tech bg-cyan-950/50 text-cyan-400 border border-cyan-500/30 rounded">
@@ -659,7 +650,7 @@
             </span>
             <span class="text-xs font-bold text-cyan-400 font-hud-tech">Wyckoff Wall & Sequential Trapped Volume</span>
           </div>
-          <div class="relative flex-1 w-full h-[340px] bg-black/80 rounded border border-cyan-950/40 overflow-hidden">
+          <div class="relative flex-1 w-full h-[340px] bg-black/90 rounded border border-cyan-950/40 overflow-hidden">
             <svg id="svgTape" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none"></svg>
             <div id="tapeCallout" class="absolute bottom-3 left-3 right-3 bg-black/95 border border-cyan-500/40 p-2.5 rounded text-xs font-hud-tech text-slate-200 pointer-events-none shadow-lg"></div>
           </div>
@@ -672,43 +663,138 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- TAB 04: 24H LIVERMORE-WYCKOFF PROTOCOL (IST TIMELINE)                     -->
+  <!-- TAB 04: 24H LIVERMORE-WYCKOFF PROTOCOL (REDESIGNED TACTICAL CAMPAIGN MAP) -->
   <!-- ========================================================================= -->
   <main id="sectionMacro" class="w-full max-w-[1340px] flex flex-col gap-4 hidden">
     
-    <!-- Macro Campaign Map -->
+    <!-- Redesigned High-Tech Macro Campaign Schematic -->
     <div class="hud-panel rounded-lg p-4 border border-slate-800 shadow-xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
         <h3 class="text-xs font-bold text-white uppercase tracking-wider font-hud-tech flex items-center gap-2">
-          <span class="text-red-500">STAT :: 02</span> THE 4-PHASE MACRO CAMPAIGN (ACCUMULATION → MARKUP → DISTRIBUTION → MARKDOWN)
+          <span class="text-red-500">STAT :: 02</span> THE 4-PHASE MACRO CAMPAIGN SCHEMATIC (AUTHENTIC WYCKOFF GEOMETRY)
         </h3>
-        <span class="text-[10px] text-slate-500 font-hud-tech">TACTICAL LIFECYCLE</span>
+        <span class="text-[10px] text-slate-500 font-hud-tech">VECTOR TELEMETRY // MULTI-SESSION HORIZON</span>
       </div>
 
-      <div class="w-full h-[280px] bg-black/90 rounded border border-slate-800/80 overflow-hidden relative mb-4">
-        <svg class="w-full h-full" viewBox="0 0 1000 280" preserveAspectRatio="none">
-          <rect x="30" y="140" width="220" height="110" fill="rgba(0, 240, 255, 0.04)" stroke="rgba(0, 240, 255, 0.2)" stroke-dasharray="4 4" rx="4" />
-          <text x="140" y="240" fill="#38bdf8" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 1: ACCUMULATION (THE CAUSE)</text>
+      <!-- REDESIGNED PRECISION SVG SCHEMATIC -->
+      <div class="w-full h-[320px] bg-black/95 rounded border border-slate-800/80 overflow-hidden relative mb-4">
+        <svg class="w-full h-full" viewBox="0 0 1000 320" preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="gridGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="rgba(0, 240, 255, 0.05)" />
+              <stop offset="100%" stop-color="rgba(0, 0, 0, 0.2)" />
+            </linearGradient>
+            <linearGradient id="markupGrad" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0%" stop-color="#10b981" />
+              <stop offset="100%" stop-color="#00f0ff" />
+            </linearGradient>
+            <linearGradient id="distGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stop-color="#f59e0b" />
+              <stop offset="100%" stop-color="#ff2a4b" />
+            </linearGradient>
+          </defs>
+
+          <!-- 1. Precision Background HUD Gridlines -->
+          <line x1="40" y1="50" x2="980" y2="50" stroke="rgba(255, 255, 255, 0.05)" stroke-dasharray="2 4" />
+          <line x1="40" y1="100" x2="980" y2="100" stroke="rgba(255, 255, 255, 0.05)" stroke-dasharray="2 4" />
+          <line x1="40" y1="150" x2="980" y2="150" stroke="rgba(255, 255, 255, 0.05)" stroke-dasharray="2 4" />
+          <line x1="40" y1="200" x2="980" y2="200" stroke="rgba(255, 255, 255, 0.05)" stroke-dasharray="2 4" />
+          <line x1="40" y1="250" x2="980" y2="250" stroke="rgba(255, 255, 255, 0.05)" stroke-dasharray="2 4" />
+
+          <!-- Vertical Zone Separators -->
+          <line x1="260" y1="20" x2="260" y2="295" stroke="rgba(0, 240, 255, 0.15)" stroke-dasharray="4 4" />
+          <line x1="500" y1="20" x2="500" y2="295" stroke="rgba(255, 255, 255, 0.12)" stroke-dasharray="4 4" />
+          <line x1="740" y1="20" x2="740" y2="295" stroke="rgba(255, 42, 75, 0.18)" stroke-dasharray="4 4" />
+
+          <!-- 2. Zone Background Cards (Framed with Tech Brackets) -->
+          <!-- Zone 1: Accumulation -->
+          <rect x="30" y="10" width="220" height="285" fill="rgba(0, 240, 255, 0.02)" stroke="rgba(0, 240, 255, 0.2)" rx="2" />
+          <rect x="30" y="10" width="220" height="20" fill="rgba(0, 240, 255, 0.08)" />
+          <text x="40" y="24" fill="#38bdf8" font-size="9" font-family="JetBrains Mono" font-weight="700">01 // ACCUMULATION (THE CAUSE)</text>
+
+          <!-- Zone 2: Markup -->
+          <rect x="270" y="10" width="220" height="285" fill="rgba(16, 185, 129, 0.02)" stroke="rgba(16, 185, 129, 0.2)" rx="2" />
+          <rect x="270" y="10" width="220" height="20" fill="rgba(16, 185, 129, 0.08)" />
+          <text x="280" y="24" fill="#34d399" font-size="9" font-family="JetBrains Mono" font-weight="700">02 // MARKUP (SOS EXPANSION)</text>
+
+          <!-- Zone 3: Distribution -->
+          <rect x="510" y="10" width="220" height="285" fill="rgba(245, 158, 11, 0.02)" stroke="rgba(245, 158, 11, 0.2)" rx="2" />
+          <rect x="510" y="10" width="220" height="20" fill="rgba(245, 158, 11, 0.08)" />
+          <text x="520" y="24" fill="#fbbf24" font-size="9" font-family="JetBrains Mono" font-weight="700">03 // DISTRIBUTION (THE TRAP)</text>
+
+          <!-- Zone 4: Markdown -->
+          <rect x="750" y="10" width="220" height="285" fill="rgba(255, 42, 75, 0.02)" stroke="rgba(255, 42, 75, 0.2)" rx="2" />
+          <rect x="750" y="10" width="220" height="20" fill="rgba(255, 42, 75, 0.08)" />
+          <text x="760" y="24" fill="#ff6b81" font-size="9" font-family="JetBrains Mono" font-weight="700">04 // MARKDOWN (LIQUIDATION)</text>
+
+          <!-- 3. Key Physical Range Levels inside Zones -->
+          <!-- Accumulation Support ($3,995) & Resistance ($4,008) -->
+          <line x1="40" y1="180" x2="245" y2="180" stroke="#38bdf8" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
+          <text x="45" y="174" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono">CREEK RESISTANCE $4,008.00</text>
           
-          <rect x="270" y="30" width="230" height="220" fill="rgba(16, 185, 129, 0.04)" stroke="rgba(16, 185, 129, 0.2)" stroke-dasharray="4 4" rx="4" />
-          <text x="385" y="240" fill="#34d399" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 2: MARKUP (LINE OF LEAST RESISTANCE)</text>
+          <line x1="40" y1="240" x2="245" y2="240" stroke="#64748b" stroke-width="1" stroke-dasharray="2 3" opacity="0.5" />
+          <text x="45" y="234" fill="#94a3b8" font-size="8.5" font-family="JetBrains Mono">SUPPORT FLOOR $3,995.00</text>
+
+          <!-- Distribution Support ($4,015) & UTAD Ceiling ($4,025) -->
+          <line x1="520" y1="95" x2="720" y2="95" stroke="#f59e0b" stroke-width="1" stroke-dasharray="2 3" opacity="0.6" />
+          <text x="525" y="90" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono">CEILING RESISTANCE $4,025.00</text>
           
-          <rect x="520" y="20" width="240" height="110" fill="rgba(255, 42, 75, 0.04)" stroke="rgba(255, 42, 75, 0.2)" stroke-dasharray="4 4" rx="4" />
-          <text x="640" y="125" fill="#ff6b81" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 3: DISTRIBUTION (THE TRAP)</text>
+          <line x1="520" y1="150" x2="720" y2="150" stroke="#ff2a4b" stroke-width="1" stroke-dasharray="2 3" opacity="0.5" />
+          <text x="525" y="144" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono">ICE SUPPORT $4,015.00</text>
+
+          <!-- 4. Authentic Wyckoff Wave Geometry (Precise Continuous Path) -->
+          <!-- PHASE 1: Accumulation wave with PS, SC, AR, ST, Spring -->
+          <path d="M 40 160 Q 65 240 85 240 T 115 190 T 145 235 T 175 210 Q 195 240 205 272" 
+                fill="none" stroke="#38bdf8" stroke-width="2.2" stroke-linecap="round" />
+
+          <!-- Spring V-Reversal Recovery to Breakout Edge -->
+          <path d="M 205 272 Q 215 282 222 250 T 245 195 T 265 175" 
+                fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" />
+
+          <!-- Spring Liquidity Sweep Target Reticle & Badge -->
+          <circle cx="205" cy="272" r="6" fill="#020408" stroke="#00f0ff" stroke-width="2" />
+          <circle cx="205" cy="272" r="2.5" fill="#00f0ff" />
+          <!-- Non-overlapping Spring Badge anchored below -->
+          <line x1="205" y1="278" x2="205" y2="292" stroke="#00f0ff" stroke-width="1" />
+          <rect x="120" y="282" width="135" height="18" fill="#030712" stroke="#00f0ff" rx="2" />
+          <text x="187" y="294" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">⚡ SPRING (SSL PURGE)</text>
+
+          <!-- PHASE 2: Markup Staircase Expansion (SOS -> LPS -> Expansion) -->
+          <path d="M 265 175 Q 295 140 325 150 T 365 110 T 410 120 T 455 85 T 505 95" 
+                fill="none" stroke="url(#markupGrad)" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Sign of Strength Pips -->
+          <circle cx="325" cy="150" r="3" fill="#10b981" />
+          <text x="325" y="165" fill="#34d399" font-size="8" font-family="JetBrains Mono" text-anchor="middle">LPS RETEST</text>
           
-          <rect x="780" y="20" width="190" height="230" fill="rgba(245, 158, 11, 0.04)" stroke="rgba(245, 158, 11, 0.2)" stroke-dasharray="4 4" rx="4" />
-          <text x="875" y="240" fill="#fbbf24" font-size="10" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 4: MARKDOWN (LIQUIDATION)</text>
-          
-          <path d="M 40 170 Q 70 210 100 180 T 150 230 T 180 160 T 210 240 T 235 220 T 260 150" fill="none" stroke="#475569" stroke-width="2" />
-          <circle cx="210" cy="240" r="5" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" />
-          <text x="210" y="260" fill="#38bdf8" font-size="9.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">SPRING (SWEEP)</text>
-          
-          <path d="M 260 150 Q 300 130 340 100 T 420 60 T 500 45 T 530 50" fill="none" stroke="#10b981" stroke-width="2.5" />
-          <path d="M 530 50 Q 570 35 610 50 T 670 25 T 720 55 T 750 45 T 770 85" fill="none" stroke="#475569" stroke-width="2" />
-          <circle cx="670" cy="25" r="6" fill="#ff2a4b" stroke="#ffffff" stroke-width="1.8" />
-          <text x="670" y="15" fill="#ff6b81" font-size="10" font-family="JetBrains Mono" font-weight="900" text-anchor="middle">UTAD / PIVOTAL POINT SWEEP</text>
-          
-          <path d="M 770 85 Q 810 145 850 185 T 910 235 T 960 255" fill="none" stroke="#ff2a4b" stroke-width="2.5" />
+          <circle cx="410" cy="120" r="3" fill="#10b981" />
+          <text x="410" y="135" fill="#34d399" font-size="8" font-family="JetBrains Mono" text-anchor="middle">EXPANSION</text>
+
+          <!-- PHASE 3: Distribution Structure (BC, AR, ST, UTAD Absorption) -->
+          <path d="M 505 95 Q 525 85 540 90 T 565 130 T 590 100 Q 615 75 635 68" 
+                fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-linecap="round" />
+
+          <!-- UTAD Reticle & Clean Top Callout Badge (Zero Collision: Badge at y=36, Header at y=10) -->
+          <circle cx="635" cy="68" r="7" fill="#020408" stroke="#ff2a4b" stroke-width="2" />
+          <circle cx="635" cy="68" r="3" fill="#ff2a4b" />
+          <!-- Leader Line up to Badge -->
+          <line x1="635" y1="61" x2="635" y2="48" stroke="#ff2a4b" stroke-width="1" />
+          <rect x="560" y="34" width="150" height="18" fill="#030712" stroke="#ff2a4b" rx="2" />
+          <text x="635" y="46" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">🔴 UTAD PIVOTAL SWEEP</text>
+
+          <!-- UTAD Rejection back into Range & Ice Breakdown -->
+          <path d="M 635 68 Q 655 85 670 135 T 700 125 T 740 155" 
+                fill="none" stroke="url(#distGrad)" stroke-width="2.2" stroke-linecap="round" />
+
+          <!-- PHASE 4: Markdown Liquidation Cascade -->
+          <path d="M 740 155 Q 765 180 785 170 T 820 220 T 865 230 T 915 275 T 960 285" 
+                fill="none" stroke="#ff2a4b" stroke-width="2.6" stroke-linecap="round" />
+
+          <!-- LPSY Retest Pip -->
+          <circle cx="785" cy="170" r="3.5" fill="#ff2a4b" />
+          <text x="785" y="160" fill="#ff6b81" font-size="8" font-family="JetBrains Mono" text-anchor="middle">LPSY RETEST</text>
+
+          <circle cx="865" cy="230" r="3.5" fill="#ff2a4b" />
+          <text x="865" y="220" fill="#ff6b81" font-size="8" font-family="JetBrains Mono" text-anchor="middle">LIQUIDATION WAVE</text>
         </svg>
       </div>
 
@@ -763,7 +849,7 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT ENGINE & INLINE TABLE EDITING LOGIC                            -->
+  <!-- JAVASCRIPT ENGINE & REDESIGNED ZERO-COLLISION TAPE OSCILLOSCOPE           -->
   <!-- ========================================================================= -->
   <script>
     // Tab Navigation
@@ -851,7 +937,6 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
         const gain = audioCtx.createGain();
 
         osc.type = 'sine';
-        // Sci-Fi chirp: 880Hz to 1320Hz
         osc.frequency.setValueAtTime(880, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(1320, audioCtx.currentTime + 0.12);
 
@@ -889,11 +974,11 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
 
         let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
         let alertBadge = isNear 
-          ? `<span class="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/50 font-bold text-[9.5px] animate-pulse tracking-wider">⚡ IN ZONE (±$5)</span>`
+          ? `<span class="px-2 py-0.5 rounded bg-red-950/60 text-red-300 border border-red-500/50 font-bold text-[9.5px] tracking-wider">⚡ IN ZONE (±$5)</span>`
           : `<span class="text-slate-500 text-[10px]">MONITORING</span>`;
 
         html += `
-          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'} transition-all">
+          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'}">
             <td class="py-2.5 px-4 font-bold ${isNear ? 'text-red-400' : 'text-slate-200'}">${a.name}</td>
             <td class="py-2.5 px-3 font-extrabold text-white text-sm">$${a.price.toFixed(2)}</td>
             <td class="py-2.5 px-3 font-bold ${absDist <= 2.0 ? 'text-red-400 font-extrabold' : (isNear ? 'text-amber-300' : 'text-slate-400')}">${distText}</td>
@@ -909,16 +994,10 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
 
     function refreshAnchors() {
       const icon = document.getElementById('refreshIcon');
-      icon.classList.add('animate-spin');
-      setTimeout(() => {
-        icon.classList.remove('animate-spin');
-        renderAnchorsTable();
-      }, 500);
+      renderAnchorsTable();
     }
 
-    // -------------------------------------------------------------------------
     // SECTION B: User Sovereign Manual Ledger (DIRECT IN-TABLE WRITING & EDITING)
-    // -------------------------------------------------------------------------
     let userLedgerRecords = JSON.parse(localStorage.getItem('escanor_user_ledger') || 'null') || [
       { id: 1, time: "27-Oct 14:15 IST", price: 4012.00, type: "REVERSAL PP", note: "Livermore Reversal Pivotal Point at Asian High. Watching for failed probe." },
       { id: 2, time: "27-Oct 09:40 IST", price: 3995.00, type: "REACTION PP", note: "Asian low reaction floor. Demand tested twice." },
@@ -936,18 +1015,16 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const now = new Date();
       const defaultTimeStr = `${now.getDate()}-Oct ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')} IST`;
 
-      // ROW 1: THE ACTIVE INLINE INPUT ROW (WRITING DIRECTLY INTO THE TABLE!)
+      // ROW 1: INLINE ENTRY ROW
       let html = `
         <tr class="bg-red-950/20 border-b-2 border-red-500/40">
-          <!-- Time Cell -->
           <td class="py-2 px-3 text-cyan-400 font-bold text-[10.5px] flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping"></span>
+            <span class="w-1.5 h-1.5 rounded-full bg-red-500"></span>
             <span>${defaultTimeStr}</span>
           </td>
 
-          <!-- Price Input Cell -->
           <td class="py-2 px-3">
-            <div class="flex items-center gap-1 bg-black/60 border border-red-500/40 rounded px-1.5 py-0.5 focus-within:border-red-400 focus-within:ring-1 focus-within:ring-red-400">
+            <div class="flex items-center gap-1 bg-black/60 border border-red-500/40 rounded px-1.5 py-0.5 focus-within:border-red-400">
               <span class="text-red-400 font-bold">$</span>
               <input type="number" id="inlinePrice" placeholder="4012.00" step="0.10" 
                      onkeydown="handleInlineKeydown(event)"
@@ -955,9 +1032,8 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
             </div>
           </td>
 
-          <!-- Type Select Cell -->
           <td class="py-2 px-3">
-            <select id="inlineType" class="bg-black/80 text-amber-300 font-bold text-[10.5px] px-2 py-1 rounded border border-slate-700 outline-none w-full">
+            <select id="inlineType" class="bg-black/80 text-amber-300 font-bold text-[10.5px] px-2 py-1 rounded border border-slate-700 outline-none w-full cursor-pointer">
               <option value="REVERSAL PP">REVERSAL PP (HIGH)</option>
               <option value="REACTION PP">REACTION PP (LOW)</option>
               <option value="WYCKOFF WALL">WYCKOFF WALL</option>
@@ -965,40 +1041,35 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
             </select>
           </td>
 
-          <!-- Distance Placeholder -->
           <td class="py-2 px-3 text-slate-500 text-[10.5px]">
             [AUTO-CALC]
           </td>
 
-          <!-- Note Input Cell -->
           <td class="py-2 px-4">
-            <input type="text" id="inlineNote" placeholder="Type pivotal note / tape observation directly here... (Press Enter to log)" 
+            <input type="text" id="inlineNote" placeholder="Type pivotal note directly here... (Press Enter to log)" 
                    onkeydown="handleInlineKeydown(event)"
-                   class="bg-black/60 text-slate-100 text-xs px-2.5 py-1 rounded border border-slate-700/80 outline-none w-full focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 placeholder:text-slate-600 font-hud-tech">
+                   class="bg-black/60 text-slate-100 text-xs px-2.5 py-1 rounded border border-slate-700/80 outline-none w-full focus:border-cyan-400 placeholder:text-slate-600 font-hud-tech">
           </td>
 
-          <!-- Inline Action Button -->
           <td class="py-2 px-3 text-center">
-            <button onclick="addInlineRecord()" class="w-full py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] tracking-wider uppercase rounded shadow-[0_0_8px_rgba(255,42,75,0.4)] transition-all cursor-pointer">
+            <button onclick="addInlineRecord()" class="w-full py-1 bg-red-600 hover:bg-red-500 text-white font-bold text-[10px] tracking-wider uppercase rounded shadow-[0_0_8px_rgba(255,42,75,0.4)] cursor-pointer">
               + LOG
             </button>
           </td>
         </tr>
       `;
 
-      // SUBSEQUENT ROWS: USER SAVED RECORDS WITH IN-PLACE EDITING
-      userLedgerRecords.forEach((r, idx) => {
+      // SAVED ROWS
+      userLedgerRecords.forEach((r) => {
         const dist = r.price - currentSpotPrice;
         const absDist = Math.abs(dist);
         const isNear = absDist <= PROXIMITY_THRESHOLD;
         let distText = dist >= 0 ? `+$${dist.toFixed(2)}` : `-$${absDist.toFixed(2)}`;
 
         html += `
-          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'} transition-all group">
-            <!-- Timestamp -->
+          <tr class="${isNear ? 'proximity-active-row' : 'hover:bg-slate-900/40'}">
             <td class="py-2.5 px-3 text-slate-400 text-[10.5px]">${r.time}</td>
             
-            <!-- In-Place Editable Price -->
             <td class="py-2.5 px-3">
               <div class="flex items-center gap-1 font-extrabold text-white text-sm">
                 <span>$</span>
@@ -1011,20 +1082,17 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
               </div>
             </td>
 
-            <!-- Pivotal Classification -->
             <td class="py-2.5 px-3">
               <span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-500/30 text-[9.5px] font-bold tracking-wider">
                 ${r.type}
               </span>
             </td>
 
-            <!-- Live Distance & Badge -->
             <td class="py-2.5 px-3 font-bold ${isNear ? 'text-red-400 font-extrabold' : 'text-slate-400'}">
               ${distText}
-              ${isNear ? '<span class="ml-1 text-[9px] text-red-400 animate-pulse font-bold">⚡ ZONE</span>' : ''}
+              ${isNear ? '<span class="ml-1 text-[9px] text-red-400 font-bold">⚡ ZONE</span>' : ''}
             </td>
 
-            <!-- In-Place Editable Note -->
             <td class="py-2.5 px-4 text-slate-300 text-xs">
               <div contenteditable="true" spellcheck="false"
                    onblur="updateRecordNote(${r.id}, this.textContent)"
@@ -1034,9 +1102,8 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
               </div>
             </td>
 
-            <!-- Delete Action -->
             <td class="py-2.5 px-3 text-center">
-              <button onclick="deleteUserRecord(${r.id})" class="text-slate-600 hover:text-red-400 text-xs font-bold transition-colors cursor-pointer">
+              <button onclick="deleteUserRecord(${r.id})" class="text-slate-600 hover:text-red-400 text-xs font-bold cursor-pointer">
                 ✕ REMOVE
               </button>
             </td>
@@ -1083,7 +1150,6 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       saveUserRecords();
       renderUserLedgerTable();
 
-      // Check proximity for immediate chime
       if (Math.abs(p - currentSpotPrice) <= PROXIMITY_THRESHOLD) {
         playLaserChime();
       }
@@ -1116,7 +1182,7 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
     }
 
     // -------------------------------------------------------------------------
-    // Tape Simulation & Rendering Engine
+    // REDESIGNED ZERO-COLLISION TAPE OSCILLOSCOPE
     // -------------------------------------------------------------------------
     const tapeData = [
       { step: 1,  time: "14:00:10", price: 4008.50, vol: 45,  dir: "up",    desc: "Auction opens below session high. Modest buying." },
@@ -1147,10 +1213,10 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
     const MAX_P = 4014.0;
     const SVG_W = 540;
     const SVG_H = 340;
-    const PAD_Y = 25;
+    const PAD_Y = 32;
 
     function priceToY(p) { return PAD_Y + (1 - (p - MIN_P) / (MAX_P - MIN_P)) * (SVG_H - 2 * PAD_Y); }
-    function indexToX(i, total = 18) { return 40 + (i / (total - 1)) * (SVG_W - 80); }
+    function indexToX(i, total = 18) { return 45 + (i / (total - 1)) * (SVG_W - 110); }
 
     function render() {
       renderRibbon();
@@ -1194,69 +1260,122 @@ Output strictly as a structured JSON update matching data/sovereign_morning_scan
       const bar2Data = activeData.slice(12, 18);
 
       let markup = `
-        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="#ff2a4b" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8" />
-        <text x="12" y="${priceToY(4012) - 6}" fill="#ff2a4b" font-size="10" font-family="JetBrains Mono" font-weight="700">PIVOTAL POINT $4,012.00 (RESISTANCE)</text>
-        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="#1e293b" stroke-width="0.8" stroke-dasharray="2 4" />
+        <!-- Background Grid -->
+        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="rgba(255, 42, 75, 0.4)" stroke-width="1" stroke-dasharray="3 3" />
+        <line x1="0" y1="${priceToY(4010)}" x2="${SVG_W}" y2="${priceToY(4010)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+        <line x1="0" y1="${priceToY(4006)}" x2="${SVG_W}" y2="${priceToY(4006)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+
+        <!-- Price Ticks on Right Margin -->
+        <text x="532" y="${priceToY(4012) + 3}" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4012.00</text>
+        <text x="532" y="${priceToY(4010) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4010.00</text>
+        <text x="532" y="${priceToY(4008) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4008.00</text>
+        <text x="532" y="${priceToY(4006) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4006.00</text>
+
+        <!-- Resistance Badge at Top Left -->
+        <rect x="10" y="10" width="165" height="18" fill="#030712" stroke="#ff2a4b" stroke-width="0.8" rx="2" />
+        <text x="18" y="22" fill="#ff6b81" font-size="9" font-family="JetBrains Mono" font-weight="700">PIVOTAL RESISTANCE $4,012.00</text>
       `;
 
       if (bar1Data.length > 0) {
         const o = bar1Data[0].price, c = bar1Data[bar1Data.length - 1].price;
         const h = Math.max(...bar1Data.map(d => d.price)), l = Math.min(...bar1Data.map(d => d.price));
-        const bx = 160, bw = 50, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
+        const bx = 160, bw = 46, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
         markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="1.5" />
         <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="1" opacity="0.85" />
-        <text x="${bx}" y="325" fill="#64748b" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:00 (Bar #1)</text>`;
+        <text x="${bx}" y="325" fill="#64748b" font-size="9.5" font-family="JetBrains Mono" text-anchor="middle">14:00 (M5 Bar #1)</text>`;
       }
       if (bar2Data.length > 0) {
         const o = bar2Data[0].price, c = bar2Data[bar2Data.length - 1].price;
         const h = Math.max(...bar2Data.map(d => d.price)), l = Math.min(...bar2Data.map(d => d.price));
-        const bx = 320, bw = 50, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
+        const bx = 320, bw = 46, isUp = c >= o, col = isUp ? "#e2e8f0" : "#ff2a4b";
         markup += `<line x1="${bx}" y1="${priceToY(h)}" x2="${bx}" y2="${priceToY(l)}" stroke="${col}" stroke-width="1.5" />
         <rect x="${bx - bw/2}" y="${Math.min(priceToY(o), priceToY(c))}" width="${bw}" height="${Math.max(4, Math.abs(priceToY(c) - priceToY(o)))}" fill="${col}" stroke="${col}" rx="1" opacity="0.85" />
-        <text x="${bx}" y="325" fill="#64748b" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:05 (Bar #2)</text>`;
+        <text x="${bx}" y="325" fill="#64748b" font-size="9.5" font-family="JetBrains Mono" text-anchor="middle">14:05 (M5 Bar #2)</text>`;
       }
       svg.innerHTML = markup;
 
       const callout = document.getElementById('candleCallout');
       if (callout) {
         callout.innerHTML = currentStep <= 8 
-          ? `<span class="text-amber-400 font-bold">THE CANDLE HIDES IT:</span> Leaving a long upper wick, but you cannot tell where the exact sell wall sat.`
-          : `<span class="text-red-400 font-bold">TOO LATE:</span> By the time the candle closes red, price is already down at $4,007.50—you missed the move!`;
+          ? `<span class="text-amber-400 font-bold">THE CANDLE HIDES IT:</span> Long upper wick hides the 850v institutional absorption wall.`
+          : `<span class="text-red-400 font-bold">TOO LATE:</span> When bar closes red, price is down at $4,007.50—the opportunity is gone!`;
       }
     }
 
+    // REDESIGNED TAPE PANEL WITH ZERO OVERLAPS
     function renderTapePanel() {
       const svg = document.getElementById('svgTape');
       if (!svg) return;
       const activeData = tapeData.slice(0, currentStep);
-      const resY = priceToY(4012.00);
 
       let markup = `
-        <line x1="0" y1="${resY}" x2="${SVG_W}" y2="${resY}" stroke="#ff2a4b" stroke-width="1.2" stroke-dasharray="4 4" opacity="0.8" />
-        <text x="12" y="${resY - 6}" fill="#ff2a4b" font-size="10" font-family="JetBrains Mono" font-weight="700">PIVOTAL POINT $4,012.00</text>
-        <line x1="0" y1="${priceToY(4010.50)}" x2="${SVG_W}" y2="${priceToY(4010.50)}" stroke="#00f0ff" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.6" />
-        <text x="12" y="${priceToY(4010.50) - 4}" fill="#38bdf8" font-size="9" font-family="JetBrains Mono">STRUCTURAL PIVOT $4,010.50 (ENTRY #2 RETEST)</text>
+        <!-- Background Precision Grid -->
+        <line x1="0" y1="${priceToY(4012)}" x2="${SVG_W}" y2="${priceToY(4012)}" stroke="rgba(255, 42, 75, 0.4)" stroke-width="1" stroke-dasharray="3 3" />
+        <line x1="0" y1="${priceToY(4010.50)}" x2="${SVG_W}" y2="${priceToY(4010.50)}" stroke="rgba(0, 240, 255, 0.35)" stroke-width="0.8" stroke-dasharray="2 3" />
+        <line x1="0" y1="${priceToY(4008)}" x2="${SVG_W}" y2="${priceToY(4008)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+        <line x1="0" y1="${priceToY(4006)}" x2="${SVG_W}" y2="${priceToY(4006)}" stroke="rgba(255, 255, 255, 0.06)" stroke-dasharray="2 4" />
+
+        <!-- Price Ticks on Right Margin (Never Collides with Lines) -->
+        <text x="532" y="${priceToY(4012) + 3}" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4012.00</text>
+        <text x="532" y="${priceToY(4010.50) + 3}" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4010.50</text>
+        <text x="532" y="${priceToY(4008) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4008.00</text>
+        <text x="532" y="${priceToY(4006) + 3}" fill="#64748b" font-size="8.5" font-family="JetBrains Mono" text-anchor="end">4006.00</text>
+
+        <!-- Clean Docked Badges at Top Left (Never Collides with Nodes) -->
+        <rect x="10" y="8" width="160" height="17" fill="#030712" stroke="#ff2a4b" stroke-width="0.8" rx="2" />
+        <text x="16" y="20" fill="#ff6b81" font-size="8.5" font-family="JetBrains Mono" font-weight="700">PIVOTAL CEILING $4,012.00</text>
+
+        <rect x="10" y="28" width="175" height="17" fill="#030712" stroke="#00f0ff" stroke-width="0.8" rx="2" />
+        <text x="16" y="40" fill="#38bdf8" font-size="8.5" font-family="JetBrains Mono" font-weight="700">STRUCTURAL PIVOT $4,010.50</text>
       `;
 
+      // Draw Oscilloscope Vector Polyline
       if (activeData.length > 1) {
         let pathD = `M ${indexToX(0)} ${priceToY(activeData[0].price)}`;
         for (let i = 1; i < activeData.length; i++) pathD += ` L ${indexToX(i)} ${priceToY(activeData[i].price)}`;
-        markup += `<path d="${pathD}" fill="none" stroke="#00f0ff" stroke-width="3.5" opacity="0.2" /><path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="1.6" />`;
+        markup += `
+          <path d="${pathD}" fill="none" stroke="#00f0ff" stroke-width="3" opacity="0.15" />
+          <path d="${pathD}" fill="none" stroke="#38bdf8" stroke-width="1.6" />
+        `;
       }
 
+      // Draw Nodes & Non-Overlapping Callout Badges
       activeData.forEach((d, i) => {
         const x = indexToX(i), y = priceToY(d.price);
+
         if (d.step === 7) {
-          markup += `<circle cx="${x}" cy="${y}" r="8" fill="#f59e0b" fill-opacity="0.3" stroke="#f59e0b" stroke-width="1.5" /><circle cx="${x}" cy="${y}" r="4" fill="#f59e0b" stroke="#ffffff" stroke-width="1.2" /><text x="${x}" y="${y - 12}" fill="#fbbf24" font-size="10" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">850v WALL</text>`;
+          // 850v Absorption Wall at $4,012.00: Leader line UP to Top Badge
+          markup += `
+            <circle cx="${x}" cy="${y}" r="8" fill="rgba(245, 158, 11, 0.25)" stroke="#f59e0b" stroke-width="1.8" />
+            <circle cx="${x}" cy="${y}" r="3" fill="#ffffff" />
+            <line x1="${x}" y1="${y - 8}" x2="${x}" y2="${y - 28}" stroke="#f59e0b" stroke-width="1.2" />
+            <rect x="${x - 55}" y="${y - 46}" width="110" height="18" fill="#030712" stroke="#f59e0b" stroke-width="1" rx="2" />
+            <text x="${x}" y="${y - 34}" fill="#fbbf24" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">850v SELL WALL</text>
+          `;
         } else if (d.step === 8) {
-          markup += `<circle cx="${x}" cy="${y}" r="6" fill="#10b981" stroke="#ffffff" stroke-width="1.5" /><line x1="${x}" y1="${y}" x2="${x + 35}" y2="${y + 25}" stroke="#10b981" stroke-width="1.2" /><rect x="${x + 37}" y="${y + 12}" width="105" height="24" fill="#064e3b" stroke="#10b981" rx="3" /><text x="${x + 43}" y="${y + 28}" fill="#34d399" font-size="9.5" font-family="JetBrains Mono" font-weight="800">ENTRY #1 @ $4,011.60</text>`;
+          // Entry #1 at $4,011.60: Leader line DOWN-LEFT to Bottom-Left Badge
+          markup += `
+            <circle cx="${x}" cy="${y}" r="5.5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
+            <line x1="${x}" y1="${y}" x2="${x - 25}" y2="${y + 24}" stroke="#10b981" stroke-width="1" />
+            <rect x="${x - 145}" y="${y + 15}" width="125" height="20" fill="#030712" stroke="#10b981" stroke-width="1" rx="2" />
+            <text x="${x - 82}" y="${y + 28}" fill="#34d399" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">ENTRY #1 @ $4,011.60</text>
+          `;
         } else if (d.step === 15) {
-          markup += `<circle cx="${x}" cy="${y}" r="6" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" /><line x1="${x}" y1="${y}" x2="${x - 30}" y2="${y - 25}" stroke="#00f0ff" stroke-width="1.2" /><rect x="${x - 140}" y="${y - 38}" width="108" height="24" fill="#083344" stroke="#00f0ff" rx="3" /><text x="${x - 134}" y="${y - 22}" fill="#7dd3fc" font-size="9.5" font-family="JetBrains Mono" font-weight="800">ENTRY #2 @ $4,010.40</text>`;
+          // Entry #2 at $4,010.40: Leader line UP-RIGHT to Top-Right Badge
+          markup += `
+            <circle cx="${x}" cy="${y}" r="5.5" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" />
+            <line x1="${x}" y1="${y}" x2="${x + 25}" y2="${y - 24}" stroke="#00f0ff" stroke-width="1" />
+            <rect x="${x + 25}" y="${y - 36}" width="125" height="20" fill="#030712" stroke="#00f0ff" stroke-width="1" rx="2" />
+            <text x="${x + 88}" y="${y - 23}" fill="#7dd3fc" font-size="8.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">ENTRY #2 @ $4,010.40</text>
+          `;
         } else {
           const nodeColor = d.dir === 'up' ? '#38bdf8' : (d.dir === 'down' ? '#ff2a4b' : '#fbbf24');
-          markup += `<circle cx="${x}" cy="${y}" r="${d.vol > 200 ? 3.5 : 2.5}" fill="${nodeColor}" opacity="0.85" />`;
+          const r = d.vol > 200 ? 3.5 : 2.2;
+          markup += `<circle cx="${x}" cy="${y}" r="${r}" fill="${nodeColor}" opacity="0.9" />`;
         }
       });
+
       svg.innerHTML = markup;
 
       const activePrint = activeData[activeData.length - 1];
