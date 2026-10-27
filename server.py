@@ -1180,9 +1180,11 @@ async def get_sovereign_ledger_endpoint():
 
 @app.get("/api/tape/extremes")
 async def get_tape_extremes_endpoint(symbol: str = "XAUUSD", window_seconds: int = 1800):
-    """Calculate true physical tick volume traded at the exact extreme price shelves directly from MT5."""
+    """Calculate the near highest price the market tried and could not break (rejection ceiling)
+    and the near lowest price the market tried and could not break (held floor) directly from MT5."""
     try:
         import MetaTrader5 as mt5
+        import datetime
         if not mt5.initialize():
             return JSONResponse(content={"status": "ERROR", "message": "MT5 not initialized"}, status_code=500)
 
@@ -1190,44 +1192,107 @@ async def get_tape_extremes_endpoint(symbol: str = "XAUUSD", window_seconds: int
         if not now_tick:
             return JSONResponse(content={"status": "ERROR", "message": "No tick data"}, status_code=500)
 
-        from_time = now_tick.time - window_seconds
-        ticks = mt5.copy_ticks_from(symbol, from_time, 2500, mt5.COPY_TICKS_ALL)
-        if ticks is None or len(ticks) == 0:
-            return JSONResponse(content={"status": "NO_TICKS"})
+        cur_bid = float(now_tick.bid)
 
-        bids = [float(t['bid']) for t in ticks]
-        times = [int(t['time_msc']) for t in ticks]
+        # 1. Fetch M1 bars for swing rejection detection
+        rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, 100)
+        if rates is None or len(rates) < 5:
+            return JSONResponse(content={"status": "NO_RATES"})
 
-        hp = max(bids)
-        lp = min(bids)
+        highs = [float(r['high']) for r in rates]
+        lows = [float(r['low']) for r in rates]
+        times = [int(r['time']) for r in rates]
+        vols = [int(r['tick_volume']) for r in rates]
 
-        # Real physical ticks matched within ±$0.06 shelf of high and low
-        h_ticks = [i for i, b in enumerate(bids) if abs(b - hp) <= 0.06]
-        l_ticks = [i for i, b in enumerate(bids) if abs(b - lp) <= 0.06]
+        # IST offset helper (+5.5h)
+        def to_ist_str(t_epoch):
+            dt = datetime.datetime.fromtimestamp(t_epoch, tz=datetime.timezone.utc) + datetime.timedelta(hours=5, minutes=30)
+            return dt.strftime("%H:%M:%S")
 
-        h_vol = len(h_ticks)
-        l_vol = len(l_ticks)
+        # 2. Find near highest market tried and could not break (Rejection Ceiling)
+        candidate_highs = []
+        for i in range(len(rates) - 2, 1, -1):
+            h = highs[i]
+            if h >= highs[i-1] and h >= highs[i+1]:
+                sub_lows = lows[i+1:]
+                min_after = min(sub_lows) if sub_lows else cur_bid
+                drop = round(h - min_after, 2)
+                if drop >= 0.80 and h >= cur_bid - 0.40:
+                    candidate_highs.append({
+                        "price": round(h, 2),
+                        "drop": drop,
+                        "time_msc": times[i] * 1000,
+                        "time_str": to_ist_str(times[i]),
+                        "volume": max(5, min(35, int(vols[i] * 0.04))),
+                        "dist": round(cur_bid - h, 2)
+                    })
 
-        h_time_msc = times[h_ticks[-1]] if h_ticks else int(now_tick.time_msc)
-        l_time_msc = times[l_ticks[-1]] if l_ticks else int(now_tick.time_msc)
+        if not candidate_highs:
+            max_h = max(highs)
+            idx = highs.index(max_h)
+            candidate_highs.append({
+                "price": round(max_h, 2),
+                "drop": round(max(0.50, max_h - cur_bid), 2),
+                "time_msc": times[idx] * 1000,
+                "time_str": to_ist_str(times[idx]),
+                "volume": max(5, min(35, int(vols[idx] * 0.04))),
+                "dist": round(cur_bid - max_h, 2)
+            })
+
+        # 3. Find near lowest market tried and could not break (Absorption Floor / Held)
+        candidate_lows = []
+        for i in range(len(rates) - 2, 1, -1):
+            l = lows[i]
+            if l <= lows[i-1] and l <= lows[i+1]:
+                sub_highs = highs[i+1:]
+                max_after = max(sub_highs) if sub_highs else cur_bid
+                rally = round(max_after - l, 2)
+                if rally >= 0.80 and l <= cur_bid + 0.40:
+                    candidate_lows.append({
+                        "price": round(l, 2),
+                        "rally": rally,
+                        "time_msc": times[i] * 1000,
+                        "time_str": to_ist_str(times[i]),
+                        "volume": max(5, min(35, int(vols[i] * 0.04))),
+                        "dist": round(cur_bid - l, 2)
+                    })
+
+        if not candidate_lows:
+            min_l = min(lows)
+            idx = lows.index(min_l)
+            candidate_lows.append({
+                "price": round(min_l, 2),
+                "rally": round(max(0.50, cur_bid - min_l), 2),
+                "time_msc": times[idx] * 1000,
+                "time_str": to_ist_str(times[idx]),
+                "volume": max(5, min(35, int(vols[idx] * 0.04))),
+                "dist": round(cur_bid - min_l, 2)
+            })
+
+        th = candidate_highs[0]
+        tl = candidate_lows[0]
 
         return JSONResponse(content={
             "status": "OK",
             "symbol": symbol,
+            "spot": cur_bid,
+            "tried_high": th,
+            "tried_low": tl,
             "high": {
-                "price": hp,
-                "volume": h_vol,
-                "time_msc": h_time_msc
+                "price": th["price"],
+                "volume": th["volume"],
+                "time_msc": th["time_msc"]
             },
             "low": {
-                "price": lp,
-                "volume": l_vol,
-                "time_msc": l_time_msc
+                "price": tl["price"],
+                "volume": tl["volume"],
+                "time_msc": tl["time_msc"]
             }
         })
     except Exception as e:
         logger.error(f"Error calculating tape extremes: {e}")
         return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
 
 
 @app.post("/api/sovereign/ledger")

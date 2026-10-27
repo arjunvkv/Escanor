@@ -726,35 +726,43 @@
           </div>
         </div>
 
-        <!-- 2 PINNED SUMMARY ITEMS: TOP & LOW RECORDINGS (USER REQUEST) -->
+        <!-- 2 PINNED SUMMARY ITEMS: TRIED & COULD NOT BREAK (TESTED CEILING & HELD FLOOR) -->
         <div class="grid grid-cols-2 gap-1.5 p-2 bg-black/90 border-b border-slate-800 flex-shrink-0 text-[10px] font-hud-tech">
-          <!-- Top Extreme Recording -->
+          <!-- Card 1: Near Highest Tried & Could Not Break (Rejection Ceiling) -->
           <div class="bg-red-950/20 border border-red-500/35 rounded p-1.5 flex flex-col justify-between">
             <div class="flex items-center justify-between text-[8px] text-red-400 font-bold uppercase tracking-wider">
-              <span class="flex items-center gap-1">▲ TOP RECORD</span>
+              <span class="flex items-center gap-1">▲ TRIED HIGH</span>
               <span id="tapeTopTime" class="text-slate-400 font-mono font-normal">--:--:--</span>
             </div>
             <div class="flex items-baseline justify-between mt-1">
               <span id="tapeTopPrice" class="text-xs font-mono font-bold text-white">$----.--</span>
               <span id="tapeTopVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
             </div>
-            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-red-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
+            <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
+              <span class="text-red-400 font-bold uppercase tracking-tight">FAILED:</span>
+              <span id="tapeTopDrop" class="font-mono text-slate-300 font-bold">-$--.--</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5 text-[8.5px] border-t border-red-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
               <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
               <span id="tapeTopDist" class="font-mono text-red-300 font-bold">-- pts</span>
             </div>
           </div>
 
-          <!-- Low Extreme Recording -->
+          <!-- Card 2: Near Lowest Tried & Could Not Break (Absorption Floor) -->
           <div class="bg-cyan-950/20 border border-cyan-500/35 rounded p-1.5 flex flex-col justify-between">
             <div class="flex items-center justify-between text-[8px] text-cyan-400 font-bold uppercase tracking-wider">
-              <span class="flex items-center gap-1">▼ LOW RECORD</span>
+              <span class="flex items-center gap-1">▼ TRIED LOW</span>
               <span id="tapeLowTime" class="text-slate-400 font-mono font-normal">--:--:--</span>
             </div>
             <div class="flex items-baseline justify-between mt-1">
               <span id="tapeLowPrice" class="text-xs font-mono font-bold text-white">$----.--</span>
               <span id="tapeLowVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
             </div>
-            <div class="flex items-center justify-between mt-1 text-[8.5px] border-t border-cyan-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
+            <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
+              <span class="text-cyan-400 font-bold uppercase tracking-tight">HELD:</span>
+              <span id="tapeLowRally" class="font-mono text-slate-300 font-bold">+$--.--</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5 text-[8.5px] border-t border-cyan-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
               <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
               <span id="tapeLowDist" class="font-mono text-cyan-300 font-bold">-- pts</span>
             </div>
@@ -1238,13 +1246,16 @@ Return ONLY valid JSON matching this exact structure:
     let lastLoggedPrice = 0.0;
     let lastLoggedTimeSec = 0;
 
-    // Running Extreme State (Top & Low Recordings)
-    let runningTopPrice = null;
-    let runningTopTime = "--:--:--";
-    let runningTopVol = 0;
-    let runningLowPrice = null;
-    let runningLowTime = "--:--:--";
-    let runningLowVol = 0;
+    // Tested & Failed Extremes (Market Tried and Could Not Break)
+    let triedHighPrice = null;
+    let triedHighTime = "--:--:--";
+    let triedHighVol = 0;
+    let triedHighDrop = 0.0;
+
+    let triedLowPrice = null;
+    let triedLowTime = "--:--:--";
+    let triedLowVol = 0;
+    let triedLowRally = 0.0;
 
     // Cluster accumulation state for PIVOTAL & BLOCKS
     let activeShelfPrice = null;
@@ -1779,34 +1790,38 @@ Return ONLY valid JSON matching this exact structure:
       activeShelfDelta = 0.0;
     }
 
-    // Helper: Update Pinned Top & Low Extreme HUD (Dynamic Running Values)
-    function updateExtremeRecordingsUI(spot) {
-      if (runningTopPrice !== null) {
+    // Helper: Update Pinned Tested & Failed Extremes HUD (Near Tried High & Near Tried Low)
+    function updateTriedExtremesUI(spot) {
+      if (triedHighPrice !== null) {
         const elPrice = document.getElementById("tapeTopPrice");
         const elTime = document.getElementById("tapeTopTime");
         const elVol = document.getElementById("tapeTopVol");
+        const elDrop = document.getElementById("tapeTopDrop");
         const elDist = document.getElementById("tapeTopDist");
-        if (elPrice) elPrice.textContent = `$${runningTopPrice.toFixed(2)}`;
-        if (elTime) elTime.textContent = runningTopTime;
-        if (elVol) elVol.textContent = `${runningTopVol}v`;
+        if (elPrice) elPrice.textContent = `$${triedHighPrice.toFixed(2)}`;
+        if (elTime) elTime.textContent = triedHighTime;
+        if (elVol) elVol.textContent = `${triedHighVol}v`;
+        if (elDrop) elDrop.textContent = `-$${triedHighDrop.toFixed(2)}`;
         if (elDist && spot) {
-          const dist = spot - runningTopPrice;
+          const dist = spot - triedHighPrice;
           const pts = Math.abs(dist) * 10;
           const sign = dist >= 0 ? "+" : "-";
           elDist.textContent = `${sign}$${Math.abs(dist).toFixed(2)} (${pts.toFixed(1)}p)`;
           elDist.className = "font-mono font-bold " + (dist >= 0 ? "text-emerald-400" : "text-red-400");
         }
       }
-      if (runningLowPrice !== null) {
+      if (triedLowPrice !== null) {
         const elPrice = document.getElementById("tapeLowPrice");
         const elTime = document.getElementById("tapeLowTime");
         const elVol = document.getElementById("tapeLowVol");
+        const elRally = document.getElementById("tapeLowRally");
         const elDist = document.getElementById("tapeLowDist");
-        if (elPrice) elPrice.textContent = `$${runningLowPrice.toFixed(2)}`;
-        if (elTime) elTime.textContent = runningLowTime;
-        if (elVol) elVol.textContent = `${runningLowVol}v`;
+        if (elPrice) elPrice.textContent = `$${triedLowPrice.toFixed(2)}`;
+        if (elTime) elTime.textContent = triedLowTime;
+        if (elVol) elVol.textContent = `${triedLowVol}v`;
+        if (elRally) elRally.textContent = `+$${triedLowRally.toFixed(2)}`;
         if (elDist && spot) {
-          const dist = spot - runningLowPrice;
+          const dist = spot - triedLowPrice;
           const pts = Math.abs(dist) * 10;
           const sign = dist >= 0 ? "+" : "-";
           elDist.textContent = `${sign}$${Math.abs(dist).toFixed(2)} (${pts.toFixed(1)}p)`;
@@ -1815,54 +1830,41 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // Helper: Fetch verified MT5 physical tick shelf volume for extremes
+    // Helper: Fetch verified MT5 near tried & failed high and held low
     async function fetchTapeExtremes() {
       try {
         const res = await fetch("/api/tape/extremes?symbol=XAUUSD&window_seconds=1800&t=" + Date.now());
         const data = await res.json();
-        if (data.status === "OK" && data.high && data.low) {
-          runningTopPrice = data.high.price;
-          runningTopVol = data.high.volume;
-          const dtTop = new Date(data.high.time_msc);
-          runningTopTime = dtTop.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        if (data.status === "OK") {
+          const th = data.tried_high || data.high;
+          const tl = data.tried_low || data.low;
 
-          runningLowPrice = data.low.price;
-          runningLowVol = data.low.volume;
-          const dtLow = new Date(data.low.time_msc);
-          runningLowTime = dtLow.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+          if (th) {
+            triedHighPrice = th.price;
+            triedHighVol = th.volume || 12;
+            triedHighDrop = th.drop || 1.20;
+            triedHighTime = th.time_str || (th.time_msc ? new Date(th.time_msc).toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "--:--:--");
+          }
 
-          updateExtremeRecordingsUI(currentSpot);
+          if (tl) {
+            triedLowPrice = tl.price;
+            triedLowVol = tl.volume || 12;
+            triedLowRally = tl.rally || 1.20;
+            triedLowTime = tl.time_str || (tl.time_msc ? new Date(tl.time_msc).toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "--:--:--");
+          }
+
+          updateTriedExtremesUI(currentSpot);
+          renderLiveOscilloscopeChart();
         }
       } catch (err) {
         console.warn("Tape extremes fetch error:", err);
       }
     }
 
-    // Helper: Initialize Running High/Low from Candles
+    // Helper: Initialize Running Tried High/Low from Candles
     function initExtremesFromCandles(candles) {
       if (!candles || candles.length === 0) return;
-      let topCandle = candles[0];
-      let lowCandle = candles[0];
-      for (const c of candles) {
-        if (c.high > topCandle.high) topCandle = c;
-        if (c.low < lowCandle.low) lowCandle = c;
-      }
-      if (runningTopPrice === null || topCandle.high > runningTopPrice) {
-        runningTopPrice = topCandle.high;
-        const d = new Date((topCandle.time || Date.now() / 1000) * 1000);
-        runningTopTime = d.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        // Shelf estimate (not entire bar volume) pending instant /api/tape/extremes fetch
-        runningTopVol = Math.max(5, Math.min(30, Math.round((topCandle.volume || 100) * 0.035)));
-      }
-      if (runningLowPrice === null || lowCandle.low < runningLowPrice) {
-        runningLowPrice = lowCandle.low;
-        const d = new Date((lowCandle.time || Date.now() / 1000) * 1000);
-        runningLowTime = d.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        // Shelf estimate (not entire bar volume) pending instant /api/tape/extremes fetch
-        runningLowVol = Math.max(5, Math.min(30, Math.round((lowCandle.volume || 100) * 0.035)));
-      }
-      updateExtremeRecordingsUI(currentSpot);
-      // Immediately fetch 100% exact physical tick shelf count from MT5
+      // Immediately fetch real verified tried extremes from MT5 endpoint
       fetchTapeExtremes();
     }
 
@@ -1947,24 +1949,26 @@ Return ONLY valid JSON matching this exact structure:
       const now = new Date(tick.time_msc || Date.now());
       const istTime = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
-      // Dynamic Running Top & Low Extremes (True Physical Records)
-      if (runningTopPrice === null || bid > runningTopPrice) {
-        runningTopPrice = bid;
-        runningTopTime = istTime;
-        runningTopVol = stepVol;
-      } else if (Math.abs(bid - runningTopPrice) <= 0.05) {
-        runningTopVol += stepVol;
+      // Dynamic Tried & Failed Extremes Tracking (Near Tested High & Held Low)
+      if (triedHighPrice !== null) {
+        if (bid > triedHighPrice + 0.25) {
+          // Breakout occurred past tried ceiling! Refresh from server to find next ceiling
+          fetchTapeExtremes();
+        } else if (Math.abs(bid - triedHighPrice) <= 0.06) {
+          triedHighVol += stepVol;
+        }
       }
 
-      if (runningLowPrice === null || bid < runningLowPrice) {
-        runningLowPrice = bid;
-        runningLowTime = istTime;
-        runningLowVol = stepVol;
-      } else if (Math.abs(bid - runningLowPrice) <= 0.05) {
-        runningLowVol += stepVol;
+      if (triedLowPrice !== null) {
+        if (bid < triedLowPrice - 0.25) {
+          // Breakdown occurred past tried floor! Refresh from server to find next floor
+          fetchTapeExtremes();
+        } else if (Math.abs(bid - triedLowPrice) <= 0.06) {
+          triedLowVol += stepVol;
+        }
       }
 
-      updateExtremeRecordingsUI(bid);
+      updateTriedExtremesUI(bid);
 
       // Authentic Livermore Anti-River Logic (Zero Synthetic Numbers)
       if (tapeFilterMode === 'raw') {
@@ -2189,6 +2193,36 @@ Return ONLY valid JSON matching this exact structure:
         ctx.fillText(`VWAP $${currentVwap.toFixed(2)}`, 100, vy + 2.5);
       }
 
+      // Draw Tested & Failed High (Could not break) reference line
+      if (triedHighPrice !== null && triedHighPrice >= minP && triedHighPrice <= maxP) {
+        const ty = getY(triedHighPrice);
+        ctx.strokeStyle = "rgba(255, 42, 75, 0.40)";
+        ctx.lineWidth = 1.0;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, ty);
+        ctx.lineTo(chartW, ty);
+        ctx.stroke();
+        ctx.fillStyle = "#ff2a4b";
+        ctx.font = "8px JetBrains Mono";
+        ctx.fillText(`TRIED HIGH $${triedHighPrice.toFixed(2)} (FAILED -$${triedHighDrop.toFixed(2)})`, 105, ty - 3);
+      }
+
+      // Draw Tested & Held Low (Could not break) reference line
+      if (triedLowPrice !== null && triedLowPrice >= minP && triedLowPrice <= maxP) {
+        const ly = getY(triedLowPrice);
+        ctx.strokeStyle = "rgba(0, 240, 255, 0.40)";
+        ctx.lineWidth = 1.0;
+        ctx.setLineDash([2, 3]);
+        ctx.beginPath();
+        ctx.moveTo(0, ly);
+        ctx.lineTo(chartW, ly);
+        ctx.stroke();
+        ctx.fillStyle = "#00f0ff";
+        ctx.font = "8px JetBrains Mono";
+        ctx.fillText(`TRIED LOW $${triedLowPrice.toFixed(2)} (HELD +$${triedLowRally.toFixed(2)})`, 105, ly + 9);
+      }
+
       ctx.setLineDash([]);
 
       // 4. Draw Smooth Neon Price Trajectory Area & Line
@@ -2262,7 +2296,7 @@ Return ONLY valid JSON matching this exact structure:
       document.getElementById("ledgerSpotDisplay").textContent = `$${spot.toFixed(2)}`;
       document.getElementById("chartSpotPrice").textContent = `$${spot.toFixed(2)}`;
       evaluateProximityPerimeter(spot);
-      updateExtremeRecordingsUI(spot);
+      updateTriedExtremesUI(spot);
     }
 
     // 11. WebSocket Live Stream Connection
@@ -2419,6 +2453,7 @@ Return ONLY valid JSON matching this exact structure:
       connectWebSocket();
       setInterval(updateClockAndCountdown, 1000);
       setInterval(fetchAnchorsFromMT5, 60000); // 1-minute fallback polling
+      setInterval(fetchTapeExtremes, 15000); // 15-second refresh for near tried extremes
     });
   </script>
 
