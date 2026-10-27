@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Livermore & Wyckoff Sovereign Operating Desk — Macro Architecture & Daily Routine</title>
+  <title>The Livermore Sovereign Desk — Automated Ledger & Morning Scan</title>
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700;800&family=Cinzel:wght@600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Rajdhani:wght@500;600;700;800&family=Cinzel:wght@600;700;800;900&family=Caveat:wght@600;700&display=swap');
 
     body {
       font-family: 'Rajdhani', sans-serif;
-      background-color: #04060d;
+      background-color: #03050c;
       color: #e2e8f0;
       margin: 0;
       padding: 0;
@@ -26,14 +26,17 @@
       font-family: 'Cinzel', serif;
     }
 
-    /* Custom Ticker Ribbon */
+    .font-handwritten {
+      font-family: 'Caveat', cursive;
+    }
+
+    /* Ticker Tape Ribbon */
     .ticker-ribbon {
-      background: rgba(8, 12, 24, 0.9);
+      background: rgba(6, 10, 22, 0.95);
       border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: 8px;
     }
 
-    /* Tape Print Pills */
     .tape-print {
       display: inline-flex;
       align-items: center;
@@ -70,38 +73,75 @@
       border-radius: 6px;
       font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.05em;
+      letter-spacing: 0.04em;
       transition: all 0.15s ease;
       cursor: pointer;
     }
     .btn-tab.active {
       background: #3b82f6;
       color: #ffffff;
-      box-shadow: 0 0 12px rgba(59, 130, 246, 0.35);
+      box-shadow: 0 0 14px rgba(59, 130, 246, 0.35);
     }
     .btn-tab.inactive {
-      background: rgba(255, 255, 255, 0.05);
+      background: rgba(255, 255, 255, 0.04);
       color: #94a3b8;
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.07);
     }
     .btn-tab.inactive:hover {
-      background: rgba(255, 255, 255, 0.09);
-      color: #e2e8f0;
+      background: rgba(255, 255, 255, 0.08);
+      color: #f1f5f9;
     }
 
-    /* Protocol Phase Cards */
-    .phase-card {
-      background: rgba(13, 19, 36, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      border-radius: 10px;
-      transition: all 0.2s ease;
+    /* Vintage Ledger Grid */
+    .ledger-table {
+      border-collapse: collapse;
+      width: 100%;
     }
-    .phase-card:hover {
-      border-color: rgba(59, 130, 246, 0.4);
-      background: rgba(13, 19, 36, 0.85);
-      transform: translateY(-2px);
+    .ledger-table th {
+      border: 1px solid #1e293b;
+      padding: 8px 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .ledger-table td {
+      border: 1px solid #1e293b;
+      padding: 6px 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      height: 32px;
     }
 
+    /* Ledger Column Color Themes */
+    .col-sec-rally { background: rgba(59, 130, 246, 0.03); color: #93c5fd; }
+    .col-nat-rally { background: rgba(255, 255, 255, 0.02); color: #f8fafc; font-weight: 700; }
+    .col-up-trend  { background: rgba(16, 185, 129, 0.04); color: #34d399; font-weight: 800; border-bottom: 2px solid #10b981; }
+    .col-down-trend{ background: rgba(244, 63, 94, 0.04); color: #f43f5e; font-weight: 800; border-bottom: 2px solid #f43f5e; }
+    .col-nat-react { background: rgba(255, 255, 255, 0.02); color: #fb7185; font-weight: 700; }
+    .col-sec-react { background: rgba(245, 158, 11, 0.03); color: #fcd34d; }
+
+    /* Pivotal Point Circles */
+    .pp-black-circle {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      border: 1.5px solid #38bdf8;
+      background: rgba(56, 189, 248, 0.15);
+      color: #ffffff;
+      font-weight: 800;
+    }
+    .pp-red-circle {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 9999px;
+      border: 1.5px solid #f43f5e;
+      background: rgba(244, 63, 94, 0.15);
+      color: #fda4af;
+      font-weight: 800;
+    }
+
+    /* Slider styling */
     input[type=range] {
       accent-color: #3b82f6;
     }
@@ -110,283 +150,294 @@
 <body class="p-3 md:p-6 min-h-screen flex flex-col items-center">
 
   <!-- Sovereign Header Banner -->
-  <div class="w-full max-w-[1280px] flex flex-col md:flex-row md:items-center justify-between mb-5 border-b border-slate-800 pb-4 gap-4">
-    <div class="flex items-center gap-3.5">
-      <div class="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
+  <div class="w-full max-w-[1300px] flex flex-col md:flex-row md:items-center justify-between mb-4 border-b border-slate-800 pb-3 gap-3">
+    <div class="flex items-center gap-3">
+      <div class="w-11 h-11 rounded-xl bg-amber-500/10 border border-amber-500/40 flex items-center justify-center text-2xl shadow-[0_0_20px_rgba(245,158,11,0.2)]">
         ⚖️
       </div>
       <div>
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-2">
           <h1 class="text-xl md:text-2xl font-bold tracking-wider font-serif-title text-amber-300">
-            THE LIVERMORE & WYCKOFF OPERATING DESK
+            THE LIVERMORE SOVEREIGN OPERATING DESK
           </h1>
-          <span class="px-2.5 py-0.5 text-xs font-bold font-mono-code bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full">
-            THE SOVEREIGN CODE
+          <span class="px-2 py-0.5 text-xs font-bold font-mono-code bg-amber-500/20 text-amber-300 border border-amber-500/40 rounded-full">
+            AUTOMATED LEDGER & SCAN
           </span>
         </div>
         <p class="text-xs text-slate-400 font-mono-code mt-0.5">
-          Connecting the Macro Structural Cycle (Wyckoff) to the Surgical Pivotal Point Tape Probe (Livermore)
+          Modernizing Jesse Livermore's 6-Column Mathematical Key & 06:30 AM IST Sovereign Money Audit
         </p>
       </div>
     </div>
 
-    <!-- Navigation / View Tabs -->
-    <div class="flex items-center gap-2 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
-      <button id="tabMacro" class="btn-tab active" onclick="switchSection('macro')">
-        1. Macro Structural Architecture
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-1.5 bg-slate-900/90 p-1 rounded-lg border border-slate-800">
+      <button id="tabScan" class="btn-tab active" onclick="switchSection('scan')">
+        1. Morning Sovereign Scan (IST)
       </button>
-      <button id="tabRoutine" class="btn-tab inactive" onclick="switchSection('routine')">
-        2. Daily Operating Routine
+      <button id="tabLedger" class="btn-tab inactive" onclick="switchSection('ledger')">
+        2. Automated 6-Column Ledger
       </button>
       <button id="tabTape" class="btn-tab inactive" onclick="switchSection('tape')">
         3. Digital Tape Execution
       </button>
+      <button id="tabMacro" class="btn-tab inactive" onclick="switchSection('macro')">
+        4. Macro Campaign Map
+      </button>
     </div>
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SECTION 1: THE MACRO STRUCTURAL CYCLE (THE BIG PICTURE)                   -->
+  <!-- SECTION 1: THE MORNING SOVEREIGN SCAN TABLE (06:30 AM IST)                -->
   <!-- ========================================================================= -->
-  <div id="sectionMacro" class="w-full max-w-[1280px] flex flex-col gap-5">
+  <div id="sectionScan" class="w-full max-w-[1300px] flex flex-col gap-4">
     
-    <!-- Big Picture Premise Card -->
-    <div class="bg-gradient-to-r from-blue-950/40 via-slate-900/60 to-purple-950/30 border border-blue-500/30 rounded-xl p-5 shadow-2xl">
-      <div class="flex items-start justify-between gap-4">
-        <div>
-          <span class="text-xs font-mono-code text-blue-400 font-bold uppercase tracking-wider">LIVERMORE'S FIRST PRINCIPLE</span>
-          <h2 class="text-lg md:text-xl font-bold text-slate-100 mt-1 font-serif-title">
-            "Big Money is Never Made in the Fluctuation of Days. It is Made in the Big Swing."
-          </h2>
-          <p class="text-xs md:text-sm text-slate-300 mt-2 max-w-4xl leading-relaxed">
-            In his youth, Jesse Livermore was the world's greatest tape scalper in the bucket shops, betting on 1/8th price wiggles. 
-            He made fortunes, but went broke repeatedly. Why? Because <strong class="text-amber-300">he was trading the noise without the tide</strong>. 
-            He did not reach supreme wealth until he realized: <em>The tape is only an execution tool for a massive macro cycle that was already prepared weeks in advance.</em>
-          </p>
+    <!-- Morning Scan Header Card -->
+    <div class="bg-gradient-to-r from-slate-900 via-blue-950/30 to-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-xl">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse"></span>
+          <span class="text-xs font-mono-code text-amber-400 font-bold uppercase tracking-wider">DAILY SOVEREIGN DAWN RECONNAISSANCE</span>
         </div>
-        <div class="hidden lg:flex flex-col items-end text-right border-l border-slate-800 pl-4 min-w-[200px]">
-          <span class="text-xs font-mono-code text-slate-500">1929 PEAK VALUATION:</span>
-          <span class="text-xl font-bold font-mono-code text-emerald-400">$100,000,000</span>
-          <span class="text-[10px] text-slate-500">(Over $1.6 Billion in Today's Value)</span>
+        <h2 class="text-base md:text-lg font-bold text-slate-100 font-serif-title mt-0.5">
+          The 06:30 AM – 07:30 AM IST Money Market Audit
+        </h2>
+        <p class="text-xs text-slate-400 font-mono-code">
+          Auditing Sovereign Debt Yields, Dollar Transmission, Physical Vault Flows, and High-Impact Gates before market battle.
+        </p>
+      </div>
+
+      <!-- Live Bias Badge -->
+      <div class="flex items-center gap-3 bg-black/40 border border-rose-500/40 px-4 py-2 rounded-lg">
+        <div class="text-right">
+          <span class="text-[10px] font-mono-code text-slate-400 block uppercase">TODAY'S SOVEREIGN VERDICT</span>
+          <span class="text-sm font-bold font-mono-code text-rose-400">BEARISH GRAVITATIONAL HEADWIND</span>
         </div>
+        <span class="text-2xl">⚡</span>
       </div>
     </div>
 
-    <!-- The 4-Phase Wyckoff-Livermore Structural Map -->
-    <div class="bg-[#070b18] border border-slate-800 rounded-xl p-4 md:p-6 shadow-2xl relative">
-      <div class="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 mb-4 gap-2">
-        <div class="flex items-center gap-2">
-          <span class="w-3 h-3 rounded-full bg-amber-400"></span>
-          <h3 class="text-base font-bold text-slate-100 uppercase tracking-wide">
-            The Universal Structural Campaign (Accumulation → Markup → Distribution → Markdown)
-          </h3>
-        </div>
-        <span class="text-xs font-mono-code text-slate-400">
-          Where Micro Tape Reading Fits into the Master Campaign
+    <!-- The Sovereign Scan Grid Table -->
+    <div class="bg-[#060914] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+      <div class="p-3 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+        <span class="text-xs font-mono-code font-bold text-slate-300 uppercase tracking-wider">
+          SOVEREIGN TRANSMISSION METRICS TABLE (XAUUSD ASSET PAIR)
+        </span>
+        <span class="text-xs font-mono-code text-slate-500">
+          LOGGED AT 06:30:15 IST • SOURCE: FRED / NY FED / COMEX / SGE
         </span>
       </div>
 
-      <!-- SVG Macro Cycle Canvas -->
-      <div class="w-full h-[320px] bg-[#030611] rounded-lg border border-slate-800/80 overflow-hidden relative mb-4">
-        <svg class="w-full h-full" viewBox="0 0 1000 320" preserveAspectRatio="none">
-          <!-- Background Zones -->
-          <!-- Phase 1: Accumulation Box -->
-          <rect x="30" y="160" width="220" height="120" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(16, 185, 129, 0.25)" stroke-dasharray="4 4" rx="6" />
-          <text x="140" y="295" fill="#34d399" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 1: ACCUMULATION (THE CAUSE)</text>
-
-          <!-- Phase 2: Markup Ramp -->
-          <rect x="270" y="40" width="230" height="240" fill="rgba(59, 130, 246, 0.04)" stroke="rgba(59, 130, 246, 0.2)" stroke-dasharray="4 4" rx="6" />
-          <text x="385" y="295" fill="#60a5fa" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 2: MARKUP (LINE OF LEAST RESISTANCE)</text>
-
-          <!-- Phase 3: Distribution Box -->
-          <rect x="520" y="30" width="240" height="120" fill="rgba(244, 63, 94, 0.05)" stroke="rgba(244, 63, 94, 0.25)" stroke-dasharray="4 4" rx="6" />
-          <text x="640" y="140" fill="#fb7185" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 3: DISTRIBUTION (THE TRAP)</text>
-
-          <!-- Phase 4: Markdown Collapse -->
-          <rect x="780" y="30" width="190" height="250" fill="rgba(245, 158, 11, 0.04)" stroke="rgba(245, 158, 11, 0.2)" stroke-dasharray="4 4" rx="6" />
-          <text x="875" y="295" fill="#fbbf24" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 4: MARKDOWN (LIQUIDATION)</text>
-
-          <!-- The Continuous Master Price Path -->
-          <!-- Accumulation Path -->
-          <path d="M 40 190 Q 70 230 100 200 T 150 250 T 180 180 T 210 260 T 235 240 T 260 170" fill="none" stroke="#64748b" stroke-width="2" />
-          <!-- The Spring (Liquidity Sweep at Bottom) -->
-          <circle cx="210" cy="260" r="5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
-          <text x="210" y="285" fill="#34d399" font-size="10" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">THE SPRING (SWEEP)</text>
-
-          <!-- Markup Acceleration Path -->
-          <path d="M 260 170 Q 300 150 340 120 T 420 80 T 500 60 T 530 65" fill="none" stroke="#3b82f6" stroke-width="2.5" />
-          <text x="390" y="90" fill="#93c5fd" font-size="10" font-family="JetBrains Mono" font-weight="700">"SIT TIGHT ON WINNERS"</text>
-
-          <!-- Distribution Path -->
-          <path d="M 530 65 Q 570 45 610 60 T 670 35 T 720 70 T 750 60 T 770 100" fill="none" stroke="#64748b" stroke-width="2" />
-          <!-- The Upthrust / UTAD (Sweep at Top) -->
-          <circle cx="670" cy="35" r="6" fill="#f43f5e" stroke="#ffffff" stroke-width="1.8" />
-          <text x="670" y="22" fill="#fb7185" font-size="11" font-family="JetBrains Mono" font-weight="900" text-anchor="middle">UTAD / PIVOTAL POINT SWEEP</text>
-
-          <!-- Markdown Collapse Path -->
-          <path d="M 770 100 Q 810 160 850 200 T 910 250 T 960 270" fill="none" stroke="#f43f5e" stroke-width="2.5" />
-
-          <!-- Zoom Lens Callout connecting to Section 3 -->
-          <line x1="670" y1="35" x2="670" y2="105" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="3 3" />
-          <rect x="580" y="105" width="180" height="24" fill="#0f172a" stroke="#f59e0b" rx="4" />
-          <text x="670" y="121" fill="#fbbf24" font-size="9.5" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">🔍 TAPE ZOOM: SECTION 3 ENTRY</text>
-        </svg>
-      </div>
-
-      <!-- The 3 Immutable Laws of the Big Picture -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-        <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-lg">
-          <span class="text-amber-400 font-bold font-mono-code uppercase">LAW 1: SUPPLY VS. DEMAND</span>
-          <p class="text-slate-300 mt-1 leading-relaxed">
-            When demand exceeds supply, price rises. When supply exceeds demand, price falls. 
-            The tape's only job is to detect which side is running out of bullets at key boundaries.
-          </p>
-        </div>
-        <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-lg">
-          <span class="text-blue-400 font-bold font-mono-code uppercase">LAW 2: CAUSE VS. EFFECT</span>
-          <p class="text-slate-300 mt-1 leading-relaxed">
-            The market cannot make a massive 50-point move without first spending hours or days building a "Cause" (horizontal consolidation). 
-            The larger the consolidation box, the bigger the resulting explosive trend.
-          </p>
-        </div>
-        <div class="bg-slate-900/80 border border-slate-800 p-3.5 rounded-lg">
-          <span class="text-rose-400 font-bold font-mono-code uppercase">LAW 3: EFFORT VS. RESULT</span>
-          <p class="text-slate-300 mt-1 leading-relaxed">
-            Volume is the Effort; Price progress is the Result. 
-            If huge volume prints on the tape but price refuses to advance by even 10 cents, an iceberg institution is absorbing. Reversal is imminent.
-          </p>
-        </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-xs font-mono-code">
+          <thead class="bg-slate-900/90 text-slate-400 border-b border-slate-800 text-[11px] uppercase">
+            <tr>
+              <th class="py-2.5 px-4">Metric / Sovereign Gauge</th>
+              <th class="py-2.5 px-3">Live Value</th>
+              <th class="py-2.5 px-3">24h Net Delta</th>
+              <th class="py-2.5 px-3">Transmission Vector</th>
+              <th class="py-2.5 px-4">Livermore's Deductive Reality</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800/80 text-slate-200">
+            <!-- Metric 1: TIPS Real Yield -->
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-4 font-bold text-amber-300 flex items-center gap-2">
+                <span>📈</span> US 10Y Real Yield (DFII10 / TIPS)
+              </td>
+              <td class="py-3 px-3 font-extrabold text-white">1.94%</td>
+              <td class="py-3 px-3 text-rose-400 font-bold">+5.2 bps</td>
+              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px]">TIGHTENING CASH</span></td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">Real opportunity cost of Gold is surging. Cash pays higher real return ⟹ <strong>Suppressive pressure on XAUUSD</strong>.</td>
+            </tr>
+            <!-- Metric 2: DXY -->
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-4 font-bold text-blue-300 flex items-center gap-2">
+                <span>💵</span> US Dollar Index (DXY)
+              </td>
+              <td class="py-3 px-3 font-extrabold text-white">104.45</td>
+              <td class="py-3 px-3 text-rose-400 font-bold">+0.38%</td>
+              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 border border-rose-500/30 text-[10px]">DOLLAR FIRMING</span></td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">DXY broke above yesterday's high. Currency flow is draining away from commodity hedges into dollar cash.</td>
+            </tr>
+            <!-- Metric 3: SGE Premium -->
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-4 font-bold text-emerald-300 flex items-center gap-2">
+                <span>🪙</span> Shanghai Gold Physical Premium
+              </td>
+              <td class="py-3 px-3 font-extrabold text-white">+$12.40 / oz</td>
+              <td class="py-3 px-3 text-amber-400 font-bold">- $4.20 / oz</td>
+              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 text-[10px]">MODERATE ABSORPTION</span></td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">Asian central bank physical bid remains positive but premium contracted. Not strong enough to overpower yield surge.</td>
+            </tr>
+            <!-- Metric 4: SOFR / Reverse Repo -->
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-4 font-bold text-purple-300 flex items-center gap-2">
+                <span>🏦</span> NY Fed Bank Liquidity (SOFR / RRP)
+              </td>
+              <td class="py-3 px-3 font-extrabold text-white">5.32%</td>
+              <td class="py-3 px-3 text-slate-400">FLAT (0.0)</td>
+              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-slate-700/50 text-slate-300 text-[10px]">STABLE INTERBANK</span></td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]">No sudden systemic bank crisis or liquidity injection. Systemic tail risk premium is muted.</td>
+            </tr>
+            <!-- Metric 5: Event Gate Runway -->
+            <tr class="hover:bg-slate-800/30 transition-colors">
+              <td class="py-3 px-4 font-bold text-cyan-300 flex items-center gap-2">
+                <span>⏱️</span> Next Tier-1 High-Impact Gate
+              </td>
+              <td class="py-3 px-3 font-extrabold text-amber-300">06:00 PM IST</td>
+              <td class="py-3 px-3 text-cyan-400 font-bold">11h 30m away</td>
+              <td class="py-3 px-3"><span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px]">ROADWAY CLEAR</span></td>
+              <td class="py-3 px-4 text-slate-400 text-[11px]"><strong>US ISM Services PMI & Prices Paid at 06:00 PM IST</strong>. Clean trading runway for London open (01:30 PM–04:30 PM IST).</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-  </div>
-
-  <!-- ========================================================================= -->
-  <!-- SECTION 2: THE DAILY OPERATING ROUTINE (HOW THEY SPENT THEIR 24 HOURS)    -->
-  <!-- ========================================================================= -->
-  <div id="sectionRoutine" class="w-full max-w-[1280px] flex flex-col gap-5 hidden">
-    
-    <!-- Routine Header Quote -->
-    <div class="bg-slate-900/70 border border-slate-800 rounded-xl p-5 shadow-xl">
-      <div class="flex items-center gap-3">
-        <span class="text-2xl">🕰️</span>
-        <div>
-          <h2 class="text-lg md:text-xl font-bold text-slate-100 font-serif-title">
-            The Daily Life & Mental Fortress of Jesse Livermore
-          </h2>
-          <p class="text-xs text-slate-400 font-mono-code mt-0.5">
-            How he prepared in absolute silence, executed like an executioner, and reconciled his books at dusk.
-          </p>
-        </div>
-      </div>
-    </div>
-
-    <!-- The 3 Pillars of the Trading Day -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <!-- The Handwritten Leather Ledger Note (Livermore's Personal Journal Entry) -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
       
-      <!-- Phase A: The Dawn Audit -->
-      <div class="phase-card p-5 flex flex-col border-t-4 border-t-amber-400">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-mono-code text-amber-400 font-bold">06:00 AM – 09:00 AM</span>
-          <span class="text-lg">🌅</span>
+      <!-- The Pocket Book Note -->
+      <div class="md:col-span-2 bg-[#090e1f] border border-amber-500/30 rounded-xl p-4 shadow-xl relative overflow-hidden">
+        <div class="flex items-center justify-between mb-2 border-b border-slate-800 pb-2">
+          <span class="text-xs font-mono-code text-amber-400 font-bold uppercase tracking-wider">
+            📓 LIVERMORE'S PRIVATE POCKET LEDGER NOTE (OCTOBER 27, 2026 • 07:10 AM IST)
+          </span>
+          <span class="text-[10px] font-mono-code text-slate-500">HANDWRITTEN IN BLACK INK</span>
         </div>
-        <h3 class="text-base font-bold text-slate-100 uppercase tracking-wider mb-2 font-serif-title">
-          1. The Morning Audit & Complete Silence
-        </h3>
-        <p class="text-xs text-slate-300 leading-relaxed mb-4">
-          Livermore lived in upstate New York and took an early morning train to Manhattan. 
-          He maintained a strict rule: <strong>NO ONE was allowed to speak to him before the market opened.</strong> No gossip, no tips, no retail chatter.
+        <p class="font-handwritten text-xl md:text-2xl text-amber-100/90 leading-relaxed tracking-wide">
+          "Real yields pushed above 1.90% with the Dollar firming. The master tide is downward. 
+          Asian trade built a narrow cause between $3,995.00 and $4,012.00. 
+          I have written down $4,012.00 as today's Reversal Pivotal Point. 
+          I shall not anticipate. If London rallies price to poke above $4,012.00 and fails to hold it on the tape, 
+          I will place a 20% feeler probe on the short side. Tripwire risk $1.50. Otherwise, I sit tight."
         </p>
-        <div class="space-y-2 mt-auto text-xs font-mono-code text-slate-300">
-          <div class="bg-black/30 p-2 rounded border border-slate-800/80">
-            <strong class="text-amber-300">The Money Market Audit:</strong> He examined Call Money Rates, Gold flow shipments between London & NY, and Central Bank balance sheets.
-          </div>
-          <div class="bg-black/30 p-2 rounded border border-slate-800/80">
-            <strong class="text-amber-300">The Pivotal Point Ledger:</strong> Before arriving at the office, he had exactly 2 or 3 critical price coordinates written down in his private pocket ledger.
-          </div>
-        </div>
       </div>
 
-      <!-- Phase B: The Battle in the Arena -->
-      <div class="phase-card p-5 flex flex-col border-t-4 border-t-blue-500">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-mono-code text-blue-400 font-bold">09:30 AM – 03:00 PM</span>
-          <span class="text-lg">⚔️</span>
+      <!-- The 3 Action Coordinates -->
+      <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-4 flex flex-col justify-between">
+        <div>
+          <span class="text-xs font-mono-code text-slate-400 font-bold uppercase tracking-wider block mb-2">
+            TODAY'S 3 PIVOTAL TARGETS
+          </span>
+          <div class="space-y-2 font-mono-code text-xs">
+            <div class="bg-black/40 p-2 rounded border border-rose-500/30 flex justify-between">
+              <span class="text-slate-400">PIVOTAL HIGH (ASH):</span>
+              <span class="text-rose-400 font-bold">$4,012.00</span>
+            </div>
+            <div class="bg-black/40 p-2 rounded border border-blue-500/30 flex justify-between">
+              <span class="text-slate-400">PIVOTAL LOW (ASL):</span>
+              <span class="text-blue-400 font-bold">$3,995.00</span>
+            </div>
+            <div class="bg-black/40 p-2 rounded border border-slate-700 flex justify-between">
+              <span class="text-slate-400">WEEKLY OPEN:</span>
+              <span class="text-slate-200 font-bold">$4,008.50</span>
+            </div>
+          </div>
         </div>
-        <h3 class="text-base font-bold text-slate-100 uppercase tracking-wider mb-2 font-serif-title">
-          2. The Battle: Probing & Sitting Tight
-        </h3>
-        <p class="text-xs text-slate-300 leading-relaxed mb-4">
-          He sat in a private office with only his tape machine and a private quote board. 
-          He did not trade constantly. Most hours were spent <em>doing absolutely nothing</em> until price reached his predefined Pivotal Point.
-        </p>
-        <div class="space-y-2 mt-auto text-xs font-mono-code text-slate-300">
-          <div class="bg-black/30 p-2 rounded border border-slate-800/80">
-            <strong class="text-blue-300">The Probe Test (Small Size):</strong> He never went all-in. He placed a small 20% feeler order. If the tape proved him wrong by even 1%, he cut it instantly without hesitation.
-          </div>
-          <div class="bg-black/30 p-2 rounded border border-slate-800/80">
-            <strong class="text-blue-300">The Pyramid Rule:</strong> Only when his first order was in profit did he add more. He NEVER averaged down on a loser.
-          </div>
-        </div>
-      </div>
-
-      <!-- Phase C: The Dusk Reckoning -->
-      <div class="phase-card p-5 flex flex-col border-t-4 border-t-emerald-400">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-mono-code text-emerald-400 font-bold">04:00 PM – 07:00 PM</span>
-          <span class="text-lg">🌙</span>
-        </div>
-        <h3 class="text-base font-bold text-slate-100 uppercase tracking-wider mb-2 font-serif-title">
-          3. The Evening Ledger & The Bank Vault
-        </h3>
-        <p class="text-xs text-slate-300 leading-relaxed mb-4">
-          After the ticker stopped, everyone else went to the bar. Livermore stayed behind. 
-          No clerk was ever permitted to write in his private black ledger—he handwrote every transaction himself.
-        </p>
-        <div class="space-y-2 mt-auto text-xs font-mono-code text-slate-300">
-          <div class="bg-black/30 p-2 rounded border border-slate-800/80">
-            <strong class="text-emerald-300">The Error Autopsy:</strong> If he took a loss, he studied it like a crime scene. Did he anticipate the market instead of waiting for the tape?
-          </div>
-          <div class="bg-black/30 p-2 rounded border border-slate-800/80">
-            <strong class="text-emerald-300">The Bank Vault Rule:</strong> At the end of every winning campaign, he withdrew 50% of the profits in physical cash and locked it into a safety deposit box so the market could never take it back.
-          </div>
+        <div class="mt-3 text-[10px] font-mono-code text-emerald-400 pt-2 border-t border-slate-800">
+          ✓ Posture: STAND ASIDE until $4,012.00 or $3,995.00 is tested.
         </div>
       </div>
 
     </div>
 
-    <!-- The Livermore Mental Commandments -->
-    <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-5">
-      <h3 class="text-sm font-bold text-slate-200 font-serif-title uppercase tracking-wider mb-3">
-        The 4 Golden Mental Commandments of Jesse Livermore:
-      </h3>
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs font-mono-code text-slate-300">
-        <div class="border-l-2 border-amber-400 pl-3">
-          <span class="text-amber-400 font-bold">"Do not anticipate the market."</span>
-          <p class="text-slate-400 mt-0.5">Wait for the market to actually confirm the turning point at the Pivotal Point before acting. Never trade on a hunch.</p>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- SECTION 2: THE AUTOMATED 6-COLUMN LIVERMORE LEDGER                        -->
+  <!-- ========================================================================= -->
+  <div id="sectionLedger" class="w-full max-w-[1300px] flex flex-col gap-4 hidden">
+    
+    <!-- Configurable Engine Settings Bar -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+      <div class="flex items-center gap-3">
+        <span class="text-xl">⚙️</span>
+        <div>
+          <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wider">
+            Automated Mathematical Ledger Controls
+          </h3>
+          <p class="text-[11px] text-slate-400 font-mono-code">
+            Configure movement rules dynamically based on changing market volatility (ATR).
+          </p>
         </div>
-        <div class="border-l-2 border-emerald-400 pl-3">
-          <span class="text-emerald-400 font-bold">"Markets are never wrong — opinions often are."</span>
-          <p class="text-slate-400 mt-0.5">The tape is reporting unvarnished reality. If the tape disagrees with your bias, discard your bias immediately.</p>
+      </div>
+
+      <!-- Controls Form -->
+      <div class="flex flex-wrap items-center gap-4 text-xs font-mono-code">
+        <!-- Setting 1: Trend Movement Rule -->
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-slate-800">
+          <span class="text-slate-400">TREND RULE ($):</span>
+          <input type="number" id="inputTrendRule" value="15" min="5" max="40" step="1" onchange="updateLedgerRules()" class="w-14 bg-slate-800 text-amber-300 font-bold px-1.5 py-0.5 rounded text-center border border-slate-700">
         </div>
-        <div class="border-l-2 border-blue-400 pl-3">
-          <span class="text-blue-400 font-bold">"Cut your losses fast; let your winners ride."</span>
-          <p class="text-slate-400 mt-0.5">A loss is like a small fire: put it out before it consumes your house. But a winning trade should be allowed to run the full distance of the trend.</p>
+
+        <!-- Setting 2: Natural Reaction Rule -->
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-slate-800">
+          <span class="text-slate-400">REACTION RULE ($):</span>
+          <input type="number" id="inputReactionRule" value="6" min="2" max="20" step="1" onchange="updateLedgerRules()" class="w-14 bg-slate-800 text-rose-300 font-bold px-1.5 py-0.5 rounded text-center border border-slate-700">
         </div>
-        <div class="border-l-2 border-purple-400 pl-3">
-          <span class="text-purple-400 font-bold">"A trader must have mental balance."</span>
-          <p class="text-slate-400 mt-0.5">Never trade when sick, emotionally exhausted, or under domestic friction. Clarity of mind is your ultimate edge.</p>
+
+        <!-- Setting 3: Feeler Probe Size -->
+        <div class="flex items-center gap-2 bg-black/40 px-3 py-1.5 rounded-lg border border-slate-800">
+          <span class="text-slate-400">1ST PROBE:</span>
+          <span class="text-emerald-400 font-bold">20% LOTS</span>
         </div>
+
+        <!-- Simulate New Tick Button -->
+        <button onclick="simulateTick()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all shadow-[0_0_10px_rgba(59,130,246,0.3)]">
+          + Feed Live Tick
+        </button>
+      </div>
+    </div>
+
+    <!-- The 6-Column Mathematical Table -->
+    <div class="bg-[#050814] border border-slate-800 rounded-xl overflow-hidden shadow-2xl">
+      <div class="overflow-x-auto">
+        <table class="ledger-table text-center">
+          <thead>
+            <tr class="bg-slate-900 text-slate-300">
+              <th class="w-24 text-slate-400">Date / Time (IST)</th>
+              <th class="col-sec-rally">1. Secondary Rally<br><span class="text-[9px] font-normal text-blue-400">(Pencil / Blue)</span></th>
+              <th class="col-nat-rally">2. Natural Rally<br><span class="text-[9px] font-normal text-slate-400">(Black Ink)</span></th>
+              <th class="col-up-trend">3. Upward Trend<br><span class="text-[9px] font-normal text-emerald-400">(Black Ink / Und)</span></th>
+              <th class="col-down-trend">4. Downward Trend<br><span class="text-[9px] font-normal text-rose-400">(Red Ink / Und)</span></th>
+              <th class="col-nat-react">5. Natural Reaction<br><span class="text-[9px] font-normal text-slate-400">(Red Ink)</span></th>
+              <th class="col-sec-react">6. Secondary Reaction<br><span class="text-[9px] font-normal text-amber-400">(Pencil / Blue)</span></th>
+              <th class="w-44 text-slate-400">Tactical Market Status</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody">
+            <!-- Populated dynamically by JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Ledger Legend & Interpretation -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs font-mono-code">
+      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex items-center gap-2.5">
+        <span class="pp-black-circle font-bold">$4,012.00</span>
+        <span class="text-slate-300"><strong>Black Circle:</strong> Reversal Pivotal Point. If tape fails to break, look to short.</span>
+      </div>
+      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex items-center gap-2.5">
+        <span class="pp-red-circle font-bold">$3,985.00</span>
+        <span class="text-slate-300"><strong>Red Circle:</strong> Reaction Pivotal Point. Support floor of the natural reaction.</span>
+      </div>
+      <div class="bg-slate-900/60 p-3 rounded-lg border border-slate-800 flex items-center gap-2.5">
+        <span class="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded font-bold">DOWNWARD TR.</span>
+        <span class="text-slate-300"><strong>Active Column:</strong> Current market trend is Downward. Only trade with red ink.</span>
       </div>
     </div>
 
   </div>
 
   <!-- ========================================================================= -->
-  <!-- SECTION 3: THE DIGITAL TAPE & SURGICAL EXECUTION (INTERACTIVE CANVAS)     -->
+  <!-- SECTION 3: DIGITAL TAPE EXECUTION & WYCKOFF WALL (INTERACTIVE)            -->
   <!-- ========================================================================= -->
-  <div id="sectionTape" class="w-full max-w-[1280px] flex flex-col gap-5 hidden">
+  <div id="sectionTape" class="w-full max-w-[1300px] flex flex-col gap-4 hidden">
     
-    <!-- Live Ticker Paper Ribbon -->
+    <!-- Live Ticker Ribbon -->
     <div class="w-full">
       <div class="flex items-center justify-between text-xs font-mono-code text-slate-400 mb-1.5 px-1">
         <div class="flex items-center gap-2">
@@ -407,7 +458,7 @@
     <div class="w-full bg-[#070b19] border border-slate-800 rounded-xl overflow-hidden shadow-2xl relative">
       
       <!-- Top Inspection Bar -->
-      <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs font-mono-code">
+      <div class="bg-slate-900/90 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 text-xs font-mono-code">
         <div class="flex items-center gap-4">
           <div>
             <span class="text-slate-500">INSTRUMENT:</span>
@@ -440,7 +491,7 @@
       </div>
 
       <!-- Dual Canvas Layout -->
-      <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800 relative min-h-[460px]">
+      <div class="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-800 relative min-h-[440px]">
         
         <!-- Panel 1: The Candlestick (The Deceptive Summary) -->
         <div class="p-4 flex flex-col relative">
@@ -458,14 +509,11 @@
             Hides the sequential order of events. By the time the candle closes red, price is already down at $4,007.50—you missed the move!
           </p>
 
-          <!-- SVG Candlestick Viewport -->
-          <div class="relative flex-1 w-full h-[360px] bg-[#04060e] rounded-lg border border-slate-800/80 overflow-hidden">
-            <svg id="svgCandle" class="w-full h-full" viewBox="0 0 540 360" preserveAspectRatio="none">
+          <div class="relative flex-1 w-full h-[340px] bg-[#04060e] rounded-lg border border-slate-800/80 overflow-hidden">
+            <svg id="svgCandle" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none">
               <!-- Injected dynamically -->
             </svg>
-            
             <div id="candleCallout" class="absolute bottom-3 left-3 right-3 bg-slate-900/90 border border-slate-700 p-2.5 rounded text-xs font-mono-code text-slate-300 pointer-events-none">
-              <!-- Dynamic explanation -->
             </div>
           </div>
         </div>
@@ -486,14 +534,11 @@
             Shows every sequential step of price. Reveals the exact tick where buyers slammed into the passive sell wall at $4,012.00 without any formula.
           </p>
 
-          <!-- SVG Digital Tape Viewport -->
-          <div class="relative flex-1 w-full h-[360px] bg-[#04060e] rounded-lg border border-slate-800/80 overflow-hidden">
-            <svg id="svgTape" class="w-full h-full" viewBox="0 0 540 360" preserveAspectRatio="none">
+          <div class="relative flex-1 w-full h-[340px] bg-[#04060e] rounded-lg border border-slate-800/80 overflow-hidden">
+            <svg id="svgTape" class="w-full h-full" viewBox="0 0 540 340" preserveAspectRatio="none">
               <!-- Injected dynamically -->
             </svg>
-
             <div id="tapeCallout" class="absolute bottom-3 left-3 right-3 bg-slate-900/95 border border-emerald-500/40 p-2.5 rounded text-xs font-mono-code text-slate-200 pointer-events-none shadow-lg">
-              <!-- Dynamic explanation -->
             </div>
           </div>
         </div>
@@ -523,29 +568,198 @@
 
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- SECTION 4: MACRO STRUCTURAL CYCLE & 24H IST ROUTINE                       -->
+  <!-- ========================================================================= -->
+  <div id="sectionMacro" class="w-full max-w-[1300px] flex flex-col gap-4 hidden">
+    
+    <!-- Big Picture Premise Card -->
+    <div class="bg-gradient-to-r from-blue-950/40 via-slate-900/60 to-purple-950/30 border border-blue-500/30 rounded-xl p-4 shadow-xl">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <span class="text-xs font-mono-code text-blue-400 font-bold uppercase tracking-wider">LIVERMORE'S FIRST PRINCIPLE</span>
+          <h2 class="text-base md:text-lg font-bold text-slate-100 mt-0.5 font-serif-title">
+            "Big Money is Never Made in the Fluctuation of Days. It is Made in the Big Swing."
+          </h2>
+          <p class="text-xs text-slate-300 mt-1.5 max-w-4xl leading-relaxed">
+            The tape is only the micro-execution lens for a massive macro campaign that was already prepared weeks in advance.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- The 4-Phase Wyckoff Structural Cycle -->
+    <div class="bg-[#070b18] border border-slate-800 rounded-xl p-4 shadow-xl">
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2 mb-3">
+        <h3 class="text-sm font-bold text-slate-100 uppercase tracking-wide">
+          The Universal Structural Campaign (Accumulation → Markup → Distribution → Markdown)
+        </h3>
+        <span class="text-xs font-mono-code text-slate-400">Where Micro Tape Fits into Macro</span>
+      </div>
+
+      <div class="w-full h-[280px] bg-[#030611] rounded-lg border border-slate-800/80 overflow-hidden relative mb-3">
+        <svg class="w-full h-full" viewBox="0 0 1000 280" preserveAspectRatio="none">
+          <rect x="30" y="140" width="220" height="110" fill="rgba(16, 185, 129, 0.05)" stroke="rgba(16, 185, 129, 0.25)" stroke-dasharray="4 4" rx="6" />
+          <text x="140" y="240" fill="#34d399" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 1: ACCUMULATION (THE CAUSE)</text>
+
+          <rect x="270" y="30" width="230" height="220" fill="rgba(59, 130, 246, 0.04)" stroke="rgba(59, 130, 246, 0.2)" stroke-dasharray="4 4" rx="6" />
+          <text x="385" y="240" fill="#60a5fa" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 2: MARKUP (LINE OF LEAST RESISTANCE)</text>
+
+          <rect x="520" y="20" width="240" height="110" fill="rgba(244, 63, 94, 0.05)" stroke="rgba(244, 63, 94, 0.25)" stroke-dasharray="4 4" rx="6" />
+          <text x="640" y="125" fill="#fb7185" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 3: DISTRIBUTION (THE TRAP)</text>
+
+          <rect x="780" y="20" width="190" height="230" fill="rgba(245, 158, 11, 0.04)" stroke="rgba(245, 158, 11, 0.2)" stroke-dasharray="4 4" rx="6" />
+          <text x="875" y="240" fill="#fbbf24" font-size="10.5" font-family="JetBrains Mono" font-weight="700" text-anchor="middle">PHASE 4: MARKDOWN (LIQUIDATION)</text>
+
+          <path d="M 40 170 Q 70 210 100 180 T 150 230 T 180 160 T 210 240 T 235 220 T 260 150" fill="none" stroke="#64748b" stroke-width="2" />
+          <circle cx="210" cy="240" r="5" fill="#10b981" stroke="#ffffff" stroke-width="1.5" />
+          <text x="210" y="260" fill="#34d399" font-size="10" font-family="JetBrains Mono" font-weight="800" text-anchor="middle">SPRING (SWEEP)</text>
+
+          <path d="M 260 150 Q 300 130 340 100 T 420 60 T 500 45 T 530 50" fill="none" stroke="#3b82f6" stroke-width="2.5" />
+
+          <path d="M 530 50 Q 570 35 610 50 T 670 25 T 720 55 T 750 45 T 770 85" fill="none" stroke="#64748b" stroke-width="2" />
+          <circle cx="670" cy="25" r="6" fill="#f43f5e" stroke="#ffffff" stroke-width="1.8" />
+          <text x="670" y="15" fill="#fb7185" font-size="10.5" font-family="JetBrains Mono" font-weight="900" text-anchor="middle">UTAD / PIVOTAL POINT SWEEP</text>
+
+          <path d="M 770 85 Q 810 145 850 185 T 910 235 T 960 255" fill="none" stroke="#f43f5e" stroke-width="2.5" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- The 24-Hour IST Operating Cadence -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs font-mono-code">
+      <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
+        <span class="text-amber-400 font-bold block mb-1">06:30 AM – 07:30 AM IST</span>
+        <strong class="text-slate-200">The Dawn Sovereign Audit:</strong>
+        <p class="text-slate-400 mt-1">Audit TIPS DFII10, DXY, and forward Tier-1 event runway. Establish macro direction.</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
+        <span class="text-blue-400 font-bold block mb-1">11:30 AM – 01:30 PM IST</span>
+        <strong class="text-slate-200">Asian Range Lock:</strong>
+        <p class="text-slate-400 mt-1">Record Asian High & Low. Stand aside until London opens.</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
+        <span class="text-emerald-400 font-bold block mb-1">01:30 PM – 06:00 PM IST</span>
+        <strong class="text-slate-200">London Battle (Entry #1):</strong>
+        <p class="text-slate-400 mt-1">Hunt liquidity sweep of Asian extreme. Execute 20% feeler probe on rejection.</p>
+      </div>
+      <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-lg">
+        <span class="text-purple-400 font-bold block mb-1">06:00 PM – 11:30 PM IST</span>
+        <strong class="text-slate-200">New York & 1:00 PM EST Gate:</strong>
+        <p class="text-slate-400 mt-1">US Data at 06:00 PM. US Bond auction at 10:30 PM. Pyramiding and trail.</p>
+      </div>
+    </div>
+
+  </div>
+
   <!-- Interactive JavaScript Engine -->
   <script>
     // Tab Navigation
     function switchSection(sec) {
-      document.getElementById('sectionMacro').classList.add('hidden');
-      document.getElementById('sectionRoutine').classList.add('hidden');
+      document.getElementById('sectionScan').classList.add('hidden');
+      document.getElementById('sectionLedger').classList.add('hidden');
       document.getElementById('sectionTape').classList.add('hidden');
+      document.getElementById('sectionMacro').classList.add('hidden');
 
-      document.getElementById('tabMacro').className = 'btn-tab inactive';
-      document.getElementById('tabRoutine').className = 'btn-tab inactive';
+      document.getElementById('tabScan').className = 'btn-tab inactive';
+      document.getElementById('tabLedger').className = 'btn-tab inactive';
       document.getElementById('tabTape').className = 'btn-tab inactive';
+      document.getElementById('tabMacro').className = 'btn-tab inactive';
 
-      if (sec === 'macro') {
-        document.getElementById('sectionMacro').classList.remove('hidden');
-        document.getElementById('tabMacro').className = 'btn-tab active';
-      } else if (sec === 'routine') {
-        document.getElementById('sectionRoutine').classList.remove('hidden');
-        document.getElementById('tabRoutine').className = 'btn-tab active';
+      if (sec === 'scan') {
+        document.getElementById('sectionScan').classList.remove('hidden');
+        document.getElementById('tabScan').className = 'btn-tab active';
+      } else if (sec === 'ledger') {
+        document.getElementById('sectionLedger').classList.remove('hidden');
+        document.getElementById('tabLedger').className = 'btn-tab active';
+        renderLedgerTable();
       } else if (sec === 'tape') {
         document.getElementById('sectionTape').classList.remove('hidden');
         document.getElementById('tabTape').className = 'btn-tab active';
         render();
+      } else if (sec === 'macro') {
+        document.getElementById('sectionMacro').classList.remove('hidden');
+        document.getElementById('tabMacro').className = 'btn-tab active';
       }
+    }
+
+    // -------------------------------------------------------------------------
+    // Automated Livermore 6-Column Mathematical Engine
+    // -------------------------------------------------------------------------
+    let trendThreshold = 15.0; // $15 move qualifies trend
+    let reactionThreshold = 6.0; // $6 move qualifies natural reaction
+
+    // Base historical Gold transaction sequence
+    let ledgerRecords = [
+      { time: "24-Oct 14:00", p: 3980.00, col: "nat-react", isPP: false, note: "Initial sell-off base" },
+      { time: "24-Oct 18:30", p: 3975.00, col: "nat-react", isPP: true,  ppType: "red", note: "Reaction Low Pivotal Point established" },
+      { time: "25-Oct 13:00", p: 3995.00, col: "nat-rally", isPP: false, note: "Rally exceeds $15 threshold" },
+      { time: "25-Oct 16:30", p: 4012.00, col: "nat-rally", isPP: true,  ppType: "black", note: "Reversal Pivotal Point established" },
+      { time: "26-Oct 09:30", p: 4004.00, col: "nat-react", isPP: false, note: "Pullback of $8 ($4,012 -> $4,004)" },
+      { time: "26-Oct 17:00", p: 4012.20, col: "nat-rally", isPP: true,  ppType: "black", note: "Testing $4,012.00 Pivotal Point" },
+      { time: "27-Oct 02:00", p: 4002.50, col: "down-trend", isPP: false, note: "Rejection from $4,012; trend shifts down" },
+      { time: "27-Oct 11:30", p: 3995.00, col: "down-trend", isPP: false, note: "Asian low tested; downward trend active" }
+    ];
+
+    function updateLedgerRules() {
+      trendThreshold = parseFloat(document.getElementById('inputTrendRule').value) || 15.0;
+      reactionThreshold = parseFloat(document.getElementById('inputReactionRule').value) || 6.0;
+      renderLedgerTable();
+    }
+
+    function renderLedgerTable() {
+      const tbody = document.getElementById('ledgerBody');
+      if (!tbody) return;
+
+      let html = '';
+      ledgerRecords.forEach((r, idx) => {
+        let cellContent = `$${r.p.toFixed(2)}`;
+        if (r.isPP) {
+          cellContent = r.ppType === 'black' 
+            ? `<span class="pp-black-circle">$${r.p.toFixed(2)} PP</span>`
+            : `<span class="pp-red-circle">$${r.p.toFixed(2)} PP</span>`;
+        }
+
+        html += `
+          <tr class="hover:bg-slate-900/40 transition-colors">
+            <td class="text-slate-400 text-[11px]">${r.time}</td>
+            <td class="col-sec-rally">${r.col === 'sec-rally' ? cellContent : ''}</td>
+            <td class="col-nat-rally">${r.col === 'nat-rally' ? cellContent : ''}</td>
+            <td class="col-up-trend">${r.col === 'up-trend' ? cellContent : ''}</td>
+            <td class="col-down-trend">${r.col === 'down-trend' ? cellContent : ''}</td>
+            <td class="col-nat-react">${r.col === 'nat-react' ? cellContent : ''}</td>
+            <td class="col-sec-react">${r.col === 'sec-react' ? cellContent : ''}</td>
+            <td class="text-left text-slate-300 text-[11px] px-3">${r.note}</td>
+          </tr>
+        `;
+      });
+
+      tbody.innerHTML = html;
+    }
+
+    function simulateTick() {
+      const last = ledgerRecords[ledgerRecords.length - 1];
+      const delta = (Math.random() > 0.5 ? -1 : 1) * (Math.random() * 3.5 + 0.5);
+      const newP = Math.round((last.p + delta) * 100) / 100;
+      
+      let col = "down-trend";
+      let isPP = false;
+      let ppType = "black";
+      let note = `Tick executed at $${newP.toFixed(2)}`;
+
+      if (newP < 3990) {
+        col = "down-trend";
+        note = "Downward expansion continuing";
+      } else if (newP > 4005) {
+        col = "nat-react";
+        note = "Technical bounce reacting";
+      }
+
+      const now = new Date();
+      const timeStr = `27-Oct ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      ledgerRecords.push({ time: timeStr, p: newP, col, isPP, ppType, note });
+      renderLedgerTable();
     }
 
     // -------------------------------------------------------------------------
@@ -579,8 +793,8 @@
     const MIN_P = 4004.0;
     const MAX_P = 4014.0;
     const SVG_W = 540;
-    const SVG_H = 360;
-    const PAD_Y = 30;
+    const SVG_H = 340;
+    const PAD_Y = 25;
 
     function priceToY(p) {
       return PAD_Y + (1 - (p - MIN_P) / (MAX_P - MIN_P)) * (SVG_H - 2 * PAD_Y);
@@ -666,7 +880,7 @@
         markup += `
           <line x1="${bx}" y1="${hY}" x2="${bx}" y2="${lY}" stroke="${col}" stroke-width="2" />
           <rect x="${bx - bw/2}" y="${Math.min(oY, cY)}" width="${bw}" height="${Math.max(4, Math.abs(cY - oY))}" fill="${col}" stroke="${col}" rx="2" />
-          <text x="${bx}" y="340" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:00 (Bar #1)</text>
+          <text x="${bx}" y="325" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:00 (Bar #1)</text>
         `;
       }
 
@@ -688,7 +902,7 @@
         markup += `
           <line x1="${bx}" y1="${hY}" x2="${bx}" y2="${lY}" stroke="${col}" stroke-width="2" />
           <rect x="${bx - bw/2}" y="${Math.min(oY, cY)}" width="${bw}" height="${Math.max(4, Math.abs(cY - oY))}" fill="${col}" stroke="${col}" rx="2" />
-          <text x="${bx}" y="340" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:05 (Bar #2)</text>
+          <text x="${bx}" y="325" fill="#94a3b8" font-size="10" font-family="JetBrains Mono" text-anchor="middle">14:05 (Bar #2)</text>
         `;
       }
 
@@ -821,6 +1035,9 @@
       currentStep = parseInt(val, 10);
       render();
     }
+
+    // Initial Execution
+    renderLedgerTable();
   </script>
 </body>
 </html>
