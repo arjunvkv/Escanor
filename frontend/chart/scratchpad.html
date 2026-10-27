@@ -312,49 +312,55 @@
 
   <!-- COMPACT 2-POINT PROBE BAR CALCULATOR (LIVERMORE ASYMMETRY PROTOCOL) -->
   <div id="probeCalculatorDrawer" class="w-full max-w-[1380px] hud-panel rounded-lg p-3 mb-4 border border-cyan-500/35 shadow-xl bg-black/95 font-hud-tech text-xs">
-    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+    <div class="flex items-center justify-between gap-3 overflow-x-auto">
       
-      <!-- Inputs Row: Side, Lots, Entry, SL, TP -->
-      <div class="flex flex-wrap items-center gap-3">
+      <!-- Inputs Row: Side, Lots, Entry, SL, TP, Auto-Type Badge -->
+      <div class="flex items-center gap-2 flex-shrink-0">
         <!-- Side Toggle -->
         <div class="flex items-center bg-black rounded border border-slate-800 p-0.5">
-          <button id="calcBtnBuy" onclick="setProbeSide('BUY')" class="px-2.5 py-1 rounded bg-cyan-600 text-white font-bold text-xs cursor-pointer">
+          <button id="calcBtnBuy" onclick="setProbeSide('BUY')" class="px-2 py-0.5 rounded bg-cyan-600 text-white font-bold text-xs cursor-pointer">
             BUY
           </button>
-          <button id="calcBtnSell" onclick="setProbeSide('SELL')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white font-bold text-xs cursor-pointer">
+          <button id="calcBtnSell" onclick="setProbeSide('SELL')" class="px-2 py-0.5 rounded text-slate-400 hover:text-white font-bold text-xs cursor-pointer">
             SELL
           </button>
         </div>
 
         <!-- Lots Input (Defaulted to 0.10, no spin arrows) -->
-        <div class="flex items-center gap-1.5 bg-black/60 px-2 py-1 rounded border border-slate-800">
+        <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-slate-800">
           <span class="text-[10px] text-slate-400 uppercase">LOTS:</span>
-          <input id="probeLotInput" type="number" step="0.01" value="0.10" class="w-14 px-1 py-0.5 bg-black rounded border border-slate-700 text-white font-mono font-bold text-center text-xs no-spin focus:border-cyan-400 outline-none" oninput="onProbeLotChanged()">
+          <input id="probeLotInput" type="number" step="0.01" value="0.10" class="w-12 px-1 py-0.5 bg-black rounded border border-slate-700 text-white font-mono font-bold text-center text-xs no-spin focus:border-cyan-400 outline-none" oninput="onProbeLotChanged()">
         </div>
 
         <!-- Entry Input (Auto-latch to spot or manual) -->
-        <div class="flex items-center gap-1.5 bg-black/60 px-2 py-1 rounded border border-cyan-500/30">
+        <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-cyan-500/30">
           <span class="text-[10px] text-cyan-400 font-bold uppercase">ENTRY:</span>
-          <input id="probeEntryInput" type="number" step="0.01" placeholder="4058.98" class="w-24 px-1.5 py-0.5 bg-black rounded border border-cyan-500/50 text-cyan-200 font-mono font-bold text-xs no-spin focus:border-cyan-400 outline-none" oninput="onProbeEntryManualInput()">
+          <input id="probeEntryInput" type="number" step="0.01" placeholder="4058.98" class="w-20 px-1.5 py-0.5 bg-black rounded border border-cyan-500/50 text-cyan-200 font-mono font-bold text-xs no-spin focus:border-cyan-400 outline-none" oninput="onProbeEntryManualInput()">
           <button onclick="setProbeEntryToSpot()" class="px-1.5 py-0.5 rounded bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/40 text-[9px] text-cyan-300 font-bold cursor-pointer" title="Latching to current live spot">
             SPOT
           </button>
         </div>
 
         <!-- Stop Loss (Auto-latched 2 price points back, manually editable) -->
-        <div class="flex items-center gap-1.5 bg-black/60 px-2 py-1 rounded border border-red-500/30">
-          <span class="text-[10px] text-red-400 font-bold uppercase">SL (-2.0P):</span>
-          <input id="probeSlInput" type="number" step="0.01" placeholder="4056.98" class="w-24 px-1.5 py-0.5 bg-black rounded border border-red-500/50 text-red-200 font-mono font-bold text-xs no-spin focus:border-red-400 outline-none" oninput="onProbeSlManualInput()">
+        <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-red-500/30">
+          <span id="probeSlLabel" class="text-[10px] text-red-400 font-bold uppercase">SL (-2.0P):</span>
+          <input id="probeSlInput" type="number" step="0.01" placeholder="4056.98" class="w-20 px-1.5 py-0.5 bg-black rounded border border-red-500/50 text-red-200 font-mono font-bold text-xs no-spin focus:border-red-400 outline-none" oninput="onProbeSlManualInput()">
         </div>
 
         <!-- Take Profit (Preset to $200 target, manually editable) -->
-        <div class="flex items-center gap-1.5 bg-black/60 px-2 py-1 rounded border border-emerald-500/30">
+        <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
           <span class="text-[10px] text-emerald-400 font-bold uppercase">TP ($200):</span>
-          <input id="probeTpInput" type="number" step="0.01" placeholder="4078.98" class="w-24 px-1.5 py-0.5 bg-black rounded border border-emerald-500/50 text-emerald-200 font-mono font-bold text-xs no-spin focus:border-emerald-400 outline-none" oninput="onProbeTpManualInput()">
+          <input id="probeTpInput" type="number" step="0.01" placeholder="4078.98" class="w-20 px-1.5 py-0.5 bg-black rounded border border-emerald-500/50 text-emerald-200 font-mono font-bold text-xs no-spin focus:border-emerald-400 outline-none" oninput="onProbeTpManualInput()">
+        </div>
+
+        <!-- Dynamic Auto-Detected Order Type Routing Badge -->
+        <div class="flex items-center gap-1 bg-black/80 px-2 py-0.5 rounded border border-slate-800 text-[10px] font-mono" title="Auto-detected order routing based on price position relative to market spot">
+          <span class="text-slate-500 uppercase">ROUTING:</span>
+          <span id="probeOrderTypeBadge" class="text-cyan-300 font-bold">BUY_LIMIT</span>
         </div>
       </div>
 
-      <!-- Right: Compact Dollar Risk/Reward Bar Calculator -->
+      <!-- Right: Compact Dollar Risk/Reward Bar & Direct MT5 Order Execution -->
       <div class="flex items-center gap-3">
         <!-- Dollar Metrics Display -->
         <div class="flex items-center gap-2.5 text-[11px] bg-black/80 px-2.5 py-1 rounded border border-slate-800">
@@ -375,19 +381,22 @@
         </div>
 
         <!-- Compact Visual Asymmetry Bar -->
-        <div class="w-24 h-4 bg-slate-900 rounded overflow-hidden flex border border-slate-800" title="Visual Risk to Reward Ratio">
+        <div class="w-20 h-4 bg-slate-900 rounded overflow-hidden flex border border-slate-800" title="Visual Risk to Reward Ratio">
           <div id="calcRiskBarSegment" class="bg-red-500/80 h-full w-[9%]" title="SL Risk (~9%)"></div>
           <div id="calcRewardBarSegment" class="bg-emerald-500/80 h-full w-[91%]" title="TP Reward (~91%)"></div>
         </div>
 
-        <!-- 1-Click Telegram Trade Alert Proposal Dispatch -->
-        <button id="btnDispatchCalcAlert" onclick="dispatchProbeCalculatorAlert()" class="px-3 py-1.5 bg-red-600 hover:bg-red-500 text-white font-hud-tech text-xs font-bold rounded flex items-center gap-1.5 shadow-[0_0_10px_rgba(255,42,75,0.3)] cursor-pointer">
-          <span id="calcAlertIcon">📲</span>
-          <span id="calcAlertText">DISPATCH PROPOSAL</span>
+        <!-- Direct MT5 Order Placement Button with Dynamic Type -->
+        <button id="btnPlaceMt5Order" onclick="placeMt5ProbeOrder()" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 active:scale-95 transition-all text-white font-hud-tech text-xs font-bold rounded flex items-center gap-1.5 shadow-[0_0_12px_rgba(255,42,75,0.4)] cursor-pointer">
+          <span id="mt5OrderIcon">⚡</span>
+          <span id="mt5OrderText">PLACE [BUY_LIMIT] ON MT5</span>
         </button>
       </div>
 
     </div>
+
+    <!-- Inline Status Feedback Toast -->
+    <div id="probeExecutionToast" class="hidden mt-2 p-1.5 px-3 rounded text-[11px] font-mono font-bold flex items-center justify-between transition-all"></div>
   </div>
 
   <!-- ========================================================================= -->
@@ -1613,12 +1622,15 @@ Return ONLY valid JSON matching this exact structure:
       probeSide = side;
       const bBuy = document.getElementById("calcBtnBuy");
       const bSell = document.getElementById("calcBtnSell");
+      const slLabel = document.getElementById("probeSlLabel");
       if (side === 'BUY') {
         bBuy.className = "px-2.5 py-1 rounded bg-cyan-600 text-white font-bold text-xs cursor-pointer";
         bSell.className = "px-2.5 py-1 rounded text-slate-400 hover:text-white font-bold text-xs cursor-pointer";
+        if (slLabel) slLabel.textContent = "SL (-2.0P):";
       } else {
         bBuy.className = "px-2.5 py-1 rounded text-slate-400 hover:text-white font-bold text-xs cursor-pointer";
         bSell.className = "px-2.5 py-1 rounded bg-red-600 text-white font-bold text-xs cursor-pointer";
+        if (slLabel) slLabel.textContent = "SL (+2.0P):";
       }
       recalculateProbeFromEntry();
     }
@@ -1641,6 +1653,43 @@ Return ONLY valid JSON matching this exact structure:
       if (isNaN(val) || val <= 0) val = 0.10;
       probeLots = val;
       recalculateProbeFromEntry();
+    }
+
+    // Dynamic auto-detection of Order Type (Limit vs Stop vs Market)
+    function getComputedProbeOrderType() {
+      const entryInput = document.getElementById("probeEntryInput");
+      const entry = parseFloat(entryInput ? entryInput.value : 0) || currentSpot;
+      const tol = 0.05;
+      if (probeSide === 'BUY') {
+        if (!entry || Math.abs(entry - currentSpot) <= tol) return "MARKET BUY";
+        if (entry < currentSpot - tol) return "BUY_LIMIT";
+        return "BUY_STOP";
+      } else {
+        if (!entry || Math.abs(entry - currentSpot) <= tol) return "MARKET SELL";
+        if (entry > currentSpot + tol) return "SELL_LIMIT";
+        return "SELL_STOP";
+      }
+    }
+
+    function updateProbeOrderTypeUI() {
+      const orderType = getComputedProbeOrderType();
+      const badge = document.getElementById("probeOrderTypeBadge");
+      const btnText = document.getElementById("mt5OrderText");
+
+      if (badge) {
+        badge.textContent = orderType;
+        if (orderType.includes("LIMIT")) {
+          badge.className = "text-cyan-300 font-bold";
+        } else if (orderType.includes("STOP")) {
+          badge.className = "text-amber-300 font-bold";
+        } else {
+          badge.className = "text-emerald-300 font-bold";
+        }
+      }
+
+      if (btnText && (!btnText.dataset.locked || btnText.dataset.locked === "false")) {
+        btnText.textContent = `PLACE [${orderType}] ON MT5`;
+      }
     }
 
     // Auto-latches SL 2.0 price points back and TP to $200 target
@@ -1713,54 +1762,99 @@ Return ONLY valid JSON matching this exact structure:
         riskBar.style.width = `${riskPct}%`;
         rewardBar.style.width = `${rewardPct}%`;
       }
+
+      updateProbeOrderTypeUI();
     }
 
-    async function dispatchProbeCalculatorAlert() {
-      const btn = document.getElementById("btnDispatchCalcAlert");
-      const icon = document.getElementById("calcAlertIcon");
-      const text = document.getElementById("calcAlertText");
+    // Direct 1-Click MT5 Order Placement (Auto-Determined Limit, Stop, or Market)
+    async function placeMt5ProbeOrder() {
+      const btn = document.getElementById("btnPlaceMt5Order");
+      const icon = document.getElementById("mt5OrderIcon");
+      const text = document.getElementById("mt5OrderText");
 
+      const entry = parseFloat(document.getElementById("probeEntryInput").value) || currentSpot;
+      const sl = parseFloat(document.getElementById("probeSlInput").value);
+      const tp = parseFloat(document.getElementById("probeTpInput").value);
+      const lots = parseFloat(document.getElementById("probeLotInput").value) || 0.10;
+      const orderType = getComputedProbeOrderType();
+
+      if (isNaN(entry) || entry <= 0) {
+        showProbeToast("Invalid Entry Coordinate. Set price or click SPOT.", "error");
+        return;
+      }
+
+      text.dataset.locked = "true";
       icon.textContent = "⏳";
-      text.textContent = "DISPATCHING...";
+      text.textContent = `TRANSMITTING [${orderType}]...`;
+      btn.disabled = true;
 
       try {
-        const entry = parseFloat(document.getElementById("probeEntryInput").value) || currentSpot;
-        const sl = parseFloat(document.getElementById("probeSlInput").value);
-        const tp = parseFloat(document.getElementById("probeTpInput").value);
-        const riskD = document.getElementById("calcSlRiskDollars").textContent;
-        const rewardD = document.getElementById("calcTpRewardDollars").textContent;
-        const rr = document.getElementById("calcRrRatio").textContent;
-
-        const orderType = probeSide === 'BUY' ? "BUY_LIMIT" : "SELL_LIMIT";
-
-        await fetch("/api/sovereign/alert_proximity", {
+        const resp = await fetch("/api/trade/probe_order", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            level_name: `LIVERMORE 2-PT PROBE (${probeSide})`,
+            symbol: "XAUUSD",
+            side: probeSide,
+            volume: lots,
             price: entry,
-            spot: currentSpot,
-            distance: currentSpot - entry,
-            note: `${probeSide} ${probeLots} lots | Entry: $${entry.toFixed(2)} | SL: $${sl.toFixed(2)} (${riskD}) | TP: $${tp.toFixed(2)} (${rewardD}) | R:R ${rr} | 2-Pt Scratch Risk Protocol`
+            sl: sl,
+            tp: tp,
+            comment: `2Pt ${orderType}`.substring(0, 25)
           })
         });
+        const data = await resp.json();
 
-        icon.textContent = "✓";
-        text.textContent = "PROPOSAL DISPATCHED!";
-        btn.classList.replace("bg-red-600", "bg-emerald-600");
-        setTimeout(() => {
-          icon.textContent = "📲";
-          text.textContent = "DISPATCH PROPOSAL";
-          btn.classList.replace("bg-emerald-600", "bg-red-600");
-        }, 3000);
-      } catch (e) {
-        icon.textContent = "✕";
-        text.textContent = "FAILED";
-        setTimeout(() => {
-          icon.textContent = "📲";
-          text.textContent = "DISPATCH PROPOSAL";
-        }, 3000);
+        if (data.status === "OK" || data.status === "PLACED" || data.status === "EXECUTED" || data.success) {
+          icon.textContent = "✓";
+          text.textContent = `MT5 #${data.ticket || data.order} PLACED!`;
+          btn.classList.replace("bg-red-600", "bg-emerald-600");
+          btn.classList.replace("hover:bg-red-500", "hover:bg-emerald-500");
+          showProbeToast(`✓ MT5 Order #${data.ticket || data.order} (${data.auto_order_type || orderType}) Placed @ $${entry.toFixed(2)} | SL: $${sl.toFixed(2)} | TP: $${tp.toFixed(2)}`, "success");
+
+          setTimeout(() => {
+            btn.classList.replace("bg-emerald-600", "bg-red-600");
+            btn.classList.replace("hover:bg-emerald-500", "hover:bg-red-500");
+            icon.textContent = "⚡";
+            text.dataset.locked = "false";
+            updateProbeOrderTypeUI();
+            btn.disabled = false;
+          }, 4000);
+        } else {
+          icon.textContent = "⚠";
+          text.textContent = "MT5 REJECTED";
+          btn.classList.replace("bg-red-600", "bg-amber-600");
+          btn.classList.replace("hover:bg-red-500", "hover:bg-amber-500");
+          showProbeToast(`⚠ MT5 Rejected: ${data.error || 'Check MT5 Algo Trading status'}`, "error");
+
+          setTimeout(() => {
+            btn.classList.replace("bg-amber-600", "bg-red-600");
+            btn.classList.replace("hover:bg-amber-500", "hover:bg-red-500");
+            icon.textContent = "⚡";
+            text.dataset.locked = "false";
+            updateProbeOrderTypeUI();
+            btn.disabled = false;
+          }, 4000);
+        }
+      } catch (err) {
+        icon.textContent = "⚠";
+        text.textContent = "NETWORK ERROR";
+        showProbeToast(`Network Error: ${err.message}`, "error");
+        text.dataset.locked = "false";
+        btn.disabled = false;
       }
+    }
+
+    function showProbeToast(msg, type) {
+      const toast = document.getElementById("probeExecutionToast");
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.className = type === "success"
+        ? "mt-2 p-1.5 px-3 rounded text-[11px] font-mono font-bold flex items-center justify-between bg-emerald-950/80 border border-emerald-500/50 text-emerald-200"
+        : "mt-2 p-1.5 px-3 rounded text-[11px] font-mono font-bold flex items-center justify-between bg-red-950/80 border border-red-500/50 text-red-200";
+      toast.classList.remove("hidden");
+      setTimeout(() => {
+        toast.classList.add("hidden");
+      }, 7000);
     }
 
     // 5. Telegram Alert Dispatcher
@@ -2573,6 +2667,7 @@ Return ONLY valid JSON matching this exact structure:
       document.getElementById("chartSpotPrice").textContent = `$${spot.toFixed(2)}`;
       evaluateProximityPerimeter(spot);
       updateTriedExtremesUI(spot);
+      updateProbeOrderTypeUI();
     }
 
     // 11. WebSocket Live Stream Connection

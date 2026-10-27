@@ -177,6 +177,12 @@ def place_pending_order(
         "type_time": mt5.ORDER_TIME_GTC
     }
     res = mt5.order_send(req)
+    if not res or res.retcode == 10030:
+        req["type_filling"] = mt5.ORDER_FILLING_IOC
+        res = mt5.order_send(req)
+        if not res or res.retcode == 10030:
+            req["type_filling"] = mt5.ORDER_FILLING_FOK
+            res = mt5.order_send(req)
     if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009):
         return {
             "status": "PLACED",

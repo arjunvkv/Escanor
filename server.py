@@ -475,6 +475,96 @@ async def trade_place_pending(request: Request):
     return JSONResponse(content=res)
 
 
+@app.post("/api/trade/probe_order")
+async def trade_probe_order(request: Request):
+    """
+    Direct MT5 execution for the 2-Point Feeler Probe Console.
+    Auto-detects LIMIT vs STOP vs MARKET order based on live price vs Entry coordinate:
+      - BUY:
+          if entry < ask - 0.05: BUY_LIMIT (buying pullback below market)
+          elif entry > ask + 0.05: BUY_STOP (buying breakout above market)
+          else: direct market BUY (at current market)
+      - SELL:
+          if entry > bid + 0.05: SELL_LIMIT (selling pullback above market)
+          elif entry < bid - 0.05: SELL_STOP (selling breakdown below market)
+          else: direct market SELL (at current market)
+    """
+    try:
+        data = await request.json()
+    except Exception:
+        data = {}
+
+    sym = data.get("symbol", config.get("symbol", "XAUUSD"))
+    side = str(data.get("side", "BUY")).strip().upper()
+    volume = float(data.get("volume") or data.get("lots") or 0.10)
+    entry_price = float(data.get("price") or data.get("entry") or 0.0)
+    sl = float(data.get("sl_price") or data.get("sl") or 0.0)
+    tp = float(data.get("tp_price") or data.get("tp") or 0.0)
+    comment = str(data.get("comment", "Livermore 2Pt Probe"))[:25]
+
+    try:
+        import MetaTrader5 as mt5
+        if not mt5.initialize():
+            return JSONResponse(status_code=500, content={"status": "FAILED", "error": "MetaTrader5 initialization failed"})
+        
+        tick = mt5.symbol_info_tick(sym)
+        if not tick:
+            return JSONResponse(status_code=500, content={"status": "FAILED", "error": f"No live tick available for {sym}"})
+
+        bid = float(tick.bid)
+        ask = float(tick.ask)
+
+        tol = 0.05
+        order_type = ""
+        res = None
+
+        if side == "BUY":
+            if entry_price <= 0.0 or abs(entry_price - ask) <= tol:
+                order_type = "BUY"
+                res = execute_market_order(symbol=sym, side="BUY", volume=volume, sl=sl, tp=tp, comment=comment)
+            elif entry_price < ask - tol:
+                order_type = "BUY_LIMIT"
+                res = place_pending_order(symbol=sym, order_type="BUY_LIMIT", price=entry_price, volume=volume, sl=sl, tp=tp, comment=comment)
+            else:
+                order_type = "BUY_STOP"
+                res = place_pending_order(symbol=sym, order_type="BUY_STOP", price=entry_price, volume=volume, sl=sl, tp=tp, comment=comment)
+        else:  # SELL
+            if entry_price <= 0.0 or abs(entry_price - bid) <= tol:
+                order_type = "SELL"
+                res = execute_market_order(symbol=sym, side="SELL", volume=volume, sl=sl, tp=tp, comment=comment)
+            elif entry_price > bid + tol:
+                order_type = "SELL_LIMIT"
+                res = place_pending_order(symbol=sym, order_type="SELL_LIMIT", price=entry_price, volume=volume, sl=sl, tp=tp, comment=comment)
+            else:
+                order_type = "SELL_STOP"
+                res = place_pending_order(symbol=sym, order_type="SELL_STOP", price=entry_price, volume=volume, sl=sl, tp=tp, comment=comment)
+
+        if not res:
+            res = {"status": "FAILED", "error": "Unknown execution error"}
+
+        if res.get("status") in ("PLACED", "EXECUTED", "OK"):
+            res["status"] = "OK"
+            res["success"] = True
+            ticket = res.get("ticket") or res.get("order")
+            res["order"] = ticket
+            res["ticket"] = ticket
+            res["auto_order_type"] = order_type
+            res["entry_price"] = entry_price
+            res["market_bid"] = bid
+            res["market_ask"] = ask
+            res["message"] = f"MT5 {order_type} #{ticket} placed successfully @ {entry_price or (ask if side=='BUY' else bid):.2f}"
+        else:
+            res["auto_order_type"] = order_type
+            res["entry_price"] = entry_price
+            res["market_bid"] = bid
+            res["market_ask"] = ask
+
+        return JSONResponse(content=res)
+    except Exception as e:
+        logger.error(f"Error in trade_probe_order: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "FAILED", "error": str(e)})
+
+
 @app.post("/api/trade/modify")
 async def trade_modify(request: Request):
     """Modify SL/TP of an active position."""
