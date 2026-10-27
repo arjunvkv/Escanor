@@ -465,10 +465,8 @@
         badgeStyle = "bg-amber-500/20 text-amber-300 border-amber-500/40";
       }
 
-      // Draw Projected Laser Line from Candle to Right Axis
-      vpocLayer.innerHTML = `
-        <!-- Vertical Candle Highlight Beam -->
-        <rect x="${candleX - 14}" y="${padTop}" width="28" height="${chartHeight - padTop - padBottom}" fill="${strokeColor}" fill-opacity="0.06" rx="4" />
+        <!-- Thin Vertical Guide Line through Selected Candle -->
+        <line x1="${candleX}" y1="${padTop}" x2="${candleX}" y2="${chartHeight - padBottom}" stroke="${strokeColor}" stroke-width="1.0" stroke-dasharray="3 3" opacity="0.65" />
         
         <!-- Glow Line Underneath -->
         <line x1="${candleX}" y1="${vpocY}" x2="${lineEndX}" y2="${vpocY}" stroke="${glowGrad}" stroke-width="4.5" opacity="0.35" filter="url(#neonGlow)" />
