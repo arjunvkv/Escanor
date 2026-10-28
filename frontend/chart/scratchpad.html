@@ -837,15 +837,18 @@
           </div>
 
           <!-- Tape Reading Mode Selector (Livermore Anti-River Filtering) -->
-          <div class="grid grid-cols-3 gap-1 pt-1 text-[9px] font-hud-tech font-bold">
-            <button id="filterBtnSmart" onclick="setTapeFilterMode('smart')" class="px-1 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 cursor-pointer text-center">
+          <div class="flex items-center gap-1 pt-1 text-[9px] font-hud-tech font-bold">
+            <button id="filterBtnSmart" onclick="setTapeFilterMode('smart')" class="flex-1 px-1 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 cursor-pointer text-center">
               🎯 PIVOTAL
             </button>
-            <button id="filterBtnBlocks" onclick="setTapeFilterMode('blocks')" class="px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center">
+            <button id="filterBtnBlocks" onclick="setTapeFilterMode('blocks')" class="flex-1 px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center">
               🧱 BLOCKS
             </button>
-            <button id="filterBtnRaw" onclick="setTapeFilterMode('raw')" class="px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center">
+            <button id="filterBtnRaw" onclick="setTapeFilterMode('raw')" class="flex-1 px-1 py-0.5 rounded bg-black/60 text-slate-400 border border-slate-800 hover:text-white cursor-pointer text-center">
               ⚡ RAW
+            </button>
+            <button id="btnRangeVolInfo" onclick="toggleRangeVolumeProfileModal()" class="w-6 h-5 flex-shrink-0 flex items-center justify-center rounded bg-slate-900 border border-slate-700 hover:border-cyan-400 text-cyan-300 hover:bg-cyan-950 text-[10px] font-bold cursor-pointer transition-all shadow-[0_0_8px_rgba(0,240,255,0.2)]" title="View Top 8 Volume Price Points in Bull/Bear Range">
+              ℹ️
             </button>
           </div>
         </div>
@@ -1352,6 +1355,66 @@ Return ONLY valid JSON matching this exact structure:
   </div>
 
   <!-- ========================================================================= -->
+  <!-- MODAL: TOP 8 VOLUME NODES IN BULL/BEAR RANGE                              -->
+  <!-- ========================================================================= -->
+  <div id="rangeVolProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) toggleRangeVolumeProfileModal()">
+    <div class="hud-panel rounded-lg max-w-md w-full p-4 border border-cyan-500/50 shadow-2xl flex flex-col gap-3">
+      <!-- Header -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div>
+          <div class="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider font-hud-tech">
+            <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <span class="text-cyan-400">VOLUME PROFILE //</span> TOP 8 NODES
+          </div>
+          <div id="rangeVolProfileSubtitle" class="text-[10px] text-slate-400 font-mono mt-0.5">
+            BULL/BEAR RANGE: $----.-- – $----.--
+          </div>
+        </div>
+        <button onclick="toggleRangeVolumeProfileModal()" class="w-6 h-6 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-xs flex items-center justify-center cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Quick Metrics Bar -->
+      <div class="grid grid-cols-3 gap-2 bg-black/60 p-2 rounded border border-slate-800 text-[10.5px] font-mono">
+        <div class="flex flex-col">
+          <span class="text-[8.5px] text-slate-500 uppercase">RANGE SPREAD</span>
+          <span id="rangeVolSpread" class="font-bold text-white">-- pts</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[8.5px] text-slate-500 uppercase">TOTAL RANGE VOL</span>
+          <span id="rangeVolTotal" class="font-bold text-amber-300">--v</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-[8.5px] text-slate-500 uppercase">BULL / BEAR RATIO</span>
+          <span id="rangeVolRatio" class="font-bold text-cyan-300">--% / --%</span>
+        </div>
+      </div>
+
+      <!-- Table Header -->
+      <div class="grid grid-cols-12 px-2 py-1 bg-black/80 border border-slate-800 rounded text-[9px] font-bold text-slate-400 uppercase font-hud-tech">
+        <div class="col-span-1">#</div>
+        <div class="col-span-3">PRICE</div>
+        <div class="col-span-3 text-right">VOLUME</div>
+        <div class="col-span-2 text-right text-emerald-400">BULL</div>
+        <div class="col-span-2 text-right text-red-400">BEAR</div>
+        <div class="col-span-1 text-center">BIAS</div>
+      </div>
+
+      <!-- Top 8 Price Nodes List (Sorted from highest volume on top) -->
+      <div id="rangeVolProfileNodesList" class="flex flex-col gap-1 max-h-72 overflow-y-auto">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Footer Info -->
+      <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[9px] text-slate-500 font-mono">
+        <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE TICK ACCUMULATION</span>
+        <span>HIGHEST VOLUME ON TOP</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
   <!-- CLIENT JAVASCRIPT LOGIC (100% REAL-TIME LIVE MT5 INTEGRATION)             -->
   <!-- ========================================================================= -->
   <script>
@@ -1362,6 +1425,8 @@ Return ONLY valid JSON matching this exact structure:
     let currentDayLow = 3989.17;
     let currentVwap = 4010.44;
     let currentAnchors = [];
+    let currentRangeVolumeNodes = [];
+    let isRangeVolProfileModalOpen = false;
     let userLedgerRecords = [];
     let chartTf = '1';
     let chartCandles = [];
@@ -2508,6 +2573,13 @@ Return ONLY valid JSON matching this exact structure:
             if (tl.bear_vol !== undefined) triedLowBearVol = tl.bear_vol;
           }
 
+          if (data.top_volume_nodes && Array.isArray(data.top_volume_nodes)) {
+            currentRangeVolumeNodes = data.top_volume_nodes;
+            if (isRangeVolProfileModalOpen) {
+              renderRangeVolumeProfileModal();
+            }
+          }
+
           updateTriedExtremesUI(currentSpot);
           renderLiveOscilloscopeChart();
         }
@@ -2630,6 +2702,10 @@ Return ONLY valid JSON matching this exact structure:
         } else if (Math.abs(bid - triedLowPrice) <= 0.06) {
           triedLowVol += stepVol;
         }
+      }
+
+      if (triedLowPrice !== null && triedHighPrice !== null) {
+        updateLiveRangeVolumeProfile(bid, delta, stepVol);
       }
 
       updateTriedExtremesUI(bid);
@@ -3036,6 +3112,115 @@ Return ONLY valid JSON matching this exact structure:
       ws.onerror = () => {
         ws.close();
       };
+    }
+
+    // 11b. Bull/Bear Range Volume Profile Modal & Real-Time Accumulation
+    function toggleRangeVolumeProfileModal() {
+      const modal = document.getElementById("rangeVolProfileModal");
+      if (!modal) return;
+      modal.classList.toggle("hidden");
+      isRangeVolProfileModalOpen = !modal.classList.contains("hidden");
+      if (isRangeVolProfileModalOpen) {
+        if (!currentRangeVolumeNodes || currentRangeVolumeNodes.length === 0) {
+          fetchTapeExtremes();
+        } else {
+          renderRangeVolumeProfileModal();
+        }
+      }
+    }
+
+    function renderRangeVolumeProfileModal() {
+      const list = document.getElementById("rangeVolProfileNodesList");
+      const sub = document.getElementById("rangeVolProfileSubtitle");
+      const spreadEl = document.getElementById("rangeVolSpread");
+      const totalEl = document.getElementById("rangeVolTotal");
+      const ratioEl = document.getElementById("rangeVolRatio");
+      if (!list) return;
+
+      const rMin = Math.min(triedLowPrice || 0, triedHighPrice || 0);
+      const rMax = Math.max(triedLowPrice || 0, triedHighPrice || 0);
+      const spread = Math.abs(rMax - rMin);
+
+      if (sub) {
+        if (triedLowPrice !== null && triedHighPrice !== null) {
+          sub.textContent = `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`;
+        } else {
+          sub.textContent = `BULL/BEAR RANGE: INITIALIZING...`;
+        }
+      }
+      if (spreadEl) spreadEl.textContent = `$${spread.toFixed(2)} (${(spread * 10).toFixed(1)}p)`;
+
+      // Sort descending by volume: highest on the top, slice top 8
+      const sorted = [...(currentRangeVolumeNodes || [])].sort((a, b) => b.volume - a.volume).slice(0, 8);
+      const totalVol = sorted.reduce((acc, n) => acc + (n.volume || 0), 0);
+      const totalBull = sorted.reduce((acc, n) => acc + (n.bull_vol || 0), 0);
+      const totalBear = sorted.reduce((acc, n) => acc + (n.bear_vol || 0), 0);
+      const maxVol = sorted.length > 0 ? Math.max(...sorted.map(n => n.volume || 1)) : 1;
+
+      if (totalEl) totalEl.textContent = `${totalVol.toLocaleString()}v`;
+      if (ratioEl) {
+        const bullPct = totalVol > 0 ? Math.round((totalBull / totalVol) * 100) : 50;
+        const bearPct = 100 - bullPct;
+        ratioEl.textContent = `${bullPct}% / ${bearPct}%`;
+      }
+
+      if (sorted.length === 0) {
+        list.innerHTML = `<div class="p-3 text-center text-[10px] text-slate-500 font-mono italic">Waiting for range trade prints...</div>`;
+        return;
+      }
+
+      list.innerHTML = sorted.map((n, idx) => {
+        const rank = idx + 1;
+        const isVpoc = rank === 1;
+        const isBullDominant = (n.bull_vol || 0) >= (n.bear_vol || 0);
+        const volBarPct = Math.max(5, Math.min(100, Math.round(((n.volume || 0) / maxVol) * 100)));
+
+        return `
+          <div class="grid grid-cols-12 px-2 py-1 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/40 rounded text-[10px] font-mono transition-all">
+            <div class="col-span-1 font-bold ${isVpoc ? 'text-amber-400' : 'text-slate-400'}">#${rank}</div>
+            <div class="col-span-3 font-bold text-white flex items-center gap-1">
+              $${Number(n.price).toFixed(2)}
+              ${isVpoc ? '<span class="px-1 py-0.2 rounded text-[7.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold">VPOC</span>' : ''}
+            </div>
+            <div class="col-span-3 text-right font-bold text-amber-300 pr-1">
+              ${Number(n.volume).toLocaleString()}v
+              <div class="w-full h-1 bg-slate-800 rounded overflow-hidden mt-0.5">
+                <div class="h-full bg-amber-400" style="width: ${volBarPct}%"></div>
+              </div>
+            </div>
+            <div class="col-span-2 text-right font-bold text-emerald-400">${Number(n.bull_vol || 0).toLocaleString()}v</div>
+            <div class="col-span-2 text-right font-bold text-red-400">${Number(n.bear_vol || 0).toLocaleString()}v</div>
+            <div class="col-span-1 text-center font-bold text-[8.5px] ${isBullDominant ? 'text-emerald-400' : 'text-red-400'}">
+              ${isBullDominant ? '▲' : '▼'}
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateLiveRangeVolumeProfile(bid, delta, stepVol) {
+      if (triedLowPrice === null || triedHighPrice === null) return;
+      const rMin = Math.min(triedLowPrice, triedHighPrice);
+      const rMax = Math.max(triedLowPrice, triedHighPrice);
+      if (bid < rMin || bid > rMax) return;
+
+      const diff = Math.max(0.20, rMax - rMin);
+      const step = diff >= 2.0 ? 0.10 : (diff >= 0.8 ? 0.05 : 0.02);
+      const p = Math.round((Math.round(bid / step) * step) * 100) / 100;
+
+      let existing = currentRangeVolumeNodes.find(n => Math.abs(n.price - p) < 0.001);
+      if (!existing) {
+        existing = { price: p, volume: 0, bull_vol: 0, bear_vol: 0 };
+        currentRangeVolumeNodes.push(existing);
+      }
+
+      existing.volume += stepVol;
+      if (delta > 0) existing.bull_vol += stepVol;
+      else if (delta < 0) existing.bear_vol += stepVol;
+
+      if (isRangeVolProfileModalOpen) {
+        renderRangeVolumeProfileModal();
+      }
     }
 
     // 12. Copy Prompt Modal & Clipboard

@@ -1402,12 +1402,64 @@ async def get_tape_extremes_endpoint(symbol: str = "XAUUSD", window_seconds: int
         tl["bull_vol"] = tl_bull
         tl["bear_vol"] = tl_bear
 
+        # 5. Compute Top 8 Highest Volume Price Points in the Bull/Bear Range (sorted highest volume on top)
+        range_min = min(th["price"], tl["price"])
+        range_max = max(th["price"], tl["price"])
+        earliest_time = min(th["time_msc"], tl["time_msc"]) // 1000
+        diff = max(0.20, range_max - range_min)
+        step = 0.10 if diff >= 2.0 else (0.05 if diff >= 0.8 else 0.02)
+
+        price_profile = {}
+        try:
+            ticks = mt5.copy_ticks_from(symbol, int(earliest_time), 5000, mt5.COPY_TICKS_ALL)
+            if ticks is not None and len(ticks) > 1:
+                for j in range(1, len(ticks)):
+                    raw_p = float(ticks[j]["bid"])
+                    if range_min <= raw_p <= range_max:
+                        p = round(round(raw_p / step) * step, 2)
+                        v = max(1, int(ticks[j]["volume"]))
+                        d = float(ticks[j]["bid"]) - float(ticks[j-1]["bid"])
+                        if p not in price_profile:
+                            price_profile[p] = {"price": p, "volume": 0, "bull_vol": 0, "bear_vol": 0}
+                        price_profile[p]["volume"] += v
+                        if d > 0:
+                            price_profile[p]["bull_vol"] += v
+                        elif d < 0:
+                            price_profile[p]["bear_vol"] += v
+        except Exception:
+            pass
+
+        # Fallback to M1 rates if ticks weren't returned
+        if not price_profile:
+            try:
+                sub_rates = [r for r in rates if r["time"] >= earliest_time]
+                for r in sub_rates:
+                    raw_p = float(r["close"])
+                    if range_min <= raw_p <= range_max:
+                        p = round(round(raw_p / step) * step, 2)
+                        rng = max(0.01, float(r["high"]) - float(r["low"]))
+                        frac = (float(r["close"]) - float(r["low"])) / rng
+                        b_v = int(round(r["tick_volume"] * frac))
+                        if p not in price_profile:
+                            price_profile[p] = {"price": p, "volume": 0, "bull_vol": 0, "bear_vol": 0}
+                        price_profile[p]["volume"] += int(r["tick_volume"])
+                        price_profile[p]["bull_vol"] += b_v
+                        price_profile[p]["bear_vol"] += max(0, int(r["tick_volume"]) - b_v)
+            except Exception:
+                pass
+
+        # Sort strictly with highest volume on top
+        top_volume_nodes = sorted(price_profile.values(), key=lambda x: x["volume"], reverse=True)[:8]
+
         return JSONResponse(content={
             "status": "OK",
             "symbol": symbol,
             "spot": cur_bid,
             "tried_high": th,
             "tried_low": tl,
+            "range_min": range_min,
+            "range_max": range_max,
+            "top_volume_nodes": top_volume_nodes,
             "high": {
                 "price": th["price"],
                 "volume": th["volume"],
