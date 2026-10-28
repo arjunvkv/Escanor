@@ -361,42 +361,54 @@
       </div>
 
       <!-- Right: Compact Dollar Risk/Reward Bar & Direct MT5 Order Execution -->
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2.5 flex-shrink-0">
         <!-- Dollar Metrics Display -->
-        <div class="flex items-center gap-2.5 text-[11px] bg-black/80 px-2.5 py-1 rounded border border-slate-800">
+        <div class="flex items-center gap-2 text-[10.5px] bg-black/80 px-2 py-1 rounded border border-slate-800">
           <div class="flex items-center gap-1">
-            <span class="text-slate-500 text-[10px]">RISK:</span>
+            <span class="text-slate-500 text-[9.5px]">RISK:</span>
             <strong id="calcSlRiskDollars" class="text-red-400 font-mono font-bold">-$20.00</strong>
           </div>
           <span class="text-slate-700">|</span>
           <div class="flex items-center gap-1">
-            <span class="text-slate-500 text-[10px]">REWARD:</span>
+            <span class="text-slate-500 text-[9.5px]">REWARD:</span>
             <strong id="calcTpRewardDollars" class="text-emerald-400 font-mono font-bold">+$200.00</strong>
           </div>
           <span class="text-slate-700">|</span>
           <div class="flex items-center gap-1">
-            <span class="text-slate-500 text-[10px]">R:R:</span>
+            <span class="text-slate-500 text-[9.5px]">R:R:</span>
             <strong id="calcRrRatio" class="text-white font-mono font-bold">1:10.0</strong>
           </div>
         </div>
 
         <!-- Compact Visual Asymmetry Bar -->
-        <div class="w-20 h-4 bg-slate-900 rounded overflow-hidden flex border border-slate-800" title="Visual Risk to Reward Ratio">
+        <div class="w-16 h-3.5 bg-slate-900 rounded overflow-hidden flex border border-slate-800" title="Visual Risk to Reward Ratio">
           <div id="calcRiskBarSegment" class="bg-red-500/80 h-full w-[9%]" title="SL Risk (~9%)"></div>
           <div id="calcRewardBarSegment" class="bg-emerald-500/80 h-full w-[91%]" title="TP Reward (~91%)"></div>
         </div>
 
-        <!-- Direct MT5 Order Placement Button with Dynamic Type -->
-        <button id="btnPlaceMt5Order" onclick="placeMt5ProbeOrder()" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 active:scale-95 transition-all text-white font-hud-tech text-xs font-bold rounded flex items-center gap-1.5 shadow-[0_0_12px_rgba(255,42,75,0.4)] cursor-pointer">
-          <span id="mt5OrderIcon">⚡</span>
-          <span id="mt5OrderText">PLACE [BUY_LIMIT] ON MT5</span>
+        <!-- Direct MT5 Order Placement Button with Dynamic Type (Compact Single-Line) -->
+        <button id="btnPlaceMt5Order" onclick="placeMt5ProbeOrder()" class="h-7 px-2.5 py-0.5 bg-red-600 hover:bg-red-500 active:scale-95 transition-all text-white font-hud-tech text-[10.5px] font-bold rounded flex items-center gap-1.5 shadow-[0_0_8px_rgba(255,42,75,0.3)] cursor-pointer whitespace-nowrap flex-shrink-0">
+          <span id="mt5OrderIcon" class="text-xs">⚡</span>
+          <span id="mt5OrderText">PLACE [BUY_LIMIT]</span>
         </button>
       </div>
 
     </div>
 
+    <!-- Placed Orders & Active Positions Below Calculator (Horizontal Minimal Pill Row) -->
+    <div id="probeActiveOrdersWrapper" class="w-full mt-2 pt-1.5 border-t border-slate-800/80 flex flex-col gap-1 hidden">
+      <div class="flex items-center justify-between text-[9px] font-hud-tech text-slate-500 px-1 uppercase tracking-wider">
+        <span class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+          WORKING MT5 ORDERS & OPEN POSITIONS
+        </span>
+        <span id="probeActiveOrdersCount" class="text-cyan-400 font-mono font-bold">0 WORKING</span>
+      </div>
+      <div id="probeActiveOrdersContainer" class="w-full flex flex-col gap-1"></div>
+    </div>
+
     <!-- Inline Status Feedback Toast -->
-    <div id="probeExecutionToast" class="hidden mt-2 p-1.5 px-3 rounded text-[11px] font-mono font-bold flex items-center justify-between transition-all"></div>
+    <div id="probeExecutionToast" class="hidden mt-1.5 p-1 px-2.5 rounded text-[10.5px] font-mono font-bold flex items-center justify-between transition-all"></div>
   </div>
 
   <!-- ========================================================================= -->
@@ -1688,7 +1700,7 @@ Return ONLY valid JSON matching this exact structure:
       }
 
       if (btnText && (!btnText.dataset.locked || btnText.dataset.locked === "false")) {
-        btnText.textContent = `PLACE [${orderType}] ON MT5`;
+        btnText.textContent = `PLACE [${orderType}]`;
       }
     }
 
@@ -1718,6 +1730,10 @@ Return ONLY valid JSON matching this exact structure:
       tpInput.value = tp.toFixed(2);
 
       updateCalculatorDollarBar();
+    }
+
+    function onProbeEntryManualInput() {
+      recalculateProbeFromEntry();
     }
 
     function onProbeSlManualInput() {
@@ -1785,7 +1801,7 @@ Return ONLY valid JSON matching this exact structure:
 
       text.dataset.locked = "true";
       icon.textContent = "⏳";
-      text.textContent = `TRANSMITTING [${orderType}]...`;
+      text.textContent = `TX [${orderType}]...`;
       btn.disabled = true;
 
       try {
@@ -1806,10 +1822,11 @@ Return ONLY valid JSON matching this exact structure:
 
         if (data.status === "OK" || data.status === "PLACED" || data.status === "EXECUTED" || data.success) {
           icon.textContent = "✓";
-          text.textContent = `MT5 #${data.ticket || data.order} PLACED!`;
+          text.textContent = `#${data.ticket || data.order} PLACED!`;
           btn.classList.replace("bg-red-600", "bg-emerald-600");
           btn.classList.replace("hover:bg-red-500", "hover:bg-emerald-500");
           showProbeToast(`✓ MT5 Order #${data.ticket || data.order} (${data.auto_order_type || orderType}) Placed @ $${entry.toFixed(2)} | SL: $${sl.toFixed(2)} | TP: $${tp.toFixed(2)}`, "success");
+          setTimeout(fetchTelemetryOrders, 600);
 
           setTimeout(() => {
             btn.classList.replace("bg-emerald-600", "bg-red-600");
@@ -1821,7 +1838,7 @@ Return ONLY valid JSON matching this exact structure:
           }, 4000);
         } else {
           icon.textContent = "⚠";
-          text.textContent = "MT5 REJECTED";
+          text.textContent = "REJECTED";
           btn.classList.replace("bg-red-600", "bg-amber-600");
           btn.classList.replace("hover:bg-red-500", "hover:bg-amber-500");
           showProbeToast(`⚠ MT5 Rejected: ${data.error || 'Check MT5 Algo Trading status'}`, "error");
@@ -1837,7 +1854,7 @@ Return ONLY valid JSON matching this exact structure:
         }
       } catch (err) {
         icon.textContent = "⚠";
-        text.textContent = "NETWORK ERROR";
+        text.textContent = "NET ERROR";
         showProbeToast(`Network Error: ${err.message}`, "error");
         text.dataset.locked = "false";
         btn.disabled = false;
@@ -1848,13 +1865,257 @@ Return ONLY valid JSON matching this exact structure:
       const toast = document.getElementById("probeExecutionToast");
       if (!toast) return;
       toast.textContent = msg;
-      toast.className = type === "success"
-        ? "mt-2 p-1.5 px-3 rounded text-[11px] font-mono font-bold flex items-center justify-between bg-emerald-950/80 border border-emerald-500/50 text-emerald-200"
-        : "mt-2 p-1.5 px-3 rounded text-[11px] font-mono font-bold flex items-center justify-between bg-red-950/80 border border-red-500/50 text-red-200";
+      if (type === "success") {
+        toast.className = "mt-1.5 p-1 px-2.5 rounded text-[10.5px] font-mono font-bold flex items-center justify-between bg-emerald-950/80 border border-emerald-500/50 text-emerald-200";
+      } else if (type === "info") {
+        toast.className = "mt-1.5 p-1 px-2.5 rounded text-[10.5px] font-mono font-bold flex items-center justify-between bg-cyan-950/80 border border-cyan-500/50 text-cyan-200";
+      } else {
+        toast.className = "mt-1.5 p-1 px-2.5 rounded text-[10.5px] font-mono font-bold flex items-center justify-between bg-red-950/80 border border-red-500/50 text-red-200";
+      }
       toast.classList.remove("hidden");
       setTimeout(() => {
         toast.classList.add("hidden");
       }, 7000);
+    }
+
+    // =========================================================================
+    // Active Placed MT5 Orders & Positions Pill Manager (Modify & Cancel)
+    // =========================================================================
+    let currentActivePendingOrders = [];
+    let currentActiveOpenPositions = [];
+
+    function renderProbeActiveOrders(pendingOrders, openPositions) {
+      const container = document.getElementById("probeActiveOrdersContainer");
+      const wrapper = document.getElementById("probeActiveOrdersWrapper");
+      const countBadge = document.getElementById("probeActiveOrdersCount");
+      if (!container || !wrapper) return;
+
+      if (pendingOrders !== undefined) currentActivePendingOrders = Array.isArray(pendingOrders) ? pendingOrders : [];
+      if (openPositions !== undefined) currentActiveOpenPositions = Array.isArray(openPositions) ? openPositions : [];
+
+      const allItems = [
+        ...currentActivePendingOrders.map(o => ({ ...o, isPending: true })),
+        ...currentActiveOpenPositions.map(p => ({ ...p, isPending: false }))
+      ];
+
+      if (countBadge) {
+        countBadge.textContent = `${allItems.length} WORKING`;
+      }
+
+      if (allItems.length === 0) {
+        wrapper.classList.add("hidden");
+        container.innerHTML = "";
+        return;
+      }
+
+      wrapper.classList.remove("hidden");
+
+      const focusedEl = document.activeElement;
+      const focusedId = focusedEl ? focusedEl.id : null;
+      let focusedStart = null, focusedEnd = null;
+      if (focusedEl && (focusedEl.tagName === "INPUT" || focusedEl.tagName === "TEXTAREA")) {
+        try {
+          focusedStart = focusedEl.selectionStart;
+          focusedEnd = focusedEl.selectionEnd;
+        } catch(e) {}
+      }
+
+      allItems.forEach(item => {
+        const ticket = item.ticket;
+        const isPending = Boolean(item.isPending);
+        const pillId = `orderPill_${ticket}`;
+        let pillEl = document.getElementById(pillId);
+
+        const rawType = (item.type || (isPending ? "PENDING" : "POSITION")).toUpperCase();
+        const displayType = isPending ? rawType : (rawType.includes("BUY") ? "BUY POS" : "SELL POS");
+        const vol = parseFloat(item.volume || 0.10);
+        const openPrice = parseFloat(item.price_open || item.price || currentSpot);
+        const slVal = (item.sl !== undefined && item.sl !== null && Number(item.sl) > 0) ? Number(item.sl).toFixed(2) : "";
+        const tpVal = (item.tp !== undefined && item.tp !== null && Number(item.tp) > 0) ? Number(item.tp).toFixed(2) : "";
+
+        let badgeClass = "bg-cyan-950 text-cyan-300 border-cyan-500/40";
+        if (displayType.includes("SELL")) {
+          badgeClass = "bg-red-950 text-red-300 border-red-500/40";
+        } else if (displayType.includes("STOP")) {
+          badgeClass = "bg-amber-950 text-amber-300 border-amber-500/40";
+        }
+
+        let distHtml = "";
+        if (isPending) {
+          const dist = openPrice - currentSpot;
+          const sign = dist >= 0 ? "+" : "";
+          distHtml = `<span class="text-slate-500 text-[10px]">(Dist: ${sign}${dist.toFixed(1)} pt)</span>`;
+        } else {
+          const pnl = parseFloat(item.profit || 0);
+          const pnlClass = pnl >= 0 ? "text-emerald-400" : "text-red-400";
+          const pnlSign = pnl >= 0 ? "+" : "";
+          distHtml = `<span class="${pnlClass} font-bold text-[10px]">PnL: ${pnlSign}$${pnl.toFixed(2)}</span>`;
+        }
+
+        if (!pillEl) {
+          pillEl = document.createElement("div");
+          pillEl.id = pillId;
+          pillEl.className = "flex items-center justify-between gap-2 bg-slate-900/90 border border-slate-800 hover:border-slate-700/80 px-2.5 py-0.5 rounded text-[10.5px] font-mono h-7 overflow-x-auto whitespace-nowrap transition-all";
+          pillEl.innerHTML = `
+            <div class="flex items-center gap-2 flex-shrink-0">
+              <span class="px-1.5 py-0.2 rounded text-[9px] font-bold border ${badgeClass}">${displayType}</span>
+              <span class="text-slate-400 font-bold">#${ticket}</span>
+              <span class="text-white font-bold">${vol.toFixed(2)}L</span>
+              <span class="text-slate-500">@</span>
+              <span class="text-cyan-300 font-bold">$${openPrice.toFixed(2)}</span>
+              <span id="orderDist_${ticket}">${distHtml}</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+              <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.2 rounded border border-red-500/30">
+                <span class="text-red-400 text-[9px] font-bold">SL:</span>
+                <input id="orderSl_${ticket}" type="number" step="0.01" value="${slVal}" placeholder="SL" class="w-16 px-1 py-0.2 bg-black rounded border border-red-500/40 text-red-200 text-[10px] font-bold font-mono no-spin focus:border-red-400 outline-none" oninput="this.dataset.modified='true'">
+              </div>
+              <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.2 rounded border border-emerald-500/30">
+                <span class="text-emerald-400 text-[9px] font-bold">TP:</span>
+                <input id="orderTp_${ticket}" type="number" step="0.01" value="${tpVal}" placeholder="TP" class="w-16 px-1 py-0.2 bg-black rounded border border-emerald-500/40 text-emerald-200 text-[10px] font-bold font-mono no-spin focus:border-emerald-400 outline-none" oninput="this.dataset.modified='true'">
+              </div>
+              <button id="btnMod_${ticket}" onclick="modifyOrderFromPill(${ticket})" class="h-5 px-2 bg-cyan-900/70 hover:bg-cyan-600 text-cyan-200 border border-cyan-500/40 rounded text-[9.5px] font-bold uppercase cursor-pointer active:scale-95 transition-all" title="Modify SL and TP on MT5">
+                MOD
+              </button>
+              <button id="btnClose_${ticket}" onclick="closeOrderFromPill(${ticket}, ${isPending})" class="h-5 px-2 ${isPending ? 'bg-red-950/80 hover:bg-red-800 text-red-300 border border-red-500/40' : 'bg-red-600 hover:bg-red-500 text-white'} rounded text-[9.5px] font-bold uppercase cursor-pointer active:scale-95 transition-all" title="${isPending ? 'Cancel Pending Order' : 'Close Position at Market'}">
+                ${isPending ? '✕ CANCEL' : '✕ CLOSE'}
+              </button>
+            </div>
+          `;
+          container.appendChild(pillEl);
+        } else {
+          // Update live distance or PnL without replacing inputs
+          const distEl = document.getElementById(`orderDist_${ticket}`);
+          if (distEl) distEl.innerHTML = distHtml;
+
+          const slInput = document.getElementById(`orderSl_${ticket}`);
+          if (slInput && document.activeElement !== slInput && slInput.dataset.modified !== "true") {
+            if (slVal && slInput.value !== slVal) slInput.value = slVal;
+          }
+
+          const tpInput = document.getElementById(`orderTp_${ticket}`);
+          if (tpInput && document.activeElement !== tpInput && tpInput.dataset.modified !== "true") {
+            if (tpVal && tpInput.value !== tpVal) tpInput.value = tpVal;
+          }
+        }
+      });
+
+      // Remove closed/cancelled orders
+      const activeIds = new Set(allItems.map(i => `orderPill_${i.ticket}`));
+      Array.from(container.children).forEach(child => {
+        if (!activeIds.has(child.id)) {
+          container.removeChild(child);
+        }
+      });
+
+      if (focusedId && document.getElementById(focusedId) && document.activeElement !== document.getElementById(focusedId)) {
+        const el = document.getElementById(focusedId);
+        el.focus();
+        if (focusedStart !== null && focusedEnd !== null) {
+          try { el.setSelectionRange(focusedStart, focusedEnd); } catch(e){}
+        }
+      }
+    }
+
+    async function modifyOrderFromPill(ticket) {
+      const slInput = document.getElementById(`orderSl_${ticket}`);
+      const tpInput = document.getElementById(`orderTp_${ticket}`);
+      const btn = document.getElementById(`btnMod_${ticket}`);
+
+      const sl = slInput && slInput.value.trim() !== "" ? parseFloat(slInput.value) : null;
+      const tp = tpInput && tpInput.value.trim() !== "" ? parseFloat(tpInput.value) : null;
+
+      if (btn) {
+        btn.textContent = "⏳";
+        btn.disabled = true;
+      }
+
+      showProbeToast(`Transmitting MT5 SL/TP Modification for #${ticket}...`, "info");
+
+      try {
+        const resp = await fetch("/api/trade/modify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticket: parseInt(ticket),
+            sl: isNaN(sl) || sl <= 0 ? null : sl,
+            tp: isNaN(tp) || tp <= 0 ? null : tp
+          })
+        });
+        const data = await resp.json();
+
+        if (data.status === "OK" || data.status === "MODIFIED" || data.success) {
+          showProbeToast(`✓ Order #${ticket} Modified: SL $${sl ? sl.toFixed(2) : 'None'} | TP $${tp ? tp.toFixed(2) : 'None'}`, "success");
+          if (slInput) slInput.dataset.modified = "false";
+          if (tpInput) tpInput.dataset.modified = "false";
+          fetchTelemetryOrders();
+        } else {
+          showProbeToast(`⚠ Modify Failed: ${data.error || 'Check MT5 logs'}`, "error");
+        }
+      } catch (err) {
+        showProbeToast(`Modify Network Error: ${err.message}`, "error");
+      } finally {
+        if (btn) {
+          btn.textContent = "MOD";
+          btn.disabled = false;
+        }
+      }
+    }
+
+    async function closeOrderFromPill(ticket, isPending) {
+      const btn = document.getElementById(`btnClose_${ticket}`);
+      const actionName = isPending ? "Cancel Pending" : "Close Position";
+
+      if (btn) {
+        btn.textContent = "⏳";
+        btn.disabled = true;
+      }
+
+      showProbeToast(`Transmitting ${actionName} #${ticket}...`, "info");
+
+      try {
+        const resp = await fetch("/api/trade/close", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ticket: parseInt(ticket),
+            is_pending: Boolean(isPending),
+            source: "terminal_probe_pill"
+          })
+        });
+        const data = await resp.json();
+
+        if (data.status === "OK" || data.status === "CLOSED" || data.success) {
+          showProbeToast(`✓ MT5 #${ticket} ${isPending ? 'Cancelled' : 'Closed'} Successfully`, "success");
+          fetchTelemetryOrders();
+        } else {
+          showProbeToast(`⚠ ${actionName} Failed: ${data.error || 'Check MT5 logs'}`, "error");
+          if (btn) {
+            btn.textContent = isPending ? "✕ CANCEL" : "✕ CLOSE";
+            btn.disabled = false;
+          }
+        }
+      } catch (err) {
+        showProbeToast(`Close Network Error: ${err.message}`, "error");
+        if (btn) {
+          btn.textContent = isPending ? "✕ CANCEL" : "✕ CLOSE";
+          btn.disabled = false;
+        }
+      }
+    }
+
+    async function fetchTelemetryOrders() {
+      try {
+        const res = await fetch("/api/telemetry?t=" + Date.now());
+        const data = await res.json();
+        if (data) {
+          const pending = data.pending_orders || data.orders || [];
+          const positions = data.open_positions || data.positions || [];
+          renderProbeActiveOrders(pending, positions);
+        }
+      } catch (err) {
+        // quiet fallback
+      }
     }
 
     // 5. Telegram Alert Dispatcher
@@ -2702,6 +2963,9 @@ Return ONLY valid JSON matching this exact structure:
             // Telemetry snapshot
             const bid = parseFloat(data.bid);
             updateLiveSpotDisplay(bid);
+            if (data.pending_orders || data.open_positions || data.positions || data.orders) {
+              renderProbeActiveOrders(data.pending_orders || data.orders, data.open_positions || data.positions);
+            }
             if (data.spread_pts) {
               currentSpread = parseFloat(data.spread_pts);
               document.getElementById("headerSpreadPts").textContent = `${currentSpread.toFixed(1)} PTS`;
@@ -2819,12 +3083,14 @@ Return ONLY valid JSON matching this exact structure:
     // 14. Initialization on DOM Loaded
     document.addEventListener("DOMContentLoaded", () => {
       fetchAnchorsFromMT5();
+      fetchTelemetryOrders();
       loadUserLedgerFromServer();
       fetchChartCandles('1');
       connectWebSocket();
       setInterval(updateClockAndCountdown, 1000);
       setInterval(fetchAnchorsFromMT5, 60000); // 1-minute fallback polling
       setInterval(fetchTapeExtremes, 15000); // 15-second refresh for near tried extremes
+      setInterval(fetchTelemetryOrders, 4000); // 4-second active order sync
     });
   </script>
 
