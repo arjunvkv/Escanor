@@ -1362,6 +1362,46 @@ async def get_tape_extremes_endpoint(symbol: str = "XAUUSD", window_seconds: int
         th = candidate_highs[0]
         tl = candidate_lows[0]
 
+        # 4. Compute verified physical bull and bear volume across the reaction range from the extreme
+        def compute_extreme_range_volume(start_epoch):
+            bull_v, bear_v = 0, 0
+            try:
+                ticks = mt5.copy_ticks_from(symbol, int(start_epoch), 5000, mt5.COPY_TICKS_ALL)
+                if ticks is not None and len(ticks) > 1:
+                    for j in range(1, len(ticks)):
+                        d = float(ticks[j]['bid']) - float(ticks[j-1]['bid'])
+                        v = max(1, int(ticks[j]['volume']))
+                        if d > 0:
+                            bull_v += v
+                        elif d < 0:
+                            bear_v += v
+                    if bull_v > 0 or bear_v > 0:
+                        return bull_v, bear_v
+            except Exception:
+                pass
+
+            # Fallback to M1 rate decomposition if tick copy is limited
+            try:
+                sub_rates = [r for r in rates if r['time'] >= start_epoch]
+                for r in sub_rates:
+                    rng = max(0.01, float(r['high']) - float(r['low']))
+                    frac = (float(r['close']) - float(r['low'])) / rng
+                    b_v = int(round(r['tick_volume'] * frac))
+                    bull_v += b_v
+                    bear_v += max(0, int(r['tick_volume']) - b_v)
+            except Exception:
+                pass
+
+            return max(1, bull_v), max(1, bear_v)
+
+        th_bull, th_bear = compute_extreme_range_volume(th["time_msc"] // 1000)
+        tl_bull, tl_bear = compute_extreme_range_volume(tl["time_msc"] // 1000)
+
+        th["bear_vol"] = th_bear
+        th["bull_vol"] = th_bull
+        tl["bull_vol"] = tl_bull
+        tl["bear_vol"] = tl_bear
+
         return JSONResponse(content={
             "status": "OK",
             "symbol": symbol,
@@ -1371,12 +1411,16 @@ async def get_tape_extremes_endpoint(symbol: str = "XAUUSD", window_seconds: int
             "high": {
                 "price": th["price"],
                 "volume": th["volume"],
-                "time_msc": th["time_msc"]
+                "time_msc": th["time_msc"],
+                "bear_vol": th_bear,
+                "bull_vol": th_bull
             },
             "low": {
                 "price": tl["price"],
                 "volume": tl["volume"],
-                "time_msc": tl["time_msc"]
+                "time_msc": tl["time_msc"],
+                "bull_vol": tl_bull,
+                "bear_vol": tl_bear
             }
         })
     except Exception as e:

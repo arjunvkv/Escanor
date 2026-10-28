@@ -866,6 +866,10 @@
               <span class="text-red-400 font-bold uppercase tracking-tight">FAILED:</span>
               <span id="tapeTopDrop" class="font-mono text-slate-300 font-bold">-$--.--</span>
             </div>
+            <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
+              <span class="text-red-400 font-bold uppercase tracking-tight">BEAR VOL:</span>
+              <span class="font-mono font-bold text-red-300"><span id="tapeTopBearVol">--v</span> <span id="tapeTopBullVolSub" class="text-cyan-400/80 font-normal text-[7.5px]">(▲--v)</span></span>
+            </div>
             <div class="flex items-center justify-between mt-0.5 text-[8.5px] border-t border-red-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
               <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
               <span id="tapeTopDist" class="font-mono text-red-300 font-bold">-- pts</span>
@@ -885,6 +889,10 @@
             <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
               <span class="text-cyan-400 font-bold uppercase tracking-tight">HELD:</span>
               <span id="tapeLowRally" class="font-mono text-slate-300 font-bold">+$--.--</span>
+            </div>
+            <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
+              <span class="text-cyan-400 font-bold uppercase tracking-tight">BULL VOL:</span>
+              <span class="font-mono font-bold text-cyan-300"><span id="tapeLowBullVol">--v</span> <span id="tapeLowBearVolSub" class="text-red-400/80 font-normal text-[7.5px]">(▼--v)</span></span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8.5px] border-t border-cyan-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
               <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
@@ -1375,11 +1383,15 @@ Return ONLY valid JSON matching this exact structure:
     let triedHighTime = "--:--:--";
     let triedHighVol = 0;
     let triedHighDrop = 0.0;
+    let triedHighBearVol = 0;
+    let triedHighBullVol = 0;
 
     let triedLowPrice = null;
     let triedLowTime = "--:--:--";
     let triedLowVol = 0;
     let triedLowRally = 0.0;
+    let triedLowBullVol = 0;
+    let triedLowBearVol = 0;
 
     // Cluster accumulation state for PIVOTAL & BLOCKS
     let activeShelfPrice = null;
@@ -2428,11 +2440,15 @@ Return ONLY valid JSON matching this exact structure:
         const elTime = document.getElementById("tapeTopTime");
         const elVol = document.getElementById("tapeTopVol");
         const elDrop = document.getElementById("tapeTopDrop");
+        const elBearVol = document.getElementById("tapeTopBearVol");
+        const elBullVolSub = document.getElementById("tapeTopBullVolSub");
         const elDist = document.getElementById("tapeTopDist");
         if (elPrice) elPrice.textContent = `$${triedHighPrice.toFixed(2)}`;
         if (elTime) elTime.textContent = triedHighTime;
         if (elVol) elVol.textContent = `${triedHighVol}v`;
         if (elDrop) elDrop.textContent = `-$${triedHighDrop.toFixed(2)}`;
+        if (elBearVol) elBearVol.textContent = `${triedHighBearVol.toLocaleString()}v`;
+        if (elBullVolSub) elBullVolSub.textContent = `(▲${triedHighBullVol.toLocaleString()}v)`;
         if (elDist && spot) {
           const dist = spot - triedHighPrice;
           const pts = Math.abs(dist) * 10;
@@ -2446,11 +2462,15 @@ Return ONLY valid JSON matching this exact structure:
         const elTime = document.getElementById("tapeLowTime");
         const elVol = document.getElementById("tapeLowVol");
         const elRally = document.getElementById("tapeLowRally");
+        const elBullVol = document.getElementById("tapeLowBullVol");
+        const elBearVolSub = document.getElementById("tapeLowBearVolSub");
         const elDist = document.getElementById("tapeLowDist");
         if (elPrice) elPrice.textContent = `$${triedLowPrice.toFixed(2)}`;
         if (elTime) elTime.textContent = triedLowTime;
         if (elVol) elVol.textContent = `${triedLowVol}v`;
         if (elRally) elRally.textContent = `+$${triedLowRally.toFixed(2)}`;
+        if (elBullVol) elBullVol.textContent = `${triedLowBullVol.toLocaleString()}v`;
+        if (elBearVolSub) elBearVolSub.textContent = `(▼${triedLowBearVol.toLocaleString()}v)`;
         if (elDist && spot) {
           const dist = spot - triedLowPrice;
           const pts = Math.abs(dist) * 10;
@@ -2475,6 +2495,8 @@ Return ONLY valid JSON matching this exact structure:
             triedHighVol = th.volume || 12;
             triedHighDrop = th.drop || 1.20;
             triedHighTime = th.time_str || (th.time_msc ? new Date(th.time_msc).toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "--:--:--");
+            if (th.bear_vol !== undefined) triedHighBearVol = th.bear_vol;
+            if (th.bull_vol !== undefined) triedHighBullVol = th.bull_vol;
           }
 
           if (tl) {
@@ -2482,6 +2504,8 @@ Return ONLY valid JSON matching this exact structure:
             triedLowVol = tl.volume || 12;
             triedLowRally = tl.rally || 1.20;
             triedLowTime = tl.time_str || (tl.time_msc ? new Date(tl.time_msc).toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : "--:--:--");
+            if (tl.bull_vol !== undefined) triedLowBullVol = tl.bull_vol;
+            if (tl.bear_vol !== undefined) triedLowBearVol = tl.bear_vol;
           }
 
           updateTriedExtremesUI(currentSpot);
@@ -2581,6 +2605,15 @@ Return ONLY valid JSON matching this exact structure:
       const istTime = now.toLocaleTimeString("en-GB", { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 
       // Dynamic Tried & Failed Extremes Tracking (Near Tested High & Held Low)
+      // Real-time live accumulation of bull and bear volume in range on every single tick!
+      if (delta < 0) {
+        triedHighBearVol += stepVol;
+        triedLowBearVol += stepVol;
+      } else if (delta > 0) {
+        triedHighBullVol += stepVol;
+        triedLowBullVol += stepVol;
+      }
+
       if (triedHighPrice !== null) {
         if (bid > triedHighPrice + 0.25) {
           // Breakout occurred past tried ceiling! Refresh from server to find next ceiling
@@ -2836,7 +2869,8 @@ Return ONLY valid JSON matching this exact structure:
         ctx.stroke();
         ctx.fillStyle = "#ff2a4b";
         ctx.font = "8px JetBrains Mono";
-        ctx.fillText(`TRIED HIGH $${triedHighPrice.toFixed(2)} (FAILED -$${triedHighDrop.toFixed(2)})`, 105, ty - 3);
+        const topVolLabel = triedHighBearVol > 0 ? ` | BEAR ${triedHighBearVol.toLocaleString()}v` : "";
+        ctx.fillText(`TRIED HIGH $${triedHighPrice.toFixed(2)} (FAILED -$${triedHighDrop.toFixed(2)}${topVolLabel})`, 105, ty - 3);
       }
 
       // Draw Tested & Held Low (Could not break) reference line
@@ -2851,7 +2885,8 @@ Return ONLY valid JSON matching this exact structure:
         ctx.stroke();
         ctx.fillStyle = "#00f0ff";
         ctx.font = "8px JetBrains Mono";
-        ctx.fillText(`TRIED LOW $${triedLowPrice.toFixed(2)} (HELD +$${triedLowRally.toFixed(2)})`, 105, ly + 9);
+        const lowVolLabel = triedLowBullVol > 0 ? ` | BULL ${triedLowBullVol.toLocaleString()}v` : "";
+        ctx.fillText(`TRIED LOW $${triedLowPrice.toFixed(2)} (HELD +$${triedLowRally.toFixed(2)}${lowVolLabel})`, 105, ly + 9);
       }
 
       ctx.setLineDash([]);
