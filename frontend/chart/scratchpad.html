@@ -2064,6 +2064,19 @@ Return ONLY valid JSON matching this exact structure:
         const openPrice = parseFloat(item.price_open || item.price || currentSpot);
         const slVal = (item.sl !== undefined && item.sl !== null && Number(item.sl) > 0) ? Number(item.sl).toFixed(2) : "";
         const tpVal = (item.tp !== undefined && item.tp !== null && Number(item.tp) > 0) ? Number(item.tp).toFixed(2) : "";
+        const isBuy = rawType.includes("BUY");
+
+        function getPillDollarText(targetP) {
+          if (!targetP || isNaN(targetP) || targetP <= 0) return { text: "--", cls: "text-slate-500" };
+          const diff = isBuy ? (targetP - openPrice) : (openPrice - targetP);
+          const d = Math.round(vol * 100 * diff * 100) / 100;
+          const sign = d >= 0 ? "+$" : "-$";
+          const cls = d < 0 ? "text-red-400" : "text-emerald-400";
+          return { text: `${sign}${Math.abs(d).toFixed(2)}`, cls: cls };
+        }
+
+        const slDInfo = getPillDollarText(parseFloat(slVal));
+        const tpDInfo = getPillDollarText(parseFloat(tpVal));
 
         let badgeClass = "bg-cyan-950 text-cyan-300 border-cyan-500/40";
         if (displayType.includes("SELL")) {
@@ -2098,13 +2111,15 @@ Return ONLY valid JSON matching this exact structure:
               <span id="orderDist_${ticket}">${distHtml}</span>
             </div>
             <div class="flex items-center gap-1.5 flex-shrink-0">
-              <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.2 rounded border border-red-500/30">
+              <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.2 rounded border border-red-500/30" title="Stop Loss Price & Risk ($)">
                 <span class="text-red-400 text-[9px] font-bold">SL:</span>
-                <input id="orderSl_${ticket}" type="number" step="0.01" value="${slVal}" placeholder="SL" class="w-16 px-1 py-0.2 bg-black rounded border border-red-500/40 text-red-200 text-[10px] font-bold font-mono no-spin focus:border-red-400 outline-none" oninput="this.dataset.modified='true'">
+                <input id="orderSl_${ticket}" type="number" step="0.01" value="${slVal}" placeholder="SL" class="w-16 px-1 py-0.2 bg-black rounded border border-red-500/40 text-red-200 text-[10px] font-bold font-mono no-spin focus:border-red-400 outline-none" oninput="this.dataset.modified='true'; updatePillDollarBadges(${ticket}, ${openPrice}, ${vol}, ${isBuy})">
+                <span id="orderSlDoll_${ticket}" class="text-[9.5px] font-bold ${slDInfo.cls} font-mono">${slDInfo.text}</span>
               </div>
-              <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.2 rounded border border-emerald-500/30">
+              <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.2 rounded border border-emerald-500/30" title="Take Profit Price & Reward ($)">
                 <span class="text-emerald-400 text-[9px] font-bold">TP:</span>
-                <input id="orderTp_${ticket}" type="number" step="0.01" value="${tpVal}" placeholder="TP" class="w-16 px-1 py-0.2 bg-black rounded border border-emerald-500/40 text-emerald-200 text-[10px] font-bold font-mono no-spin focus:border-emerald-400 outline-none" oninput="this.dataset.modified='true'">
+                <input id="orderTp_${ticket}" type="number" step="0.01" value="${tpVal}" placeholder="TP" class="w-16 px-1 py-0.2 bg-black rounded border border-emerald-500/40 text-emerald-200 text-[10px] font-bold font-mono no-spin focus:border-emerald-400 outline-none" oninput="this.dataset.modified='true'; updatePillDollarBadges(${ticket}, ${openPrice}, ${vol}, ${isBuy})">
+                <span id="orderTpDoll_${ticket}" class="text-[9.5px] font-bold ${tpDInfo.cls} font-mono">${tpDInfo.text}</span>
               </div>
               <button id="btnMod_${ticket}" onclick="modifyOrderFromPill(${ticket})" class="h-5 px-2 bg-cyan-900/70 hover:bg-cyan-600 text-cyan-200 border border-cyan-500/40 rounded text-[9.5px] font-bold uppercase cursor-pointer active:scale-95 transition-all" title="Modify SL and TP on MT5">
                 MOD
@@ -2129,6 +2144,8 @@ Return ONLY valid JSON matching this exact structure:
           if (tpInput && document.activeElement !== tpInput && tpInput.dataset.modified !== "true") {
             if (tpVal && tpInput.value !== tpVal) tpInput.value = tpVal;
           }
+
+          updatePillDollarBadges(ticket, openPrice, vol, isBuy);
         }
       });
 
@@ -2145,6 +2162,39 @@ Return ONLY valid JSON matching this exact structure:
         el.focus();
         if (focusedStart !== null && focusedEnd !== null) {
           try { el.setSelectionRange(focusedStart, focusedEnd); } catch(e){}
+        }
+      }
+    }
+
+    function updatePillDollarBadges(ticket, openPrice, vol, isBuy) {
+      const slInput = document.getElementById(`orderSl_${ticket}`);
+      const tpInput = document.getElementById(`orderTp_${ticket}`);
+      const slDollEl = document.getElementById(`orderSlDoll_${ticket}`);
+      const tpDollEl = document.getElementById(`orderTpDoll_${ticket}`);
+
+      if (slInput && slDollEl) {
+        const val = parseFloat(slInput.value);
+        if (!isNaN(val) && val > 0) {
+          const diff = isBuy ? (val - openPrice) : (openPrice - val);
+          const d = Math.round(vol * 100 * diff * 100) / 100;
+          slDollEl.textContent = `${d >= 0 ? '+$' : '-$'}${Math.abs(d).toFixed(2)}`;
+          slDollEl.className = `text-[9.5px] font-bold font-mono ${d < 0 ? 'text-red-400' : 'text-emerald-400'}`;
+        } else {
+          slDollEl.textContent = "--";
+          slDollEl.className = "text-[9.5px] font-bold font-mono text-slate-500";
+        }
+      }
+
+      if (tpInput && tpDollEl) {
+        const val = parseFloat(tpInput.value);
+        if (!isNaN(val) && val > 0) {
+          const diff = isBuy ? (val - openPrice) : (openPrice - val);
+          const d = Math.round(vol * 100 * diff * 100) / 100;
+          tpDollEl.textContent = `${d >= 0 ? '+$' : '-$'}${Math.abs(d).toFixed(2)}`;
+          tpDollEl.className = `text-[9.5px] font-bold font-mono ${d >= 0 ? 'text-emerald-400' : 'text-red-400'}`;
+        } else {
+          tpDollEl.textContent = "--";
+          tpDollEl.className = "text-[9.5px] font-bold font-mono text-slate-500";
         }
       }
     }
