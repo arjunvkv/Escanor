@@ -1,0 +1,15 @@
+{
+  "date_ist": "2026-10-29",
+  "real_yield_pct": 2.67,
+  "real_yield_delta_bps": 3.0,
+  "real_yield_vector": "CASH TIGHTENING",
+  "dxy_spot": 102.12,
+  "dxy_delta_pct": -0.22,
+  "dxy_vector": "DOLLAR SOFTENING",
+  "sge_premium_usd": 11.00,
+  "sge_delta_usd": -3.80,
+  "sge_vector": "MODERATE BID",
+  "next_event_name": "US Q3 GDP Advance & Core PCE Inflation",
+  "next_event_ist": "18:00 IST",
+  "pocket_note": "Post-FOMC rate hold keeps US 10Y real yields elevated at 2.67% (+3.0 bps), maintaining structural carry pressure on gold, while DXY pullback to 102.12 provides countervailing support. Shanghai physical premium compressed to +$11.00/oz (-$3.80/oz delta) as physical accumulators pause ahead of U.S. Q3 Advance GDP and Core PCE prints at 18:00 IST. Roadway remains clear through London morning session."
+}

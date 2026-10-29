@@ -47,6 +47,7 @@ DRAWINGS_PATH.parent.mkdir(parents=True, exist_ok=True)
 EVALUATION_VIEW_PATH = BASE_DIR / "data" / "active_evaluation_view.json"
 EVALUATION_SNAPSHOT_PATH = BASE_DIR / "data" / "active_evaluation_snapshot.png"
 DRAWDOWN_PATH = BASE_DIR / "data" / "drawdown.json"
+SOVEREIGN_AUDIT_PATH = BASE_DIR / "data" / "sovereign_audit.json"
 
 drawdown_config: Dict[str, Any] = {
     "enabled": True,
@@ -1265,6 +1266,39 @@ async def get_sovereign_ledger_endpoint():
         return JSONResponse(content={"status": "OK", "records": records})
     except Exception as e:
         logger.error(f"Error loading sovereign ledger: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.get("/api/sovereign/audit")
+async def get_sovereign_audit_endpoint():
+    """Fetch the active Sovereign Money Market Audit JSON."""
+    try:
+        if SOVEREIGN_AUDIT_PATH.exists():
+            with open(SOVEREIGN_AUDIT_PATH, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return JSONResponse(content={"status": "OK", "audit": data})
+        return JSONResponse(content={"status": "OK", "audit": None})
+    except Exception as e:
+        logger.error(f"Error reading sovereign audit: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
+@app.post("/api/sovereign/audit")
+async def save_sovereign_audit_endpoint(request: Request):
+    """Save/ingest newly audited Sovereign Money Market JSON."""
+    try:
+        body = await request.json()
+        if not body:
+            return JSONResponse(content={"status": "ERROR", "message": "Empty body"}, status_code=400)
+        
+        SOVEREIGN_AUDIT_PATH.parent.mkdir(parents=True, exist_ok=True)
+        with open(SOVEREIGN_AUDIT_PATH, "w", encoding="utf-8") as f:
+            json.dump(body, f, indent=2)
+            
+        logger.info(f"Successfully ingested and saved sovereign audit for {body.get('date_ist')}")
+        return JSONResponse(content={"status": "OK", "message": "Audit saved successfully", "audit": body})
+    except Exception as e:
+        logger.error(f"Error saving sovereign audit: {e}")
         return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
 
 
