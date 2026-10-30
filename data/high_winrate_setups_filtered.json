@@ -1,0 +1,5696 @@
+{
+  "metadata": {
+    "title": "ESCANOR SOVEREIGN GOLD (XAUUSD) \u2014 HIGH WIN-RATE SETUP AUDIT",
+    "description": "Strictly filtered master document containing ONLY high-conviction physical setups (79.5% - 100% historical win-rate). All low-probability, stalling, or decaying setups purged.",
+    "filter_timestamp": "2026-10-30T21:22:23.236714",
+    "total_setups_retained": 177,
+    "trash_setups_dumped": 1306,
+    "trash_purge_rate_pct": 88.1,
+    "unique_golden_prices": 76
+  },
+  "high_winrate_setups": [
+    {
+      "price": 3891.64,
+      "price_formatted": "$3891.64",
+      "cycle_number": 1,
+      "wave_label": "W1 22:55",
+      "time_iso": "2026-10-30T22:55:30",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 18.04,
+        "volume": 11,
+        "delta": -1,
+        "effort_ratio": 1,
+        "origin": "$3891.75 (\u25bc0.11)"
+      },
+      "structural_context": {
+        "role": "BULL ABSORPTION FLOOR",
+        "bias": "\u25b2"
+      }
+    },
+    {
+      "price": 3896.2,
+      "price_formatted": "$3896.20",
+      "cycle_number": 1,
+      "wave_label": "W1 22:55",
+      "time_iso": "2026-10-30T22:55:15",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 11.33,
+        "volume": 11,
+        "delta": -5,
+        "effort_ratio": 1,
+        "origin": "$3896.20"
+      },
+      "structural_context": {
+        "role": "BULL ABSORPTION FLOOR",
+        "bias": "\u25b2"
+      }
+    },
+    {
+      "price": 3896.22,
+      "price_formatted": "$3896.22",
+      "cycle_number": 1,
+      "wave_label": "W1 22:55",
+      "time_iso": "2026-10-30T22:55:15",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 11.31,
+        "volume": 10,
+        "delta": -6,
+        "effort_ratio": 1,
+        "origin": "$3896.22"
+      },
+      "structural_context": {
+        "role": "BULL ABSORPTION FLOOR",
+        "bias": "\u25b2"
+      }
+    },
+    {
+      "price": 3975.94,
+      "price_formatted": "$3975.94",
+      "cycle_number": 1,
+      "wave_label": "W2 16:30",
+      "time_iso": "2026-10-30T16:30:24",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 10.63,
+        "volume": 3,
+        "delta": 1,
+        "effort_ratio": 0,
+        "origin": "$3975.69 (\u25b20.25)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3976.05,
+      "price_formatted": "$3976.05",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:26",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 10.52,
+        "volume": 20,
+        "delta": 0,
+        "effort_ratio": 2,
+        "origin": "$3975.99 (\u25b20.06)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3976.1,
+      "price_formatted": "$3976.10",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:27",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 10.47,
+        "volume": 23,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$3975.99 (\u25b20.11)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3976.18,
+      "price_formatted": "$3976.18",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:27",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 10.39,
+        "volume": 25,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$3975.99 (\u25b20.19)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3976.2,
+      "price_formatted": "$3976.20",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:27",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 10.37,
+        "volume": 27,
+        "delta": 1,
+        "effort_ratio": 3,
+        "origin": "$3975.99 (\u25b20.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3976.22,
+      "price_formatted": "$3976.22",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:27",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 10.35,
+        "volume": 21,
+        "delta": 3,
+        "effort_ratio": 2,
+        "origin": "$3975.99 (\u25b20.23)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3897.5,
+      "price_formatted": "$3897.50",
+      "cycle_number": 1,
+      "wave_label": "W1 22:55",
+      "time_iso": "2026-10-30T22:55:06",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 10.03,
+        "volume": 8,
+        "delta": -6,
+        "effort_ratio": 1,
+        "origin": "$3897.67 (\u25bc0.17)"
+      },
+      "structural_context": {
+        "role": "ABSORPTION WALL DECAY",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3897.6,
+      "price_formatted": "$3897.60",
+      "cycle_number": 1,
+      "wave_label": "W1 22:55",
+      "time_iso": "2026-10-30T22:55:05",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 9.93,
+        "volume": 20,
+        "delta": -8,
+        "effort_ratio": 2,
+        "origin": "$3897.69 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "ABSORPTION WALL DECAY",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3977.6,
+      "price_formatted": "$3977.60",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:42",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 8.97,
+        "volume": 3,
+        "delta": 1,
+        "effort_ratio": 0,
+        "origin": "$3977.41 (\u25b20.19)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3977.78,
+      "price_formatted": "$3977.78",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:42",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 8.79,
+        "volume": 3,
+        "delta": 3,
+        "effort_ratio": 0,
+        "origin": "$3977.62 (\u25b20.16)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3977.8,
+      "price_formatted": "$3977.80",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:42",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 8.77,
+        "volume": 3,
+        "delta": 3,
+        "effort_ratio": 0,
+        "origin": "$3977.62 (\u25b20.18)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3978.0,
+      "price_formatted": "$3978.00",
+      "cycle_number": 1,
+      "wave_label": "W2 16:31",
+      "time_iso": "2026-10-30T16:31:42",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 8.57,
+        "volume": 22,
+        "delta": -2,
+        "effort_ratio": 3,
+        "origin": "$3977.86 (\u25b20.14)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3996.7,
+      "price_formatted": "$3996.70",
+      "cycle_number": 1,
+      "wave_label": "W1 09:38",
+      "time_iso": "2026-10-30T09:38:15",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 11,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 8.47,
+        "volume": 11,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3996.90 (\u25bc0.20)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3899.2,
+      "price_formatted": "$3899.20",
+      "cycle_number": 1,
+      "wave_label": "W1 22:54",
+      "time_iso": "2026-10-30T22:54:47",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 15,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 8.33,
+        "volume": 32,
+        "delta": -4,
+        "effort_ratio": 4,
+        "origin": "$3899.29 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3899.4,
+      "price_formatted": "$3899.40",
+      "cycle_number": 1,
+      "wave_label": "W1 22:54",
+      "time_iso": "2026-10-30T22:54:45",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 15,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 8.13,
+        "volume": 47,
+        "delta": -1,
+        "effort_ratio": 6,
+        "origin": "$3899.27 (\u25b20.13)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.1,
+      "price_formatted": "$3909.10",
+      "cycle_number": 2,
+      "wave_label": "W2 23:08",
+      "time_iso": "2026-10-30T23:08:55",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 7.99,
+        "volume": 5,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3909.10"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.7,
+      "price_formatted": "$3909.70",
+      "cycle_number": 2,
+      "wave_label": "W2 23:08",
+      "time_iso": "2026-10-30T23:08:56",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 7.39,
+        "volume": 62,
+        "delta": 10,
+        "effort_ratio": 8,
+        "origin": "$3909.62 (\u25b20.08)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.8,
+      "price_formatted": "$3909.80",
+      "cycle_number": 2,
+      "wave_label": "W1 23:08",
+      "time_iso": "2026-10-30T23:08:56",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 10,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 7.29,
+        "volume": 55,
+        "delta": -3,
+        "effort_ratio": 8,
+        "origin": "$3909.62 (\u25b20.18)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.9,
+      "price_formatted": "$3909.90",
+      "cycle_number": 2,
+      "wave_label": "W1 23:08",
+      "time_iso": "2026-10-30T23:08:56",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 11,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 7.19,
+        "volume": 58,
+        "delta": 0,
+        "effort_ratio": 8,
+        "origin": "$3909.83 (\u25b20.07)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.1,
+      "price_formatted": "$3990.10",
+      "cycle_number": 5,
+      "wave_label": "W1 17:16",
+      "time_iso": "2026-10-30T17:16:07",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 7.12,
+        "volume": 8,
+        "delta": 4,
+        "effort_ratio": 1,
+        "origin": "$3990.18 (\u25bc0.08)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.0,
+      "price_formatted": "$3910.00",
+      "cycle_number": 2,
+      "wave_label": "W1 23:08",
+      "time_iso": "2026-10-30T23:08:56",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 11,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 7.09,
+        "volume": 17,
+        "delta": 11,
+        "effort_ratio": 2,
+        "origin": "$3909.83 (\u25b20.17)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.2,
+      "price_formatted": "$3990.20",
+      "cycle_number": 5,
+      "wave_label": "W1 17:16",
+      "time_iso": "2026-10-30T17:16:06",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 5,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 7.02,
+        "volume": 17,
+        "delta": -7,
+        "effort_ratio": 2,
+        "origin": "$3990.39 (\u25bc0.19)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.1,
+      "price_formatted": "$3910.10",
+      "cycle_number": 2,
+      "wave_label": "W1 23:08",
+      "time_iso": "2026-10-30T23:08:56",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 11,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.99,
+        "volume": 17,
+        "delta": -1,
+        "effort_ratio": 2,
+        "origin": "$3910.04 (\u25b20.06)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.2,
+      "price_formatted": "$3910.20",
+      "cycle_number": 2,
+      "wave_label": "W1 23:09",
+      "time_iso": "2026-10-30T23:09:04",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.89,
+        "volume": 17,
+        "delta": -1,
+        "effort_ratio": 2,
+        "origin": "$3910.40 (\u25bc0.20)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.3,
+      "price_formatted": "$3910.30",
+      "cycle_number": 2,
+      "wave_label": "W1 23:09",
+      "time_iso": "2026-10-30T23:09:04",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.79,
+        "volume": 27,
+        "delta": -3,
+        "effort_ratio": 4,
+        "origin": "$3910.40 (\u25bc0.10)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.4,
+      "price_formatted": "$3910.40",
+      "cycle_number": 2,
+      "wave_label": "W1 23:09",
+      "time_iso": "2026-10-30T23:09:04",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.69,
+        "volume": 23,
+        "delta": -3,
+        "effort_ratio": 3,
+        "origin": "$3910.40"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.0,
+      "price_formatted": "$3980.00",
+      "cycle_number": 2,
+      "wave_label": "W3 16:31",
+      "time_iso": "2026-10-30T16:31:56",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 17,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.57,
+        "volume": 18,
+        "delta": 0,
+        "effort_ratio": 3,
+        "origin": "$3979.86 (\u25b20.14)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3911.5,
+      "price_formatted": "$3911.50",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 6.35,
+        "volume": 10,
+        "delta": -2,
+        "effort_ratio": 2,
+        "origin": "$3911.56 (\u25bc0.06)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3911.56,
+      "price_formatted": "$3911.56",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.29,
+        "volume": 13,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$3911.56"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3907.2,
+      "price_formatted": "$3907.20",
+      "cycle_number": 2,
+      "wave_label": "W1 23:51",
+      "time_iso": "2026-10-30T23:51:45",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 6.29,
+        "volume": 10,
+        "delta": -4,
+        "effort_ratio": 2,
+        "origin": "$3907.31 (\u25bc0.11)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3907.22,
+      "price_formatted": "$3907.22",
+      "cycle_number": 2,
+      "wave_label": "W1 23:51",
+      "time_iso": "2026-10-30T23:51:45",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 6.27,
+        "volume": 14,
+        "delta": -4,
+        "effort_ratio": 2,
+        "origin": "$3907.31 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3911.6,
+      "price_formatted": "$3911.60",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 6.25,
+        "volume": 7,
+        "delta": -1,
+        "effort_ratio": 1,
+        "origin": "$3911.60"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.5,
+      "price_formatted": "$3988.50",
+      "cycle_number": 3,
+      "wave_label": "W3 17:12",
+      "time_iso": "2026-10-30T17:12:51",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.21,
+        "volume": 13,
+        "delta": 1,
+        "effort_ratio": 2,
+        "origin": "$3988.30 (\u25b20.20)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3911.7,
+      "price_formatted": "$3911.70",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 6.15,
+        "volume": 7,
+        "delta": -3,
+        "effort_ratio": 1,
+        "origin": "$3911.85 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3911.8,
+      "price_formatted": "$3911.80",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 6.05,
+        "volume": 18,
+        "delta": -6,
+        "effort_ratio": 3,
+        "origin": "$3911.80"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3911.9,
+      "price_formatted": "$3911.90",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.95,
+        "volume": 19,
+        "delta": -1,
+        "effort_ratio": 3,
+        "origin": "$3911.85 (\u25b20.05)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.3,
+      "price_formatted": "$3993.30",
+      "cycle_number": 4,
+      "wave_label": "W2 17:20",
+      "time_iso": "2026-10-30T17:20:23",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 5.94,
+        "volume": 5,
+        "delta": -3,
+        "effort_ratio": 1,
+        "origin": "$3993.44 (\u25bc0.14)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.32,
+      "price_formatted": "$3993.32",
+      "cycle_number": 4,
+      "wave_label": "W2 17:20",
+      "time_iso": "2026-10-30T17:20:23",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 5.92,
+        "volume": 7,
+        "delta": -3,
+        "effort_ratio": 1,
+        "origin": "$3993.44 (\u25bc0.12)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3982.5,
+      "price_formatted": "$3982.50",
+      "cycle_number": 2,
+      "wave_label": "W3 16:44",
+      "time_iso": "2026-10-30T16:44:09",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 5.85,
+        "volume": 1,
+        "delta": 1,
+        "effort_ratio": 0,
+        "origin": "$3982.35 (\u25b20.15)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3912.0,
+      "price_formatted": "$3912.00",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.85,
+        "volume": 43,
+        "delta": -9,
+        "effort_ratio": 7,
+        "origin": "$3912.15 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3997.6,
+      "price_formatted": "$3997.60",
+      "cycle_number": 1,
+      "wave_label": "W2 09:42",
+      "time_iso": "2026-10-30T09:42:29",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 5.76,
+        "volume": 5,
+        "delta": -1,
+        "effort_ratio": 1,
+        "origin": "$3997.66 (\u25bc0.06)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3912.1,
+      "price_formatted": "$3912.10",
+      "cycle_number": 2,
+      "wave_label": "W2 23:12",
+      "time_iso": "2026-10-30T23:12:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 12,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.75,
+        "volume": 31,
+        "delta": -3,
+        "effort_ratio": 5,
+        "origin": "$3912.15 (\u25bc0.05)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.0,
+      "price_formatted": "$3980.00",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 5.69,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3980.00"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.6,
+      "price_formatted": "$3993.60",
+      "cycle_number": 5,
+      "wave_label": "W2 17:20",
+      "time_iso": "2026-10-30T17:20:22",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 5.64,
+        "volume": 3,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3993.69 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.8,
+      "price_formatted": "$3909.80",
+      "cycle_number": 2,
+      "wave_label": "W2 23:16",
+      "time_iso": "2026-10-30T23:16:37",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 5.61,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3909.87 (\u25bc0.07)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.9,
+      "price_formatted": "$3909.90",
+      "cycle_number": 2,
+      "wave_label": "W2 23:16",
+      "time_iso": "2026-10-30T23:16:37",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.51,
+        "volume": 15,
+        "delta": -5,
+        "effort_ratio": 3,
+        "origin": "$3909.90"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.2,
+      "price_formatted": "$3980.20",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 5.49,
+        "volume": 3,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3980.30 (\u25bc0.10)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.0,
+      "price_formatted": "$3910.00",
+      "cycle_number": 2,
+      "wave_label": "W2 23:16",
+      "time_iso": "2026-10-30T23:16:37",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.41,
+        "volume": 18,
+        "delta": 6,
+        "effort_ratio": 3,
+        "origin": "$3910.15 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.1,
+      "price_formatted": "$3910.10",
+      "cycle_number": 2,
+      "wave_label": "W2 23:16",
+      "time_iso": "2026-10-30T23:16:36",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.31,
+        "volume": 29,
+        "delta": -7,
+        "effort_ratio": 5,
+        "origin": "$3910.15 (\u25bc0.05)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.4,
+      "price_formatted": "$3980.40",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 5.29,
+        "volume": 2,
+        "delta": 0,
+        "effort_ratio": 0,
+        "origin": "$3980.56 (\u25bc0.16)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.2,
+      "price_formatted": "$3910.20",
+      "cycle_number": 2,
+      "wave_label": "W2 23:16",
+      "time_iso": "2026-10-30T23:16:36",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.21,
+        "volume": 22,
+        "delta": -4,
+        "effort_ratio": 4,
+        "origin": "$3910.39 (\u25bc0.19)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.5,
+      "price_formatted": "$3980.50",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.19,
+        "volume": 2,
+        "delta": 2,
+        "effort_ratio": 0,
+        "origin": "$3980.33 (\u25b20.17)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.6,
+      "price_formatted": "$3980.60",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.09,
+        "volume": 3,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3980.60"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.8,
+      "price_formatted": "$3981.80",
+      "cycle_number": 3,
+      "wave_label": "W1 18:45",
+      "time_iso": "2026-10-30T18:45:08",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 5.03,
+        "volume": 8,
+        "delta": 2,
+        "effort_ratio": 2,
+        "origin": "$3981.95 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.7,
+      "price_formatted": "$3980.70",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.99,
+        "volume": 1,
+        "delta": 1,
+        "effort_ratio": 0,
+        "origin": "$3980.55 (\u25b20.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.8,
+      "price_formatted": "$3980.80",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:17",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 4.89,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3980.99 (\u25bc0.19)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.1,
+      "price_formatted": "$3990.10",
+      "cycle_number": 6,
+      "wave_label": "W1 17:45",
+      "time_iso": "2026-10-30T17:45:35",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 4.78,
+        "volume": 1,
+        "delta": 1,
+        "effort_ratio": 0,
+        "origin": "$3990.10"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3996.7,
+      "price_formatted": "$3996.70",
+      "cycle_number": 2,
+      "wave_label": "W1 10:16",
+      "time_iso": "2026-10-30T10:16:32",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 4.74,
+        "volume": 3,
+        "delta": -3,
+        "effort_ratio": 1,
+        "origin": "$3996.91 (\u25bc0.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3996.7,
+      "price_formatted": "$3996.70",
+      "cycle_number": 2,
+      "wave_label": "W2 10:18",
+      "time_iso": "2026-10-30T10:18:13",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 13,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.74,
+        "volume": 4,
+        "delta": 2,
+        "effort_ratio": 1,
+        "origin": "$3996.70"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.99,
+      "price_formatted": "$3980.99",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.7,
+        "volume": 5,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3980.99"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.0,
+      "price_formatted": "$3981.00",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 4.69,
+        "volume": 5,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3981.00"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.2,
+      "price_formatted": "$3990.20",
+      "cycle_number": 6,
+      "wave_label": "W1 17:45",
+      "time_iso": "2026-10-30T17:45:34",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 4.68,
+        "volume": 6,
+        "delta": -2,
+        "effort_ratio": 1,
+        "origin": "$3990.43 (\u25bc0.23)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.0,
+      "price_formatted": "$3980.00",
+      "cycle_number": 1,
+      "wave_label": "W2 15:35",
+      "time_iso": "2026-10-30T15:35:12",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 15,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.62,
+        "volume": 22,
+        "delta": 10,
+        "effort_ratio": 5,
+        "origin": "$3980.24 (\u25bc0.24)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3984.0,
+      "price_formatted": "$3984.00",
+      "cycle_number": 2,
+      "wave_label": "W2 16:44",
+      "time_iso": "2026-10-30T16:44:24",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 5,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 4.53,
+        "volume": 10,
+        "delta": 2,
+        "effort_ratio": 2,
+        "origin": "$3983.81 (\u25b20.19)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.4,
+      "price_formatted": "$3980.40",
+      "cycle_number": 2,
+      "wave_label": "W2 16:05",
+      "time_iso": "2026-10-30T16:05:57",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 9,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.51,
+        "volume": 23,
+        "delta": 1,
+        "effort_ratio": 5,
+        "origin": "$3980.59 (\u25bc0.19)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.4,
+      "price_formatted": "$3980.40",
+      "cycle_number": 2,
+      "wave_label": "W3 16:07",
+      "time_iso": "2026-10-30T16:07:12",
+      "primary_pattern": "Ceiling Squeeze Breakout",
+      "pattern_id": "PATTERN_B",
+      "win_rate_tier": "88.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 4.51,
+        "volume": 12,
+        "delta": 8,
+        "effort_ratio": 3,
+        "origin": "$3980.33 (\u25b20.07)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.5,
+      "price_formatted": "$3988.50",
+      "cycle_number": 4,
+      "wave_label": "W2 18:19",
+      "time_iso": "2026-10-30T18:19:13",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 4.49,
+        "volume": 7,
+        "delta": -1,
+        "effort_ratio": 2,
+        "origin": "$3988.63 (\u25bc0.13)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.2,
+      "price_formatted": "$3981.20",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:17",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.49,
+        "volume": 27,
+        "delta": -5,
+        "effort_ratio": 6,
+        "origin": "$3980.99 (\u25b20.21)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.2,
+      "price_formatted": "$3980.20",
+      "cycle_number": 1,
+      "wave_label": "W2 15:35",
+      "time_iso": "2026-10-30T15:35:12",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 19,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.42,
+        "volume": 13,
+        "delta": 1,
+        "effort_ratio": 3,
+        "origin": "$3980.44 (\u25bc0.24)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3987.9,
+      "price_formatted": "$3987.90",
+      "cycle_number": 1,
+      "wave_label": "W1 12:39",
+      "time_iso": "2026-10-30T12:39:35",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 4.41,
+        "volume": 16,
+        "delta": -2,
+        "effort_ratio": 4,
+        "origin": "$3988.06 (\u25bc0.16)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.5,
+      "price_formatted": "$3980.50",
+      "cycle_number": 2,
+      "wave_label": "W2 16:05",
+      "time_iso": "2026-10-30T16:05:54",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.41,
+        "volume": 12,
+        "delta": -6,
+        "effort_ratio": 3,
+        "origin": "$3980.59 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3913.49,
+      "price_formatted": "$3913.49",
+      "cycle_number": 2,
+      "wave_label": "W1 23:10",
+      "time_iso": "2026-10-30T23:10:22",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.36,
+        "volume": 9,
+        "delta": 1,
+        "effort_ratio": 2,
+        "origin": "$3913.36 (\u25b20.13)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3913.5,
+      "price_formatted": "$3913.50",
+      "cycle_number": 2,
+      "wave_label": "W1 23:10",
+      "time_iso": "2026-10-30T23:10:22",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.35,
+        "volume": 7,
+        "delta": 1,
+        "effort_ratio": 2,
+        "origin": "$3913.36 (\u25b20.14)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.4,
+      "price_formatted": "$3988.40",
+      "cycle_number": 2,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:45",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 4.31,
+        "volume": 9,
+        "delta": 1,
+        "effort_ratio": 2,
+        "origin": "$3988.61 (\u25bc0.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.0,
+      "price_formatted": "$3988.00",
+      "cycle_number": 1,
+      "wave_label": "W1 12:39",
+      "time_iso": "2026-10-30T12:39:35",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 9,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 4.31,
+        "volume": 8,
+        "delta": 0,
+        "effort_ratio": 2,
+        "origin": "$3988.06 (\u25bc0.06)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.6,
+      "price_formatted": "$3980.60",
+      "cycle_number": 2,
+      "wave_label": "W2 16:05",
+      "time_iso": "2026-10-30T16:05:53",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.31,
+        "volume": 14,
+        "delta": -2,
+        "effort_ratio": 3,
+        "origin": "$3980.60"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.6,
+      "price_formatted": "$3988.60",
+      "cycle_number": 1,
+      "wave_label": "W1 12:39",
+      "time_iso": "2026-10-30T12:39:55",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.3,
+        "volume": 17,
+        "delta": 7,
+        "effort_ratio": 4,
+        "origin": "$3988.48 (\u25b20.12)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.5,
+      "price_formatted": "$3988.50",
+      "cycle_number": 2,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:44",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.21,
+        "volume": 17,
+        "delta": 1,
+        "effort_ratio": 4,
+        "origin": "$3988.61 (\u25bc0.11)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.7,
+      "price_formatted": "$3980.70",
+      "cycle_number": 2,
+      "wave_label": "W2 16:05",
+      "time_iso": "2026-10-30T16:05:40",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 15,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.21,
+        "volume": 32,
+        "delta": 2,
+        "effort_ratio": 8,
+        "origin": "$3980.87 (\u25bc0.17)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.6,
+      "price_formatted": "$3988.60",
+      "cycle_number": 2,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:44",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 4.11,
+        "volume": 12,
+        "delta": 0,
+        "effort_ratio": 3,
+        "origin": "$3988.60"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.8,
+      "price_formatted": "$3980.80",
+      "cycle_number": 2,
+      "wave_label": "W2 16:05",
+      "time_iso": "2026-10-30T16:05:40",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 12,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.11,
+        "volume": 9,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$3980.87 (\u25bc0.07)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3987.9,
+      "price_formatted": "$3987.90",
+      "cycle_number": 5,
+      "wave_label": "W2 18:33",
+      "time_iso": "2026-10-30T18:33:38",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 4.0,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3988.11 (\u25bc0.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.3,
+      "price_formatted": "$3989.30",
+      "cycle_number": 2,
+      "wave_label": "W1 13:12",
+      "time_iso": "2026-10-30T13:12:03",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.93,
+        "volume": 15,
+        "delta": 3,
+        "effort_ratio": 4,
+        "origin": "$3989.40 (\u25bc0.10)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3982.9,
+      "price_formatted": "$3982.90",
+      "cycle_number": 3,
+      "wave_label": "W2 18:45",
+      "time_iso": "2026-10-30T18:45:51",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 3.93,
+        "volume": 3,
+        "delta": 3,
+        "effort_ratio": 1,
+        "origin": "$3982.68 (\u25b20.22)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.8,
+      "price_formatted": "$3988.80",
+      "cycle_number": 2,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:46",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.91,
+        "volume": 8,
+        "delta": 4,
+        "effort_ratio": 2,
+        "origin": "$3988.60 (\u25b20.20)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.0,
+      "price_formatted": "$3981.00",
+      "cycle_number": 2,
+      "wave_label": "W2 16:07",
+      "time_iso": "2026-10-30T16:07:48",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 5,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.91,
+        "volume": 24,
+        "delta": 2,
+        "effort_ratio": 6,
+        "origin": "$3981.00"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.0,
+      "price_formatted": "$3988.00",
+      "cycle_number": 5,
+      "wave_label": "W2 18:33",
+      "time_iso": "2026-10-30T18:33:38",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.9,
+        "volume": 5,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3988.11 (\u25bc0.11)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.2,
+      "price_formatted": "$3980.20",
+      "cycle_number": 2,
+      "wave_label": "W1 16:04",
+      "time_iso": "2026-10-30T16:04:32",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 3.79,
+        "volume": 7,
+        "delta": -5,
+        "effort_ratio": 2,
+        "origin": "$3980.42 (\u25bc0.22)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.7,
+      "price_formatted": "$3909.70",
+      "cycle_number": 3,
+      "wave_label": "W3 23:50",
+      "time_iso": "2026-10-30T23:50:27",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 3.79,
+        "volume": 7,
+        "delta": -5,
+        "effort_ratio": 2,
+        "origin": "$3909.88 (\u25bc0.18)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.0,
+      "price_formatted": "$3989.00",
+      "cycle_number": 2,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:42",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.71,
+        "volume": 39,
+        "delta": -3,
+        "effort_ratio": 11,
+        "origin": "$3989.20 (\u25bc0.20)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.2,
+      "price_formatted": "$3981.20",
+      "cycle_number": 2,
+      "wave_label": "W2 16:07",
+      "time_iso": "2026-10-30T16:07:50",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.71,
+        "volume": 2,
+        "delta": 0,
+        "effort_ratio": 1,
+        "origin": "$3981.02 (\u25b20.18)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.8,
+      "price_formatted": "$3909.80",
+      "cycle_number": 3,
+      "wave_label": "W3 23:50",
+      "time_iso": "2026-10-30T23:50:25",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.69,
+        "volume": 8,
+        "delta": -6,
+        "effort_ratio": 2,
+        "origin": "$3909.88 (\u25bc0.08)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.1,
+      "price_formatted": "$3989.10",
+      "cycle_number": 2,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:42",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 9,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.61,
+        "volume": 31,
+        "delta": 11,
+        "effort_ratio": 9,
+        "origin": "$3989.20 (\u25bc0.10)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.4,
+      "price_formatted": "$3980.40",
+      "cycle_number": 2,
+      "wave_label": "W1 16:04",
+      "time_iso": "2026-10-30T16:04:31",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.59,
+        "volume": 12,
+        "delta": 4,
+        "effort_ratio": 3,
+        "origin": "$3980.40"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3997.6,
+      "price_formatted": "$3997.60",
+      "cycle_number": 4,
+      "wave_label": "W2 13:30",
+      "time_iso": "2026-10-30T13:30:07",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 9,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.54,
+        "volume": 17,
+        "delta": 3,
+        "effort_ratio": 5,
+        "origin": "$3997.43 (\u25b20.17)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.5,
+      "price_formatted": "$3980.50",
+      "cycle_number": 2,
+      "wave_label": "W1 16:04",
+      "time_iso": "2026-10-30T16:04:38",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 3.49,
+        "volume": 2,
+        "delta": 2,
+        "effort_ratio": 1,
+        "origin": "$3980.50"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.3,
+      "price_formatted": "$3989.30",
+      "cycle_number": 3,
+      "wave_label": "W1 14:27",
+      "time_iso": "2026-10-30T14:27:41",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 11,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 3.41,
+        "volume": 4,
+        "delta": 2,
+        "effort_ratio": 1,
+        "origin": "$3989.46 (\u25bc0.16)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.1,
+      "price_formatted": "$3989.10",
+      "cycle_number": 1,
+      "wave_label": "W1 12:32",
+      "time_iso": "2026-10-30T12:32:53",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 3.37,
+        "volume": 1,
+        "delta": 1,
+        "effort_ratio": 0,
+        "origin": "$3989.10"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3987.9,
+      "price_formatted": "$3987.90",
+      "cycle_number": 2,
+      "wave_label": "W2 14:34",
+      "time_iso": "2026-10-30T14:34:09",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.26,
+        "volume": 20,
+        "delta": -4,
+        "effort_ratio": 6,
+        "origin": "$3987.96 (\u25bc0.06)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3908.3,
+      "price_formatted": "$3908.30",
+      "cycle_number": 2,
+      "wave_label": "W1 23:42",
+      "time_iso": "2026-10-30T23:42:19",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 3.26,
+        "volume": 4,
+        "delta": -2,
+        "effort_ratio": 1,
+        "origin": "$3908.30"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3982.5,
+      "price_formatted": "$3982.50",
+      "cycle_number": 1,
+      "wave_label": "W1 15:17",
+      "time_iso": "2026-10-30T15:17:36",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 3.19,
+        "volume": 11,
+        "delta": 3,
+        "effort_ratio": 3,
+        "origin": "$3982.50"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.8,
+      "price_formatted": "$3980.80",
+      "cycle_number": 2,
+      "wave_label": "W1 16:04",
+      "time_iso": "2026-10-30T16:04:23",
+      "primary_pattern": "Ceiling Squeeze Breakout",
+      "pattern_id": "PATTERN_B",
+      "win_rate_tier": "88.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 17,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 3.19,
+        "volume": 13,
+        "delta": 1,
+        "effort_ratio": 4,
+        "origin": "$3980.72 (\u25b20.08)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.3,
+      "price_formatted": "$3989.30",
+      "cycle_number": 1,
+      "wave_label": "W1 12:32",
+      "time_iso": "2026-10-30T12:32:53",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 3.17,
+        "volume": 2,
+        "delta": -2,
+        "effort_ratio": 1,
+        "origin": "$3989.44 (\u25bc0.14)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.0,
+      "price_formatted": "$3988.00",
+      "cycle_number": 2,
+      "wave_label": "W2 14:34",
+      "time_iso": "2026-10-30T14:34:09",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 5,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.16,
+        "volume": 19,
+        "delta": 3,
+        "effort_ratio": 6,
+        "origin": "$3988.21 (\u25bc0.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3987.9,
+      "price_formatted": "$3987.90",
+      "cycle_number": 2,
+      "wave_label": "W1 14:31",
+      "time_iso": "2026-10-30T14:31:26",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.16,
+        "volume": 14,
+        "delta": -2,
+        "effort_ratio": 4,
+        "origin": "$3988.00 (\u25bc0.10)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.8,
+      "price_formatted": "$3981.80",
+      "cycle_number": 2,
+      "wave_label": "W3 16:07",
+      "time_iso": "2026-10-30T16:07:56",
+      "primary_pattern": "Ceiling Squeeze Breakout",
+      "pattern_id": "PATTERN_B",
+      "win_rate_tier": "88.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 3.11,
+        "volume": 2,
+        "delta": 2,
+        "effort_ratio": 1,
+        "origin": "$3981.71 (\u25b20.09)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.9,
+      "price_formatted": "$3909.90",
+      "cycle_number": 1,
+      "wave_label": "W1 22:33",
+      "time_iso": "2026-10-30T22:33:59",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 3.1,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3910.05 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.0,
+      "price_formatted": "$3988.00",
+      "cycle_number": 2,
+      "wave_label": "W1 14:31",
+      "time_iso": "2026-10-30T14:31:26",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.06,
+        "volume": 8,
+        "delta": -4,
+        "effort_ratio": 3,
+        "origin": "$3988.24 (\u25bc0.24)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.4,
+      "price_formatted": "$3980.40",
+      "cycle_number": 3,
+      "wave_label": "W1 18:59",
+      "time_iso": "2026-10-30T18:59:59",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.04,
+        "volume": 6,
+        "delta": 0,
+        "effort_ratio": 2,
+        "origin": "$3980.57 (\u25bc0.17)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.4,
+      "price_formatted": "$3980.40",
+      "cycle_number": 3,
+      "wave_label": "W2 19:00",
+      "time_iso": "2026-10-30T19:00:57",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 3.04,
+        "volume": 27,
+        "delta": -11,
+        "effort_ratio": 9,
+        "origin": "$3980.53 (\u25bc0.13)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3910.0,
+      "price_formatted": "$3910.00",
+      "cycle_number": 1,
+      "wave_label": "W1 22:33",
+      "time_iso": "2026-10-30T22:33:59",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 3.0,
+        "volume": 36,
+        "delta": 0,
+        "effort_ratio": 12,
+        "origin": "$3910.05 (\u25bc0.05)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3984.0,
+      "price_formatted": "$3984.00",
+      "cycle_number": 3,
+      "wave_label": "W2 18:46",
+      "time_iso": "2026-10-30T18:46:02",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.83,
+        "volume": 26,
+        "delta": 4,
+        "effort_ratio": 9,
+        "origin": "$3983.82 (\u25b20.18)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3908.7,
+      "price_formatted": "$3908.70",
+      "cycle_number": 2,
+      "wave_label": "W2 23:45",
+      "time_iso": "2026-10-30T23:45:30",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 2.82,
+        "volume": 6,
+        "delta": 0,
+        "effort_ratio": 2,
+        "origin": "$3908.70"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.1,
+      "price_formatted": "$3990.10",
+      "cycle_number": 1,
+      "wave_label": "W3 12:41",
+      "time_iso": "2026-10-30T12:41:07",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 18,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.8,
+        "volume": 33,
+        "delta": 5,
+        "effort_ratio": 12,
+        "origin": "$3989.87 (\u25b20.23)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3908.3,
+      "price_formatted": "$3908.30",
+      "cycle_number": 2,
+      "wave_label": "W2 23:48",
+      "time_iso": "2026-10-30T23:48:08",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.74,
+        "volume": 20,
+        "delta": -8,
+        "effort_ratio": 7,
+        "origin": "$3908.54 (\u25bc0.24)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.2,
+      "price_formatted": "$3993.20",
+      "cycle_number": 2,
+      "wave_label": "W2 12:57",
+      "time_iso": "2026-10-30T12:57:38",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.72,
+        "volume": 11,
+        "delta": -5,
+        "effort_ratio": 4,
+        "origin": "$3993.32 (\u25bc0.12)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.2,
+      "price_formatted": "$3993.20",
+      "cycle_number": 2,
+      "wave_label": "W3 12:59",
+      "time_iso": "2026-10-30T12:59:19",
+      "primary_pattern": "Ceiling Squeeze Breakout",
+      "pattern_id": "PATTERN_B",
+      "win_rate_tier": "88.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 16,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.72,
+        "volume": 17,
+        "delta": 5,
+        "effort_ratio": 6,
+        "origin": "$3993.00 (\u25b20.20)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3908.32,
+      "price_formatted": "$3908.32",
+      "cycle_number": 2,
+      "wave_label": "W2 23:48",
+      "time_iso": "2026-10-30T23:48:08",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.72,
+        "volume": 16,
+        "delta": -4,
+        "effort_ratio": 6,
+        "origin": "$3908.54 (\u25bc0.22)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.0,
+      "price_formatted": "$3980.00",
+      "cycle_number": 3,
+      "wave_label": "W1 19:09",
+      "time_iso": "2026-10-30T19:09:17",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 12,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.71,
+        "volume": 31,
+        "delta": 3,
+        "effort_ratio": 11,
+        "origin": "$3980.15 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.2,
+      "price_formatted": "$3990.20",
+      "cycle_number": 1,
+      "wave_label": "W3 12:41",
+      "time_iso": "2026-10-30T12:41:08",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 20,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.7,
+        "volume": 27,
+        "delta": 5,
+        "effort_ratio": 10,
+        "origin": "$3990.07 (\u25b20.13)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 4024.1,
+      "price_formatted": "$4024.10",
+      "cycle_number": 1,
+      "wave_label": "W1 00:00",
+      "time_iso": "2026-10-30T00:00:02",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.69,
+        "volume": 11,
+        "delta": 3,
+        "effort_ratio": 4,
+        "origin": "$4023.97 (\u25b20.13)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.8,
+      "price_formatted": "$3981.80",
+      "cycle_number": 2,
+      "wave_label": "W2 16:04",
+      "time_iso": "2026-10-30T16:04:54",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.68,
+        "volume": 2,
+        "delta": 2,
+        "effort_ratio": 1,
+        "origin": "$3981.59 (\u25b20.21)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.4,
+      "price_formatted": "$3988.40",
+      "cycle_number": 2,
+      "wave_label": "W2 14:31",
+      "time_iso": "2026-10-30T14:31:11",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 22,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.66,
+        "volume": 41,
+        "delta": -3,
+        "effort_ratio": 15,
+        "origin": "$3988.54 (\u25bc0.14)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3982.5,
+      "price_formatted": "$3982.50",
+      "cycle_number": 1,
+      "wave_label": "W2 15:24",
+      "time_iso": "2026-10-30T15:24:49",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 12,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.64,
+        "volume": 31,
+        "delta": 1,
+        "effort_ratio": 12,
+        "origin": "$3982.55 (\u25bc0.05)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.8,
+      "price_formatted": "$3980.80",
+      "cycle_number": 3,
+      "wave_label": "W2 19:02",
+      "time_iso": "2026-10-30T19:02:42",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.64,
+        "volume": 2,
+        "delta": -2,
+        "effort_ratio": 1,
+        "origin": "$3981.03 (\u25bc0.23)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.4,
+      "price_formatted": "$3988.40",
+      "cycle_number": 4,
+      "wave_label": "W1 18:11",
+      "time_iso": "2026-10-30T18:11:04",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 3,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.61,
+        "volume": 14,
+        "delta": -2,
+        "effort_ratio": 5,
+        "origin": "$3988.40"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 4024.1,
+      "price_formatted": "$4024.10",
+      "cycle_number": 3,
+      "wave_label": "W2 04:50",
+      "time_iso": "2026-10-30T04:50:32",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.6,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$4024.10"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.3,
+      "price_formatted": "$3993.30",
+      "cycle_number": 2,
+      "wave_label": "W2 12:57",
+      "time_iso": "2026-10-30T12:57:31",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.59,
+        "volume": 16,
+        "delta": 0,
+        "effort_ratio": 6,
+        "origin": "$3993.11 (\u25b20.19)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.32,
+      "price_formatted": "$3993.32",
+      "cycle_number": 2,
+      "wave_label": "W2 12:57",
+      "time_iso": "2026-10-30T12:57:31",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.57,
+        "volume": 16,
+        "delta": 2,
+        "effort_ratio": 6,
+        "origin": "$3993.11 (\u25b20.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.5,
+      "price_formatted": "$3988.50",
+      "cycle_number": 4,
+      "wave_label": "W1 18:11",
+      "time_iso": "2026-10-30T18:11:04",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.51,
+        "volume": 16,
+        "delta": 4,
+        "effort_ratio": 6,
+        "origin": "$3988.71 (\u25bc0.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.99,
+      "price_formatted": "$3980.99",
+      "cycle_number": 3,
+      "wave_label": "W2 19:02",
+      "time_iso": "2026-10-30T19:02:41",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 14,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.45,
+        "volume": 31,
+        "delta": -3,
+        "effort_ratio": 13,
+        "origin": "$3980.99"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.0,
+      "price_formatted": "$3981.00",
+      "cycle_number": 3,
+      "wave_label": "W2 19:02",
+      "time_iso": "2026-10-30T19:02:41",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 14,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.44,
+        "volume": 28,
+        "delta": -4,
+        "effort_ratio": 11,
+        "origin": "$3981.00"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.6,
+      "price_formatted": "$3988.60",
+      "cycle_number": 4,
+      "wave_label": "W1 18:09",
+      "time_iso": "2026-10-30T18:09:16",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 2.41,
+        "volume": 3,
+        "delta": -1,
+        "effort_ratio": 1,
+        "origin": "$3988.60"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.6,
+      "price_formatted": "$3988.60",
+      "cycle_number": 4,
+      "wave_label": "W2 18:11",
+      "time_iso": "2026-10-30T18:11:02",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.41,
+        "volume": 20,
+        "delta": 0,
+        "effort_ratio": 8,
+        "origin": "$3988.71 (\u25bc0.11)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3983.3,
+      "price_formatted": "$3983.30",
+      "cycle_number": 1,
+      "wave_label": "W2 15:20",
+      "time_iso": "2026-10-30T15:20:16",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 2.39,
+        "volume": 10,
+        "delta": -2,
+        "effort_ratio": 4,
+        "origin": "$3983.30"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.8,
+      "price_formatted": "$3981.80",
+      "cycle_number": 1,
+      "wave_label": "W2 15:27",
+      "time_iso": "2026-10-30T15:27:51",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.39,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3981.97 (\u25bc0.17)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.2,
+      "price_formatted": "$3981.20",
+      "cycle_number": 1,
+      "wave_label": "W2 15:33",
+      "time_iso": "2026-10-30T15:33:48",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 18,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.37,
+        "volume": 28,
+        "delta": 4,
+        "effort_ratio": 12,
+        "origin": "$3981.20"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3996.7,
+      "price_formatted": "$3996.70",
+      "cycle_number": 6,
+      "wave_label": "W2 17:25",
+      "time_iso": "2026-10-30T17:25:40",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.32,
+        "volume": 9,
+        "delta": -5,
+        "effort_ratio": 4,
+        "origin": "$3996.78 (\u25bc0.08)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3987.9,
+      "price_formatted": "$3987.90",
+      "cycle_number": 4,
+      "wave_label": "W1 16:48",
+      "time_iso": "2026-10-30T16:48:22",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.32,
+        "volume": 2,
+        "delta": -2,
+        "effort_ratio": 1,
+        "origin": "$3988.06 (\u25bc0.16)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3987.9,
+      "price_formatted": "$3987.90",
+      "cycle_number": 4,
+      "wave_label": "W2 16:49",
+      "time_iso": "2026-10-30T16:49:09",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 16,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.32,
+        "volume": 38,
+        "delta": -4,
+        "effort_ratio": 16,
+        "origin": "$3987.76 (\u25b20.14)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.2,
+      "price_formatted": "$3981.20",
+      "cycle_number": 3,
+      "wave_label": "W2 19:02",
+      "time_iso": "2026-10-30T19:02:38",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 19,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.24,
+        "volume": 32,
+        "delta": 0,
+        "effort_ratio": 14,
+        "origin": "$3981.31 (\u25bc0.11)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.0,
+      "price_formatted": "$3988.00",
+      "cycle_number": 4,
+      "wave_label": "W1 16:48",
+      "time_iso": "2026-10-30T16:48:17",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 6,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.22,
+        "volume": 23,
+        "delta": -7,
+        "effort_ratio": 10,
+        "origin": "$3988.06 (\u25bc0.06)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.0,
+      "price_formatted": "$3988.00",
+      "cycle_number": 4,
+      "wave_label": "W2 16:49",
+      "time_iso": "2026-10-30T16:49:12",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 13,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.22,
+        "volume": 27,
+        "delta": 13,
+        "effort_ratio": 12,
+        "origin": "$3988.00"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.8,
+      "price_formatted": "$3988.80",
+      "cycle_number": 4,
+      "wave_label": "W1 18:09",
+      "time_iso": "2026-10-30T18:09:14",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 10,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.21,
+        "volume": 32,
+        "delta": 2,
+        "effort_ratio": 14,
+        "origin": "$3988.89 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.8,
+      "price_formatted": "$3988.80",
+      "cycle_number": 4,
+      "wave_label": "W2 18:11",
+      "time_iso": "2026-10-30T18:11:01",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.21,
+        "volume": 15,
+        "delta": -1,
+        "effort_ratio": 7,
+        "origin": "$3988.92 (\u25bc0.12)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3904.8,
+      "price_formatted": "$3904.80",
+      "cycle_number": 2,
+      "wave_label": "W2 00:04",
+      "time_iso": "2026-10-31T00:04:21",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment",
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 2.13,
+        "volume": 9,
+        "delta": 5,
+        "effort_ratio": 4,
+        "origin": "$3904.56 (\u25b20.24)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.6,
+      "price_formatted": "$3980.60",
+      "cycle_number": 3,
+      "wave_label": "W3 19:09",
+      "time_iso": "2026-10-30T19:09:43",
+      "primary_pattern": "Ceiling Squeeze Breakout",
+      "pattern_id": "PATTERN_B",
+      "win_rate_tier": "88.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Ceiling Squeeze Breakout"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": 2.11,
+        "volume": 7,
+        "delta": 5,
+        "effort_ratio": 3,
+        "origin": "$3980.39 (\u25b20.21)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.0,
+      "price_formatted": "$3989.00",
+      "cycle_number": 2,
+      "wave_label": "W2 14:31",
+      "time_iso": "2026-10-30T14:31:00",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 19,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 2.06,
+        "volume": 47,
+        "delta": -13,
+        "effort_ratio": 23,
+        "origin": "$3989.20 (\u25bc0.20)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3975.8,
+      "price_formatted": "$3975.80",
+      "cycle_number": 2,
+      "wave_label": "W2 19:21",
+      "time_iso": "2026-10-30T19:21:01",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 21,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.04,
+        "volume": 24,
+        "delta": 4,
+        "effort_ratio": 12,
+        "origin": "$3975.73 (\u25b20.07)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.0,
+      "price_formatted": "$3989.00",
+      "cycle_number": 4,
+      "wave_label": "W1 18:09",
+      "time_iso": "2026-10-30T18:09:14",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 13,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 2.01,
+        "volume": 8,
+        "delta": 2,
+        "effort_ratio": 4,
+        "origin": "$3989.13 (\u25bc0.13)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.8,
+      "price_formatted": "$3988.80",
+      "cycle_number": 1,
+      "wave_label": "W2 12:36",
+      "time_iso": "2026-10-30T12:36:57",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.99,
+        "volume": 26,
+        "delta": -4,
+        "effort_ratio": 13,
+        "origin": "$3988.80"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3996.7,
+      "price_formatted": "$3996.70",
+      "cycle_number": 4,
+      "wave_label": "W2 13:25",
+      "time_iso": "2026-10-30T13:25:49",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 38,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.97,
+        "volume": 38,
+        "delta": 8,
+        "effort_ratio": 19,
+        "origin": "$3996.59 (\u25b20.11)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.8,
+      "price_formatted": "$3980.80",
+      "cycle_number": 1,
+      "wave_label": "W2 15:33",
+      "time_iso": "2026-10-30T15:33:56",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 1.95,
+        "volume": 5,
+        "delta": -5,
+        "effort_ratio": 3,
+        "origin": "$3980.95 (\u25bc0.15)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3896.2,
+      "price_formatted": "$3896.20",
+      "cycle_number": 2,
+      "wave_label": "W1 00:18",
+      "time_iso": "2026-10-31T00:18:31",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 1.94,
+        "volume": 3,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$3896.43 (\u25bc0.23)"
+      },
+      "structural_context": {
+        "role": "BULL ABSORPTION FLOOR",
+        "bias": "\u25b2"
+      }
+    },
+    {
+      "price": 3896.22,
+      "price_formatted": "$3896.22",
+      "cycle_number": 2,
+      "wave_label": "W1 00:18",
+      "time_iso": "2026-10-31T00:18:31",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.0,
+        "exit_displacement_pts": 1.92,
+        "volume": 3,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$3896.43 (\u25bc0.21)"
+      },
+      "structural_context": {
+        "role": "BULL ABSORPTION FLOOR",
+        "bias": "\u25b2"
+      }
+    },
+    {
+      "price": 3989.3,
+      "price_formatted": "$3989.30",
+      "cycle_number": 3,
+      "wave_label": "W3 14:33",
+      "time_iso": "2026-10-30T14:33:54",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 41,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.86,
+        "volume": 20,
+        "delta": -4,
+        "effort_ratio": 11,
+        "origin": "$3989.30"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3988.4,
+      "price_formatted": "$3988.40",
+      "cycle_number": 3,
+      "wave_label": "W1 16:48",
+      "time_iso": "2026-10-30T16:48:17",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.82,
+        "volume": 1,
+        "delta": 1,
+        "effort_ratio": 1,
+        "origin": "$3988.31 (\u25b20.09)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.0,
+      "price_formatted": "$3980.00",
+      "cycle_number": 3,
+      "wave_label": "W3 19:30",
+      "time_iso": "2026-10-30T19:30:00",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 3,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.8,
+        "volume": 16,
+        "delta": 0,
+        "effort_ratio": 9,
+        "origin": "$3979.78 (\u25b20.22)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.0,
+      "price_formatted": "$3989.00",
+      "cycle_number": 1,
+      "wave_label": "W2 12:36",
+      "time_iso": "2026-10-30T12:36:47",
+      "primary_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "pattern_id": "PATTERN_A",
+      "win_rate_tier": "100.0%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Squeeze Reclaim / Wyckoff Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 19,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.79,
+        "volume": 15,
+        "delta": -1,
+        "effort_ratio": 8,
+        "origin": "$3989.05 (\u25bc0.05)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.99,
+      "price_formatted": "$3980.99",
+      "cycle_number": 1,
+      "wave_label": "W2 15:33",
+      "time_iso": "2026-10-30T15:33:48",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": 1.76,
+        "volume": 23,
+        "delta": -5,
+        "effort_ratio": 13,
+        "origin": "$3981.18 (\u25bc0.19)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3981.0,
+      "price_formatted": "$3981.00",
+      "cycle_number": 1,
+      "wave_label": "W2 15:33",
+      "time_iso": "2026-10-30T15:33:48",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 7,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.75,
+        "volume": 28,
+        "delta": -6,
+        "effort_ratio": 16,
+        "origin": "$3981.18 (\u25bc0.18)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3909.9,
+      "price_formatted": "$3909.90",
+      "cycle_number": 3,
+      "wave_label": "W2 23:42",
+      "time_iso": "2026-10-30T23:42:49",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.66,
+        "volume": 44,
+        "delta": -2,
+        "effort_ratio": 27,
+        "origin": "$3909.90"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 4024.1,
+      "price_formatted": "$4024.10",
+      "cycle_number": 6,
+      "wave_label": "W1 07:21",
+      "time_iso": "2026-10-30T07:21:21",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.02,
+        "exit_displacement_pts": 1.56,
+        "volume": 3,
+        "delta": -3,
+        "effort_ratio": 2,
+        "origin": "$4024.17 (\u25bc0.07)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3997.6,
+      "price_formatted": "$3997.60",
+      "cycle_number": 3,
+      "wave_label": "W1 11:18",
+      "time_iso": "2026-10-30T11:18:52",
+      "primary_pattern": "Flash Rejection Trampoline",
+      "pattern_id": "PATTERN_2",
+      "win_rate_tier": "84.3%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "Flash Rejection Trampoline"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 1,
+        "dwell_sec": 8,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.56,
+        "volume": 23,
+        "delta": -7,
+        "effort_ratio": 15,
+        "origin": "$3997.77 (\u25bc0.17)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3989.3,
+      "price_formatted": "$3989.30",
+      "cycle_number": 5,
+      "wave_label": "W2 18:15",
+      "time_iso": "2026-10-30T18:15:00",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring",
+        "Flash Rejection Trampoline",
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.01,
+        "exit_displacement_pts": 1.47,
+        "volume": 7,
+        "delta": 3,
+        "effort_ratio": 5,
+        "origin": "$3989.12 (\u25b20.18)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3997.6,
+      "price_formatted": "$3997.60",
+      "cycle_number": 3,
+      "wave_label": "W2 11:21",
+      "time_iso": "2026-10-30T11:21:25",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 13,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 0.91,
+        "volume": 29,
+        "delta": -5,
+        "effort_ratio": 32,
+        "origin": "$3997.73 (\u25bc0.13)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.1,
+      "price_formatted": "$3990.10",
+      "cycle_number": 3,
+      "wave_label": "W2 14:29",
+      "time_iso": "2026-10-30T14:29:12",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 13,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": -2.74,
+        "volume": 40,
+        "delta": 6,
+        "effort_ratio": 15,
+        "origin": "$3990.15 (\u25bc0.05)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3990.2,
+      "price_formatted": "$3990.20",
+      "cycle_number": 3,
+      "wave_label": "W2 14:29",
+      "time_iso": "2026-10-30T14:29:11",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 14,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": -2.84,
+        "volume": 30,
+        "delta": 0,
+        "effort_ratio": 11,
+        "origin": "$3990.36 (\u25bc0.16)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3907.2,
+      "price_formatted": "$3907.20",
+      "cycle_number": 2,
+      "wave_label": "W2 23:57",
+      "time_iso": "2026-10-30T23:57:50",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": -2.91,
+        "volume": 21,
+        "delta": -3,
+        "effort_ratio": 7,
+        "origin": "$3907.29 (\u25bc0.09)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3907.22,
+      "price_formatted": "$3907.22",
+      "cycle_number": 2,
+      "wave_label": "W2 23:57",
+      "time_iso": "2026-10-30T23:57:50",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 2,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": -2.93,
+        "volume": 27,
+        "delta": -1,
+        "effort_ratio": 9,
+        "origin": "$3907.29 (\u25bc0.07)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.2,
+      "price_formatted": "$3980.20",
+      "cycle_number": 3,
+      "wave_label": "W2 19:12",
+      "time_iso": "2026-10-30T19:12:28",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 1,
+        "adverse_slip_pts": 0.04,
+        "exit_displacement_pts": -4.4,
+        "volume": 1,
+        "delta": -1,
+        "effort_ratio": 0,
+        "origin": "$3980.26 (\u25bc0.06)"
+      },
+      "structural_context": {
+        "role": "DISTRIBUTION CEILING DEFENSE",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 4024.1,
+      "price_formatted": "$4024.10",
+      "cycle_number": 6,
+      "wave_label": "W2 07:28",
+      "time_iso": "2026-10-30T07:28:47",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 19,
+        "adverse_slip_pts": 0.03,
+        "exit_displacement_pts": -7.36,
+        "volume": 10,
+        "delta": -8,
+        "effort_ratio": 1,
+        "origin": "$4024.32 (\u25bc0.22)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3980.0,
+      "price_formatted": "$3980.00",
+      "cycle_number": 2,
+      "wave_label": "W2 16:18",
+      "time_iso": "2026-10-30T16:18:31",
+      "primary_pattern": "W2 Confirmation Spring",
+      "pattern_id": "PATTERN_1",
+      "win_rate_tier": "84.1%",
+      "conviction": "TIER_1_SUPREME",
+      "all_matched_patterns": [
+        "W2 Confirmation Spring"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 4,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": -14.83,
+        "volume": 17,
+        "delta": -5,
+        "effort_ratio": 1,
+        "origin": "$3980.08 (\u25bc0.08)"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    },
+    {
+      "price": 3993.32,
+      "price_formatted": "$3993.32",
+      "cycle_number": 1,
+      "wave_label": "W2 11:42",
+      "time_iso": "2026-10-30T11:42:14",
+      "primary_pattern": "Golden Confluence Alignment",
+      "pattern_id": "PATTERN_3",
+      "win_rate_tier": "79.5%",
+      "conviction": "TIER_1_ELITE",
+      "all_matched_patterns": [
+        "Golden Confluence Alignment"
+      ],
+      "physical_metrics": {
+        "wave_number_in_cycle": 2,
+        "dwell_sec": 16,
+        "adverse_slip_pts": 0.05,
+        "exit_displacement_pts": 1.38,
+        "volume": 44,
+        "delta": 0,
+        "effort_ratio": 32,
+        "origin": "$3993.32"
+      },
+      "structural_context": {
+        "role": "FLOOR BROKEN / BEAR BREAKDOWN",
+        "bias": "\u25bc"
+      }
+    }
+  ],
+  "golden_price_nodes_summary": {
+    "$3891.64": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 18.04,
+      "avg_slip": 0.0,
+      "best_dwell": 1,
+      "structural_role": "BULL ABSORPTION FLOOR"
+    },
+    "$3896.20": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 11.33,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "BULL ABSORPTION FLOOR"
+    },
+    "$3896.22": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 11.31,
+      "avg_slip": 0.01,
+      "best_dwell": 1,
+      "structural_role": "BULL ABSORPTION FLOOR"
+    },
+    "$3975.94": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 10.63,
+      "avg_slip": 0.01,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3976.05": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 10.52,
+      "avg_slip": 0.05,
+      "best_dwell": 8,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3976.10": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 10.47,
+      "avg_slip": 0.05,
+      "best_dwell": 7,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3976.18": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 10.39,
+      "avg_slip": 0.05,
+      "best_dwell": 8,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3976.20": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 10.37,
+      "avg_slip": 0.05,
+      "best_dwell": 8,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3976.22": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 10.35,
+      "avg_slip": 0.05,
+      "best_dwell": 8,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3897.50": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 10.03,
+      "avg_slip": 0.02,
+      "best_dwell": 1,
+      "structural_role": "ABSORPTION WALL DECAY"
+    },
+    "$3897.60": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 9.93,
+      "avg_slip": 0.05,
+      "best_dwell": 2,
+      "structural_role": "ABSORPTION WALL DECAY"
+    },
+    "$3977.60": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 8.97,
+      "avg_slip": 0.02,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3977.78": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 8.79,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3977.80": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 8.77,
+      "avg_slip": 0.01,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3978.00": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 8.57,
+      "avg_slip": 0.05,
+      "best_dwell": 4,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3996.70": {
+      "setup_count": 5,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 8.47,
+      "avg_slip": 0.04,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3899.20": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 8.33,
+      "avg_slip": 0.05,
+      "best_dwell": 15,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3899.40": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 8.13,
+      "avg_slip": 0.05,
+      "best_dwell": 15,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3909.10": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 7.99,
+      "avg_slip": 0.03,
+      "best_dwell": 7,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3909.70": {
+      "setup_count": 2,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 7.39,
+      "avg_slip": 0.045,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3909.80": {
+      "setup_count": 3,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 7.29,
+      "avg_slip": 0.047,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3909.90": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 7.19,
+      "avg_slip": 0.048,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3990.10": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 7.12,
+      "avg_slip": 0.043,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3910.00": {
+      "setup_count": 3,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 7.09,
+      "avg_slip": 0.047,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3990.20": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 7.02,
+      "avg_slip": 0.045,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3910.10": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 6.99,
+      "avg_slip": 0.05,
+      "best_dwell": 3,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3910.20": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 6.89,
+      "avg_slip": 0.05,
+      "best_dwell": 3,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3910.30": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 6.79,
+      "avg_slip": 0.05,
+      "best_dwell": 4,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3910.40": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 6.69,
+      "avg_slip": 0.05,
+      "best_dwell": 4,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3980.00": {
+      "setup_count": 6,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 6.57,
+      "avg_slip": 0.047,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3911.50": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 6.35,
+      "avg_slip": 0.0,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3911.56": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 6.29,
+      "avg_slip": 0.05,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3907.20": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 6.29,
+      "avg_slip": 0.025,
+      "best_dwell": 2,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3907.22": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 6.27,
+      "avg_slip": 0.025,
+      "best_dwell": 2,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3911.60": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 6.25,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3988.50": {
+      "setup_count": 4,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 6.21,
+      "avg_slip": 0.043,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3911.70": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 6.15,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3911.80": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 6.05,
+      "avg_slip": 0.05,
+      "best_dwell": 4,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3911.90": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.95,
+      "avg_slip": 0.05,
+      "best_dwell": 7,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3993.30": {
+      "setup_count": 2,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.94,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3993.32": {
+      "setup_count": 3,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.92,
+      "avg_slip": 0.033,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3982.50": {
+      "setup_count": 3,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 5.85,
+      "avg_slip": 0.02,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3912.00": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.85,
+      "avg_slip": 0.05,
+      "best_dwell": 8,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3997.60": {
+      "setup_count": 4,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.76,
+      "avg_slip": 0.045,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3912.10": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.75,
+      "avg_slip": 0.05,
+      "best_dwell": 12,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3993.60": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 5.64,
+      "avg_slip": 0.03,
+      "best_dwell": 2,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3980.20": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 5.49,
+      "avg_slip": 0.037,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3980.40": {
+      "setup_count": 6,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 5.29,
+      "avg_slip": 0.038,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3980.50": {
+      "setup_count": 3,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 5.19,
+      "avg_slip": 0.04,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3980.60": {
+      "setup_count": 3,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 5.09,
+      "avg_slip": 0.043,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3981.80": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 5.03,
+      "avg_slip": 0.048,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3980.70": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.99,
+      "avg_slip": 0.05,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3980.80": {
+      "setup_count": 5,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.89,
+      "avg_slip": 0.032,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3980.99": {
+      "setup_count": 3,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.7,
+      "avg_slip": 0.047,
+      "best_dwell": 6,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3981.00": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.69,
+      "avg_slip": 0.048,
+      "best_dwell": 5,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3984.00": {
+      "setup_count": 2,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 4.53,
+      "avg_slip": 0.045,
+      "best_dwell": 5,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3981.20": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.49,
+      "avg_slip": 0.05,
+      "best_dwell": 3,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3987.90": {
+      "setup_count": 6,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.41,
+      "avg_slip": 0.045,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3913.49": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.36,
+      "avg_slip": 0.05,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3913.50": {
+      "setup_count": 1,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.35,
+      "avg_slip": 0.05,
+      "best_dwell": 2,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3988.40": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.31,
+      "avg_slip": 0.038,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3988.00": {
+      "setup_count": 6,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.31,
+      "avg_slip": 0.047,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3988.60": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 4.3,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3989.30": {
+      "setup_count": 5,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 3.93,
+      "avg_slip": 0.034,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3982.90": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 3.93,
+      "avg_slip": 0.03,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3988.80": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 3.91,
+      "avg_slip": 0.05,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3989.00": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 3.71,
+      "avg_slip": 0.048,
+      "best_dwell": 8,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3989.10": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 3.61,
+      "avg_slip": 0.045,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3908.30": {
+      "setup_count": 2,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 3.26,
+      "avg_slip": 0.035,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3908.70": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 2.82,
+      "avg_slip": 0.0,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3993.20": {
+      "setup_count": 2,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 2.72,
+      "avg_slip": 0.04,
+      "best_dwell": 6,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3908.32": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 2.72,
+      "avg_slip": 0.05,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$4024.10": {
+      "setup_count": 4,
+      "top_pattern": "Flash Rejection Trampoline",
+      "max_exit_disp": 2.69,
+      "avg_slip": 0.038,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3983.30": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 2.39,
+      "avg_slip": 0.01,
+      "best_dwell": 1,
+      "structural_role": "DISTRIBUTION CEILING DEFENSE"
+    },
+    "$3904.80": {
+      "setup_count": 1,
+      "top_pattern": "W2 Confirmation Spring",
+      "max_exit_disp": 2.13,
+      "avg_slip": 0.01,
+      "best_dwell": 1,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    },
+    "$3975.80": {
+      "setup_count": 1,
+      "top_pattern": "Squeeze Reclaim / Wyckoff Spring",
+      "max_exit_disp": 2.04,
+      "avg_slip": 0.04,
+      "best_dwell": 21,
+      "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN"
+    }
+  }
+}
