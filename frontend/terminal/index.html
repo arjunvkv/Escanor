@@ -1414,15 +1414,15 @@ Return ONLY valid JSON matching this exact structure:
   <div id="rangeVolProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) toggleRangeVolumeProfileModal()">
     <div class="relative flex flex-col md:flex-row items-start gap-3 max-w-5xl" onclick="event.stopPropagation()">
       <!-- Main Volume Profile Table Window -->
-      <div class="hud-panel rounded-lg w-[380px] p-4 border border-cyan-500/50 shadow-2xl flex flex-col gap-3">
+      <div class="hud-panel rounded-lg w-[410px] p-4 border border-cyan-500/50 shadow-2xl flex flex-col gap-3">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <div>
-            <div class="flex items-center gap-1.5 text-xs font-bold text-white uppercase tracking-wider font-hud-tech">
-              <span class="w-2 h-2 rounded-full bg-cyan-400"></span>
+            <div class="flex items-center gap-2 text-sm font-bold text-white uppercase tracking-wider font-hud-tech">
+              <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
               <span class="text-cyan-400">VOLUME PROFILE //</span> TOP 8 NODES
             </div>
-            <div id="rangeVolProfileSubtitle" class="text-[10px] text-slate-400 font-mono mt-0.5">
+            <div id="rangeVolProfileSubtitle" class="text-[11px] text-slate-300 font-mono mt-0.5">
               BULL/BEAR RANGE: $----.-- – $----.--
             </div>
           </div>
@@ -1432,23 +1432,23 @@ Return ONLY valid JSON matching this exact structure:
         </div>
 
         <!-- Quick Metrics Bar -->
-        <div class="grid grid-cols-3 gap-2 bg-black/60 p-2 rounded border border-slate-800 text-[10.5px] font-mono">
+        <div class="grid grid-cols-3 gap-2 bg-black/60 p-2.5 rounded-lg border border-slate-800 text-xs font-mono">
           <div class="flex flex-col">
-            <span class="text-[8.5px] text-slate-500 uppercase">RANGE SPREAD</span>
+            <span class="text-[9.5px] text-slate-400 uppercase font-semibold">RANGE SPREAD</span>
             <span id="rangeVolSpread" class="font-bold text-white">-- pts</span>
           </div>
           <div class="flex flex-col">
-            <span class="text-[8.5px] text-slate-500 uppercase">TOTAL RANGE VOL</span>
+            <span class="text-[9.5px] text-slate-400 uppercase font-semibold">TOTAL RANGE VOL</span>
             <span id="rangeVolTotal" class="font-bold text-amber-300">--v</span>
           </div>
           <div class="flex flex-col">
-            <span class="text-[8.5px] text-slate-500 uppercase">BULL / BEAR RATIO</span>
+            <span class="text-[9.5px] text-slate-400 uppercase font-semibold">BULL / BEAR RATIO</span>
             <span id="rangeVolRatio" class="font-bold text-cyan-300">--% / --%</span>
           </div>
         </div>
 
         <!-- Table Header -->
-        <div class="grid grid-cols-12 px-2 py-1 bg-black/80 border border-slate-800 rounded text-[9px] font-bold text-slate-400 uppercase font-hud-tech">
+        <div class="grid grid-cols-12 px-2.5 py-1.5 bg-black/80 border border-slate-700 rounded text-[11px] font-bold text-slate-300 uppercase font-hud-tech">
           <div class="col-span-1">#</div>
           <div class="col-span-3">PRICE</div>
           <div class="col-span-3 text-right">VOLUME</div>
@@ -1470,61 +1470,61 @@ Return ONLY valid JSON matching this exact structure:
       </div>
 
       <!-- FLOATING INSPECTION BOX ON THE RIGHT (APPEARS WHEN HOVERED) -->
-      <div id="nodeHoverFlyoutBox" class="w-[530px] bg-slate-950/98 border border-cyan-400/80 rounded-xl p-3.5 shadow-2xl backdrop-blur-md flex flex-col gap-2 transition-all">
+      <div id="nodeHoverFlyoutBox" class="w-[680px] bg-slate-950/98 border-2 border-cyan-400/90 rounded-xl p-4 shadow-2xl backdrop-blur-md flex flex-col gap-2.5 transition-all">
         <!-- Flyout Header -->
-        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
-          <div class="flex items-center gap-2">
-            <span id="npRankBadge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">#1</span>
-            <span id="npPriceTitle" class="text-base font-bold text-white font-mono tracking-wide">$3988.60</span>
-            <span id="npVpocBadge" class="px-1 py-0.2 rounded text-[7.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold font-mono hidden">VPOC</span>
-            <span id="npBiasIcon" class="text-xs font-bold text-emerald-400">▲</span>
+        <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+          <div class="flex items-center gap-2.5">
+            <span id="npRankBadge" class="px-2 py-0.5 rounded text-[11px] font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">#1</span>
+            <span id="npPriceTitle" class="text-xl font-bold text-white font-mono tracking-wide">$3988.60</span>
+            <span id="npVpocBadge" class="px-2 py-0.5 rounded text-[9.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold font-mono hidden">VPOC</span>
+            <span id="npBiasIcon" class="text-sm font-bold text-emerald-400">▲</span>
           </div>
-          <div class="flex items-center gap-2">
-            <span id="npVolBadge" class="text-[9.5px] font-mono text-slate-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">98v</span>
-            <span class="text-[8.5px] text-cyan-400 font-mono">HOVER INSPECTOR</span>
+          <div class="flex items-center gap-2.5">
+            <span id="npVolBadge" class="text-xs font-mono text-slate-200 bg-slate-900 px-2.5 py-1 rounded border border-slate-700 font-semibold">98v</span>
+            <span class="text-[10.5px] text-cyan-400 font-mono font-bold tracking-wider">HOVER INSPECTOR</span>
           </div>
         </div>
 
         <!-- Status & Role Banner -->
-        <div class="flex items-center justify-between px-2 py-1 rounded bg-black/60 border border-slate-800 text-[9px] font-mono">
-          <div class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
-            <span class="text-slate-400 uppercase">TRUE PHYSICAL TRAIL:</span>
+        <div class="flex items-center justify-between px-3 py-1.5 rounded-lg bg-black/70 border border-slate-800 text-[11px] font-mono">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="text-slate-400 uppercase font-semibold">TRUE PHYSICAL TRAIL:</span>
           </div>
-          <span id="npRoleTitle" class="text-cyan-300 font-bold uppercase">BULL ABSORPTION FLOOR</span>
+          <span id="npRoleTitle" class="text-cyan-300 font-bold uppercase tracking-wide">BULL ABSORPTION FLOOR</span>
         </div>
 
-        <!-- Zero-Scroll 8-Column Comparison Table -->
-        <div class="overflow-x-auto my-1">
-          <table class="w-full text-left text-[9px] border-collapse font-mono">
-            <thead class="bg-black/90 text-slate-400 uppercase text-[7.5px] border-b border-slate-800">
+        <!-- Zero-Scroll 8-Column Comparison Table (Normal Reading Size) -->
+        <div class="overflow-x-auto my-0.5">
+          <table class="w-full text-left text-xs border-collapse font-mono">
+            <thead class="bg-black/90 text-slate-300 uppercase text-[10.5px] font-bold border-b border-slate-700">
               <tr>
-                <th class="py-1 px-1">WAVE</th>
-                <th class="py-1 px-1 text-center">GAP</th>
-                <th class="py-1 px-1">ORIGIN</th>
-                <th class="py-1 px-1 text-center text-amber-300">DWELL</th>
-                <th class="py-1 px-1 text-right">VOL (Δ)</th>
-                <th class="py-1 px-1 text-right">SLIP</th>
-                <th class="py-1 px-1 text-right">EXIT DISP</th>
-                <th class="py-1 px-1 text-right text-cyan-300">EFFORT/RES</th>
+                <th class="py-2 px-2.5">WAVE</th>
+                <th class="py-2 px-2 text-center">GAP</th>
+                <th class="py-2 px-2.5">ORIGIN</th>
+                <th class="py-2 px-2 text-center text-amber-300">DWELL</th>
+                <th class="py-2 px-2.5 text-right">VOL (Δ)</th>
+                <th class="py-2 px-2 text-right">SLIP</th>
+                <th class="py-2 px-2.5 text-right">EXIT DISP</th>
+                <th class="py-2 px-2.5 text-right text-cyan-300">EFFORT/RES</th>
               </tr>
             </thead>
-            <tbody id="npWavesTableBody" class="divide-y divide-slate-800/60">
+            <tbody id="npWavesTableBody" class="divide-y divide-slate-800/80">
               <!-- Populated dynamically on hover -->
             </tbody>
           </table>
         </div>
 
         <!-- Quick 1-Line Trail Deduction Bar -->
-        <div class="bg-black/60 border border-slate-800 rounded px-2 py-1 text-[8.5px] flex items-center justify-between font-mono">
-          <span class="text-slate-400 uppercase font-semibold">DISPLACEMENT VECTOR:</span>
-          <span id="npTrailVector" class="text-amber-300 font-bold font-mono">+3.50p → +2.09p → +1.48p → -1.82p (BROKEN)</span>
+        <div class="bg-black/70 border border-slate-800 rounded-lg px-3 py-2 text-[11px] flex items-center justify-between font-mono">
+          <span class="text-slate-400 uppercase font-bold tracking-wider">DISPLACEMENT VECTOR:</span>
+          <span id="npTrailVector" class="text-amber-300 font-bold text-xs tracking-wide font-mono">+3.50p → +2.09p → +1.48p → -1.82p (BROKEN)</span>
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[8.5px] font-mono">
-          <span class="text-emerald-400 font-medium">100% AUDITED TICK AUCTION TRAIL</span>
-          <span class="text-slate-500">GLIDE CURSOR OVER ROWS TO COMPARE</span>
+        <div class="flex items-center justify-between pt-1.5 border-t border-slate-800/80 text-[10px] font-mono">
+          <span class="text-emerald-400 font-bold tracking-wide">100% AUDITED TICK AUCTION TRAIL</span>
+          <span class="text-slate-400 font-medium">GLIDE CURSOR OVER ROWS TO COMPARE</span>
         </div>
       </div>
     </div>
@@ -3345,18 +3345,18 @@ Return ONLY valid JSON matching this exact structure:
         const isBullDominant = (n.bull_vol || 0) >= (n.bear_vol || 0);
 
         return `
-          <div onmouseenter="showNodeHoverFlyout(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" class="grid grid-cols-12 px-2 py-1.5 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer rounded text-[10px] font-mono transition-all">
+          <div onmouseenter="showNodeHoverFlyout(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" class="grid grid-cols-12 px-2.5 py-2 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer rounded-lg text-[11.5px] font-mono transition-all">
             <div class="col-span-1 font-bold ${isVpoc ? 'text-amber-400' : 'text-slate-400'}">#${rank}</div>
-            <div class="col-span-3 font-bold text-white flex items-center gap-1">
+            <div class="col-span-3 font-bold text-white flex items-center gap-1.5">
               $${Number(n.price).toFixed(2)}
-              ${isVpoc ? '<span class="px-1 py-0.2 rounded text-[7.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold">VPOC</span>' : ''}
+              ${isVpoc ? '<span class="px-1.5 py-0.5 rounded text-[8.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold">VPOC</span>' : ''}
             </div>
             <div class="col-span-3 text-right font-bold text-amber-300 pr-1">
               ${Number(n.volume).toLocaleString()}v
             </div>
             <div class="col-span-2 text-right font-bold text-emerald-400">${Number(n.bull_vol || 0).toLocaleString()}v</div>
             <div class="col-span-2 text-right font-bold text-red-400">${Number(n.bear_vol || 0).toLocaleString()}v</div>
-            <div class="col-span-1 text-center font-bold text-[8.5px] ${isBullDominant ? 'text-emerald-400' : 'text-red-400'}">
+            <div class="col-span-1 text-center font-bold text-[10px] ${isBullDominant ? 'text-emerald-400' : 'text-red-400'}">
               ${isBullDominant ? '▲' : '▼'}
             </div>
           </div>
@@ -3520,15 +3520,15 @@ Return ONLY valid JSON matching this exact structure:
           const origClean = (w.origin || "").replace('v', '▼').replace('^', '▲');
 
           return `
-            <tr class="hover:bg-slate-900/60 font-mono">
-              <td class="py-1 px-1 font-bold text-cyan-300 text-[8px]">${w.wave}</td>
-              <td class="py-1 px-1 text-center text-slate-400 text-[8px]">${w.gap}</td>
-              <td class="py-1 px-1 text-slate-300 text-[8px]">${origClean}</td>
-              <td class="py-1 px-1 text-center font-bold text-amber-300 text-[8px]">${w.dwell}</td>
-              <td class="py-1 px-1 text-right font-bold text-white text-[8px]">${w.vol.replace('D', 'Δ')}</td>
-              <td class="py-1 px-1 text-right font-mono ${slipColor} text-[8px]">${w.slip}</td>
-              <td class="py-1 px-1 text-right font-bold ${dispColor} text-[8px]">${w.disp}</td>
-              <td class="py-1 px-1 text-right font-bold text-cyan-300 text-[8px]">${w.eff_res}</td>
+            <tr class="hover:bg-slate-900/70 font-mono text-[12px] border-b border-slate-800/40">
+              <td class="py-2 px-2.5 font-bold text-cyan-300">${w.wave}</td>
+              <td class="py-2 px-2 text-center text-slate-300">${w.gap}</td>
+              <td class="py-2 px-2.5 text-slate-200">${origClean}</td>
+              <td class="py-2 px-2 text-center font-bold text-amber-300">${w.dwell}</td>
+              <td class="py-2 px-2.5 text-right font-bold text-white">${w.vol.replace('D', 'Δ')}</td>
+              <td class="py-2 px-2 text-right font-bold ${slipColor}">${w.slip}</td>
+              <td class="py-2 px-2.5 text-right font-bold ${dispColor}">${w.disp}</td>
+              <td class="py-2 px-2.5 text-right font-bold text-cyan-300">${w.eff_res}</td>
             </tr>
           `;
         }).join("");
