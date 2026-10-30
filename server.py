@@ -363,9 +363,30 @@ def calculate_node_provenance_live(node_price: float, symbol: str = "XAUUSD", lo
     if active_wave:
         clustered.append(active_wave)
 
+    # Partition clustered visits into distinct collection cycles.
+    # Any gap > 20 minutes (1200s) signifies a break between sessions/cycles.
+    # We strictly isolate the MOST RECENT collection cycle to eliminate stale data.
+    collection_cycles = []
+    cur_cycle = []
+    for c in clustered:
+        if not cur_cycle:
+            cur_cycle.append(c)
+        else:
+            gap = c["start_time"] - cur_cycle[-1]["end_time"]
+            if gap > 1200:  # gap > 20 minutes marks a different collection regime
+                collection_cycles.append(cur_cycle)
+                cur_cycle = [c]
+            else:
+                cur_cycle.append(c)
+    if cur_cycle:
+        collection_cycles.append(cur_cycle)
+
+    # Strictly take the MOST RECENT collection cycle (no stale data from 153+ mins ago!)
+    active_waves = collection_cycles[-1] if collection_cycles else []
+
     waves_out = []
     prev_wave_end = None
-    for w_idx, w in enumerate(clustered):
+    for w_idx, w in enumerate(active_waves):
         dwell_sec = max(1, int(w["end_time"] - w["start_time"]))
         dwell_str = f"{dwell_sec}s" if dwell_sec < 60 else f"{dwell_sec // 60}m {dwell_sec % 60}s"
 
@@ -458,7 +479,7 @@ def calculate_node_provenance_live(node_price: float, symbol: str = "XAUUSD", lo
     return {
         "price": node_price,
         "total_waves": len(waves_out),
-        "waves": waves_out[-4:],
+        "waves": waves_out[-6:] if len(waves_out) > 6 else waves_out,
         "displacement_vector": f"{disp_vector} {status_note}",
         "structural_role": role_text,
         "role_color": role_color,
@@ -475,7 +496,7 @@ async def get_node_provenance(price: float, symbol: str = "XAUUSD"):
     # 1. Check in-memory dynamic cache first (<0.1ms)
     if p_key in _DYNAMIC_PROVENANCE_CACHE:
         cached = _DYNAMIC_PROVENANCE_CACHE[p_key]
-        if time.time() - cached.get("_cached_at", 0) < 60.0:
+        if time.time() - cached.get("_cached_at", 0) < 10.0:
             return JSONResponse(content=cached["data"])
 
     # 2. Compute live from real MT5 ticks
