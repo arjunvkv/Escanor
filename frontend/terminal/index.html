@@ -347,9 +347,9 @@
           <input id="probeSlInput" type="number" step="0.01" placeholder="4056.98" class="w-20 px-1.5 py-0.5 bg-black rounded border border-red-500/50 text-red-200 font-mono font-bold text-xs no-spin focus:border-red-400 outline-none" oninput="onProbeSlManualInput()">
         </div>
 
-        <!-- Take Profit (Preset to $200 target, manually editable) -->
+        <!-- Take Profit (Preset to $700 target, manually editable) -->
         <div class="flex items-center gap-1 bg-black/60 px-1.5 py-0.5 rounded border border-emerald-500/30">
-          <span class="text-[10px] text-emerald-400 font-bold uppercase">TP ($200):</span>
+          <span class="text-[10px] text-emerald-400 font-bold uppercase">TP ($700):</span>
           <input id="probeTpInput" type="number" step="0.01" placeholder="4078.98" class="w-20 px-1.5 py-0.5 bg-black rounded border border-emerald-500/50 text-emerald-200 font-mono font-bold text-xs no-spin focus:border-emerald-400 outline-none" oninput="onProbeTpManualInput()">
         </div>
 
@@ -371,7 +371,7 @@
           <span class="text-slate-700">|</span>
           <div class="flex items-center gap-1">
             <span class="text-slate-500 text-[9.5px]">REWARD:</span>
-            <strong id="calcTpRewardDollars" class="text-emerald-400 font-mono font-bold">+$200.00</strong>
+            <strong id="calcTpRewardDollars" class="text-emerald-400 font-mono font-bold">+$700.00</strong>
           </div>
           <span class="text-slate-700">|</span>
           <div class="flex items-center gap-1">
@@ -1931,7 +1931,7 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // Auto-latches SL 2.0 price points back and TP to $200 target
+    // Auto-latches SL 2.0 price points back and TP to $700 target
     function recalculateProbeFromEntry() {
       const entryInput = document.getElementById("probeEntryInput");
       const slInput = document.getElementById("probeSlInput");
@@ -1949,10 +1949,10 @@ Return ONLY valid JSON matching this exact structure:
       const sl = probeSide === 'BUY' ? (entry - slDist) : (entry + slDist);
       slInput.value = sl.toFixed(2);
 
-      // Preset $200 dollars target for selected lot size
+      // Preset $700 dollars target for selected lot size
       // Gold point value = lots * 100
       const pointVal = probeLots * 100;
-      const tpPointsNeeded = pointVal > 0 ? (200.00 / pointVal) : 20.00;
+      const tpPointsNeeded = pointVal > 0 ? (700.00 / pointVal) : 70.00;
       const tp = probeSide === 'BUY' ? (entry + tpPointsNeeded) : (entry - tpPointsNeeded);
       tpInput.value = tp.toFixed(2);
 
