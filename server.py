@@ -255,16 +255,24 @@ def calculate_node_provenance_live(node_price: float, symbol: str = "XAUUSD", lo
     if not tick:
         return {"price": node_price, "waves": [], "status": "NO_TICK"}
 
-    now_epoch = tick.time
+    now_epoch = int(tick.time)
     now_ts = time.time()
-    # Cache raw ticks for 8 seconds so hovering multiple nodes in succession is instantaneous (<2ms)
+    # Cache raw ticks for 5 seconds so hovering multiple nodes in succession is instantaneous (<2ms)
     if (_PROVENANCE_TICK_CACHE["ticks"] is not None and 
         _PROVENANCE_TICK_CACHE["symbol"] == symbol and 
-        (now_ts - _PROVENANCE_TICK_CACHE["time"]) < 8.0):
+        (now_ts - _PROVENANCE_TICK_CACHE["time"]) < 5.0):
         ticks = _PROVENANCE_TICK_CACHE["ticks"]
     else:
-        start_epoch = int(now_epoch - lookback_hours * 3600)
-        ticks = mt5_mod.copy_ticks_from(symbol, start_epoch, 100000, mt5_mod.COPY_TICKS_ALL)
+        start_epoch = int(now_epoch - 3600 * 2)
+        ticks = mt5_mod.copy_ticks_range(
+            symbol,
+            datetime.fromtimestamp(start_epoch),
+            datetime.fromtimestamp(now_epoch + 15),
+            mt5_mod.COPY_TICKS_ALL
+        )
+        if ticks is None or len(ticks) == 0:
+            ticks = mt5_mod.copy_ticks_from(symbol, start_epoch, 100000, mt5_mod.COPY_TICKS_ALL)
+
         if ticks is not None and len(ticks) > 0:
             _PROVENANCE_TICK_CACHE = {"time": now_ts, "symbol": symbol, "ticks": ticks}
         else:
