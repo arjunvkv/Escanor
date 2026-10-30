@@ -3429,30 +3429,8 @@ Return ONLY valid JSON matching this exact structure:
       if (priceEl) priceEl.textContent = `$${pFixed2}`;
       if (vpocEl) vpocEl.classList.toggle("hidden", rank !== 1);
 
-      const isBull = (bullVol || 0) >= (bearVol || 0);
-      if (biasEl) {
-        biasEl.textContent = isBull ? "▲" : "▼";
-        biasEl.className = `text-xs font-bold ${isBull ? "text-emerald-400" : "text-red-400"}`;
-      }
       if (volEl) {
-        volEl.innerHTML = `<span class="text-white font-bold">${volume}v</span> <span class="text-slate-500">(${bullVol}b/${bearVol}s)</span>`;
-      }
-
-      if (pNum <= 3988.65) {
-        if (roleEl) {
-          roleEl.textContent = "BULL ABSORPTION FLOOR";
-          roleEl.className = "text-emerald-400 font-bold uppercase";
-        }
-      } else if (pNum >= 3990.05) {
-        if (roleEl) {
-          roleEl.textContent = "DISTRIBUTION CEILING DEFENSE";
-          roleEl.className = "text-red-400 font-bold uppercase";
-        }
-      } else {
-        if (roleEl) {
-          roleEl.textContent = "MID-RANGE VALUE ROTATION";
-          roleEl.className = "text-amber-300 font-bold uppercase";
-        }
+        volEl.innerHTML = `<span class="text-white font-bold">${volume}v</span> <span class="text-slate-400">(${bullVol}b/${bearVol}s)</span>`;
       }
 
       // If we don't have this node cached yet, fetch authentic tick audit from server API
@@ -3460,7 +3438,7 @@ Return ONLY valid JSON matching this exact structure:
         if (tableBodyEl) {
           tableBodyEl.innerHTML = `
             <tr>
-              <td colspan="8" class="p-3 text-center text-[10px] text-cyan-400 font-mono animate-pulse">
+              <td colspan="8" class="p-3 text-center text-xs text-cyan-400 font-mono animate-pulse">
                 Auditing MT5 tick history for $${pFixed2}...
               </td>
             </tr>
@@ -3480,7 +3458,7 @@ Return ONLY valid JSON matching this exact structure:
             } else if (tableBodyEl) {
               tableBodyEl.innerHTML = `
                 <tr>
-                  <td colspan="8" class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
+                  <td colspan="8" class="p-3 text-center text-xs text-slate-400 font-mono italic">
                     Zero auction touches in session window
                   </td>
                 </tr>
@@ -3494,19 +3472,64 @@ Return ONLY valid JSON matching this exact structure:
         return;
       }
 
-      const waves = node.waves;
-      if (roleEl) {
-        const lastW = waves[waves.length - 1];
-        if (lastW && lastW.disp_val < -0.5) {
-          roleEl.textContent = "FLOOR BROKEN / EXPANSION";
-          roleEl.className = "text-rose-400 font-bold uppercase";
-        } else if (lastW && Math.abs(lastW.disp_val) < 1.2) {
-          roleEl.textContent = "ABSORPTION WALL DECAY";
-          roleEl.className = "text-amber-300 font-bold uppercase";
+      const waves = node.waves || [];
+      const lastW = waves.length > 0 ? waves[waves.length - 1] : null;
+      const priorWaves = waves.slice(0, -1);
+      const priorDisps = priorWaves.map(w => w.disp_val || 0);
+
+      let roleText = "MID-RANGE VALUE ROTATION";
+      let roleClass = "text-cyan-300 font-bold uppercase tracking-wide";
+      let biasIcon = (bullVol || 0) >= (bearVol || 0) ? "▲" : "▼";
+      let biasClass = biasIcon === "▲" ? "text-emerald-400" : "text-rose-400";
+
+      if (node.structural_role) {
+        roleText = node.structural_role;
+        biasIcon = node.structural_bias || (node.role_color === "emerald" ? "▲" : "▼");
+        if (node.role_color === "emerald") {
+          roleClass = "text-emerald-400 font-bold uppercase tracking-wide";
+          biasClass = "text-emerald-400";
+        } else if (node.role_color === "rose") {
+          roleClass = "text-rose-400 font-bold uppercase tracking-wide";
+          biasClass = "text-rose-400";
         } else {
-          roleEl.textContent = isBull ? "BULL ABSORPTION FLOOR" : "DISTRIBUTION CEILING DEFENSE";
-          roleEl.className = isBull ? "text-emerald-400 font-bold uppercase" : "text-rose-400 font-bold uppercase";
+          roleClass = "text-amber-300 font-bold uppercase tracking-wide";
+          biasClass = "text-amber-300";
         }
+      } else if (lastW) {
+        const lastDisp = lastW.disp_val || 0;
+        if (lastDisp >= 1.0) {
+          if (priorDisps.some(d => d < -1.0)) {
+            roleText = "CEILING RECLAIMED / SQUEEZE BREAKOUT";
+          } else {
+            roleText = "BULL ABSORPTION FLOOR";
+          }
+          roleClass = "text-emerald-400 font-bold uppercase tracking-wide";
+          biasIcon = "▲";
+          biasClass = "text-emerald-400";
+        } else if (lastDisp <= -1.0) {
+          if (priorDisps.some(d => d > 1.0)) {
+            roleText = "FLOOR BROKEN / BEAR BREAKDOWN";
+          } else {
+            roleText = "DISTRIBUTION CEILING DEFENSE";
+          }
+          roleClass = "text-rose-400 font-bold uppercase tracking-wide";
+          biasIcon = "▼";
+          biasClass = "text-rose-400";
+        } else {
+          roleText = "ABSORPTION WALL DECAY";
+          roleClass = "text-amber-300 font-bold uppercase tracking-wide";
+          biasIcon = (lastW.delta || 0) >= 0 ? "▲" : "▼";
+          biasClass = biasIcon === "▲" ? "text-emerald-400" : "text-rose-400";
+        }
+      }
+
+      if (roleEl) {
+        roleEl.textContent = roleText;
+        roleEl.className = roleClass;
+      }
+      if (biasEl) {
+        biasEl.textContent = biasIcon;
+        biasEl.className = `text-sm font-bold ${biasClass}`;
       }
 
       if (trailVectorEl) {

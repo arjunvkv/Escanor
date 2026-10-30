@@ -425,18 +425,44 @@ def calculate_node_provenance_live(node_price: float, symbol: str = "XAUUSD", lo
 
     disp_vector = " → ".join([w["disp"] for w in waves_out[-4:]])
     last_disp = waves_out[-1]["disp_val"] if waves_out else 0
-    if last_disp < -0.5:
-        status_note = "(FLOOR BROKEN)"
-    elif abs(last_disp) < 1.2:
-        status_note = "(DECAY/ABSORBED)"
+    prior_disps = [w["disp_val"] for w in waves_out[-4:-1]]
+
+    if last_disp >= 1.0:
+        if any(d < -1.0 for d in prior_disps):
+            status_note = "(CEILING RECLAIMED)"
+            role_text = "CEILING RECLAIMED / SQUEEZE BREAKOUT"
+            role_color = "emerald"
+            bias = "▲"
+        else:
+            status_note = "(SOLID DEFENSE)"
+            role_text = "BULL ABSORPTION FLOOR"
+            role_color = "emerald"
+            bias = "▲"
+    elif last_disp <= -1.0:
+        if any(d > 1.0 for d in prior_disps):
+            status_note = "(FLOOR BROKEN)"
+            role_text = "FLOOR BROKEN / BEAR BREAKDOWN"
+            role_color = "rose"
+            bias = "▼"
+        else:
+            status_note = "(BEAR EXPANSION)"
+            role_text = "DISTRIBUTION CEILING DEFENSE"
+            role_color = "rose"
+            bias = "▼"
     else:
-        status_note = "(SOLID DEFENSE)"
+        status_note = "(DECAY/ABSORBED)"
+        role_text = "ABSORPTION WALL DECAY"
+        role_color = "amber"
+        bias = "▲" if (waves_out and waves_out[-1]["delta"] >= 0) else "▼"
 
     return {
         "price": node_price,
         "total_waves": len(waves_out),
         "waves": waves_out[-4:],
         "displacement_vector": f"{disp_vector} {status_note}",
+        "structural_role": role_text,
+        "role_color": role_color,
+        "structural_bias": bias,
         "status": "OK"
     }
 
