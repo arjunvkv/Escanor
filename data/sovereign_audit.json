@@ -1,15 +1,15 @@
 {
   "date_ist": "2026-10-30",
   "real_yield_pct": 2.63,
-  "real_yield_delta_bps": -4.0,
+  "real_yield_delta_bps": -4,
   "real_yield_vector": "REAL YIELD EASING",
   "dxy_spot": 101.85,
   "dxy_delta_pct": -0.33,
   "dxy_vector": "DOLLAR SOFTENING",
-  "sge_premium_usd": 14.20,
-  "sge_delta_usd": 3.20,
+  "sge_premium_usd": 14.2,
+  "sge_delta_usd": 3.2,
   "sge_vector": "PHYSICAL ACCUMULATION",
   "next_event_name": "US Q3 Employment Cost Index (ECI)",
   "next_event_ist": "18:00 IST",
-  "pocket_note": "US 10Y real yields compressed 4.0 bps to 2.63% alongside a DXY slide down to 101.85 (-0.33%), removing sovereign gravitational drag on gold. Concurrently, Shanghai physical demand expanded its Au99.99 premium to +14.20 USD/oz (+3.20 delta), demonstrating strong Asian floor defense on dips below $4,020. The primary sovereign runway remains clear until the Q3 Employment Cost Index gate at 18:00 IST."
+  "pocket_note": "US 10Y real yields compressed 4.0 bps to 2.63% alongside a DXY slide down to 101.85 (-0.33%), removing sovereign gravitational drag on gold. Concurrently, Shanghai physical demand expanded its Au99.99 premium to +14.20 USD/oz (+3.20 delta), demonstrating strong Asian floor defense on dips below 4020. The primary sovereign runway remains clear until the Q3 Employment Cost Index gate at 18:00 IST."
 }

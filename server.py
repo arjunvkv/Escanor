@@ -1640,6 +1640,13 @@ async def get_scratchpad_ui():
     return FileResponse(str(scratchpad_path))
 
 
+@app.get("/provenance")
+async def get_provenance_scratchpad_ui():
+    """Serve the Real Calculated Volume Profile Provenance & Auction Wave Ledger."""
+    provenance_path = BASE_DIR / "frontend" / "provenance_scratchpad.html"
+    return FileResponse(str(provenance_path))
+
+
 @app.get("/")
 async def root_redirect(request: Request):
     """Smart router: Mobile user-agents go to /mobile, desktops go to /chart."""
