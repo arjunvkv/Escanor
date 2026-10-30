@@ -3374,19 +3374,29 @@ Return ONLY valid JSON matching this exact structure:
       }
 
       let parsed = null;
+      let clean = raw.trim();
+      if (clean.includes("```")) {
+        const match = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+        if (match) clean = match[1].trim();
+      }
+
       try {
-        let clean = raw;
-        if (clean.includes("```")) {
-          const match = clean.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-          if (match) clean = match[1];
+        parsed = JSON.parse(clean);
+      } catch (firstErr) {
+        try {
+          // Fallback: replace unescaped line breaks inside quotes caused by chat math rendering
+          const sanitized = clean.replace(/"([^"\]*(?:\.[^"\]*)*)"/g, (m) => {
+            return m.replace(/?
+|/g, " ");
+          });
+          parsed = JSON.parse(sanitized);
+        } catch (secondErr) {
+          if (err) {
+            err.textContent = "Invalid JSON: " + firstErr.message;
+            err.classList.remove("hidden");
+          }
+          return;
         }
-        parsed = JSON.parse(clean.trim());
-      } catch (e) {
-        if (err) {
-          err.textContent = "Invalid JSON: " + e.message;
-          err.classList.remove("hidden");
-        }
-        return;
       }
 
       try {
