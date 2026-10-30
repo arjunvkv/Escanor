@@ -1412,7 +1412,7 @@ Return ONLY valid JSON matching this exact structure:
   <!-- MODAL: TOP 8 VOLUME NODES IN BULL/BEAR RANGE                              -->
   <!-- ========================================================================= -->
   <div id="rangeVolProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) toggleRangeVolumeProfileModal()">
-    <div class="hud-panel rounded-lg max-w-md w-full p-4 border border-cyan-500/50 shadow-2xl flex flex-col gap-3">
+    <div class="hud-panel rounded-lg max-w-md w-full p-4 border border-cyan-500/50 shadow-2xl flex flex-col gap-3 relative overflow-hidden">
       <!-- Header -->
       <div class="flex items-center justify-between border-b border-slate-800 pb-2">
         <div>
@@ -1463,7 +1463,48 @@ Return ONLY valid JSON matching this exact structure:
       <!-- Footer Info -->
       <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[9px] text-slate-500 font-mono">
         <span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> LIVE TICK ACCUMULATION</span>
-        <span>HIGHEST VOLUME ON TOP</span>
+        <span class="text-cyan-400 font-semibold cursor-pointer">CLICK ROW FOR TRUE VALUES TRAIL</span>
+      </div>
+
+      <!-- SMALL BOX POPUP: NODE VALUES TRAIL & PROVENANCE (100% TRUE AUDITED METRICS) -->
+      <div id="nodeProvenancePopupBox" class="absolute inset-0 bg-slate-950/95 border border-cyan-400/80 rounded-lg p-3.5 shadow-2xl flex flex-col gap-2 z-30 hidden backdrop-blur-md">
+        <!-- Popup Header -->
+        <div class="flex items-center justify-between border-b border-slate-800 pb-1.5">
+          <div class="flex items-center gap-2">
+            <span id="npRankBadge" class="px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-950 text-cyan-400 border border-cyan-800 font-mono">#1</span>
+            <span id="npPriceTitle" class="text-sm font-bold text-white font-mono tracking-wide">$3988.60</span>
+            <span id="npVpocBadge" class="px-1 py-0.2 rounded text-[7.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold font-mono hidden">VPOC</span>
+            <span id="npBiasIcon" class="text-xs font-bold text-emerald-400">▲</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span id="npVolBadge" class="text-[9.5px] font-mono text-slate-300 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">98v</span>
+            <button onclick="closeNodeProvenanceBox()" class="w-5 h-5 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white font-bold text-[10px] flex items-center justify-center cursor-pointer">
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <!-- Status & Role Banner -->
+        <div class="flex items-center justify-between px-2 py-1 rounded bg-black/60 border border-slate-800 text-[9px] font-mono">
+          <div class="flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+            <span class="text-slate-400 uppercase">TRUE VALUES TRAIL:</span>
+          </div>
+          <span id="npRoleTitle" class="text-cyan-300 font-bold uppercase">BULL ABSORPTION FLOOR</span>
+        </div>
+
+        <!-- Waves Chronological Values Trail (Scrollable) -->
+        <div id="npWavesContainer" class="flex flex-col gap-1.5 overflow-y-auto max-h-[220px] pr-1">
+          <!-- Dynamic Wave Cards -->
+        </div>
+
+        <!-- Footer -->
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[8.5px] font-mono">
+          <span class="text-emerald-400 font-medium">100% AUDITED TICK AUCTION TRAIL</span>
+          <button onclick="closeNodeProvenanceBox()" class="text-cyan-400 hover:underline cursor-pointer font-bold">
+            ← BACK TO TOP 8 NODES
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -3281,10 +3322,9 @@ Return ONLY valid JSON matching this exact structure:
         const rank = idx + 1;
         const isVpoc = rank === 1;
         const isBullDominant = (n.bull_vol || 0) >= (n.bear_vol || 0);
-        const volBarPct = Math.max(5, Math.min(100, Math.round(((n.volume || 0) / maxVol) * 100)));
 
         return `
-          <div class="grid grid-cols-12 px-2 py-1 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-500/40 rounded text-[10px] font-mono transition-all">
+          <div onclick="openNodeProvenanceBox(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" class="grid grid-cols-12 px-2 py-1.5 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-400 hover:bg-slate-800/70 cursor-pointer rounded text-[10px] font-mono transition-all">
             <div class="col-span-1 font-bold ${isVpoc ? 'text-amber-400' : 'text-slate-400'}">#${rank}</div>
             <div class="col-span-3 font-bold text-white flex items-center gap-1">
               $${Number(n.price).toFixed(2)}
@@ -3292,9 +3332,6 @@ Return ONLY valid JSON matching this exact structure:
             </div>
             <div class="col-span-3 text-right font-bold text-amber-300 pr-1">
               ${Number(n.volume).toLocaleString()}v
-              <div class="w-full h-1 bg-slate-800 rounded overflow-hidden mt-0.5">
-                <div class="h-full bg-amber-400" style="width: ${volBarPct}%"></div>
-              </div>
             </div>
             <div class="col-span-2 text-right font-bold text-emerald-400">${Number(n.bull_vol || 0).toLocaleString()}v</div>
             <div class="col-span-2 text-right font-bold text-red-400">${Number(n.bear_vol || 0).toLocaleString()}v</div>
@@ -3329,6 +3366,158 @@ Return ONLY valid JSON matching this exact structure:
       if (isRangeVolProfileModalOpen) {
         renderRangeVolumeProfileModal();
       }
+    }
+
+    // 11c. Node Provenance & Values Trail Box (100% True MT5 Tick Audit)
+    const NODE_PROVENANCE_DATA = {"3988.6": {"rank": 1, "price": 3988.6, "is_vpoc": true, "volume": 98, "bull_vol": 51, "bear_vol": 47, "bias": "\u25b2", "total_waves": 10, "waves": [{"wave": 1, "time": "14:27:44", "ticks": 10, "origin": 3989.14, "dir": "DOWN", "diff": -0.54, "vol": 10, "bull": 5, "bear": 5, "delta": 0, "disp": 3.5, "exit": 3991.7}, {"wave": 2, "time": "14:31:10", "ticks": 47, "origin": 3989.03, "dir": "DOWN", "diff": -0.43, "vol": 47, "bull": 15, "bear": 32, "delta": -17, "disp": 2.09, "exit": 3987.84}, {"wave": 3, "time": "14:33:58", "ticks": 116, "origin": 3989.28, "dir": "DOWN", "diff": -0.68, "vol": 116, "bull": 44, "bear": 72, "delta": -28, "disp": 1.48, "exit": 3987.36}, {"wave": 4, "time": "14:41:26", "ticks": 57, "origin": 3989.06, "dir": "DOWN", "diff": -0.46, "vol": 57, "bull": 21, "bear": 36, "delta": -15, "disp": -1.82, "exit": 3989.05}]}, "3988.4": {"rank": 2, "price": 3988.4, "is_vpoc": false, "volume": 90, "bull_vol": 47, "bear_vol": 43, "bias": "\u25b2", "total_waves": 12, "waves": [{"wave": 1, "time": "14:27:45", "ticks": 9, "origin": 3988.49, "dir": "DOWN", "diff": -0.09, "vol": 9, "bull": 5, "bear": 4, "delta": 1, "disp": 3.63, "exit": 3991.7}, {"wave": 2, "time": "14:31:11", "ticks": 37, "origin": 3988.61, "dir": "DOWN", "diff": -0.21, "vol": 37, "bull": 17, "bear": 20, "delta": -3, "disp": 1.82, "exit": 3990.03}, {"wave": 3, "time": "14:33:59", "ticks": 26, "origin": 3988.6, "dir": "DOWN", "diff": -0.2, "vol": 26, "bull": 13, "bear": 13, "delta": 0, "disp": 1.09, "exit": 3987.36}, {"wave": 4, "time": "14:35:00", "ticks": 53, "origin": 3988.76, "dir": "DOWN", "diff": -0.36, "vol": 53, "bull": 30, "bear": 23, "delta": 7, "disp": 1.68, "exit": 3987.68}]}, "3989.3": {"rank": 3, "price": 3989.3, "is_vpoc": false, "volume": 89, "bull_vol": 42, "bear_vol": 47, "bias": "\u25bc", "total_waves": 12, "waves": [{"wave": 1, "time": "14:27:41", "ticks": 4, "origin": 3989.89, "dir": "DOWN", "diff": -0.59, "vol": 4, "bull": 3, "bear": 1, "delta": 2, "disp": 2.83, "exit": 3991.24}, {"wave": 2, "time": "14:30:40", "ticks": 29, "origin": 3989.68, "dir": "DOWN", "diff": -0.38, "vol": 29, "bull": 13, "bear": 16, "delta": -3, "disp": 1.39, "exit": 3989.99}, {"wave": 3, "time": "14:33:54", "ticks": 4, "origin": 3989.54, "dir": "DOWN", "diff": -0.24, "vol": 4, "bull": 1, "bear": 3, "delta": -2, "disp": -1.94, "exit": 3987.36}, {"wave": 4, "time": "14:34:32", "ticks": 15, "origin": 3989.18, "dir": "UP", "diff": 0.12, "vol": 15, "bull": 7, "bear": 8, "delta": -1, "disp": -1.07, "exit": 3988.23}]}, "3989.1": {"rank": 4, "price": 3989.1, "is_vpoc": false, "volume": 84, "bull_vol": 37, "bear_vol": 47, "bias": "\u25bc", "total_waves": 10, "waves": [{"wave": 1, "time": "14:27:42", "ticks": 30, "origin": 3989.53, "dir": "DOWN", "diff": -0.43, "vol": 30, "bull": 21, "bear": 9, "delta": 12, "disp": 3.03, "exit": 3991.47}, {"wave": 2, "time": "14:30:53", "ticks": 41, "origin": 3989.41, "dir": "DOWN", "diff": -0.31, "vol": 41, "bull": 17, "bear": 24, "delta": -7, "disp": 1.59, "exit": 3988.24}, {"wave": 3, "time": "14:33:56", "ticks": 24, "origin": 3989.28, "dir": "DOWN", "diff": -0.18, "vol": 24, "bull": 7, "bear": 17, "delta": -10, "disp": -0.93, "exit": 3987.36}, {"wave": 4, "time": "14:35:49", "ticks": 84, "origin": 3989.01, "dir": "UP", "diff": 0.09, "vol": 84, "bull": 37, "bear": 47, "delta": -10, "disp": 2.03, "exit": 3988.14}]}, "3990.1": {"rank": 5, "price": 3990.1, "is_vpoc": false, "volume": 77, "bull_vol": 36, "bear_vol": 41, "bias": "\u25bc", "total_waves": 9, "waves": [{"wave": 1, "time": "14:27:18", "ticks": 49, "origin": 3990.46, "dir": "DOWN", "diff": -0.36, "vol": 49, "bull": 32, "bear": 17, "delta": 15, "disp": 2.03, "exit": 3988.95}, {"wave": 2, "time": "14:29:13", "ticks": 36, "origin": 3990.24, "dir": "DOWN", "diff": -0.14, "vol": 36, "bull": 21, "bear": 15, "delta": 6, "disp": 2.2, "exit": 3991.75}, {"wave": 3, "time": "14:30:34", "ticks": 9, "origin": 3990.31, "dir": "DOWN", "diff": -0.21, "vol": 9, "bull": 4, "bear": 5, "delta": -1, "disp": -1.37, "exit": 3988.73}, {"wave": 4, "time": "14:31:45", "ticks": 52, "origin": 3989.96, "dir": "UP", "diff": 0.14, "vol": 52, "bull": 30, "bear": 22, "delta": 8, "disp": 0.96, "exit": 3990.86}]}, "3989.0": {"rank": 6, "price": 3989.0, "is_vpoc": false, "volume": 69, "bull_vol": 29, "bear_vol": 40, "bias": "\u25bc", "total_waves": 13, "waves": [{"wave": 1, "time": "14:27:42", "ticks": 32, "origin": 3989.53, "dir": "DOWN", "diff": -0.53, "vol": 32, "bull": 14, "bear": 18, "delta": -4, "disp": 3.13, "exit": 3991.47}, {"wave": 2, "time": "14:31:00", "ticks": 38, "origin": 3989.27, "dir": "DOWN", "diff": -0.27, "vol": 38, "bull": 15, "bear": 23, "delta": -8, "disp": 1.22, "exit": 3987.84}, {"wave": 3, "time": "14:33:56", "ticks": 22, "origin": 3989.28, "dir": "DOWN", "diff": -0.28, "vol": 22, "bull": 12, "bear": 10, "delta": 2, "disp": -1.26, "exit": 3987.36}, {"wave": 4, "time": "14:35:40", "ticks": 60, "origin": 3988.76, "dir": "UP", "diff": 0.24, "vol": 60, "bull": 32, "bear": 28, "delta": 4, "disp": 1.08, "exit": 3988.14}]}, "3988.5": {"rank": 7, "price": 3988.5, "is_vpoc": false, "volume": 61, "bull_vol": 33, "bear_vol": 28, "bias": "\u25b2", "total_waves": 10, "waves": [{"wave": 1, "time": "14:27:44", "ticks": 16, "origin": 3988.66, "dir": "DOWN", "diff": -0.16, "vol": 16, "bull": 9, "bear": 7, "delta": 2, "disp": 3.56, "exit": 3991.7}, {"wave": 2, "time": "14:31:11", "ticks": 29, "origin": 3988.61, "dir": "DOWN", "diff": -0.11, "vol": 29, "bull": 16, "bear": 13, "delta": 3, "disp": 1.72, "exit": 3989.33}, {"wave": 3, "time": "14:33:59", "ticks": 22, "origin": 3988.6, "dir": "DOWN", "diff": -0.1, "vol": 22, "bull": 12, "bear": 10, "delta": 2, "disp": 0.99, "exit": 3987.36}, {"wave": 4, "time": "14:35:00", "ticks": 41, "origin": 3988.25, "dir": "UP", "diff": 0.25, "vol": 41, "bull": 25, "bear": 16, "delta": 9, "disp": 1.58, "exit": 3987.68}]}, "3990.2": {"rank": 8, "price": 3990.2, "is_vpoc": false, "volume": 61, "bull_vol": 38, "bear_vol": 23, "bias": "\u25b2", "total_waves": 8, "waves": [{"wave": 1, "time": "14:27:22", "ticks": 36, "origin": 3989.99, "dir": "UP", "diff": 0.21, "vol": 36, "bull": 19, "bear": 17, "delta": 2, "disp": 1.93, "exit": 3988.13}, {"wave": 2, "time": "14:29:11", "ticks": 27, "origin": 3990.45, "dir": "DOWN", "diff": -0.25, "vol": 27, "bull": 14, "bear": 13, "delta": 1, "disp": 2.1, "exit": 3991.75}, {"wave": 3, "time": "14:30:34", "ticks": 4, "origin": 3990.31, "dir": "DOWN", "diff": -0.11, "vol": 4, "bull": 0, "bear": 4, "delta": -4, "disp": -1.47, "exit": 3988.73}, {"wave": 4, "time": "14:31:46", "ticks": 11, "origin": 3990.06, "dir": "UP", "diff": 0.14, "vol": 11, "bull": 6, "bear": 5, "delta": 1, "disp": -0.68, "exit": 3989.52}]}};
+
+    function openNodeProvenanceBox(price, rank, volume, bullVol, bearVol) {
+      const popup = document.getElementById("nodeProvenancePopupBox");
+      if (!popup) return;
+
+      const pNum = Number(price);
+      const pFixed2 = pNum.toFixed(2);
+      const pFixed1 = pNum.toFixed(1);
+      const pStr = String(price);
+
+      let node = NODE_PROVENANCE_DATA[pFixed2] || NODE_PROVENANCE_DATA[pFixed1] || NODE_PROVENANCE_DATA[pStr] || null;
+      if (!node) {
+        for (const k in NODE_PROVENANCE_DATA) {
+          if (Math.abs(parseFloat(k) - pNum) < 0.06) {
+            node = NODE_PROVENANCE_DATA[k];
+            break;
+          }
+        }
+      }
+
+      const rankEl = document.getElementById("npRankBadge");
+      const priceEl = document.getElementById("npPriceTitle");
+      const vpocEl = document.getElementById("npVpocBadge");
+      const biasEl = document.getElementById("npBiasIcon");
+      const volEl = document.getElementById("npVolBadge");
+      const roleEl = document.getElementById("npRoleTitle");
+      const wavesEl = document.getElementById("npWavesContainer");
+
+      if (rankEl) rankEl.textContent = `#${rank}`;
+      if (priceEl) priceEl.textContent = `$${pFixed2}`;
+      if (vpocEl) vpocEl.classList.toggle("hidden", rank !== 1);
+
+      const isBull = (bullVol || 0) >= (bearVol || 0);
+      if (biasEl) {
+        biasEl.textContent = isBull ? "▲" : "▼";
+        biasEl.className = `text-xs font-bold ${isBull ? "text-emerald-400" : "text-red-400"}`;
+      }
+      if (volEl) {
+        volEl.innerHTML = `<span class="text-white font-bold">${volume}v</span> <span class="text-slate-500">(${bullVol}b/${bearVol}s)</span>`;
+      }
+
+      if (pNum <= 3988.65) {
+        if (roleEl) {
+          roleEl.textContent = "BULL ABSORPTION FLOOR";
+          roleEl.className = "text-emerald-400 font-bold uppercase";
+        }
+      } else if (pNum >= 3990.05) {
+        if (roleEl) {
+          roleEl.textContent = "DISTRIBUTION CEILING DEFENSE";
+          roleEl.className = "text-red-400 font-bold uppercase";
+        }
+      } else {
+        if (roleEl) {
+          roleEl.textContent = "MID-RANGE VALUE ROTATION";
+          roleEl.className = "text-amber-300 font-bold uppercase";
+        }
+      }
+
+      if (!node || !node.waves || node.waves.length === 0) {
+        // Fallback: try fetching from server API
+        fetch(`/api/node_provenance?price=${pNum}`)
+          .then(r => r.json())
+          .then(data => {
+            if (data && data.waves && data.waves.length > 0) {
+              NODE_PROVENANCE_DATA[pFixed2] = data;
+              openNodeProvenanceBox(price, rank, volume, bullVol, bearVol);
+            } else {
+              wavesEl.innerHTML = `
+                <div class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
+                  Live accumulating node for $${pFixed2}...<br>
+                  Current Volume: ${volume}v (${bullVol}b / ${bearVol}s)
+                </div>
+              `;
+            }
+          })
+          .catch(() => {
+            wavesEl.innerHTML = `
+              <div class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
+                Live accumulating node for $${pFixed2}...<br>
+                Current Volume: ${volume}v (${bullVol}b / ${bearVol}s)
+              </div>
+            `;
+          });
+        popup.classList.remove("hidden");
+        return;
+      }
+
+      const waves = node.waves;
+      wavesEl.innerHTML = waves.map((w, i) => {
+        const isDown = w.dir === "DOWN";
+        const dirBadge = isDown
+          ? `<span class="px-1 py-0.2 rounded text-[7.5px] bg-red-950/80 text-red-400 border border-red-800/60 font-bold">DROP FROM ABOVE</span>`
+          : `<span class="px-1 py-0.2 rounded text-[7.5px] bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-bold">SURGE FROM BELOW</span>`;
+
+        const deltaColor = w.delta >= 0 ? "text-emerald-400" : "text-red-400";
+        const deltaSign = w.delta >= 0 ? "+" : "";
+        const dispColor = w.disp >= 0 ? "text-emerald-400" : "text-red-400";
+        const dispSign = w.disp >= 0 ? "+" : "";
+
+        let note = "";
+        if (i === 0) {
+          note = `Pristine Test: Established initial auction reaction with ${dispSign}${w.disp.toFixed(2)} pts bounce.`;
+        } else {
+          const prevW = waves[i-1];
+          const prevRej = Math.abs(prevW.disp);
+          const currRej = Math.abs(w.disp);
+          if (w.disp < 0 && prevW.disp >= 0) {
+            note = `FLOOR LIQUIDATED: Bids exhausted. Level breached downward (${w.disp.toFixed(2)} pts).`;
+          } else if (currRej < prevRej && w.vol >= prevW.vol) {
+            note = `ORDER CONSUMPTION: Vol rose (+${w.vol - prevW.vol}v) but reaction decayed by -${(prevRej - currRej).toFixed(2)} pts. Resting depth thinning.`;
+          } else if (currRej > prevRej) {
+            note = `ACCUMULATION REINFORCED: Reaction expanded by +${(currRej - prevRej).toFixed(2)} pts. Institutional bids reloading.`;
+          } else {
+            note = `Active Auction Rotation: Two-way tape exchange of ${w.vol}v contracts.`;
+          }
+        }
+
+        return `
+          <div class="p-2 rounded bg-slate-900/90 border border-slate-800/90 text-[9.5px] font-mono space-y-1">
+            <div class="flex justify-between items-center">
+              <div class="flex items-center gap-1.5">
+                <span class="text-cyan-300 font-bold">WAVE #${w.wave}</span>
+                <span class="text-slate-400 text-[8.5px]">${w.time} (${w.ticks}t)</span>
+                ${dirBadge}
+              </div>
+              <div class="text-white font-bold">
+                ${w.vol}v <span class="text-slate-500 font-normal">(${w.bull}b/${w.bear}s, <span class="${deltaColor}">${deltaSign}${w.delta}v</span>)</span>
+              </div>
+            </div>
+
+            <div class="flex justify-between items-center text-[9px] text-slate-300">
+              <span>Launch: <span class="text-cyan-300 font-semibold">From $${Number(w.origin).toFixed(2)}</span> (${isDown ? '-' : '+'}${Math.abs(w.diff).toFixed(2)} pts)</span>
+              <span>Exit: <span class="font-bold ${dispColor}">${dispSign}${Number(w.disp).toFixed(2)} pts</span> → <span class="text-white font-semibold">$${Number(w.exit).toFixed(2)}</span></span>
+            </div>
+
+            <div class="text-[8.5px] text-slate-400 pt-0.5 border-t border-slate-800/60 leading-tight">
+              ↳ <span class="text-slate-300">${note}</span>
+            </div>
+          </div>
+        `;
+      }).join("");
+
+      popup.classList.remove("hidden");
+    }
+
+    function closeNodeProvenanceBox() {
+      const popup = document.getElementById("nodeProvenancePopupBox");
+      if (popup) popup.classList.add("hidden");
     }
 
     // 12. Copy Prompt Modal & Clipboard

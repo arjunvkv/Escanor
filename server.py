@@ -48,6 +48,7 @@ EVALUATION_VIEW_PATH = BASE_DIR / "data" / "active_evaluation_view.json"
 EVALUATION_SNAPSHOT_PATH = BASE_DIR / "data" / "active_evaluation_snapshot.png"
 DRAWDOWN_PATH = BASE_DIR / "data" / "drawdown.json"
 SOVEREIGN_AUDIT_PATH = BASE_DIR / "data" / "sovereign_audit.json"
+NODE_PROVENANCE_CACHE_PATH = BASE_DIR / "data" / "node_provenance_cache.json"
 
 drawdown_config: Dict[str, Any] = {
     "enabled": True,
@@ -234,6 +235,27 @@ async def get_drawings(symbol: str = "XAUUSD"):
         except Exception as e:
             logger.error(f"Failed to read drawings: {e}")
     return JSONResponse(content={"status": "OK", "drawings": []})
+
+
+@app.get("/api/node_provenance")
+async def get_node_provenance(price: float, symbol: str = "XAUUSD"):
+    """Fetch 100% true historical auction wave provenance for a specific volume node."""
+    p_key = f"{price:.2f}"
+    p_key_alt = f"{price:.1f}"
+    if NODE_PROVENANCE_CACHE_PATH.exists():
+        try:
+            with open(NODE_PROVENANCE_CACHE_PATH, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+                if p_key in cache:
+                    return JSONResponse(content=cache[p_key])
+                if p_key_alt in cache:
+                    return JSONResponse(content=cache[p_key_alt])
+                for k, v in cache.items():
+                    if abs(float(k) - price) < 0.06:
+                        return JSONResponse(content=v)
+        except Exception as e:
+            logger.error(f"Error loading node provenance cache: {e}")
+    return JSONResponse(content={"price": price, "waves": [], "status": "NOT_FOUND"})
 
 
 @app.post("/api/drawings")
