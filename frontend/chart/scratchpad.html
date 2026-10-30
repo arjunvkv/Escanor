@@ -3493,7 +3493,6 @@ Return ONLY valid JSON matching this exact structure:
       }
 
       if (tableBodyEl) {
-        tableBodyEl.innerHTML = waves.map((w, i) => {
         tableBodyEl.innerHTML = waves.map(w => {
           const dispColor = w.disp_val >= 0 ? "text-emerald-400" : "text-rose-400";
           const slipColor = w.slip.startsWith("-") ? "text-rose-400" : (w.slip.startsWith("+") ? "text-emerald-400" : "text-slate-400");
@@ -3576,10 +3575,7 @@ Return ONLY valid JSON matching this exact structure:
       } catch (firstErr) {
         try {
           // Fallback: replace unescaped line breaks inside quotes caused by chat math rendering
-          const sanitized = clean.replace(/"([^"\]*(?:\.[^"\]*)*)"/g, (m) => {
-            return m.replace(/?
-|/g, " ");
-          });
+          const sanitized = clean.split("\n").join(" ").split("\r").join("");
           parsed = JSON.parse(sanitized);
         } catch (secondErr) {
           if (err) {
