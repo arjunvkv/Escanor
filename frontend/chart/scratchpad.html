@@ -1493,9 +1493,31 @@ Return ONLY valid JSON matching this exact structure:
           <span id="npRoleTitle" class="text-cyan-300 font-bold uppercase">BULL ABSORPTION FLOOR</span>
         </div>
 
-        <!-- Waves Chronological Values Trail (Scrollable) -->
-        <div id="npWavesContainer" class="flex flex-col gap-1.5 overflow-y-auto max-h-[220px] pr-1">
-          <!-- Dynamic Wave Cards -->
+        <!-- Zero-Scroll Comparison Table -->
+        <div class="overflow-x-auto my-1">
+          <table class="w-full text-left text-[9px] border-collapse font-mono">
+            <thead class="bg-black/90 text-slate-400 uppercase text-[7.5px] border-b border-slate-800">
+              <tr>
+                <th class="py-1 px-1">WAVE</th>
+                <th class="py-1 px-1">ORIGIN</th>
+                <th class="py-1 px-1 text-right">VOL</th>
+                <th class="py-1 px-1 text-right text-emerald-400">BULL</th>
+                <th class="py-1 px-1 text-right text-rose-400">BEAR</th>
+                <th class="py-1 px-1 text-right">DELTA</th>
+                <th class="py-1 px-1 text-right">DISP</th>
+                <th class="py-1 px-1 text-right">DYNAMICS</th>
+              </tr>
+            </thead>
+            <tbody id="npWavesTableBody" class="divide-y divide-slate-800/60">
+              <!-- Populated dynamically -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Quick 1-Line Trail Deduction Bar -->
+        <div class="bg-black/60 border border-slate-800 rounded px-2 py-1 text-[8.5px] flex items-center justify-between font-mono">
+          <span class="text-slate-400 uppercase font-semibold">DISPLACEMENT VECTOR:</span>
+          <span id="npTrailVector" class="text-amber-300 font-bold font-mono">+3.50p → +2.09p → +1.48p → -1.82p (BROKEN)</span>
         </div>
 
         <!-- Footer -->
@@ -3396,7 +3418,8 @@ Return ONLY valid JSON matching this exact structure:
       const biasEl = document.getElementById("npBiasIcon");
       const volEl = document.getElementById("npVolBadge");
       const roleEl = document.getElementById("npRoleTitle");
-      const wavesEl = document.getElementById("npWavesContainer");
+      const tableBodyEl = document.getElementById("npWavesTableBody");
+      const trailVectorEl = document.getElementById("npTrailVector");
 
       if (rankEl) rankEl.textContent = `#${rank}`;
       if (priceEl) priceEl.textContent = `$${pFixed2}`;
@@ -3436,81 +3459,81 @@ Return ONLY valid JSON matching this exact structure:
             if (data && data.waves && data.waves.length > 0) {
               NODE_PROVENANCE_DATA[pFixed2] = data;
               openNodeProvenanceBox(price, rank, volume, bullVol, bearVol);
-            } else {
-              wavesEl.innerHTML = `
-                <div class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
-                  Live accumulating node for $${pFixed2}...<br>
-                  Current Volume: ${volume}v (${bullVol}b / ${bearVol}s)
-                </div>
+            } else if (tableBodyEl) {
+              tableBodyEl.innerHTML = `
+                <tr>
+                  <td colspan="8" class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
+                    Live accumulating node for $${pFixed2}... Current: ${volume}v (${bullVol}b / ${bearVol}s)
+                  </td>
+                </tr>
               `;
             }
           })
           .catch(() => {
-            wavesEl.innerHTML = `
-              <div class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
-                Live accumulating node for $${pFixed2}...<br>
-                Current Volume: ${volume}v (${bullVol}b / ${bearVol}s)
-              </div>
-            `;
+            if (tableBodyEl) {
+              tableBodyEl.innerHTML = `
+                <tr>
+                  <td colspan="8" class="p-3 text-center text-[10px] text-slate-400 font-mono italic">
+                    Live accumulating node for $${pFixed2}... Current: ${volume}v (${bullVol}b / ${bearVol}s)
+                  </td>
+                </tr>
+              `;
+            }
           });
         popup.classList.remove("hidden");
         return;
       }
 
       const waves = node.waves;
-      wavesEl.innerHTML = waves.map((w, i) => {
-        const isDown = w.dir === "DOWN";
-        const dirBadge = isDown
-          ? `<span class="px-1 py-0.2 rounded text-[7.5px] bg-red-950/80 text-red-400 border border-red-800/60 font-bold">DROP FROM ABOVE</span>`
-          : `<span class="px-1 py-0.2 rounded text-[7.5px] bg-emerald-950/80 text-emerald-400 border border-emerald-800/60 font-bold">SURGE FROM BELOW</span>`;
+      const dispVector = waves.map(w => `${w.disp >= 0 ? '+' : ''}${w.disp.toFixed(2)}p`).join(" → ");
+      if (trailVectorEl) {
+        const lastW = waves[waves.length - 1];
+        const statusNote = lastW.disp < 0 ? "(FLOOR BROKEN)" : (lastW.disp < 1.5 ? "(DECAY/ABSORBED)" : "(SOLID DEFENSE)");
+        trailVectorEl.textContent = `${dispVector} ${statusNote}`;
+      }
 
-        const deltaColor = w.delta >= 0 ? "text-emerald-400" : "text-red-400";
-        const deltaSign = w.delta >= 0 ? "+" : "";
-        const dispColor = w.disp >= 0 ? "text-emerald-400" : "text-red-400";
-        const dispSign = w.disp >= 0 ? "+" : "";
+      if (tableBodyEl) {
+        tableBodyEl.innerHTML = waves.map((w, i) => {
+          const isDown = w.dir === "DOWN";
+          const originStr = `$${w.origin.toFixed(2)} (${isDown ? '▼' : '▲'}${Math.abs(w.diff).toFixed(2)})`;
+          const deltaColor = w.delta > 0 ? "text-emerald-400" : (w.delta < 0 ? "text-rose-400" : "text-slate-400");
+          const deltaSign = w.delta > 0 ? "+" : "";
+          const dispColor = w.disp >= 0 ? "text-emerald-400" : "text-rose-400";
+          const dispSign = w.disp >= 0 ? "+" : "";
 
-        let note = "";
-        if (i === 0) {
-          note = `Pristine Test: Established initial auction reaction with ${dispSign}${w.disp.toFixed(2)} pts bounce.`;
-        } else {
-          const prevW = waves[i-1];
-          const prevRej = Math.abs(prevW.disp);
-          const currRej = Math.abs(w.disp);
-          if (w.disp < 0 && prevW.disp >= 0) {
-            note = `FLOOR LIQUIDATED: Bids exhausted. Level breached downward (${w.disp.toFixed(2)} pts).`;
-          } else if (currRej < prevRej && w.vol >= prevW.vol) {
-            note = `ORDER CONSUMPTION: Vol rose (+${w.vol - prevW.vol}v) but reaction decayed by -${(prevRej - currRej).toFixed(2)} pts. Resting depth thinning.`;
-          } else if (currRej > prevRej) {
-            note = `ACCUMULATION REINFORCED: Reaction expanded by +${(currRej - prevRej).toFixed(2)} pts. Institutional bids reloading.`;
-          } else {
-            note = `Active Auction Rotation: Two-way tape exchange of ${w.vol}v contracts.`;
+          let dynamics = "Pristine Touch";
+          let dynColor = "text-emerald-400";
+          if (i > 0) {
+            const prevW = waves[i-1];
+            if (w.disp < 0 && prevW.disp >= 0) {
+              dynamics = "Floor Broken";
+              dynColor = "text-rose-400 font-bold";
+            } else if (Math.abs(w.disp) < Math.abs(prevW.disp) && w.vol >= prevW.vol) {
+              dynamics = `Decay -${(Math.abs(prevW.disp) - Math.abs(w.disp)).toFixed(2)}p (Eaten)`;
+              dynColor = "text-amber-400";
+            } else if (Math.abs(w.disp) > Math.abs(prevW.disp)) {
+              dynamics = `Reload +${(Math.abs(w.disp) - Math.abs(prevW.disp)).toFixed(2)}p`;
+              dynColor = "text-emerald-400";
+            } else {
+              dynamics = "Two-Way Chop";
+              dynColor = "text-slate-300";
+            }
           }
-        }
 
-        return `
-          <div class="p-2 rounded bg-slate-900/90 border border-slate-800/90 text-[9.5px] font-mono space-y-1">
-            <div class="flex justify-between items-center">
-              <div class="flex items-center gap-1.5">
-                <span class="text-cyan-300 font-bold">WAVE #${w.wave}</span>
-                <span class="text-slate-400 text-[8.5px]">${w.time} (${w.ticks}t)</span>
-                ${dirBadge}
-              </div>
-              <div class="text-white font-bold">
-                ${w.vol}v <span class="text-slate-500 font-normal">(${w.bull}b/${w.bear}s, <span class="${deltaColor}">${deltaSign}${w.delta}v</span>)</span>
-              </div>
-            </div>
-
-            <div class="flex justify-between items-center text-[9px] text-slate-300">
-              <span>Launch: <span class="text-cyan-300 font-semibold">From $${Number(w.origin).toFixed(2)}</span> (${isDown ? '-' : '+'}${Math.abs(w.diff).toFixed(2)} pts)</span>
-              <span>Exit: <span class="font-bold ${dispColor}">${dispSign}${Number(w.disp).toFixed(2)} pts</span> → <span class="text-white font-semibold">$${Number(w.exit).toFixed(2)}</span></span>
-            </div>
-
-            <div class="text-[8.5px] text-slate-400 pt-0.5 border-t border-slate-800/60 leading-tight">
-              ↳ <span class="text-slate-300">${note}</span>
-            </div>
-          </div>
-        `;
-      }).join("");
+          return `
+            <tr class="hover:bg-slate-900/60 font-mono">
+              <td class="py-1 px-1 font-bold text-cyan-300 text-[8.5px]">W${w.wave} ${w.time ? w.time.slice(0,5) : ''}</td>
+              <td class="py-1 px-1 text-slate-300 text-[8.5px]">${originStr}</td>
+              <td class="py-1 px-1 text-right font-bold text-white text-[8.5px]">${w.vol}v</td>
+              <td class="py-1 px-1 text-right text-emerald-400 text-[8.5px]">${w.bull}v</td>
+              <td class="py-1 px-1 text-right text-rose-400 text-[8.5px]">${w.bear}v</td>
+              <td class="py-1 px-1 text-right font-bold ${deltaColor} text-[8.5px]">${deltaSign}${w.delta}v</td>
+              <td class="py-1 px-1 text-right font-bold ${dispColor} text-[8.5px]">${dispSign}${w.disp.toFixed(2)}p</td>
+              <td class="py-1 px-1 text-right font-semibold ${dynColor} text-[8.5px]">${dynamics}</td>
+            </tr>
+          `;
+        }).join("");
+      }
 
       popup.classList.remove("hidden");
     }
