@@ -134,7 +134,7 @@ export class ReplayStrategyEngine {
     if (typeof window.klinecharts === 'undefined') return;
     const supported = window.klinecharts.getSupportedOverlays() || [];
 
-    // 1. Trade Entry Marker (Triangle Arrow & Price Badge)
+    // 1. Trade Entry Marker (Clean Minimalist Arrow Indicator — Zero Text Clutter)
     if (!supported.includes('replayTradeMarker')) {
       window.klinecharts.registerOverlay({
         name: 'replayTradeMarker',
@@ -144,6 +144,12 @@ export class ReplayStrategyEngine {
         needDefaultYAxisFigure: false,
         zLevel: 300,
         fixedZLevel: true,
+        onClick: (event) => {
+          if (window.__replayEngine) {
+            window.__replayEngine.onTradeOverlayClick(event);
+          }
+          return true;
+        },
         createPointFigures: ({ overlay, coordinates, yAxis, xAxis }) => {
           let x = coordinates?.[0]?.x;
           let y = coordinates?.[0]?.y;
@@ -157,62 +163,78 @@ export class ReplayStrategyEngine {
 
           const data = overlay.extendData || {};
           const isBuy = (data.dir === 'BUY');
-          const price = Number(data.price || overlay.points?.[0]?.value || 0);
           const color = isBuy ? '#10b981' : '#ef4444';
-          const bgColor = isBuy ? 'rgba(6, 78, 59, 0.90)' : 'rgba(127, 29, 29, 0.90)';
-          const text = isBuy ? `▲ BUY $${price.toFixed(2)}` : `▼ SELL $${price.toFixed(2)}`;
 
           const figures = [];
-          const yOffset = isBuy ? 24 : -24;
 
-          // Connecting line
-          figures.push({
-            type: 'line',
-            attrs: {
-              coordinates: [
-                { x, y },
-                { x, y: y + yOffset }
-              ]
-            },
-            styles: {
-              style: 'solid',
-              color: color,
-              size: 1.5
-            }
-          });
-
-          // Text pill badge
-          figures.push({
-            type: 'text',
-            attrs: {
-              x,
-              y: y + yOffset,
-              text: text,
-              align: 'center',
-              baseline: isBuy ? 'top' : 'bottom'
-            },
-            styles: {
-              color: '#ffffff',
-              size: 10,
-              weight: 'bold',
-              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-              backgroundColor: bgColor,
-              borderColor: color,
-              borderSize: 1,
-              borderRadius: 3,
-              paddingLeft: 6,
-              paddingRight: 6,
-              paddingTop: 2,
-              paddingBottom: 2
-            }
-          });
+          if (isBuy) {
+            // Sleek upward entry arrow pointing up into candle low
+            figures.push({
+              type: 'line',
+              attrs: {
+                coordinates: [
+                  { x, y: y + 6 },
+                  { x, y: y + 14 }
+                ]
+              },
+              styles: {
+                style: 'solid',
+                color: color,
+                size: 2
+              }
+            });
+            figures.push({
+              type: 'polygon',
+              attrs: {
+                coordinates: [
+                  { x, y: y + 1 },
+                  { x: x - 5, y: y + 7 },
+                  { x: x + 5, y: y + 7 }
+                ]
+              },
+              styles: {
+                style: 'fill',
+                color: color
+              }
+            });
+          } else {
+            // Sleek downward entry arrow pointing down into candle high
+            figures.push({
+              type: 'line',
+              attrs: {
+                coordinates: [
+                  { x, y: y - 6 },
+                  { x, y: y - 14 }
+                ]
+              },
+              styles: {
+                style: 'solid',
+                color: color,
+                size: 2
+              }
+            });
+            figures.push({
+              type: 'polygon',
+              attrs: {
+                coordinates: [
+                  { x, y: y - 1 },
+                  { x: x - 5, y: y - 7 },
+                  { x: x + 5, y: y - 7 }
+                ]
+              },
+              styles: {
+                style: 'fill',
+                color: color
+              }
+            });
+          }
 
           return figures;
         }
       });
     }
 
-    // 2. Light Trade Outcome Box (Spanning from Entry Bar to Exit Bar)
+    // 2. Light Trade Outcome Box (Shaded Box Only — Zero Text Badges)
     if (!supported.includes('replayTradeBox')) {
       window.klinecharts.registerOverlay({
         name: 'replayTradeBox',
@@ -222,6 +244,12 @@ export class ReplayStrategyEngine {
         needDefaultYAxisFigure: false,
         zLevel: 100,
         fixedZLevel: true,
+        onClick: (event) => {
+          if (window.__replayEngine) {
+            window.__replayEngine.onTradeOverlayClick(event);
+          }
+          return true;
+        },
         createPointFigures: ({ overlay, coordinates, yAxis, xAxis }) => {
           let x0 = coordinates?.[0]?.x;
           let y0 = coordinates?.[0]?.y;
@@ -252,25 +280,20 @@ export class ReplayStrategyEngine {
 
           const data = overlay.extendData || {};
           const outcome = data.outcome || 'WIN';
-          const pnlPts = Number(data.pnlPts || 0);
-          const pnlUsd = Number(data.pnlUsd || 0);
 
-          let fillColor = 'rgba(16, 185, 129, 0.16)';
+          let fillColor = 'rgba(16, 185, 129, 0.12)';
           let borderColor = '#10b981';
-          let labelText = `✓ WIN +${pnlPts.toFixed(2)}p (+$${pnlUsd.toFixed(0)})`;
 
           if (outcome === 'LOSS') {
-            fillColor = 'rgba(239, 68, 68, 0.16)';
+            fillColor = 'rgba(239, 68, 68, 0.12)';
             borderColor = '#ef4444';
-            labelText = `✕ SCRATCH ${pnlPts.toFixed(2)}p (-$${Math.abs(pnlUsd).toFixed(0)})`;
           } else if (outcome === 'BE') {
-            fillColor = 'rgba(245, 158, 11, 0.16)';
+            fillColor = 'rgba(245, 158, 11, 0.12)';
             borderColor = '#f59e0b';
-            labelText = `🛡️ BE +${pnlPts.toFixed(2)}p (+$${pnlUsd.toFixed(0)})`;
           }
 
-          const figures = [
-            // Light transparent box
+          return [
+            // Light transparent box only, no text badges cluttering the candles
             {
               type: 'polygon',
               attrs: {
@@ -285,38 +308,11 @@ export class ReplayStrategyEngine {
                 style: 'stroke_fill',
                 color: fillColor,
                 borderColor: borderColor,
-                borderSize: 1.5,
-                borderStyle: 'solid'
-              }
-            },
-            // Pill tag in top-left of box
-            {
-              type: 'text',
-              attrs: {
-                x: minX + 6,
-                y: minY + 6,
-                text: labelText,
-                align: 'left',
-                baseline: 'top'
-              },
-              styles: {
-                color: borderColor,
-                size: 9.5,
-                weight: 'bold',
-                family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                backgroundColor: 'rgba(15, 23, 42, 0.88)',
-                borderColor: borderColor,
                 borderSize: 1,
-                borderRadius: 2,
-                paddingLeft: 5,
-                paddingRight: 5,
-                paddingTop: 2,
-                paddingBottom: 2
+                borderStyle: 'dashed'
               }
             }
           ];
-
-          return figures;
         }
       });
     }
@@ -381,6 +377,7 @@ export class ReplayStrategyEngine {
       if (e.target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
 
       if (e.key === 'Escape') {
+        this.hideTradeInspector();
         if (this.isScissorsMode) {
           this.exitScissorsMode();
         } else if (this.isActive) {
@@ -395,9 +392,7 @@ export class ReplayStrategyEngine {
       }
     });
 
-    // ⚡ CAPTURE-PHASE SCISSORS CLICK LISTENER
-    // KLineCharts attaches canvas pointer listeners that stop propagation in bubble phase.
-    // Capturing phase ensures our scissors click intercepts the event immediately!
+    // ⚡ CAPTURE-PHASE SCISSORS CLICK LISTENER & TRADE INSPECTOR
     const chartDom = document.getElementById('klineChart');
     if (chartDom) {
       const handleScissorsTrigger = (e) => {
@@ -411,6 +406,32 @@ export class ReplayStrategyEngine {
 
       chartDom.addEventListener('pointerdown', handleScissorsTrigger, true);
       chartDom.addEventListener('click', handleScissorsTrigger, true);
+
+      // Trade inspector click: inspects clicked trade outcome box, entry arrow, or parent box
+      chartDom.addEventListener('click', (e) => {
+        if (this.isScissorsMode) return;
+        const card = document.getElementById('tvReplayTradeInspectorCard');
+        if (card && card.contains(e.target)) return;
+
+        const hit = this.hitTestTradeAt(e);
+        if (hit) {
+          this.showTradeInspector(hit, e.clientX, e.clientY);
+        } else {
+          this.hideTradeInspector();
+        }
+      });
+
+      // Pointer feedback on hover over clickable trade boxes or markers
+      chartDom.addEventListener('pointermove', (e) => {
+        if (this.isScissorsMode) return;
+        if (!this.chart) return;
+        const hit = this.hitTestTradeAt(e);
+        if (hit) {
+          chartDom.style.cursor = 'pointer';
+        } else if (chartDom.style.cursor === 'pointer') {
+          chartDom.style.cursor = '';
+        }
+      });
 
       // Live hovered bar feedback in scissors banner
       chartDom.addEventListener('pointermove', (e) => {
@@ -430,6 +451,16 @@ export class ReplayStrategyEngine {
         } catch (err) {}
       }, true);
     }
+
+    // Dismiss inspector card on outside window click
+    window.addEventListener('click', (e) => {
+      const card = document.getElementById('tvReplayTradeInspectorCard');
+      if (!card || card.style.display === 'none') return;
+      if (card.contains(e.target)) return;
+      if (!chartDom?.contains(e.target)) {
+        this.hideTradeInspector();
+      }
+    });
 
     if (this.chart) {
       this.chart.subscribeAction('onCrosshairChange', (data) => {
@@ -784,6 +815,7 @@ export class ReplayStrategyEngine {
     this.pause();
     this.isActive = false;
     this.exitScissorsMode();
+    this.hideTradeInspector();
     window.__replayActive = false;
 
     if (this.subTickTimerId) {
@@ -814,6 +846,7 @@ export class ReplayStrategyEngine {
    * Clean all trade markers & outcome boxes spawned by replay
    */
   clearReplayTradeMarkings() {
+    this.hideTradeInspector();
     if (!this.chart) return;
     this.spawnedOverlayIds.forEach((id) => {
       try {
@@ -1166,6 +1199,7 @@ export class ReplayStrategyEngine {
         extendData: {
           parentBoxId: boxId,
           tradeId,
+          trade: { ...trade },
           dir,
           price: entryPrice,
           testedLevel,
@@ -1221,6 +1255,17 @@ export class ReplayStrategyEngine {
         extendData: {
           parentBoxId: boxId,
           tradeId: trade.id,
+          trade: { ...trade },
+          dir: trade.dir,
+          entry: trade.entry,
+          sl: trade.sl,
+          risk: trade.risk,
+          testedLevel: trade.testedLevel,
+          entryTime: trade.entryTime,
+          exitTime: trade.exitTime,
+          exitPrice: trade.exitPrice,
+          maxMfe: trade.maxMfe,
+          maxMae: trade.maxMae,
           outcome,
           pnlPts,
           pnlUsd
@@ -1315,5 +1360,313 @@ export class ReplayStrategyEngine {
         document.body.style.userSelect = '';
       }
     });
+  }
+
+  /**
+   * Look up trade by tradeId across all tracked boxes
+   */
+  getTradeById(tradeId) {
+    if (!tradeId) return null;
+    for (const st of this.boxTradeStates.values()) {
+      if (st.activeTrade && st.activeTrade.id === tradeId) return st.activeTrade;
+      const found = st.tradesHistory?.find(t => t.id === tradeId);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  /**
+   * Return all trades (history + active) for a given parent boxId
+   */
+  getTradesForBox(boxId) {
+    if (!boxId) return [];
+    const state = this.boxTradeStates.get(boxId);
+    if (!state) return [];
+    const list = [...(state.tradesHistory || [])];
+    if (state.activeTrade) {
+      list.push(state.activeTrade);
+    }
+    return list;
+  }
+
+  /**
+   * Hit test click coordinates against trade markers, trade boxes, and drawn parent boxes
+   */
+  hitTestTradeAt(event) {
+    if (!this.chart) return null;
+    const chartDom = document.getElementById('klineChart');
+    const rect = chartDom?.getBoundingClientRect();
+    if (!rect) return null;
+
+    const clientX = event.clientX;
+    const clientY = event.clientY;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+
+    const allOverlays = (typeof this.chart.getOverlays === 'function') ? this.chart.getOverlays() : [];
+
+    // 1. Check entry markers (22px hit radius)
+    const markers = allOverlays.filter(o => o.name === 'replayTradeMarker' && o.points?.length >= 1);
+    for (const m of markers) {
+      let coords = null;
+      try { coords = this.chart.convertToPixel(m.points); } catch (e) {}
+      if (!coords || !coords.length) {
+        try { coords = this.chart.convertToPixel(m.points, { paneId: 'candle_pane' }); } catch (e) {}
+      }
+      if (coords && coords[0]) {
+        const px = coords[0].x;
+        const py = coords[0].y;
+        if (typeof px === 'number' && typeof py === 'number' && !isNaN(px) && !isNaN(py)) {
+          const dist = Math.hypot(x - px, y - py);
+          if (dist <= 22) {
+            const tradeId = m.extendData?.tradeId;
+            const trade = this.getTradeById(tradeId) || m.extendData?.trade || m.extendData;
+            const parentBoxId = m.extendData?.parentBoxId;
+            const allTrades = parentBoxId ? this.getTradesForBox(parentBoxId) : [trade];
+            return { type: 'marker', overlay: m, trade, allTrades, parentBoxId, x: clientX, y: clientY };
+          }
+        }
+      }
+    }
+
+    // 2. Check trade outcome boxes (replayTradeBox)
+    const tradeBoxes = allOverlays.filter(o => o.name === 'replayTradeBox' && o.points?.length >= 2);
+    for (const b of tradeBoxes) {
+      let coords = null;
+      try { coords = this.chart.convertToPixel(b.points); } catch (e) {}
+      if (!coords || !coords.length) {
+        try { coords = this.chart.convertToPixel(b.points, { paneId: 'candle_pane' }); } catch (e) {}
+      }
+      if (coords && coords.length >= 2) {
+        const xs = coords.map(pt => pt.x);
+        const ys = coords.map(pt => pt.y);
+        const minX = Math.min(...xs) - 4;
+        const maxX = Math.max(...xs) + 4;
+        const minY = Math.min(...ys) - 4;
+        const maxY = Math.max(...ys) + 4;
+        if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+          const tradeId = b.extendData?.tradeId;
+          const trade = this.getTradeById(tradeId) || b.extendData?.trade || b.extendData;
+          const parentBoxId = b.extendData?.parentBoxId;
+          const allTrades = parentBoxId ? this.getTradesForBox(parentBoxId) : [trade];
+          return { type: 'tradeBox', overlay: b, trade, allTrades, parentBoxId, x: clientX, y: clientY };
+        }
+      }
+    }
+
+    // 3. Check parent drawn boxes (rect) that generated trades
+    const drawnRects = allOverlays.filter(o => o.name === 'rect' && o.points?.length >= 2);
+    for (const r of drawnRects) {
+      const boxTrades = this.getTradesForBox(r.id);
+      if (boxTrades.length === 0) continue;
+
+      let coords = null;
+      try { coords = this.chart.convertToPixel(r.points); } catch (e) {}
+      if (!coords || !coords.length) {
+        try { coords = this.chart.convertToPixel(r.points, { paneId: 'candle_pane' }); } catch (e) {}
+      }
+      if (coords && coords.length >= 2) {
+        const xs = coords.map(pt => pt.x);
+        const ys = coords.map(pt => pt.y);
+        const minX = Math.min(...xs) - 4;
+        const maxX = Math.max(...xs) + 4;
+        const minY = Math.min(...ys) - 4;
+        const maxY = Math.max(...ys) + 4;
+        if (x >= minX && x <= maxX && y >= minY && y <= maxY) {
+          const latestTrade = boxTrades[boxTrades.length - 1];
+          return { type: 'parentRect', overlay: r, trade: latestTrade, allTrades: boxTrades, parentBoxId: r.id, x: clientX, y: clientY };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Handle direct KLineCharts overlay click
+   */
+  onTradeOverlayClick(event) {
+    const overlay = event?.overlay;
+    if (!overlay) return;
+    const rawEvt = event.event || event;
+    const clientX = rawEvt?.clientX ?? (window.innerWidth / 2);
+    const clientY = rawEvt?.clientY ?? (window.innerHeight / 2);
+    const tradeId = overlay.extendData?.tradeId;
+    const parentBoxId = overlay.extendData?.parentBoxId;
+    const trade = this.getTradeById(tradeId) || overlay.extendData?.trade || overlay.extendData;
+    const allTrades = parentBoxId ? this.getTradesForBox(parentBoxId) : [trade];
+    this.showTradeInspector({ type: overlay.name, overlay, trade, allTrades, parentBoxId, x: clientX, y: clientY }, clientX, clientY);
+  }
+
+  /**
+   * Show sleek floating trade details popover card
+   */
+  showTradeInspector(hit, clientX, clientY, activeIndex = 0) {
+    if (!hit) return;
+    let card = document.getElementById('tvReplayTradeInspectorCard');
+    if (!card) {
+      card = document.createElement('div');
+      card.id = 'tvReplayTradeInspectorCard';
+      card.className = 'tv-replay-trade-inspector';
+      document.body.appendChild(card);
+    }
+
+    const allTrades = (hit.allTrades && hit.allTrades.length > 0) ? hit.allTrades : [hit.trade];
+    const safeIdx = Math.max(0, Math.min(activeIndex, allTrades.length - 1));
+    const trade = allTrades[safeIdx] || hit.trade || {};
+
+    const dir = trade.dir || 'BUY';
+    const isBuy = (dir === 'BUY');
+    const outcome = trade.outcome || (trade.exitTime ? 'CLOSED' : 'ACTIVE');
+    const pnlPts = Number(trade.pnlPts || 0);
+    const pnlUsd = Number(trade.pnlUsd || 0);
+    const entry = Number(trade.entry || trade.price || 0);
+    const exitPrice = Number(trade.exitPrice || 0);
+    const sl = Number(trade.sl || 0);
+    const risk = Number(trade.risk || Math.abs(entry - sl) || 0);
+    const mfe = Number(trade.maxMfe || 0);
+    const mae = Number(trade.maxMae || 0);
+    const testedLevel = trade.testedLevel || 'FULCRUM';
+
+    const fmtTime = (ts) => {
+      if (!ts) return 'Active / In Progress';
+      const d = new Date(ts);
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' ' +
+             d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    };
+
+    const entryTimeStr = fmtTime(trade.entryTime);
+    const exitTimeStr = fmtTime(trade.exitTime);
+
+    let durationStr = 'Open';
+    if (trade.entryTime && trade.exitTime) {
+      const diffMins = Math.round((trade.exitTime - trade.entryTime) / 60000);
+      durationStr = `${diffMins} min${diffMins !== 1 ? 's' : ''}`;
+    }
+
+    let outcomeClass = 'tv-ti-win';
+    let outcomeText = `WIN (+${pnlPts.toFixed(2)}p)`;
+    if (outcome === 'LOSS') {
+      outcomeClass = 'tv-ti-loss';
+      outcomeText = `SCRATCH (${pnlPts.toFixed(2)}p)`;
+    } else if (outcome === 'BE') {
+      outcomeClass = 'tv-ti-be';
+      outcomeText = `BE (+${pnlPts.toFixed(2)}p)`;
+    } else if (outcome === 'ACTIVE') {
+      outcomeClass = 'tv-ti-active';
+      outcomeText = `RUNNING`;
+    }
+
+    const pnlColor = pnlUsd > 0 ? '#10b981' : (pnlUsd < 0 ? '#ef4444' : '#f59e0b');
+    const pnlSign = pnlUsd > 0 ? '+' : '';
+
+    // If multiple trades exist on this box, render tabs
+    let tabsHtml = '';
+    if (allTrades.length > 1) {
+      tabsHtml = `<div class="tv-ti-tabs">`;
+      allTrades.forEach((t, i) => {
+        const activeCls = (i === safeIdx) ? 'active' : '';
+        const tPts = Number(t.pnlPts || 0);
+        const tSign = tPts >= 0 ? '+' : '';
+        tabsHtml += `<button class="tv-ti-tab-btn ${activeCls}" onclick="window.__replayEngine && window.__replayEngine.switchTradeInspectorTab(${i}, ${clientX}, ${clientY})">#${i + 1} (${t.dir} ${tSign}${tPts.toFixed(1)}p)</button>`;
+      });
+      tabsHtml += `</div>`;
+    }
+
+    // Cache current hit for tab switches
+    this._currentInspectorHit = hit;
+
+    card.innerHTML = `
+      <div class="tv-ti-header">
+        <div class="tv-ti-header-left">
+          <span class="tv-ti-dir-badge ${isBuy ? 'tv-ti-buy' : 'tv-ti-sell'}">${dir}</span>
+          <span class="tv-ti-outcome-badge ${outcomeClass}">${outcomeText}</span>
+        </div>
+        <button class="tv-ti-close-btn" title="Close" onclick="window.__replayEngine && window.__replayEngine.hideTradeInspector()">✕</button>
+      </div>
+
+      ${tabsHtml}
+
+      <div class="tv-ti-pnl-banner" style="color: ${pnlColor}">
+        <span class="tv-ti-pnl-usd">${pnlSign}$${pnlUsd.toFixed(2)}</span>
+        <span class="tv-ti-pnl-pts">${pnlSign}${pnlPts.toFixed(2)} pts</span>
+      </div>
+
+      <div class="tv-ti-divider"></div>
+
+      <div class="tv-ti-grid">
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Level Tested</span>
+          <span class="tv-ti-val tv-ti-accent">${testedLevel}</span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Entry Price</span>
+          <span class="tv-ti-val">$${entry.toFixed(2)}</span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Entry Time</span>
+          <span class="tv-ti-val-sub">${entryTimeStr}</span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Exit Price</span>
+          <span class="tv-ti-val">${exitPrice > 0 ? `$${exitPrice.toFixed(2)}` : 'Open'}</span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Exit Time</span>
+          <span class="tv-ti-val-sub">${exitTimeStr}</span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Stop Loss</span>
+          <span class="tv-ti-val tv-ti-sl">$${sl.toFixed(2)} (${risk.toFixed(2)}p risk)</span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Excursion</span>
+          <span class="tv-ti-val"><span style="color:#10b981">+${mfe.toFixed(2)}p</span> / <span style="color:#ef4444">-${mae.toFixed(2)}p</span></span>
+        </div>
+        <div class="tv-ti-row">
+          <span class="tv-ti-lbl">Duration</span>
+          <span class="tv-ti-val">${durationStr}</span>
+        </div>
+      </div>
+    `;
+
+    card.style.display = 'block';
+    const cardRect = card.getBoundingClientRect();
+    const pad = 12;
+
+    let posX = clientX + 16;
+    let posY = clientY - 20;
+
+    if (posX + cardRect.width > window.innerWidth - pad) {
+      posX = clientX - cardRect.width - 16;
+    }
+    if (posY + cardRect.height > window.innerHeight - pad) {
+      posY = window.innerHeight - cardRect.height - pad;
+    }
+    if (posY < pad) posY = pad;
+    if (posX < pad) posX = pad;
+
+    card.style.left = `${posX}px`;
+    card.style.top = `${posY}px`;
+  }
+
+  /**
+   * Switch between multiple trades on the same box in the inspector
+   */
+  switchTradeInspectorTab(index, clientX, clientY) {
+    if (this._currentInspectorHit) {
+      this.showTradeInspector(this._currentInspectorHit, clientX, clientY, index);
+    }
+  }
+
+  /**
+   * Hide trade details popover card
+   */
+  hideTradeInspector() {
+    const card = document.getElementById('tvReplayTradeInspectorCard');
+    if (card) {
+      card.style.display = 'none';
+    }
+    this._currentInspectorHit = null;
   }
 }
