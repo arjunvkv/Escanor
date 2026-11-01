@@ -12,6 +12,7 @@ import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611012130';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -191,6 +192,11 @@ async function init() {
   // 6. Initialize Left Toolbar & Trap Alerts
   initToolbar(chart, currentSymbol);
   initTrapAlerts();
+
+  // 6b. Initialize TradingView Bar Replay & Blind Strategy Engine
+  const replayEngine = new ReplayStrategyEngine({ chart, symbol: currentSymbol });
+  replayEngine.bindUI();
+  window.__replayEngine = replayEngine;
 
   // 7. Restore Server-Side Drawings
   try {
@@ -1289,8 +1295,8 @@ function connectWebSocket() {
             if (lineTrading) {
               lineTrading.onPriceTick(bid, ask || bid);
             }
-            // 2. Immediately update candle chart live bar
-            if (typeof liveBarCallback === 'function') {
+            // 2. Immediately update candle chart live bar (skip if Replay is active)
+            if (typeof liveBarCallback === 'function' && !window.__replayActive) {
               liveBarCallback({ bid, ask: ask || bid, time: data.time_msc || Date.now() });
             }
             // 3. ⚡ Real-Time Trap Candle Alert Evaluation (Cyan & Yellow)

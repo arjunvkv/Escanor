@@ -184,7 +184,12 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     }
 
     showTvConfirm('Clear Chart Drawings', `Remove all ${userDrawings.length} line and box drawing(s) on chart?`, () => {
-      userDrawings.forEach(ov => chart.removeOverlay({ id: ov.id }));
+      userDrawings.forEach(ov => {
+        chart.removeOverlay({ id: ov.id });
+        if (window.__replayEngine) {
+          window.__replayEngine.onOverlayRemoved(ov.id);
+        }
+      });
       if (window.__lineTradingManager) {
         window.__lineTradingManager.clearAllLines();
       }
@@ -650,6 +655,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       chart.removeOverlay({ id });
       if (window.__lineTradingManager) {
         window.__lineTradingManager.removeLineOverlay(id);
+      }
+      if (window.__replayEngine) {
+        window.__replayEngine.onOverlayRemoved(id);
       }
       recalculateRectZLevels(chart);
       updateExtensionSeriesRibbon(chart);

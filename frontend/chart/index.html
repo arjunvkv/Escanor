@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202610261515">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611012200">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -100,6 +100,18 @@
             <line x1="1" y1="1" x2="23" y2="23"></line>
           </svg>
           <span>Deactivate Alarms</span>
+        </button>
+
+        <!-- TradingView Bar Replay (Scissors) Tool -->
+        <button id="tvBarReplayBtn" class="tv-top-replay-btn" title="Bar Replay: Click to activate scissors and trim chart (Alt + R)">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="6" cy="6" r="3"></circle>
+            <circle cx="6" cy="18" r="3"></circle>
+            <line x1="20" y1="4" x2="8.12" y2="15.88"></line>
+            <line x1="14.47" y1="14.48" x2="20" y2="20"></line>
+            <line x1="8.12" y1="8.12" x2="12" y2="12"></line>
+          </svg>
+          <span>Replay</span>
         </button>
 
         <button id="tvClearAllDrawingsTopBtn" class="tv-top-clear-btn" title="Remove all line and box drawings">
@@ -297,6 +309,51 @@
           <span id="tvFloatingCloseAllBadge" class="tv-rc-badge">0</span>
           <span id="tvFloatingCloseAllPnl" class="tv-rc-pnl">+$0.00</span>
         </button>
+
+        <!-- ✂️ Scissors Prompt Banner (Top Center) -->
+        <div id="tvScissorsPromptBanner" class="tv-scissors-banner" style="display: none;">
+          <span class="tv-scissors-icon">✂️</span>
+          <span class="tv-scissors-text"><b>JUMP TO BAR:</b> Click on any candle to trim the chart and start replay from that point.</span>
+          <button id="tvCancelScissorsBtn" class="tv-scissors-cancel-btn">Cancel (Esc)</button>
+        </div>
+
+        <!-- 🎛️ TradingView Floating Replay Control Bar -->
+        <div id="tvReplayControlBar" class="tv-replay-control-bar" style="display: none;">
+          <div class="tv-replay-drag-handle" title="Drag Replay Bar">⋮⋮</div>
+          <div class="tv-replay-status-pill">
+            <span class="tv-replay-pulse"></span>
+            <span>REPLAY</span>
+          </div>
+          <div class="tv-replay-divider"></div>
+          <button id="tvReplayJumpBtn" class="tv-replay-btn" title="Jump to new bar (Scissors)">
+            <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"></circle><circle cx="6" cy="18" r="3"></circle><line x1="20" y1="4" x2="8.12" y2="15.88"></line><line x1="14.47" y1="14.48" x2="20" y2="20"></line><line x1="8.12" y1="8.12" x2="12" y2="12"></line></svg>
+            <span>Jump</span>
+          </button>
+          <button id="tvReplayResetBtn" class="tv-replay-btn" title="Reset to start of cut">⏮</button>
+          <button id="tvReplayPlayBtn" class="tv-replay-btn tv-replay-play-btn" title="Play / Pause Replay (Space)">▶</button>
+          <button id="tvReplayStepBtn" class="tv-replay-btn" title="Forward 1 Bar (Right Arrow)">⏭</button>
+          <div class="tv-replay-divider"></div>
+          <div class="tv-replay-speed-wrap" title="Replay Speed">
+            <span class="tv-replay-speed-label">SPEED:</span>
+            <select id="tvReplaySpeedSelect" class="tv-replay-speed-select">
+              <option value="100">0.1s (10x)</option>
+              <option value="250">0.25s (4x)</option>
+              <option value="500" selected>0.5s (2x)</option>
+              <option value="1000">1.0s (1x)</option>
+              <option value="2000">2.0s (0.5x)</option>
+              <option value="3000">3.0s (0.3x)</option>
+            </select>
+          </div>
+          <div class="tv-replay-divider"></div>
+          <div id="tvReplayTimeBadge" class="tv-replay-time-badge" title="Current Replay Timestamp">---- --:--</div>
+          <div class="tv-replay-divider"></div>
+          <div id="tvReplayStatsBadge" class="tv-replay-stats-badge" title="Blind Strategy Performance on Drawn Boxes">
+            <span class="tv-strat-dot">⚡</span>
+            <span id="tvReplayStatsText">0 Trades | $0.00</span>
+          </div>
+          <div class="tv-replay-divider"></div>
+          <button id="tvReplayExitBtn" class="tv-replay-exit-btn" title="Exit Replay & Return to Live MT5 (Esc)">✕</button>
+        </div>
 
         <!-- Canvas Container -->
         <div id="klineChart"></div>
@@ -1437,6 +1494,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202610272355"></script>
+  <script type="module" src="/chart/js/app.js?v=202611012200"></script>
 </body>
 </html>
