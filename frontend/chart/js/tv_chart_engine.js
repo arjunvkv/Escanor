@@ -4930,8 +4930,8 @@ export function computeBoxFulcrumAndVacuum(overlay, dataList) {
   for (let i = 0; i < dataList.length; i++) {
     const b = dataList[i];
     if (!b || typeof b.timestamp !== 'number') continue;
-    if (b.timestamp + barMs < leftTime) continue;
-    if (b.timestamp > rightTime + barMs) continue;
+    if (b.timestamp < leftTime) continue;
+    if (b.timestamp > rightTime) continue;
     bars.push(b);
   }
 

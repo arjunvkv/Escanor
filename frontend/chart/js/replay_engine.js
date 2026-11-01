@@ -999,7 +999,7 @@ export class ReplayStrategyEngine {
       if (!fulcrumPrice || !vacuumPrice || !leftTime || !rightTime) return;
 
       // Setup arms strictly AFTER the box finishes forming (Zero lookahead during box formation)
-      if (bar.timestamp < rightTime) return;
+      if (bar.timestamp <= rightTime) return;
 
       // Get or initialize state for this box
       if (!this.boxTradeStates.has(rect.id)) {
@@ -1043,11 +1043,7 @@ export class ReplayStrategyEngine {
           }
 
           // State C: Multi-Stage Milestone Trailing for Big Moves
-          if (mfe >= 12.0) {
-            if (tr.milestone < 3) tr.milestone = 3;
-            const trailSl = Math.round((curPrice + 1.50) * 100) / 100;
-            if (trailSl < tr.sl) tr.sl = trailSl;
-          } else if (mfe >= 8.5) {
+          if (mfe >= 8.5) {
             if (tr.milestone < 2) tr.milestone = 2;
             tr.sl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100);
           } else if (mfe >= 5.0) {
@@ -1090,11 +1086,7 @@ export class ReplayStrategyEngine {
           }
 
           // State C: Multi-Stage Milestone Trailing for Big Moves
-          if (mfe >= 12.0) {
-            if (tr.milestone < 3) tr.milestone = 3;
-            const trailSl = Math.round((curPrice - 1.50) * 100) / 100;
-            if (trailSl > tr.sl) tr.sl = trailSl;
-          } else if (mfe >= 8.5) {
+          if (mfe >= 8.5) {
             if (tr.milestone < 2) tr.milestone = 2;
             tr.sl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100);
           } else if (mfe >= 5.0) {
@@ -1130,8 +1122,23 @@ export class ReplayStrategyEngine {
             const curDisp = (pos === 'SELL') ? (entry - bar.close) : (bar.close - entry);
             tr.dispHistory.push(curDisp);
 
-            // 1. If candle closed with strong positive displacement >= 1.80p, lock BE (+0.10p) for subsequent candles
-            if (curDisp >= 1.80 && !tr.beActive && tr.milestone === 0) {
+            // 1. Structural Candle Extreme Trailing for Proven Big Runners (Milestone >= 2: MFE >= +8.5p)
+            // Trails behind completed candle extreme (+0.50p buffer) strictly upon bar close: ZERO LOOKAHEAD
+            if (tr.milestone >= 2) {
+              if (pos === 'SELL') {
+                const trailSl = Math.round((Number(bar.high) + 0.50) * 100) / 100;
+                if (trailSl < tr.sl) {
+                  tr.sl = trailSl;
+                }
+              } else {
+                const trailSl = Math.round((Number(bar.low) - 0.50) * 100) / 100;
+                if (trailSl > tr.sl) {
+                  tr.sl = trailSl;
+                }
+              }
+            }
+            // 2. If candle closed with strong positive displacement >= 1.80p, lock BE (+0.10p) for subsequent candles
+            else if (curDisp >= 1.80 && !tr.beActive && tr.milestone === 0) {
               tr.beActive = true;
               if (pos === 'SELL') {
                 tr.sl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
@@ -1139,7 +1146,7 @@ export class ReplayStrategyEngine {
                 tr.sl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
               }
             }
-            // 2. State A: Absorption Wall Decay / Churn Stalling (Dwell >= 3 bars and not expanding)
+            // 3. State A: Absorption Wall Decay / Churn Stalling (Dwell >= 3 bars and not expanding)
             else if (tr.barsInTrade >= 3 && tr.maxMfe < 2.50 && !tr.beActive && tr.milestone === 0) {
               const isDecaying = (tr.dispHistory.length >= 2 && tr.dispHistory[tr.dispHistory.length - 1] <= tr.dispHistory[tr.dispHistory.length - 2]) || curDisp <= 0.60;
               if (isDecaying) {
