@@ -981,27 +981,18 @@ export class ReplayStrategyEngine {
 
       // Get or initialize state for this box
       if (!this.boxTradeStates.has(rect.id)) {
-        // Determine impulse direction from candles inside the box [leftTime, rightTime]
-        const boxBars = fullList.filter(
-          (b) => b && b.timestamp >= leftTime && b.timestamp <= rightTime
-        );
-        let impulse = 'NEUTRAL';
-        if (boxBars.length >= 2) {
-          const firstOpen = boxBars[0].open;
-          const lastClose = boxBars[boxBars.length - 1].close;
-          if (lastClose < firstOpen) impulse = 'BEARISH';
-          else if (lastClose > firstOpen) impulse = 'BULLISH';
-        }
-
         this.boxTradeStates.set(rect.id, {
           inTrade: false,
           activeTrade: null,
           tradesHistory: [],
           lastExitTime: 0,
-          impulse,
           fulcrumPrice,
           vacuumPrice
         });
+      } else {
+        const st = this.boxTradeStates.get(rect.id);
+        st.fulcrumPrice = fulcrumPrice;
+        st.vacuumPrice = vacuumPrice;
       }
 
       const state = this.boxTradeStates.get(rect.id);
@@ -1018,10 +1009,12 @@ export class ReplayStrategyEngine {
           if (mfe > tr.maxMfe) tr.maxMfe = mfe;
           if (mae > tr.maxMae) tr.maxMae = mae;
 
+          let justRatcheted = false;
           // Breakeven Gate: Move SL to BE + 0.10p profit once MFE >= +1.80p
           if (mfe >= 1.80 && !tr.beActive) {
             tr.beActive = true;
             tr.sl = Math.round((entry - 0.10) * 100) / 100;
+            justRatcheted = true;
           }
 
           // Check TP Hit (+10p runner milestone or +5p base)
@@ -1033,8 +1026,9 @@ export class ReplayStrategyEngine {
             return;
           }
 
-          // Check SL Hit
-          if (bar.high >= tr.sl) {
+          // Check SL Hit: on the ratchet bar, evaluate against close (or subsequent bounce), not the past pre-drop high
+          const slHit = justRatcheted ? (bar.close >= tr.sl) : (bar.high >= tr.sl);
+          if (slHit) {
             const outcome = tr.beActive ? 'BE' : 'LOSS';
             const pnlPts = tr.beActive ? 0.10 : -(tr.sl - entry);
             this.closeTrade(rect.id, tr, bar, outcome, pnlPts, tr.sl);
@@ -1046,10 +1040,12 @@ export class ReplayStrategyEngine {
           if (mfe > tr.maxMfe) tr.maxMfe = mfe;
           if (mae > tr.maxMae) tr.maxMae = mae;
 
+          let justRatcheted = false;
           // Breakeven Gate: Move SL to BE + 0.10p profit once MFE >= +1.80p
           if (mfe >= 1.80 && !tr.beActive) {
             tr.beActive = true;
             tr.sl = Math.round((entry + 0.10) * 100) / 100;
+            justRatcheted = true;
           }
 
           // Check TP Hit (+10p runner milestone or +5p base)
@@ -1061,8 +1057,9 @@ export class ReplayStrategyEngine {
             return;
           }
 
-          // Check SL Hit
-          if (bar.low <= tr.sl) {
+          // Check SL Hit: on the ratchet bar, evaluate against close (or subsequent dip), not the past pre-rally low
+          const slHit = justRatcheted ? (bar.close <= tr.sl) : (bar.low <= tr.sl);
+          if (slHit) {
             const outcome = tr.beActive ? 'BE' : 'LOSS';
             const pnlPts = tr.beActive ? 0.10 : -(entry - tr.sl);
             this.closeTrade(rect.id, tr, bar, outcome, pnlPts, tr.sl);
@@ -1072,7 +1069,7 @@ export class ReplayStrategyEngine {
         return;
       }
 
-      // 2. ENTRY EVALUATION (ZERO LOOKAHEAD, LEVEL ARRIVAL GATE AT THE TWO POINT MARKINGS)
+      // 2. ENTRY EVALUATION (ZERO LOOKAHEAD, DYNAMIC TWO-WAY AUCTION AT THE TWO POINT MARKINGS)
       // Entries are evaluated strictly upon completed bar close to eliminate repaint and intra-bar flickers
       if (!isBarComplete) return;
       if (state.inTrade) return;
@@ -1080,23 +1077,32 @@ export class ReplayStrategyEngine {
       // 15-min cooldown after previous trade exit on this box
       if (bar.timestamp - state.lastExitTime < 15 * 60 * 1000) return;
 
-      const { impulse } = state;
       const targetLevels = [fulcrumPrice, vacuumPrice];
+      const body = Math.abs(bar.close - bar.open);
+      const upperWick = bar.high - Math.max(bar.open, bar.close);
+      const lowerWick = Math.min(bar.open, bar.close) - bar.low;
 
-      if (impulse === 'BEARISH') {
-        // BEARISH BREAKDOWN SETUP: Retest Rejection (SELL)
-        // Price pulls back UP into either of the two points (Vacuum Void or Retest Fulcrum) from below
-        for (const lvl of targetLevels) {
-          const dist = Math.abs(bar.high - lvl);
-          const reachedZone = (dist <= 0.80) || (bar.high >= lvl - 0.40 && bar.low <= lvl + 0.80);
-
+      for (const lvl of targetLevels) {
+        // --- SCENARIO 1: TOUCH / INTERACTION FROM ABOVE ---
+        if (bar.open >= lvl - 0.20) {
+          const reachedZone = (bar.low <= lvl + 0.80) && (bar.high >= lvl - 0.40);
           if (reachedZone) {
-            // Candle Rejection Signal: Bearish close or strong upper rejection wick
-            const body = Math.abs(bar.close - bar.open);
-            const upperWick = bar.high - Math.max(bar.open, bar.close);
-            const isRejection = (bar.close <= bar.open) || (upperWick >= 0.35 && upperWick >= body);
+            // 1A. Support Bounce / Hold: MUST close above the line (Defense / Trampoline Bounce)
+            if (bar.close >= lvl - 0.10) {
+              const isBounce = (bar.close > bar.open) || (lowerWick >= 0.35 && lowerWick >= body * 0.7);
+              if (isBounce) {
+                const entryPrice = Math.round(bar.close * 100) / 100;
+                const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
+                const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
-            if (isRejection) {
+                if (risk >= 0.50 && risk <= 3.50) {
+                  this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
+                  return;
+                }
+              }
+            }
+            // 1B. Momentum Vacuum Breakdown: Sliced cleanly through the level from above (Floor Broken / Waterfall Bear)
+            else if (bar.close <= lvl - 0.40 && bar.close < bar.open && body >= 0.80) {
               const entryPrice = Math.round(bar.close * 100) / 100;
               const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
               const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
@@ -1108,20 +1114,26 @@ export class ReplayStrategyEngine {
             }
           }
         }
-      } else if (impulse === 'BULLISH') {
-        // BULLISH BREAKOUT SETUP: Retest Bounce (BUY)
-        // Price pulls back DOWN into either of the two points (Vacuum Void or Retest Fulcrum) from above
-        for (const lvl of targetLevels) {
-          const dist = Math.abs(bar.low - lvl);
-          const reachedZone = (dist <= 0.80) || (bar.low <= lvl + 0.40 && bar.high >= lvl - 0.80);
-
+        // --- SCENARIO 2: TOUCH / INTERACTION FROM BELOW ---
+        else if (bar.open <= lvl + 0.20) {
+          const reachedZone = (bar.high >= lvl - 0.80) && (bar.low <= lvl + 0.40);
           if (reachedZone) {
-            // Candle Bounce Signal: Bullish close or strong lower rejection wick
-            const body = Math.abs(bar.close - bar.open);
-            const lowerWick = Math.min(bar.open, bar.close) - bar.low;
-            const isBounce = (bar.close >= bar.open) || (lowerWick >= 0.35 && lowerWick >= body);
+            // 2A. Resistance Rejection / Retest Flip: MUST fail to reclaim and close below (Ceiling Defense / Flip)
+            if (bar.close <= lvl + 0.10) {
+              const isRejection = (bar.close < bar.open) || (upperWick >= 0.35 && upperWick >= body * 0.7);
+              if (isRejection) {
+                const entryPrice = Math.round(bar.close * 100) / 100;
+                const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
+                const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
-            if (isBounce) {
+                if (risk >= 0.50 && risk <= 3.50) {
+                  this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
+                  return;
+                }
+              }
+            }
+            // 2B. Momentum Vacuum Breakout: Sliced cleanly through the level from below (Ceiling Reclaimed / Skyrocket Bull)
+            else if (bar.close >= lvl + 0.40 && bar.close > bar.open && body >= 0.80) {
               const entryPrice = Math.round(bar.close * 100) / 100;
               const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
               const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
@@ -1130,35 +1142,6 @@ export class ReplayStrategyEngine {
                 this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
                 return;
               }
-            }
-          }
-        }
-      } else {
-        // NEUTRAL CONSOLIDATION: Test upper boundary for rejection (SELL) or lower boundary for bounce (BUY)
-        const upperLvl = Math.max(fulcrumPrice, vacuumPrice);
-        const lowerLvl = Math.min(fulcrumPrice, vacuumPrice);
-
-        // Check Upper Level Rejection (SELL)
-        if (Math.abs(bar.high - upperLvl) <= 0.80 || bar.high >= upperLvl - 0.40) {
-          if (bar.close <= bar.open) {
-            const entryPrice = Math.round(bar.close * 100) / 100;
-            const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
-            const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
-            if (risk >= 0.50 && risk <= 3.50) {
-              this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, upperLvl);
-              return;
-            }
-          }
-        }
-        // Check Lower Level Bounce (BUY)
-        else if (Math.abs(bar.low - lowerLvl) <= 0.80 || bar.low <= lowerLvl + 0.40) {
-          if (bar.close >= bar.open) {
-            const entryPrice = Math.round(bar.close * 100) / 100;
-            const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
-            const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
-            if (risk >= 0.50 && risk <= 3.50) {
-              this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lowerLvl);
-              return;
             }
           }
         }
