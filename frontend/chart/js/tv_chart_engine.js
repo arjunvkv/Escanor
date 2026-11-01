@@ -1886,11 +1886,22 @@ export function initTradingViewChart(containerId = 'klineChart') {
   // which matches and deletes EVERY overlay on the entire chart!
   const rawRemoveOverlay = chart.removeOverlay.bind(chart);
   chart.removeOverlay = function (target) {
+    let removedId = null;
     if (typeof target === 'string' || typeof target === 'number') {
-      return rawRemoveOverlay({ id: String(target) });
+      removedId = String(target);
+      const res = rawRemoveOverlay({ id: removedId });
+      if (typeof window !== 'undefined' && window.__replayEngine?.onOverlayRemoved) {
+        try { window.__replayEngine.onOverlayRemoved(removedId); } catch (_) {}
+      }
+      return res;
     }
     if (target && typeof target === 'object' && target.id !== undefined) {
-      return rawRemoveOverlay({ ...target, id: String(target.id) });
+      removedId = String(target.id);
+      const res = rawRemoveOverlay({ ...target, id: removedId });
+      if (typeof window !== 'undefined' && window.__replayEngine?.onOverlayRemoved) {
+        try { window.__replayEngine.onOverlayRemoved(removedId); } catch (_) {}
+      }
+      return res;
     }
     return rawRemoveOverlay(target || {});
   };

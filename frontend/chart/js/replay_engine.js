@@ -671,7 +671,7 @@ export class ReplayStrategyEngine {
       };
       this.appendChartBar(initialCandle);
       this.updateTimeDisplay();
-      this.evaluateBoxesStrategy(initialCandle);
+      this.evaluateBoxesStrategy(initialCandle, false);
     }
 
     // Process current intra-bar sub-tick
@@ -693,8 +693,8 @@ export class ReplayStrategyEngine {
     // Update candle in-place on chart (living candle breathing animation)
     this.updateLiveChartBar(liveCandle);
 
-    // Evaluate Strategy Engine on current sub-tick
-    this.evaluateBoxesStrategy(liveCandle);
+    // Evaluate Strategy Engine on current sub-tick (manages active trade every tick, checks entry only on completed bar)
+    this.evaluateBoxesStrategy(liveCandle, isLastTick);
 
     this.currentTickIndex += 1;
 
@@ -736,7 +736,7 @@ export class ReplayStrategyEngine {
     this.updateTimeDisplay();
 
     // Run Strategy Engine on completed bar
-    this.evaluateBoxesStrategy(nextBar);
+    this.evaluateBoxesStrategy(nextBar, true);
   }
 
   /**
@@ -749,11 +749,12 @@ export class ReplayStrategyEngine {
     this.currentIndex = this.cutIndex;
     const trimmed = this.fullCandles.slice(0, this.cutIndex + 1);
     this.setChartData(trimmed);
+    this.boxTradeStates.clear();
     this.clearReplayTradeMarkings();
     this.updateTimeDisplay();
     this.updateStatsDisplay();
     if (trimmed.length > 0) {
-      this.evaluateBoxesStrategy(trimmed[trimmed.length - 1]);
+      this.evaluateBoxesStrategy(trimmed[trimmed.length - 1], true);
     }
   }
 
@@ -839,42 +840,96 @@ export class ReplayStrategyEngine {
 
   /**
    * 🦅 BLIND STRATEGY ENGINE EXECUTION (ZERO LOOKAHEAD, ZERO TRAPS, ZERO OVERFIT)
-   * Evaluates all visible boxes on the current bar
+   * Executes strictly according to the two point markings (Retest Fulcrum Axis & Vacuum Void)
+   * of user-drawn boxes.
    */
-  evaluateBoxesStrategy(bar) {
+  evaluateBoxesStrategy(bar, isBarComplete = true) {
     if (!this.chart || !bar) return;
 
     const overlays = this.chart.getOverlays() || [];
     const rects = overlays.filter((ov) => ov.name === 'rect');
 
+    // Auto-reconciliation: Purge states and child overlays for any boxes deleted by user
+    const currentRectIds = new Set(rects.map((r) => r.id));
+    for (const trackedId of this.boxTradeStates.keys()) {
+      if (!currentRectIds.has(trackedId)) {
+        this.onOverlayRemoved(trackedId);
+      }
+    }
+
     rects.forEach((rect) => {
-      const pts = rect.points || [];
-      if (pts.length < 2) return;
+      // 1. Calculate the Two Point Markings (Retest Fulcrum Axis & Vacuum Void)
+      let levels = null;
+      if (typeof window !== 'undefined' && typeof window.__computeBoxFulcrumAndVacuum === 'function') {
+        levels = window.__computeBoxFulcrumAndVacuum(rect, this.fullCandles);
+      }
 
-      const prices = pts.map((p) => p.value).filter((v) => typeof v === 'number' && !isNaN(v));
-      const times = pts.map((p) => p.timestamp).filter((t) => typeof t === 'number' && !isNaN(t));
-      if (prices.length < 2 || times.length < 2) return;
+      if (!levels) {
+        const pts = rect.points || [];
+        if (pts.length < 2) return;
+        const prices = pts.map((p) => p.value).filter((v) => typeof v === 'number' && !isNaN(v));
+        const times = pts.map((p) => p.timestamp).filter((t) => typeof t === 'number' && !isNaN(t));
+        if (prices.length < 2 || times.length < 2) return;
+        const topPrice = Math.max(...prices);
+        const bottomPrice = Math.min(...prices);
+        levels = {
+          topPrice,
+          bottomPrice,
+          fulcrumPrice: Math.round(((topPrice + bottomPrice) / 2) * 100) / 100,
+          vacuumPrice: Math.round(((topPrice + bottomPrice) / 2) * 100) / 100,
+          leftTime: Math.min(...times),
+          rightTime: Math.max(...times)
+        };
+      }
 
-      const boxTop = Math.max(...prices);
-      const boxBottom = Math.min(...prices);
-      const boxStart = Math.min(...times);
+      const { fulcrumPrice, vacuumPrice, leftTime, rightTime, topPrice, bottomPrice } = levels;
+      if (!fulcrumPrice || !vacuumPrice || !leftTime || !rightTime) return;
 
-      // Only evaluate if current bar is at or after box start
-      if (bar.timestamp < boxStart) return;
+      // Setup arms strictly AFTER the box finishes forming (Zero lookahead during box formation)
+      if (bar.timestamp < rightTime) return;
+
+      const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
+      const barMs = tfMins * 60 * 1000;
+      const maxHorizonTs = rightTime + 30 * barMs;
 
       // Get or initialize state for this box
       if (!this.boxTradeStates.has(rect.id)) {
+        // Determine impulse direction from candles inside the box [leftTime, rightTime]
+        const boxBars = (this.fullCandles || []).filter(
+          (b) => b && b.timestamp >= leftTime && b.timestamp <= rightTime
+        );
+        let impulse = 'NEUTRAL';
+        if (boxBars.length >= 2) {
+          const firstOpen = boxBars[0].open;
+          const lastClose = boxBars[boxBars.length - 1].close;
+          if (lastClose < firstOpen) impulse = 'BEARISH';
+          else if (lastClose > firstOpen) impulse = 'BULLISH';
+        }
+
         this.boxTradeStates.set(rect.id, {
           inTrade: false,
           activeTrade: null,
           tradesHistory: [],
-          lastExitTime: 0
+          lastExitTime: 0,
+          resolved: false,
+          impulse,
+          fulcrumPrice,
+          vacuumPrice
         });
       }
 
       const state = this.boxTradeStates.get(rect.id);
 
-      // 1. MANAGE ACTIVE TRADE
+      // If setup already resolved (trade taken & finished, or horizon expired), do nothing!
+      if (state.resolved && !state.inTrade) return;
+
+      // Horizon expiry: if 30 bars pass after box without arrival, resolve box
+      if (bar.timestamp > maxHorizonTs && !state.inTrade) {
+        state.resolved = true;
+        return;
+      }
+
+      // 1. MANAGE ACTIVE TRADE (Evaluated on every intra-bar micro-tick for realistic broker execution)
       if (state.inTrade && state.activeTrade) {
         const tr = state.activeTrade;
         const pos = tr.dir;
@@ -886,13 +941,13 @@ export class ReplayStrategyEngine {
           if (mfe > tr.maxMfe) tr.maxMfe = mfe;
           if (mae > tr.maxMae) tr.maxMae = mae;
 
-          // Breakeven Gate: Move SL to BE + 0.10p once MFE >= +1.80p
+          // Breakeven Gate: Move SL to BE + 0.10p profit once MFE >= +1.80p
           if (mfe >= 1.80 && !tr.beActive) {
             tr.beActive = true;
             tr.sl = Math.round((entry - 0.10) * 100) / 100;
           }
 
-          // Check TP Hit (+10p milestone or +5p base)
+          // Check TP Hit (+10p runner milestone or +5p base)
           if (mfe >= 10.0) {
             this.closeTrade(rect.id, tr, bar, 'WIN', 7.50, entry - 10.0);
             return;
@@ -914,13 +969,13 @@ export class ReplayStrategyEngine {
           if (mfe > tr.maxMfe) tr.maxMfe = mfe;
           if (mae > tr.maxMae) tr.maxMae = mae;
 
-          // Breakeven Gate: Move SL to BE + 0.10p once MFE >= +1.80p
+          // Breakeven Gate: Move SL to BE + 0.10p profit once MFE >= +1.80p
           if (mfe >= 1.80 && !tr.beActive) {
             tr.beActive = true;
             tr.sl = Math.round((entry + 0.10) * 100) / 100;
           }
 
-          // Check TP Hit (+10p milestone or +5p base)
+          // Check TP Hit (+10p runner milestone or +5p base)
           if (mfe >= 10.0) {
             this.closeTrade(rect.id, tr, bar, 'WIN', 7.50, entry + 10.0);
             return;
@@ -940,39 +995,94 @@ export class ReplayStrategyEngine {
         return;
       }
 
-      // 2. ENTRY EVALUATION (ZERO LOOKAHEAD, FIRST TOUCH LEVEL ARRIVAL GATE)
-      // Enforce 30-min cooldown after previous trade exit on this box
+      // 2. ENTRY EVALUATION (ZERO LOOKAHEAD, LEVEL ARRIVAL GATE AT THE TWO POINT MARKINGS)
+      // Entries are evaluated strictly upon completed bar close to eliminate repaint and intra-bar flickers
+      if (!isBarComplete) return;
+      if (state.resolved || state.inTrade) return;
+
+      // 30-min cooldown after previous trade exit on this box
       if (bar.timestamp - state.lastExitTime < 30 * 60 * 1000) return;
 
-      const distTop = Math.abs(bar.high - boxTop);
-      const distBottom = Math.abs(bar.low - boxBottom);
+      const { impulse } = state;
+      const targetLevels = [fulcrumPrice, vacuumPrice];
 
-      // LEVEL ARRIVAL GATE: Price must be within 0.80p of the two points
-      if (distTop > 0.80 && distBottom > 0.80) return;
+      if (impulse === 'BEARISH') {
+        // BEARISH BREAKDOWN SETUP: Retest Rejection (SELL)
+        // Price pulls back UP into either of the two points (Vacuum Void or Retest Fulcrum) from below
+        for (const lvl of targetLevels) {
+          const dist = Math.abs(bar.high - lvl);
+          const reachedZone = (dist <= 0.80) || (bar.high >= lvl - 0.40 && bar.low <= lvl + 0.80);
 
-      // Retest Axis Exhaustion Rejection (Top Edge: SELL)
-      if (distTop <= 0.80 && bar.high >= (boxTop - 0.40)) {
-        // Candle rejection signal (close <= open, upper probe)
-        if (bar.close <= bar.open) {
-          const entryPrice = Math.round(bar.close * 100) / 100;
-          const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
-          const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+          if (reachedZone) {
+            // Candle Rejection Signal: Bearish close or strong upper rejection wick
+            const body = Math.abs(bar.close - bar.open);
+            const upperWick = bar.high - Math.max(bar.open, bar.close);
+            const isRejection = (bar.close <= bar.open) || (upperWick >= 0.35 && upperWick >= body);
 
-          if (risk >= 0.60 && risk <= 2.20) {
-            this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar);
+            if (isRejection) {
+              const entryPrice = Math.round(bar.close * 100) / 100;
+              const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
+              const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+
+              if (risk >= 0.50 && risk <= 3.50) {
+                this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
+                return;
+              }
+            }
           }
         }
-      }
-      // Vacuum Void Floor Bounce (Bottom Edge: BUY)
-      else if (distBottom <= 0.80 && bar.low <= (boxBottom + 0.40)) {
-        // Candle bounce signal (close >= open, lower rejection wick)
-        if (bar.close >= bar.open) {
-          const entryPrice = Math.round(bar.close * 100) / 100;
-          const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
-          const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
+      } else if (impulse === 'BULLISH') {
+        // BULLISH BREAKOUT SETUP: Retest Bounce (BUY)
+        // Price pulls back DOWN into either of the two points (Vacuum Void or Retest Fulcrum) from above
+        for (const lvl of targetLevels) {
+          const dist = Math.abs(bar.low - lvl);
+          const reachedZone = (dist <= 0.80) || (bar.low <= lvl + 0.40 && bar.high >= lvl - 0.80);
 
-          if (risk >= 0.60 && risk <= 2.20) {
-            this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar);
+          if (reachedZone) {
+            // Candle Bounce Signal: Bullish close or strong lower rejection wick
+            const body = Math.abs(bar.close - bar.open);
+            const lowerWick = Math.min(bar.open, bar.close) - bar.low;
+            const isBounce = (bar.close >= bar.open) || (lowerWick >= 0.35 && lowerWick >= body);
+
+            if (isBounce) {
+              const entryPrice = Math.round(bar.close * 100) / 100;
+              const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
+              const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
+
+              if (risk >= 0.50 && risk <= 3.50) {
+                this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
+                return;
+              }
+            }
+          }
+        }
+      } else {
+        // NEUTRAL CONSOLIDATION: Test upper boundary for rejection (SELL) or lower boundary for bounce (BUY)
+        const upperLvl = Math.max(fulcrumPrice, vacuumPrice);
+        const lowerLvl = Math.min(fulcrumPrice, vacuumPrice);
+
+        // Check Upper Level Rejection (SELL)
+        if (Math.abs(bar.high - upperLvl) <= 0.80 || bar.high >= upperLvl - 0.40) {
+          if (bar.close <= bar.open) {
+            const entryPrice = Math.round(bar.close * 100) / 100;
+            const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
+            const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+            if (risk >= 0.50 && risk <= 3.50) {
+              this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, upperLvl);
+              return;
+            }
+          }
+        }
+        // Check Lower Level Bounce (BUY)
+        else if (Math.abs(bar.low - lowerLvl) <= 0.80 || bar.low <= lowerLvl + 0.40) {
+          if (bar.close >= bar.open) {
+            const entryPrice = Math.round(bar.close * 100) / 100;
+            const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
+            const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
+            if (risk >= 0.50 && risk <= 3.50) {
+              this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lowerLvl);
+              return;
+            }
           }
         }
       }
@@ -982,7 +1092,7 @@ export class ReplayStrategyEngine {
   /**
    * Open Trade & Spawn Entry Marker
    */
-  openTrade(boxId, dir, entryPrice, sl, risk, bar) {
+  openTrade(boxId, dir, entryPrice, sl, risk, bar, testedLevel) {
     const state = this.boxTradeStates.get(boxId);
     if (!state) return;
 
@@ -997,7 +1107,8 @@ export class ReplayStrategyEngine {
       risk,
       beActive: false,
       maxMfe: 0.0,
-      maxMae: 0.0
+      maxMae: 0.0,
+      testedLevel
     };
 
     state.inTrade = true;
@@ -1013,6 +1124,7 @@ export class ReplayStrategyEngine {
           tradeId,
           dir,
           price: entryPrice,
+          testedLevel,
           lot: 0.50
         }
       });
@@ -1046,14 +1158,22 @@ export class ReplayStrategyEngine {
     state.inTrade = false;
     state.activeTrade = null;
     state.lastExitTime = bar.timestamp;
+    state.resolved = true; // Mark box setup as completed so no subsequent false trades trigger
 
-    // Create On-Chart Light Outcome Box
+    // Create On-Chart Light Outcome Box spanning entry to exit with clear vertical height
     try {
+      let topVal = Math.max(trade.entry, trade.sl, exitPrice);
+      let botVal = Math.min(trade.entry, trade.sl, exitPrice);
+      if (topVal - botVal < 1.00) {
+        topVal += 0.50;
+        botVal -= 0.50;
+      }
+
       const boxOverlayId = this.chart.createOverlay({
         name: 'replayTradeBox',
         points: [
-          { timestamp: trade.entryTime, value: trade.entry },
-          { timestamp: bar.timestamp, value: exitPrice }
+          { timestamp: trade.entryTime, value: topVal },
+          { timestamp: bar.timestamp, value: botVal }
         ],
         extendData: {
           parentBoxId: boxId,
