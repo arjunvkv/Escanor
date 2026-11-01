@@ -1268,9 +1268,6 @@ export class ReplayStrategyEngine {
       if (!isBarComplete) return;
       if (state.inTrade) return;
 
-      // 15-min cooldown after previous trade exit on this box
-      if (bar.timestamp - state.lastExitTime < 15 * 60 * 1000) return;
-
       const targetLevels = [fulcrumPrice, vacuumPrice];
       const body = Math.abs(bar.close - bar.open);
       const upperWick = bar.high - Math.max(bar.open, bar.close);
@@ -1290,11 +1287,11 @@ export class ReplayStrategyEngine {
               const isBounce = (bar.close > bar.open) || (lowerWick >= 1.50 && lowerWick >= body * 1.5 && bar.close >= lvl);
               if (isBounce) {
                 const entryPrice = Math.round(bar.close * 100) / 100;
-                // SL anchored strictly BELOW the physical level envelope (lvl - 0.65) and candle low (bar.low - 0.35)
-                const scratchSl = Math.round(Math.min(bar.low - 0.35, lvl - 0.65) * 100) / 100;
+                // SL anchored strictly to the physical level envelope (lvl - 0.65) — Pure Scratch SL
+                const scratchSl = Math.round((lvl - 0.65) * 100) / 100;
                 const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
-                if (risk >= 0.50 && risk <= 3.50) {
+                if (risk >= 0.50 && risk <= 2.50) {
                   this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
                   return;
                 }
@@ -1303,11 +1300,11 @@ export class ReplayStrategyEngine {
             // 1B. Momentum Vacuum Breakdown: Sliced cleanly through the level from above (Floor Broken / Waterfall Bear)
             else if (bar.close <= lvl - 0.40 && bar.close < bar.open && body >= 0.80) {
               const entryPrice = Math.round(bar.close * 100) / 100;
-              // SL anchored strictly ABOVE the physical level envelope (lvl + 0.65) and candle high (bar.high + 0.35)
-              const scratchSl = Math.round(Math.max(bar.high + 0.35, lvl + 0.65) * 100) / 100;
+              // SL anchored strictly to the physical level envelope (lvl + 0.65) — Pure Scratch SL
+              const scratchSl = Math.round((lvl + 0.65) * 100) / 100;
               const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
-              if (risk >= 0.50 && risk <= 3.50) {
+              if (risk >= 0.50 && risk <= 2.50) {
                 this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
                 return;
               }
@@ -1324,11 +1321,11 @@ export class ReplayStrategyEngine {
               const isRejection = (bar.close < bar.open) || (upperWick >= 1.50 && upperWick >= body * 1.5 && bar.close <= lvl);
               if (isRejection) {
                 const entryPrice = Math.round(bar.close * 100) / 100;
-                // SL anchored strictly ABOVE the physical level envelope (lvl + 0.65) and candle high (bar.high + 0.35)
-                const scratchSl = Math.round(Math.max(bar.high + 0.35, lvl + 0.65) * 100) / 100;
+                // SL anchored strictly to the physical level envelope (lvl + 0.65) — Pure Scratch SL
+                const scratchSl = Math.round((lvl + 0.65) * 100) / 100;
                 const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
-                if (risk >= 0.50 && risk <= 3.50) {
+                if (risk >= 0.50 && risk <= 2.50) {
                   this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
                   return;
                 }
@@ -1337,11 +1334,11 @@ export class ReplayStrategyEngine {
             // 2B. Momentum Vacuum Breakout: Sliced cleanly through the level from below (Ceiling Reclaimed / Skyrocket Bull)
             else if (bar.close >= lvl + 0.40 && bar.close > bar.open && body >= 0.80) {
               const entryPrice = Math.round(bar.close * 100) / 100;
-              // SL anchored strictly BELOW the physical level envelope (lvl - 0.65) and candle low (bar.low - 0.35)
-              const scratchSl = Math.round(Math.min(bar.low - 0.35, lvl - 0.65) * 100) / 100;
+              // SL anchored strictly to the physical level envelope (lvl - 0.65) — Pure Scratch SL
+              const scratchSl = Math.round((lvl - 0.65) * 100) / 100;
               const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
-              if (risk >= 0.50 && risk <= 3.50) {
+              if (risk >= 0.50 && risk <= 2.50) {
                 this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
                 return;
               }
