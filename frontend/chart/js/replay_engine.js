@@ -63,11 +63,15 @@ export class ReplayStrategyEngine {
    * Helper to set full candle dataset in KLineCharts v10 via chartStore
    */
   setChartData(dataList) {
-    if (!this.chart || !Array.isArray(dataList)) return;
+    if (!this.chart || !Array.isArray(dataList) || dataList.length === 0) return;
     try {
       const cs = this.chart._chartStore || (typeof this.chart.getChartStore === 'function' ? this.chart.getChartStore() : null);
       if (cs && typeof cs._addData === 'function') {
+        const prevBarSpace = this.chart.getBarSpace?.()?.bar || 6.0;
         cs._addData(dataList, 'init', false);
+        if (typeof this.chart.setBarSpace === 'function') {
+          this.chart.setBarSpace(prevBarSpace > 1.0 ? prevBarSpace : 6.0);
+        }
         if (typeof this.chart.setOffsetRightDistance === 'function') {
           this.chart.setOffsetRightDistance(80);
         }
@@ -363,21 +367,15 @@ export class ReplayStrategyEngine {
       chartDom.addEventListener('pointermove', (e) => {
         if (!this.isScissorsMode || !this.chart) return;
         try {
-          const rect = chartDom.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const res = this.chart.convertFromPixel({ x, y: 0 });
-          if (res && typeof res.dataIndex === 'number') {
-            const idx = Math.round(res.dataIndex);
-            const dataList = this.chart.getDataList() || [];
-            if (idx >= 0 && idx < dataList.length) {
-              const b = dataList[idx];
-              const dt = new Date(b.timestamp);
-              const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
-              const dateStr = dt.toISOString().slice(5, 10);
-              const bannerText = document.querySelector('.tv-scissors-text');
-              if (bannerText) {
-                bannerText.innerHTML = `<b>JUMP TO BAR:</b> Click bar at <code>${dateStr} ${timeStr}</code> ($${b.close.toFixed(2)}) to cut.`;
-              }
+          const cs = this.chart._chartStore || (typeof this.chart.getChartStore === 'function' ? this.chart.getChartStore() : null);
+          const b = this.hoveredBar || (cs && typeof cs.getCrosshair === 'function' && cs.getCrosshair()?.kLineData);
+          if (b && b.timestamp) {
+            const dt = new Date(b.timestamp);
+            const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            const dateStr = dt.toISOString().slice(5, 10);
+            const bannerText = document.querySelector('.tv-scissors-text');
+            if (bannerText) {
+              bannerText.innerHTML = `<b>JUMP TO BAR:</b> Click bar at <code>${dateStr} ${timeStr}</code> ($${Number(b.close || 0).toFixed(2)}) to cut.`;
             }
           }
         } catch (err) {}
@@ -402,6 +400,11 @@ export class ReplayStrategyEngine {
    */
   enterScissorsMode() {
     this.isScissorsMode = true;
+    const dataList = this.chart?.getDataList() || [];
+    if (!this.isActive && dataList.length > 0) {
+      this.fullCandles = [...dataList];
+    }
+
     const chartDom = document.getElementById('klineChart');
     if (chartDom) {
       chartDom.classList.add('tv-scissors-mode');
@@ -441,46 +444,63 @@ export class ReplayStrategyEngine {
   onScissorsClick(evt) {
     if (!this.chart) return;
     const dataList = this.chart.getDataList() || [];
-    if (dataList.length === 0) return;
+    if (dataList.length === 0 && this.fullCandles.length === 0) return;
 
-    let targetIndex = -1;
-
-    // Method A: Precise coordinate conversion via convertFromPixel
-    const chartDom = document.getElementById('klineChart');
-    if (evt && chartDom && typeof this.chart.convertFromPixel === 'function') {
-      try {
-        const rect = chartDom.getBoundingClientRect();
-        const x = evt.clientX - rect.left;
-        const y = evt.clientY - rect.top;
-        const res = this.chart.convertFromPixel({ x, y });
-        if (res && typeof res.dataIndex === 'number' && !isNaN(res.dataIndex)) {
-          targetIndex = Math.round(res.dataIndex);
-        } else if (res && res.timestamp) {
-          targetIndex = dataList.findIndex(b => b.timestamp === res.timestamp);
-        }
-      } catch (err) {
-        console.warn('[Replay] convertFromPixel error:', err);
-      }
-    }
-
-    // Method B: Fallback to hoveredIndex
-    if ((targetIndex < 0 || targetIndex >= dataList.length) && this.hoveredIndex >= 0) {
-      targetIndex = this.hoveredIndex;
-    }
-
-    // Method C: Fallback to hoveredBar timestamp
-    if ((targetIndex < 0 || targetIndex >= dataList.length) && this.hoveredBar && this.hoveredBar.timestamp) {
-      targetIndex = dataList.findIndex(b => b.timestamp === this.hoveredBar.timestamp);
-    }
-
-    if (targetIndex < 0 || targetIndex >= dataList.length) {
-      targetIndex = Math.max(0, dataList.length - 15);
-    }
-
-    // Save full original dataset if not already captured
+    // Capture complete dataset before any trimming
     if (this.fullCandles.length === 0 || !this.isActive) {
       this.fullCandles = [...dataList];
     }
+    const fullList = this.fullCandles;
+    if (fullList.length === 0) return;
+
+    let targetIndex = -1;
+    let clickedTimestamp = null;
+
+    // 1. Primary: Use hoveredBar or internal crosshair bar (exact bar under mouse pointer)
+    const cs = this.chart._chartStore || (typeof this.chart.getChartStore === 'function' ? this.chart.getChartStore() : null);
+    const chBar = (cs && typeof cs.getCrosshair === 'function' && cs.getCrosshair()?.kLineData) || this.hoveredBar;
+    if (chBar && chBar.timestamp) {
+      clickedTimestamp = chBar.timestamp;
+    }
+
+    if (clickedTimestamp) {
+      targetIndex = fullList.findIndex(b => b.timestamp === clickedTimestamp);
+    }
+
+    // 2. Secondary: If crosshair coordinate available, convert to bar
+    if (targetIndex < 0 && evt) {
+      try {
+        const chartDom = document.getElementById('klineChart');
+        const rect = chartDom?.getBoundingClientRect();
+        if (rect && typeof this.chart.convertFromPixel === 'function') {
+          const x = evt.clientX - rect.left;
+          const y = evt.clientY - rect.top;
+          const res = this.chart.convertFromPixel({ x, y });
+          if (res && res.timestamp) {
+            targetIndex = fullList.findIndex(b => b.timestamp === res.timestamp);
+          } else if (res && typeof res.dataIndex === 'number' && !isNaN(res.dataIndex)) {
+            const idx = Math.round(res.dataIndex);
+            if (idx >= 0 && idx < fullList.length) {
+              targetIndex = idx;
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('[Replay] convertFromPixel fallback error:', err);
+      }
+    }
+
+    // 3. Tertiary: Fallback to hoveredIndex
+    if (targetIndex < 0 && this.hoveredIndex >= 0 && this.hoveredIndex < fullList.length) {
+      targetIndex = this.hoveredIndex;
+    }
+
+    // 4. Default: If clicked far right, use latest bar
+    if (targetIndex < 0) {
+      targetIndex = fullList.length - 1;
+    }
+
+    targetIndex = Math.max(0, Math.min(targetIndex, fullList.length - 1));
 
     this.cutIndex = targetIndex;
     this.currentIndex = targetIndex;
@@ -577,6 +597,9 @@ export class ReplayStrategyEngine {
     this.clearReplayTradeMarkings();
     this.updateTimeDisplay();
     this.updateStatsDisplay();
+    if (trimmed.length > 0) {
+      this.evaluateBoxesStrategy(trimmed[trimmed.length - 1]);
+    }
   }
 
   /**
