@@ -790,8 +790,19 @@ export class ReplayStrategyEngine {
 
     this.updateTimeDisplay();
 
-    // Run Strategy Engine on completed bar
-    this.evaluateBoxesStrategy(nextBar, true);
+    // Run Strategy Engine on intra-bar ticks to guarantee 100% deterministic execution
+    const ticks = this.generateIntraBarTicks(nextBar);
+    for (let i = 0; i < ticks.length; i++) {
+      const isLast = (i === ticks.length - 1);
+      const subBar = {
+        timestamp: nextBar.timestamp,
+        open: nextBar.open,
+        high: nextBar.high,
+        low: nextBar.low,
+        close: ticks[i]
+      };
+      this.evaluateBoxesStrategy(subBar, isLast);
+    }
   }
 
   /**
@@ -919,7 +930,18 @@ export class ReplayStrategyEngine {
     for (let i = 0; i <= limitIdx; i++) {
       const b = fullList[i];
       if (!b) continue;
-      this.evaluateBoxesStrategy(b, true);
+      const ticks = this.generateIntraBarTicks(b);
+      for (let j = 0; j < ticks.length; j++) {
+        const isLast = (j === ticks.length - 1);
+        const subBar = {
+          timestamp: b.timestamp,
+          open: b.open,
+          high: b.high,
+          low: b.low,
+          close: ticks[j]
+        };
+        this.evaluateBoxesStrategy(subBar, isLast);
+      }
     }
 
     this.updateStatsDisplay();
@@ -1002,68 +1024,133 @@ export class ReplayStrategyEngine {
         const tr = state.activeTrade;
         const pos = tr.dir;
         const entry = tr.entry;
+        const curPrice = Number(bar.close);
 
         if (pos === 'SELL') {
-          const mfe = entry - bar.low;
-          const mae = bar.high - entry;
+          const mfe = entry - curPrice;
+          const mae = curPrice - entry;
           if (mfe > tr.maxMfe) tr.maxMfe = mfe;
           if (mae > tr.maxMae) tr.maxMae = mae;
 
-          let justRatcheted = false;
-          // Breakeven Gate: Move SL to BE + 0.10p profit once MFE >= +1.80p
-          if (mfe >= 1.80 && !tr.beActive) {
-            tr.beActive = true;
-            tr.sl = Math.round((entry - 0.10) * 100) / 100;
-            justRatcheted = true;
+          // State B: Fast Velocity Runner Anchor (MFE >= 2.50p in early waves)
+          // Anchors SL to Level Slip Buffer (Level + 0.35p) to let retest wave breathe without getting choked
+          if (mfe >= 2.50 && tr.barsInTrade <= 2 && !tr.runnerActive) {
+            tr.runnerActive = true;
+            const levelSl = Math.round((tr.testedLevel + 0.35) * 100) / 100;
+            if (levelSl < tr.sl) {
+              tr.sl = levelSl;
+            }
           }
 
-          // Check TP Hit (+10p runner milestone or +5p base)
-          if (mfe >= 10.0) {
-            this.closeTrade(rect.id, tr, bar, 'WIN', 7.50, entry - 10.0);
-            return;
-          } else if (mfe >= 5.0 && bar.high >= entry - 3.50) {
-            this.closeTrade(rect.id, tr, bar, 'WIN', 5.00, entry - 5.0);
-            return;
+          // State C: Multi-Stage Milestone Trailing for Big Moves
+          if (mfe >= 12.0) {
+            if (tr.milestone < 3) tr.milestone = 3;
+            const trailSl = Math.round((curPrice + 1.50) * 100) / 100;
+            if (trailSl < tr.sl) tr.sl = trailSl;
+          } else if (mfe >= 8.5) {
+            if (tr.milestone < 2) tr.milestone = 2;
+            tr.sl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100);
+          } else if (mfe >= 5.0) {
+            if (tr.milestone < 1) tr.milestone = 1;
+            tr.sl = Math.min(tr.sl, Math.round((entry - 2.50) * 100) / 100);
           }
 
-          // Check SL Hit: on the ratchet bar, evaluate against close (or subsequent bounce), not the past pre-drop high
-          const slHit = justRatcheted ? (bar.close >= tr.sl) : (bar.high >= tr.sl);
+          // Check SL Hit strictly on curPrice
+          const slHit = (curPrice >= tr.sl);
           if (slHit) {
-            const outcome = tr.beActive ? 'BE' : 'LOSS';
-            const pnlPts = tr.beActive ? 0.10 : -(tr.sl - entry);
+            let outcome = 'LOSS';
+            let pnlPts = -Math.round((tr.sl - entry) * 100) / 100;
+            if (tr.milestone >= 1) {
+              outcome = 'WIN';
+              pnlPts = Math.round((entry - tr.sl) * 100) / 100;
+            } else if (tr.beActive) {
+              outcome = 'BE';
+              pnlPts = 0.10;
+            } else if (tr.sl < entry) {
+              outcome = 'WIN';
+              pnlPts = Math.round((entry - tr.sl) * 100) / 100;
+            }
             this.closeTrade(rect.id, tr, bar, outcome, pnlPts, tr.sl);
             return;
           }
         } else if (pos === 'BUY') {
-          const mfe = bar.high - entry;
-          const mae = entry - bar.low;
+          const mfe = curPrice - entry;
+          const mae = entry - curPrice;
           if (mfe > tr.maxMfe) tr.maxMfe = mfe;
           if (mae > tr.maxMae) tr.maxMae = mae;
 
-          let justRatcheted = false;
-          // Breakeven Gate: Move SL to BE + 0.10p profit once MFE >= +1.80p
-          if (mfe >= 1.80 && !tr.beActive) {
-            tr.beActive = true;
-            tr.sl = Math.round((entry + 0.10) * 100) / 100;
-            justRatcheted = true;
+          // State B: Fast Velocity Runner Anchor (MFE >= 2.50p in early waves)
+          // Anchors SL to Level Slip Buffer (Level - 0.35p) to let retest wave breathe without getting choked
+          if (mfe >= 2.50 && tr.barsInTrade <= 2 && !tr.runnerActive) {
+            tr.runnerActive = true;
+            const levelSl = Math.round((tr.testedLevel - 0.35) * 100) / 100;
+            if (levelSl > tr.sl) {
+              tr.sl = levelSl;
+            }
           }
 
-          // Check TP Hit (+10p runner milestone or +5p base)
-          if (mfe >= 10.0) {
-            this.closeTrade(rect.id, tr, bar, 'WIN', 7.50, entry + 10.0);
-            return;
-          } else if (mfe >= 5.0 && bar.low <= entry + 3.50) {
-            this.closeTrade(rect.id, tr, bar, 'WIN', 5.00, entry + 5.0);
-            return;
+          // State C: Multi-Stage Milestone Trailing for Big Moves
+          if (mfe >= 12.0) {
+            if (tr.milestone < 3) tr.milestone = 3;
+            const trailSl = Math.round((curPrice - 1.50) * 100) / 100;
+            if (trailSl > tr.sl) tr.sl = trailSl;
+          } else if (mfe >= 8.5) {
+            if (tr.milestone < 2) tr.milestone = 2;
+            tr.sl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100);
+          } else if (mfe >= 5.0) {
+            if (tr.milestone < 1) tr.milestone = 1;
+            tr.sl = Math.max(tr.sl, Math.round((entry + 2.50) * 100) / 100);
           }
 
-          // Check SL Hit: on the ratchet bar, evaluate against close (or subsequent dip), not the past pre-rally low
-          const slHit = justRatcheted ? (bar.close <= tr.sl) : (bar.low <= tr.sl);
+          // Check SL Hit strictly on curPrice
+          const slHit = (curPrice <= tr.sl);
           if (slHit) {
-            const outcome = tr.beActive ? 'BE' : 'LOSS';
-            const pnlPts = tr.beActive ? 0.10 : -(entry - tr.sl);
+            let outcome = 'LOSS';
+            let pnlPts = -Math.round((entry - tr.sl) * 100) / 100;
+            if (tr.milestone >= 1) {
+              outcome = 'WIN';
+              pnlPts = Math.round((tr.sl - entry) * 100) / 100;
+            } else if (tr.beActive) {
+              outcome = 'BE';
+              pnlPts = 0.10;
+            } else if (tr.sl > entry) {
+              outcome = 'WIN';
+              pnlPts = Math.round((tr.sl - entry) * 100) / 100;
+            }
             this.closeTrade(rect.id, tr, bar, outcome, pnlPts, tr.sl);
             return;
+          }
+        }
+
+        // --- COMPLETED BAR AUCTION HARVEST (Displacement & Absorption Decay Evaluation) ---
+        if (isBarComplete) {
+          if (bar.timestamp !== tr.lastBarTimestamp) {
+            tr.barsInTrade += 1;
+            tr.lastBarTimestamp = bar.timestamp;
+            const curDisp = (pos === 'SELL') ? (entry - bar.close) : (bar.close - entry);
+            tr.dispHistory.push(curDisp);
+
+            // 1. If candle closed with strong positive displacement >= 1.80p, lock BE (+0.10p) for subsequent candles
+            if (curDisp >= 1.80 && !tr.beActive && tr.milestone === 0) {
+              tr.beActive = true;
+              if (pos === 'SELL') {
+                tr.sl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
+              } else {
+                tr.sl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
+              }
+            }
+            // 2. State A: Absorption Wall Decay / Churn Stalling (Dwell >= 3 bars and not expanding)
+            else if (tr.barsInTrade >= 3 && tr.maxMfe < 2.50 && !tr.beActive && tr.milestone === 0) {
+              const isDecaying = (tr.dispHistory.length >= 2 && tr.dispHistory[tr.dispHistory.length - 1] <= tr.dispHistory[tr.dispHistory.length - 2]) || curDisp <= 0.60;
+              if (isDecaying) {
+                tr.beActive = true;
+                if (pos === 'SELL') {
+                  tr.sl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
+                } else {
+                  tr.sl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
+                }
+              }
+            }
           }
         }
         return;
@@ -1163,9 +1250,15 @@ export class ReplayStrategyEngine {
       dir,
       entry: entryPrice,
       entryTime: bar.timestamp,
+      lastBarTimestamp: bar.timestamp,
+      barsInTrade: 0,
+      dispHistory: [],
       sl,
+      initialSl: sl,
       risk,
       beActive: false,
+      runnerActive: false,
+      milestone: 0,
       maxMfe: 0.0,
       maxMae: 0.0,
       testedLevel
