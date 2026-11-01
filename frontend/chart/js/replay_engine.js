@@ -167,8 +167,8 @@ export class ReplayStrategyEngine {
 
           const figures = [];
 
+          // 1. Sleek Entry Arrow (pointing up into candle low for BUY, down into high for SELL)
           if (isBuy) {
-            // Sleek upward entry arrow pointing up into candle low
             figures.push({
               type: 'line',
               attrs: {
@@ -198,7 +198,6 @@ export class ReplayStrategyEngine {
               }
             });
           } else {
-            // Sleek downward entry arrow pointing down into candle high
             figures.push({
               type: 'line',
               attrs: {
@@ -228,6 +227,54 @@ export class ReplayStrategyEngine {
               }
             });
           }
+
+          // 2. Dashed Green Horizontal Line at Trade Start (Zero Lookahead Visual Proof)
+          // Appears immediately upon trade entry and spans forward to trade exit or across active trade
+          let xEnd = (bounding && typeof bounding.width === 'number' && bounding.width > x)
+            ? bounding.width
+            : (x + 250);
+
+          if (data.exitTime && xAxis && typeof xAxis.convertToPixel === 'function') {
+            const exitPx = xAxis.convertToPixel(data.exitTime);
+            if (typeof exitPx === 'number' && !isNaN(exitPx) && exitPx > x) {
+              xEnd = exitPx;
+            }
+          }
+
+          figures.push({
+            type: 'line',
+            attrs: {
+              coordinates: [
+                { x: x, y: y },
+                { x: xEnd, y: y }
+              ]
+            },
+            styles: {
+              style: 'dashed',
+              dashValue: [6, 4],
+              color: '#10b981',
+              size: 1.5
+            }
+          });
+
+          // 3. Clean Entry Price Badge at Start
+          const entryVal = Number(data.price || overlay.points?.[0]?.value || 0).toFixed(2);
+          figures.push({
+            type: 'text',
+            attrs: {
+              x: x + 6,
+              y: isBuy ? (y - 5) : (y + 12),
+              text: `${data.dir || ''} ${entryVal}`,
+              align: 'left',
+              baseline: isBuy ? 'bottom' : 'top'
+            },
+            styles: {
+              color: '#10b981',
+              size: 10,
+              family: 'monospace',
+              weight: 'bold'
+            }
+          });
 
           return figures;
         }
@@ -1297,6 +1344,7 @@ export class ReplayStrategyEngine {
         }
       });
       if (markerId) {
+        trade.markerId = markerId;
         this.spawnedOverlayIds.add(markerId);
       }
     } catch (e) {
@@ -1321,6 +1369,27 @@ export class ReplayStrategyEngine {
     trade.pnlUsd = pnlUsd;
     trade.exitTime = bar.timestamp;
     trade.exitPrice = exitPrice;
+
+    // Update entry marker with exitTime so the dashed green line spans strictly to trade exit
+    if (trade.markerId) {
+      try {
+        this.chart.overrideOverlay({
+          id: trade.markerId,
+          extendData: {
+            parentBoxId: boxId,
+            tradeId: trade.id,
+            trade: { ...trade },
+            dir: trade.dir,
+            price: trade.entry,
+            testedLevel: trade.testedLevel,
+            lot,
+            exitTime: bar.timestamp
+          }
+        });
+      } catch (e) {
+        console.warn('Failed updating entry marker with exitTime:', e);
+      }
+    }
 
     state.tradesHistory.push({ ...trade });
     state.inTrade = false;
