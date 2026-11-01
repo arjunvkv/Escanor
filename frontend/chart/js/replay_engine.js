@@ -1275,7 +1275,7 @@ export class ReplayStrategyEngine {
 
       for (const lvl of targetLevels) {
         // Enforce proximity gate to avoid chasing late entries far into a hole
-        if (Math.abs(bar.close - lvl) > 2.50) continue;
+        if (Math.abs(bar.close - lvl) > 3.80) continue;
 
         // --- SCENARIO 1: TOUCH / INTERACTION FROM ABOVE ---
         if (bar.open >= lvl - 0.20) {
@@ -1291,20 +1291,21 @@ export class ReplayStrategyEngine {
                 const scratchSl = Math.round((lvl - 0.65) * 100) / 100;
                 const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
-                if (risk >= 0.50 && risk <= 2.50) {
+                if (risk >= 0.50 && risk <= 4.20) {
                   this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
                   return;
                 }
               }
             }
             // 1B. Momentum Vacuum Breakdown: Sliced cleanly through the level from above (Floor Broken / Waterfall Bear)
-            else if (bar.close <= lvl - 0.40 && bar.close < bar.open && body >= 0.80) {
+            // Guarded by lowerWick filter: must close near lows, no bouncing floor wick
+            else if (bar.close <= lvl - 0.40 && bar.close < bar.open && body >= 0.80 && lowerWick <= 1.00 && lowerWick <= body * 0.5) {
               const entryPrice = Math.round(bar.close * 100) / 100;
               // SL anchored strictly to the physical level envelope (lvl + 0.65) — Pure Scratch SL
               const scratchSl = Math.round((lvl + 0.65) * 100) / 100;
               const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
-              if (risk >= 0.50 && risk <= 2.50) {
+              if (risk >= 0.50 && risk <= 4.20) {
                 this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
                 return;
               }
@@ -1325,20 +1326,21 @@ export class ReplayStrategyEngine {
                 const scratchSl = Math.round((lvl + 0.65) * 100) / 100;
                 const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
-                if (risk >= 0.50 && risk <= 2.50) {
+                if (risk >= 0.50 && risk <= 4.20) {
                   this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
                   return;
                 }
               }
             }
             // 2B. Momentum Vacuum Breakout: Sliced cleanly through the level from below (Ceiling Reclaimed / Skyrocket Bull)
-            else if (bar.close >= lvl + 0.40 && bar.close > bar.open && body >= 0.80) {
+            // Guarded by upperWick filter: must close near highs, no exhaustion ceiling rejection wick
+            else if (bar.close >= lvl + 0.40 && bar.close > bar.open && body >= 0.80 && upperWick <= 1.00 && upperWick <= body * 0.5) {
               const entryPrice = Math.round(bar.close * 100) / 100;
               // SL anchored strictly to the physical level envelope (lvl - 0.65) — Pure Scratch SL
               const scratchSl = Math.round((lvl - 0.65) * 100) / 100;
               const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
-              if (risk >= 0.50 && risk <= 2.50) {
+              if (risk >= 0.50 && risk <= 4.20) {
                 this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
                 return;
               }
