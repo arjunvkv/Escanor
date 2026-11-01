@@ -150,7 +150,7 @@ export class ReplayStrategyEngine {
           }
           return true;
         },
-        createPointFigures: ({ overlay, coordinates, yAxis, xAxis }) => {
+        createPointFigures: ({ overlay, coordinates, bounding, yAxis, xAxis }) => {
           let x = coordinates?.[0]?.x;
           let y = coordinates?.[0]?.y;
           if ((typeof x !== 'number' || isNaN(x)) && overlay.points?.[0] && xAxis && typeof xAxis.convertToPixel === 'function') {
@@ -228,36 +228,7 @@ export class ReplayStrategyEngine {
             });
           }
 
-          // 2. Dashed Green Horizontal Line at Trade Start (Zero Lookahead Visual Proof)
-          // Appears immediately upon trade entry and spans forward to trade exit or across active trade
-          let xEnd = (bounding && typeof bounding.width === 'number' && bounding.width > x)
-            ? bounding.width
-            : (x + 250);
-
-          if (data.exitTime && xAxis && typeof xAxis.convertToPixel === 'function') {
-            const exitPx = xAxis.convertToPixel(data.exitTime);
-            if (typeof exitPx === 'number' && !isNaN(exitPx) && exitPx > x) {
-              xEnd = exitPx;
-            }
-          }
-
-          figures.push({
-            type: 'line',
-            attrs: {
-              coordinates: [
-                { x: x, y: y },
-                { x: xEnd, y: y }
-              ]
-            },
-            styles: {
-              style: 'dashed',
-              dashValue: [6, 4],
-              color: '#10b981',
-              size: 1.5
-            }
-          });
-
-          // 3. Clean Entry Price Badge at Start
+          // 2. Clean Entry Price Badge at Start
           const entryVal = Number(data.price || overlay.points?.[0]?.value || 0).toFixed(2);
           figures.push({
             type: 'text',
@@ -281,7 +252,7 @@ export class ReplayStrategyEngine {
       });
     }
 
-    // 2. Light Trade Outcome Box (Shaded Box Only — Zero Text Badges)
+    // 2. Light Trade Outcome Box (Shaded Box Starting At Entry — Zero Text Badges)
     if (!supported.includes('replayTradeBox')) {
       window.klinecharts.registerOverlay({
         name: 'replayTradeBox',
@@ -297,36 +268,35 @@ export class ReplayStrategyEngine {
           }
           return true;
         },
-        createPointFigures: ({ overlay, coordinates, yAxis, xAxis }) => {
+        createPointFigures: ({ overlay, coordinates, bounding, yAxis, xAxis }) => {
           let x0 = coordinates?.[0]?.x;
           let y0 = coordinates?.[0]?.y;
           let x1 = coordinates?.[1]?.x;
           let y1 = coordinates?.[1]?.y;
 
-          if ((typeof x0 !== 'number' || isNaN(x0)) && overlay.points?.[0] && xAxis && typeof xAxis.convertToPixel === 'function') {
-            x0 = xAxis.convertToPixel(overlay.points[0].timestamp);
-          }
-          if ((typeof y0 !== 'number' || isNaN(y0)) && overlay.points?.[0] && yAxis && typeof yAxis.convertToPixel === 'function') {
-            y0 = yAxis.convertToPixel(overlay.points[0].value);
-          }
-          if ((typeof x1 !== 'number' || isNaN(x1)) && overlay.points?.[1] && xAxis && typeof xAxis.convertToPixel === 'function') {
-            x1 = xAxis.convertToPixel(overlay.points[1].timestamp);
-          }
-          if ((typeof y1 !== 'number' || isNaN(y1)) && overlay.points?.[1] && yAxis && typeof yAxis.convertToPixel === 'function') {
-            y1 = yAxis.convertToPixel(overlay.points[1].value);
-          }
-
-          if (typeof x0 !== 'number' || typeof y0 !== 'number' || typeof x1 !== 'number' || typeof y1 !== 'number' || isNaN(x0) || isNaN(y0) || isNaN(x1) || isNaN(y1)) {
+          if (typeof x0 !== 'number' || typeof y0 !== 'number' || isNaN(x0) || isNaN(y0)) {
             return [];
           }
 
+          // If x1 is same as x0 (e.g. freshly opened trade on entry candle), ensure at least a 24px wide box
+          if (typeof x1 !== 'number' || isNaN(x1) || Math.abs(x1 - x0) < 16) {
+            x1 = x0 + 24;
+          }
+          if (typeof y1 !== 'number' || isNaN(y1)) {
+            y1 = y0 + 30;
+          }
+
           const minX = Math.min(x0, x1);
-          const maxX = Math.max(x0, x1);
+          let maxX = Math.max(x0, x1);
+          if (maxX - minX < 24) maxX = minX + 24;
+
           const minY = Math.min(y0, y1);
-          const maxY = Math.max(y0, y1);
+          let maxY = Math.max(y0, y1);
+          if (maxY - minY < 12) maxY = minY + 15;
 
           const data = overlay.extendData || {};
-          const outcome = data.outcome || 'WIN';
+          const isLive = Boolean(data.isLive);
+          const outcome = data.outcome || (isLive ? 'ACTIVE' : 'WIN');
 
           let fillColor = 'rgba(16, 185, 129, 0.12)';
           let borderColor = '#10b981';
@@ -337,10 +307,13 @@ export class ReplayStrategyEngine {
           } else if (outcome === 'BE') {
             fillColor = 'rgba(245, 158, 11, 0.12)';
             borderColor = '#f59e0b';
+          } else if (isLive || outcome === 'ACTIVE') {
+            fillColor = 'rgba(16, 185, 129, 0.08)';
+            borderColor = '#10b981';
           }
 
-          return [
-            // Light transparent box only, no text badges cluttering the candles
+          const figures = [
+            // Light transparent trade box starting from entry itself
             {
               type: 'polygon',
               attrs: {
@@ -356,10 +329,41 @@ export class ReplayStrategyEngine {
                 color: fillColor,
                 borderColor: borderColor,
                 borderSize: 1,
-                borderStyle: 'dashed'
+                borderStyle: (isLive || outcome === 'ACTIVE') ? 'dashed' : 'solid'
               }
             }
           ];
+
+          // Dashed green horizontal entry line right across the box starting at entry
+          const entryPrice = Number(data.entry || overlay.points?.[0]?.value || 0);
+          let yEntry = null;
+          if (entryPrice > 0 && yAxis && typeof yAxis.convertToPixel === 'function') {
+            const py = yAxis.convertToPixel(entryPrice);
+            if (typeof py === 'number' && !isNaN(py)) {
+              yEntry = py;
+            }
+          }
+          if (yEntry === null) {
+            yEntry = (minY + maxY) / 2;
+          }
+
+          figures.push({
+            type: 'line',
+            attrs: {
+              coordinates: [
+                { x: minX, y: yEntry },
+                { x: maxX, y: yEntry }
+              ]
+            },
+            styles: {
+              style: 'dashed',
+              dashValue: [6, 4],
+              color: '#10b981',
+              size: 1.5
+            }
+          });
+
+          return figures;
         }
       });
     }
@@ -1207,6 +1211,55 @@ export class ReplayStrategyEngine {
             }
           }
         }
+
+        // Dynamically update / stretch the active trade box so it visibly starts at entry and spans to the current bar
+        if (this.chart) {
+          const curTop = Math.max(tr.entry, tr.sl, Number(bar.high || curPrice));
+          const curBot = Math.min(tr.entry, tr.sl, Number(bar.low || curPrice));
+          const boxPoints = [
+            { timestamp: tr.entryTime, value: curTop },
+            { timestamp: bar.timestamp, value: curBot }
+          ];
+          const boxData = {
+            parentBoxId: rect.id,
+            tradeId: tr.id,
+            trade: { ...tr },
+            dir: tr.dir,
+            entry: tr.entry,
+            sl: tr.sl,
+            risk: tr.risk,
+            testedLevel: tr.testedLevel,
+            entryTime: tr.entryTime,
+            isLive: true,
+            outcome: 'ACTIVE'
+          };
+
+          if (tr.boxOverlayId) {
+            try {
+              this.chart.overrideOverlay({
+                id: tr.boxOverlayId,
+                points: boxPoints,
+                extendData: boxData
+              });
+            } catch (e) {
+              // ignore
+            }
+          } else {
+            try {
+              const bId = this.chart.createOverlay({
+                name: 'replayTradeBox',
+                points: boxPoints,
+                extendData: boxData
+              });
+              if (bId) {
+                tr.boxOverlayId = bId;
+                this.spawnedOverlayIds.add(bId);
+              }
+            } catch (e) {
+              // ignore
+            }
+          }
+        }
         return;
       }
 
@@ -1330,7 +1383,7 @@ export class ReplayStrategyEngine {
     state.inTrade = true;
     state.activeTrade = trade;
 
-    // Create On-Chart Visual Entry Marker
+    // 1. Create On-Chart Visual Entry Marker
     try {
       const markerId = this.chart.createOverlay({
         name: 'replayTradeMarker',
@@ -1351,6 +1404,43 @@ export class ReplayStrategyEngine {
       }
     } catch (e) {
       console.warn('Failed creating entry marker:', e);
+    }
+
+    // 2. Create On-Chart Visual Trade Box Immediately At Entry (Starts drawing right from entry itself)
+    try {
+      let topVal = Math.max(entryPrice, sl, Number(bar.high || entryPrice));
+      let botVal = Math.min(entryPrice, sl, Number(bar.low || entryPrice));
+      if (topVal - botVal < 1.00) {
+        topVal += 0.50;
+        botVal -= 0.50;
+      }
+
+      const boxOverlayId = this.chart.createOverlay({
+        name: 'replayTradeBox',
+        points: [
+          { timestamp: bar.timestamp, value: topVal },
+          { timestamp: bar.timestamp, value: botVal }
+        ],
+        extendData: {
+          parentBoxId: boxId,
+          tradeId: trade.id,
+          trade: { ...trade },
+          dir,
+          entry: entryPrice,
+          sl,
+          risk,
+          testedLevel,
+          entryTime: bar.timestamp,
+          isLive: true,
+          outcome: 'ACTIVE'
+        }
+      });
+      if (boxOverlayId) {
+        trade.boxOverlayId = boxOverlayId;
+        this.spawnedOverlayIds.add(boxOverlayId);
+      }
+    } catch (e) {
+      console.warn('Failed creating live replay trade box at entry:', e);
     }
 
     this.updateStatsDisplay();
@@ -1398,45 +1488,63 @@ export class ReplayStrategyEngine {
     state.activeTrade = null;
     state.lastExitTime = bar.timestamp;
 
-    // Create On-Chart Light Outcome Box spanning entry to exit with clear vertical height
-    try {
-      let topVal = Math.max(trade.entry, trade.sl, exitPrice);
-      let botVal = Math.min(trade.entry, trade.sl, exitPrice);
-      if (topVal - botVal < 1.00) {
-        topVal += 0.50;
-        botVal -= 0.50;
-      }
+    // Calculate final box bounds spanning entry to exit
+    let topVal = Math.max(trade.entry, trade.sl, exitPrice);
+    let botVal = Math.min(trade.entry, trade.sl, exitPrice);
+    if (topVal - botVal < 1.00) {
+      topVal += 0.50;
+      botVal -= 0.50;
+    }
 
-      const boxOverlayId = this.chart.createOverlay({
-        name: 'replayTradeBox',
-        points: [
-          { timestamp: trade.entryTime, value: topVal },
-          { timestamp: bar.timestamp, value: botVal }
-        ],
-        extendData: {
-          parentBoxId: boxId,
-          tradeId: trade.id,
-          trade: { ...trade },
-          dir: trade.dir,
-          entry: trade.entry,
-          sl: trade.sl,
-          risk: trade.risk,
-          testedLevel: trade.testedLevel,
-          entryTime: trade.entryTime,
-          exitTime: trade.exitTime,
-          exitPrice: trade.exitPrice,
-          maxMfe: trade.maxMfe,
-          maxMae: trade.maxMae,
-          outcome,
-          pnlPts,
-          pnlUsd
-        }
-      });
-      if (boxOverlayId) {
-        this.spawnedOverlayIds.add(boxOverlayId);
+    const boxPayload = {
+      points: [
+        { timestamp: trade.entryTime, value: topVal },
+        { timestamp: bar.timestamp, value: botVal }
+      ],
+      extendData: {
+        parentBoxId: boxId,
+        tradeId: trade.id,
+        trade: { ...trade },
+        dir: trade.dir,
+        entry: trade.entry,
+        sl: trade.sl,
+        risk: trade.risk,
+        testedLevel: trade.testedLevel,
+        entryTime: trade.entryTime,
+        exitTime: trade.exitTime,
+        exitPrice: trade.exitPrice,
+        maxMfe: trade.maxMfe,
+        maxMae: trade.maxMae,
+        outcome,
+        pnlPts,
+        pnlUsd,
+        isLive: false
       }
-    } catch (e) {
-      console.warn('Failed creating replay trade box:', e);
+    };
+
+    // If live box already exists, update/lock it to final exit. Otherwise create it.
+    if (trade.boxOverlayId) {
+      try {
+        this.chart.overrideOverlay({
+          id: trade.boxOverlayId,
+          ...boxPayload
+        });
+      } catch (e) {
+        console.warn('Failed overriding replay trade box on close:', e);
+      }
+    } else {
+      try {
+        const boxOverlayId = this.chart.createOverlay({
+          name: 'replayTradeBox',
+          ...boxPayload
+        });
+        if (boxOverlayId) {
+          trade.boxOverlayId = boxOverlayId;
+          this.spawnedOverlayIds.add(boxOverlayId);
+        }
+      } catch (e) {
+        console.warn('Failed creating replay trade box:', e);
+      }
     }
 
     this.updateStatsDisplay();
