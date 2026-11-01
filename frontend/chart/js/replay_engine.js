@@ -60,6 +60,45 @@ export class ReplayStrategyEngine {
   }
 
   /**
+   * Helper to set full candle dataset in KLineCharts v10 via chartStore
+   */
+  setChartData(dataList) {
+    if (!this.chart || !Array.isArray(dataList)) return;
+    try {
+      const cs = this.chart._chartStore || (typeof this.chart.getChartStore === 'function' ? this.chart.getChartStore() : null);
+      if (cs && typeof cs._addData === 'function') {
+        cs._addData(dataList, 'init', false);
+        if (typeof this.chart.setOffsetRightDistance === 'function') {
+          this.chart.setOffsetRightDistance(80);
+        }
+        if (typeof this.chart.scrollToRealTime === 'function') {
+          this.chart.scrollToRealTime();
+        }
+      }
+    } catch (err) {
+      console.warn('[Replay] setChartData error:', err);
+    }
+  }
+
+  /**
+   * Helper to smoothly append a single candle bar in KLineCharts v10
+   */
+  appendChartBar(bar) {
+    if (!this.chart || !bar) return;
+    try {
+      const cs = this.chart._chartStore || (typeof this.chart.getChartStore === 'function' ? this.chart.getChartStore() : null);
+      if (cs && typeof cs._addData === 'function') {
+        cs._addData([bar], 'backward', false);
+        if (typeof this.chart.scrollToRealTime === 'function') {
+          this.chart.scrollToRealTime();
+        }
+      }
+    } catch (err) {
+      console.warn('[Replay] appendChartBar error:', err);
+    }
+  }
+
+  /**
    * Register custom KLineCharts overlays for Replay
    */
   initOverlays() {
@@ -249,7 +288,8 @@ export class ReplayStrategyEngine {
     const cancelScissorsBtn = document.getElementById('tvCancelScissorsBtn');
 
     // Header Replay Button Toggle
-    this.replayBtn?.addEventListener('click', () => {
+    this.replayBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
       if (this.isActive) {
         this.exitReplay();
       } else {
@@ -258,8 +298,14 @@ export class ReplayStrategyEngine {
     });
 
     // Scissors Mode Actions
-    cancelScissorsBtn?.addEventListener('click', () => this.exitScissorsMode());
-    jumpBtn?.addEventListener('click', () => this.enterScissorsMode());
+    cancelScissorsBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.exitScissorsMode();
+    });
+    jumpBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.enterScissorsMode();
+    });
 
     // Controls
     resetBtn?.addEventListener('click', () => this.resetToCut());
@@ -296,14 +342,46 @@ export class ReplayStrategyEngine {
       }
     });
 
-    // Crosshair hover and click listener on chart container
+    // ⚡ CAPTURE-PHASE SCISSORS CLICK LISTENER
+    // KLineCharts attaches canvas pointer listeners that stop propagation in bubble phase.
+    // Capturing phase ensures our scissors click intercepts the event immediately!
     const chartDom = document.getElementById('klineChart');
     if (chartDom) {
-      chartDom.addEventListener('click', (e) => {
+      const handleScissorsTrigger = (e) => {
         if (this.isScissorsMode) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           this.onScissorsClick(e);
         }
-      });
+      };
+
+      chartDom.addEventListener('pointerdown', handleScissorsTrigger, true);
+      chartDom.addEventListener('click', handleScissorsTrigger, true);
+
+      // Live hovered bar feedback in scissors banner
+      chartDom.addEventListener('pointermove', (e) => {
+        if (!this.isScissorsMode || !this.chart) return;
+        try {
+          const rect = chartDom.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const res = this.chart.convertFromPixel({ x, y: 0 });
+          if (res && typeof res.dataIndex === 'number') {
+            const idx = Math.round(res.dataIndex);
+            const dataList = this.chart.getDataList() || [];
+            if (idx >= 0 && idx < dataList.length) {
+              const b = dataList[idx];
+              const dt = new Date(b.timestamp);
+              const timeStr = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+              const dateStr = dt.toISOString().slice(5, 10);
+              const bannerText = document.querySelector('.tv-scissors-text');
+              if (bannerText) {
+                bannerText.innerHTML = `<b>JUMP TO BAR:</b> Click bar at <code>${dateStr} ${timeStr}</code> ($${b.close.toFixed(2)}) to cut.`;
+              }
+            }
+          }
+        } catch (err) {}
+      }, true);
     }
 
     if (this.chart) {
@@ -330,6 +408,10 @@ export class ReplayStrategyEngine {
     }
     if (this.scissorsBanner) {
       this.scissorsBanner.style.display = 'flex';
+      const bannerText = document.querySelector('.tv-scissors-text');
+      if (bannerText) {
+        bannerText.innerHTML = `<b>JUMP TO BAR:</b> Click on any candle bar to trim the chart and start replay from that point.`;
+      }
     }
     if (this.replayBtn) {
       this.replayBtn.classList.add('active');
@@ -361,14 +443,39 @@ export class ReplayStrategyEngine {
     const dataList = this.chart.getDataList() || [];
     if (dataList.length === 0) return;
 
-    let targetIndex = this.hoveredIndex;
+    let targetIndex = -1;
 
-    // Fallback: search nearest bar by coordinates if hoveredIndex not populated
-    if (targetIndex < 0 || targetIndex >= dataList.length) {
-      targetIndex = dataList.length - 10;
+    // Method A: Precise coordinate conversion via convertFromPixel
+    const chartDom = document.getElementById('klineChart');
+    if (evt && chartDom && typeof this.chart.convertFromPixel === 'function') {
+      try {
+        const rect = chartDom.getBoundingClientRect();
+        const x = evt.clientX - rect.left;
+        const y = evt.clientY - rect.top;
+        const res = this.chart.convertFromPixel({ x, y });
+        if (res && typeof res.dataIndex === 'number' && !isNaN(res.dataIndex)) {
+          targetIndex = Math.round(res.dataIndex);
+        } else if (res && res.timestamp) {
+          targetIndex = dataList.findIndex(b => b.timestamp === res.timestamp);
+        }
+      } catch (err) {
+        console.warn('[Replay] convertFromPixel error:', err);
+      }
     }
 
-    targetIndex = Math.max(5, Math.min(targetIndex, dataList.length - 1));
+    // Method B: Fallback to hoveredIndex
+    if ((targetIndex < 0 || targetIndex >= dataList.length) && this.hoveredIndex >= 0) {
+      targetIndex = this.hoveredIndex;
+    }
+
+    // Method C: Fallback to hoveredBar timestamp
+    if ((targetIndex < 0 || targetIndex >= dataList.length) && this.hoveredBar && this.hoveredBar.timestamp) {
+      targetIndex = dataList.findIndex(b => b.timestamp === this.hoveredBar.timestamp);
+    }
+
+    if (targetIndex < 0 || targetIndex >= dataList.length) {
+      targetIndex = Math.max(0, dataList.length - 15);
+    }
 
     // Save full original dataset if not already captured
     if (this.fullCandles.length === 0 || !this.isActive) {
@@ -380,7 +487,7 @@ export class ReplayStrategyEngine {
 
     // Trim candles up to clicked bar
     const trimmed = this.fullCandles.slice(0, this.cutIndex + 1);
-    this.chart.applyNewData(trimmed);
+    this.setChartData(trimmed);
 
     // Pause live WebSocket bar updates
     window.__replayActive = true;
@@ -451,7 +558,7 @@ export class ReplayStrategyEngine {
     const nextBar = this.fullCandles[this.currentIndex];
 
     // Smoothly append candle to chart
-    this.chart.updateData(nextBar);
+    this.appendChartBar(nextBar);
 
     this.updateTimeDisplay();
 
@@ -466,7 +573,7 @@ export class ReplayStrategyEngine {
     this.pause();
     this.currentIndex = this.cutIndex;
     const trimmed = this.fullCandles.slice(0, this.cutIndex + 1);
-    this.chart.applyNewData(trimmed);
+    this.setChartData(trimmed);
     this.clearReplayTradeMarkings();
     this.updateTimeDisplay();
     this.updateStatsDisplay();
@@ -486,7 +593,7 @@ export class ReplayStrategyEngine {
 
     // Restore full original candles
     if (this.fullCandles.length > 0) {
-      this.chart.applyNewData(this.fullCandles);
+      this.setChartData(this.fullCandles);
       this.fullCandles = [];
     }
 
@@ -566,7 +673,6 @@ export class ReplayStrategyEngine {
       const boxTop = Math.max(...prices);
       const boxBottom = Math.min(...prices);
       const boxStart = Math.min(...times);
-      const boxEnd = Math.max(...times);
 
       // Only evaluate if current bar is at or after box start
       if (bar.timestamp < boxStart) return;
@@ -661,7 +767,7 @@ export class ReplayStrategyEngine {
 
       // Retest Axis Exhaustion Rejection (Top Edge: SELL)
       if (distTop <= 0.80 && bar.high >= (boxTop - 0.40)) {
-        // Candle rejection signal (close < open, upper probe)
+        // Candle rejection signal (close <= open, upper probe)
         if (bar.close <= bar.open) {
           const entryPrice = Math.round(bar.close * 100) / 100;
           const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
@@ -674,7 +780,7 @@ export class ReplayStrategyEngine {
       }
       // Vacuum Void Floor Bounce (Bottom Edge: BUY)
       else if (distBottom <= 0.80 && bar.low <= (boxBottom + 0.40)) {
-        // Candle bounce signal (close > open, lower rejection wick)
+        // Candle bounce signal (close >= open, lower rejection wick)
         if (bar.close >= bar.open) {
           const entryPrice = Math.round(bar.close * 100) / 100;
           const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
