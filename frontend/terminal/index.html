@@ -649,8 +649,8 @@
           TEST CHIME
         </button>
 
-        <span class="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-500/30 text-[10px] font-bold tracking-wider">
-          TRIGGER: ±$5.00 PERIMETER
+        <span class="px-2 py-0.5 rounded bg-amber-950/40 text-amber-300 border border-amber-500/30 text-[10px] font-bold tracking-wider">
+          TRIGGER: STALL &gt; 30s (±$0.40 BOX)
         </span>
       </div>
 
@@ -1680,7 +1680,115 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // 3. Proximity Radar Checker (±$5.00 Perimeter)
+    // Cache for nearest anchor coordinate
+    let nearestAnchorCache = null;
+    let nearestDistCache = 999999;
+
+    // -------------------------------------------------------------
+    // 3. SOVEREIGN PRICE STALL DETECTOR (> 30s ABSORPTION ENGINE)
+    // -------------------------------------------------------------
+    let stallState = {
+      centerPrice: null,
+      boxMin: 0.0,
+      boxMax: 0.0,
+      startTimeSec: 0,
+      dwellSec: 0,
+      tickCount: 0,
+      totalVol: 0,
+      alertFired: false,
+      boxRadius: 0.40, // +/- $0.40 tight compression box (0.80 pt width)
+      cooldownEpoch: 0
+    };
+
+    function evaluatePriceStall(spot, vol) {
+      if (!spot || isNaN(spot)) return;
+      const nowSec = Date.now() / 1000;
+      const v = (vol && !isNaN(vol) && vol > 0) ? vol : 1;
+
+      // Check if price is within current stall box
+      if (stallState.centerPrice === null || spot < stallState.boxMin || spot > stallState.boxMax) {
+        // Price broke out or initialized new stall box
+        stallState.centerPrice = spot;
+        stallState.boxMin = roundTo2(spot - stallState.boxRadius);
+        stallState.boxMax = roundTo2(spot + stallState.boxRadius);
+        stallState.startTimeSec = nowSec;
+        stallState.dwellSec = 0;
+        stallState.tickCount = 1;
+        stallState.totalVol = v;
+        stallState.alertFired = false;
+        renderStallStatusUI(spot);
+        return;
+      }
+
+      // Price is STILL inside the box! Accumulate dwell time
+      stallState.tickCount++;
+      stallState.totalVol += v;
+      stallState.dwellSec = Math.floor(nowSec - stallState.startTimeSec);
+
+      // ALERT CONDITION: Dwell >= 30 seconds
+      if (stallState.dwellSec >= 30 && !stallState.alertFired) {
+        // Debounce: do not spam same level within 5 minutes (300 sec)
+        if (nowSec - stallState.cooldownEpoch > 300) {
+          stallState.alertFired = true;
+          stallState.cooldownEpoch = nowSec;
+
+          // 1. Play audio chime if enabled
+          if (alertPrefs.pc) {
+            playLaserChime();
+          }
+
+          // 2. Dispatch Telegram alert if enabled
+          if (alertPrefs.telegram) {
+            dispatchStallTelegramAlert(stallState);
+          }
+        }
+      }
+
+      renderStallStatusUI(spot);
+    }
+
+    function renderStallStatusUI(spot) {
+      const banner = document.getElementById("proximityStatusBanner");
+      const bannerText = document.getElementById("bannerText");
+      if (!banner || !bannerText) return;
+
+      const nearestStr = nearestAnchorCache 
+        ? `${nearestAnchorCache.name} ($${nearestAnchorCache.price.toFixed(2)}, ${nearestDistCache.toFixed(2)}p away)`
+        : "Scanning Anchors";
+
+      if (stallState.dwellSec >= 30) {
+        banner.className = "px-2.5 py-1 rounded bg-amber-950 text-amber-200 border border-amber-500 text-xs font-hud-tech font-bold flex items-center gap-2 glow-amber animate-pulse";
+        bannerText.innerHTML = `⚠️ <span class="text-amber-300 font-extrabold">STALL ALERT (>30s):</span> Holding $${stallState.centerPrice.toFixed(2)} [<b>${stallState.dwellSec}s</b>] (${stallState.tickCount} ticks) · NEAR: ${nearestStr}`;
+      } else if (stallState.dwellSec >= 15) {
+        banner.className = "px-2.5 py-1 rounded bg-black/80 text-amber-300 border border-amber-500/50 text-xs font-hud-tech font-bold flex items-center gap-2";
+        bannerText.innerHTML = `⏳ <span class="text-amber-400">STALL FORMING:</span> $${stallState.centerPrice.toFixed(2)} [<b>${stallState.dwellSec}s</b> / 30s] (${stallState.tickCount} ticks) · NEAR: ${nearestStr}`;
+      } else {
+        banner.className = "px-2.5 py-1 rounded bg-black/60 text-slate-400 border border-slate-800 text-xs font-hud-tech font-bold flex items-center gap-2";
+        bannerText.innerHTML = `STALL: $${(stallState.centerPrice || spot).toFixed(2)} [${stallState.dwellSec}s] · NEAREST: ${nearestStr}`;
+      }
+    }
+
+    async function dispatchStallTelegramAlert(state) {
+      try {
+        await fetch("/api/sovereign/alert_stall", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            stall_price: state.centerPrice,
+            box_min: state.boxMin,
+            box_max: state.boxMax,
+            dwell_sec: state.dwellSec,
+            tick_count: state.tickCount,
+            nearest_level: nearestAnchorCache ? nearestAnchorCache.name : "Round Number",
+            level_dist: nearestAnchorCache ? (state.centerPrice - nearestAnchorCache.price) : 0.0
+          })
+        });
+      } catch (err) {
+        console.warn("Stall Telegram dispatch failed:", err);
+      }
+    }
+
+    // 3b. Proximity Radar Checker (Nearest Structure Only - No Alarms)
     function evaluateProximityPerimeter(spot) {
       if (!spot || currentAnchors.length === 0) return;
       
@@ -1703,32 +1811,8 @@ Return ONLY valid JSON matching this exact structure:
         }
       });
 
-      const banner = document.getElementById("proximityStatusBanner");
-      const bannerText = document.getElementById("bannerText");
-
-      if (nearestAnchor && nearestDist <= 5.00) {
-        const sign = spot >= nearestAnchor.price ? "+" : "-";
-        banner.className = "px-2.5 py-1 rounded bg-red-950 text-red-200 border border-red-500 text-xs font-hud-tech font-bold flex items-center gap-2 glow-red";
-        bannerText.innerHTML = `TARGET LOCK: ${sign}$${nearestDist.toFixed(2)} to ${nearestAnchor.name} ($${nearestAnchor.price.toFixed(2)})`;
-
-        // Check Debounce for sound & Telegram
-        const key = `${nearestAnchor.name}_${nearestAnchor.price}`;
-        const nowSec = Date.now() / 1000;
-        if (!clientAlertCooldown[key] || (nowSec - clientAlertCooldown[key] > 600)) {
-          clientAlertCooldown[key] = nowSec;
-          playLaserChime();
-          if (alertPrefs.telegram) {
-            dispatchTelegramProximityAlert(nearestAnchor, spot, spot - nearestAnchor.price);
-          }
-        }
-      } else {
-        banner.className = "px-2.5 py-1 rounded bg-black/60 text-slate-400 border border-slate-800 text-xs font-hud-tech font-bold flex items-center gap-2";
-        if (nearestAnchor) {
-          bannerText.innerHTML = `NEAREST: $${nearestAnchor.price.toFixed(2)} (${nearestAnchor.name}) [${nearestDist.toFixed(2)} pts away]`;
-        } else {
-          bannerText.innerHTML = "RADAR CLEAR: ALL ANCHORS > ±$5.00";
-        }
-      }
+      nearestAnchorCache = nearestAnchor;
+      nearestDistCache = nearestDist;
 
       // Update Livermore Feeler Console with nearest anchor
       updateLivermoreProbeConsole(spot, nearestAnchor, nearestDist);
@@ -3241,9 +3325,27 @@ Return ONLY valid JSON matching this exact structure:
       document.getElementById("ledgerSpotDisplay").textContent = `$${spot.toFixed(2)}`;
       document.getElementById("chartSpotPrice").textContent = `$${spot.toFixed(2)}`;
       evaluateProximityPerimeter(spot);
+      evaluatePriceStall(spot, 1);
       updateTriedExtremesUI(spot);
       updateProbeOrderTypeUI();
     }
+
+    // Smooth 1-second stall timer tick
+    setInterval(() => {
+      if (currentSpot && !isNaN(currentSpot) && stallState.centerPrice !== null && stallState.startTimeSec > 0) {
+        const nowSec = Date.now() / 1000;
+        stallState.dwellSec = Math.floor(nowSec - stallState.startTimeSec);
+        if (stallState.dwellSec >= 30 && !stallState.alertFired) {
+          if (nowSec - stallState.cooldownEpoch > 300) {
+            stallState.alertFired = true;
+            stallState.cooldownEpoch = nowSec;
+            if (alertPrefs.pc) playLaserChime();
+            if (alertPrefs.telegram) dispatchStallTelegramAlert(stallState);
+          }
+        }
+        renderStallStatusUI(currentSpot);
+      }
+    }, 1000);
 
     // 11. WebSocket Live Stream Connection
     function connectWebSocket() {

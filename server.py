@@ -1877,6 +1877,63 @@ async def dispatch_sovereign_proximity_alert_endpoint(req: Request):
         return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
 
 
+@app.post("/api/sovereign/alert_stall")
+async def dispatch_sovereign_stall_alert_endpoint(req: Request):
+    """Debounced dispatch of Telegram alert when price stalls at a tight coordinate for > 30s."""
+    try:
+        body = await req.json()
+        stall_price = float(body.get("stall_price", 0.0))
+        box_min = float(body.get("box_min", 0.0))
+        box_max = float(body.get("box_max", 0.0))
+        dwell_sec = int(body.get("dwell_sec", 30))
+        tick_count = int(body.get("tick_count", 0))
+        nearest_level = body.get("nearest_level", "")
+        level_dist = float(body.get("level_dist", 0.0))
+
+        key = f"stall_{round(stall_price * 2) / 2:.1f}"
+        from core.sovereign_desk import should_dispatch_proximity_alert
+        if not should_dispatch_proximity_alert(key):
+            return JSONResponse(content={"status": "DEBOUNCED", "message": f"Alert for {key} recently dispatched"})
+
+        ist_time = time.strftime('%d-%b %H:%M:%S IST', time.gmtime(time.time() + 19800))
+        dist_sign = "+" if level_dist >= 0 else "-"
+        msg = (
+            f"⏳ <b>ESCANOR // PRICE STALL ALERT (&gt; 30s)</b>\n\n"
+            f"📍 <b>Stall Coordinate:</b> <code>${stall_price:.2f}</code>\n"
+            f"📦 <b>Stall Box:</b> <code>${box_min:.2f} - ${box_max:.2f}</code> (Width: ${(box_max - box_min):.2f})\n"
+            f"⏱️ <b>Dwell Duration:</b> <b>{dwell_sec}s</b> (Ticks: {tick_count})\n"
+            f"🎯 <b>Nearest Anchor:</b> {nearest_level} (<code>{dist_sign}${abs(level_dist):.2f}</code>)\n"
+            f"⚡ <b>Institutional Context:</b> Micro absorption shelf detected. High kinetic energy compression.\n\n"
+            f"<i>Time: {ist_time}</i>"
+        )
+
+        bot_token = DEFAULT_TELEGRAM_BOT_TOKEN
+        chat_id = DEFAULT_TELEGRAM_CHAT_ID
+
+        def _send():
+            import urllib.request
+            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+            payload = {
+                "chat_id": chat_id,
+                "text": msg,
+                "parse_mode": "HTML",
+                "disable_web_page_preview": True
+            }
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req_tg = urllib.request.Request(
+                url, data=data_bytes, headers={"Content-Type": "application/json"}
+            )
+            with urllib.request.urlopen(req_tg, timeout=8) as resp:
+                return resp.read().decode()
+
+        loop = asyncio.get_event_loop()
+        res_text = await loop.run_in_executor(None, _send)
+        return JSONResponse(content={"status": "OK", "telegram_response": json.loads(res_text)})
+    except Exception as e:
+        logger.error(f"Error dispatching stall alert: {e}")
+        return JSONResponse(content={"status": "ERROR", "message": str(e)}, status_code=500)
+
+
 # =========================================================================
 # 🌐 UI STATIC ROUTES
 # =========================================================================
