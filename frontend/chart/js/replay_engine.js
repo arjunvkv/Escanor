@@ -1177,16 +1177,20 @@ export class ReplayStrategyEngine {
       const lowerWick = Math.min(bar.open, bar.close) - bar.low;
 
       for (const lvl of targetLevels) {
+        // Enforce proximity gate to avoid chasing late entries far into a hole
+        if (Math.abs(bar.close - lvl) > 2.50) continue;
+
         // --- SCENARIO 1: TOUCH / INTERACTION FROM ABOVE ---
         if (bar.open >= lvl - 0.20) {
           const reachedZone = (bar.low <= lvl + 0.80) && (bar.high >= lvl - 0.40);
           if (reachedZone) {
-            // 1A. Support Bounce / Hold: MUST close above the line (Defense / Trampoline Bounce)
+            // 1A. Support Bounce / Hold: MUST close above the line AND be a confirmed bullish candle (close > open)
             if (bar.close >= lvl - 0.10) {
-              const isBounce = (bar.close > bar.open) || (lowerWick >= 0.35 && lowerWick >= body * 0.7);
+              const isBounce = (bar.close > bar.open);
               if (isBounce) {
                 const entryPrice = Math.round(bar.close * 100) / 100;
-                const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
+                // SL anchored strictly BELOW the physical level envelope (lvl - 0.65) and candle low (bar.low - 0.35)
+                const scratchSl = Math.round(Math.min(bar.low - 0.35, lvl - 0.65) * 100) / 100;
                 const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
                 if (risk >= 0.50 && risk <= 3.50) {
@@ -1198,7 +1202,8 @@ export class ReplayStrategyEngine {
             // 1B. Momentum Vacuum Breakdown: Sliced cleanly through the level from above (Floor Broken / Waterfall Bear)
             else if (bar.close <= lvl - 0.40 && bar.close < bar.open && body >= 0.80) {
               const entryPrice = Math.round(bar.close * 100) / 100;
-              const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
+              // SL anchored strictly ABOVE the physical level envelope (lvl + 0.65) and candle high (bar.high + 0.35)
+              const scratchSl = Math.round(Math.max(bar.high + 0.35, lvl + 0.65) * 100) / 100;
               const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
               if (risk >= 0.50 && risk <= 3.50) {
@@ -1212,12 +1217,13 @@ export class ReplayStrategyEngine {
         else if (bar.open <= lvl + 0.20) {
           const reachedZone = (bar.high >= lvl - 0.80) && (bar.low <= lvl + 0.40);
           if (reachedZone) {
-            // 2A. Resistance Rejection / Retest Flip: MUST fail to reclaim and close below (Ceiling Defense / Flip)
+            // 2A. Resistance Rejection / Retest Flip: MUST fail to reclaim and close below AND be a confirmed bearish candle (close < open)
             if (bar.close <= lvl + 0.10) {
-              const isRejection = (bar.close < bar.open) || (upperWick >= 0.35 && upperWick >= body * 0.7);
+              const isRejection = (bar.close < bar.open);
               if (isRejection) {
                 const entryPrice = Math.round(bar.close * 100) / 100;
-                const scratchSl = Math.round((bar.high + 0.20) * 100) / 100;
+                // SL anchored strictly ABOVE the physical level envelope (lvl + 0.65) and candle high (bar.high + 0.35)
+                const scratchSl = Math.round(Math.max(bar.high + 0.35, lvl + 0.65) * 100) / 100;
                 const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
                 if (risk >= 0.50 && risk <= 3.50) {
@@ -1229,7 +1235,8 @@ export class ReplayStrategyEngine {
             // 2B. Momentum Vacuum Breakout: Sliced cleanly through the level from below (Ceiling Reclaimed / Skyrocket Bull)
             else if (bar.close >= lvl + 0.40 && bar.close > bar.open && body >= 0.80) {
               const entryPrice = Math.round(bar.close * 100) / 100;
-              const scratchSl = Math.round((bar.low - 0.20) * 100) / 100;
+              // SL anchored strictly BELOW the physical level envelope (lvl - 0.65) and candle low (bar.low - 0.35)
+              const scratchSl = Math.round(Math.min(bar.low - 0.35, lvl - 0.65) * 100) / 100;
               const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
 
               if (risk >= 0.50 && risk <= 3.50) {
