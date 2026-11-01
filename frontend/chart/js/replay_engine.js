@@ -1229,11 +1229,12 @@ export class ReplayStrategyEngine {
 
         // --- SCENARIO 1: TOUCH / INTERACTION FROM ABOVE ---
         if (bar.open >= lvl - 0.20) {
-          const reachedZone = (bar.low <= lvl + 0.80) && (bar.high >= lvl - 0.40);
+          // Touch reach widened symmetrically to 1.20p so fast probes into the level zone are never missed by cents
+          const reachedZone = (bar.low <= lvl + 1.20) && (bar.high >= lvl - 0.50);
           if (reachedZone) {
-            // 1A. Support Bounce / Hold: MUST close above the line AND be a confirmed bullish candle (close > open)
+            // 1A. Support Bounce / Hold: Bullish close OR Hammer pinbar with dominant lower wick (rejecting support)
             if (bar.close >= lvl - 0.10) {
-              const isBounce = (bar.close > bar.open);
+              const isBounce = (bar.close > bar.open) || (lowerWick >= 1.50 && lowerWick >= body * 1.5 && bar.close >= lvl);
               if (isBounce) {
                 const entryPrice = Math.round(bar.close * 100) / 100;
                 // SL anchored strictly BELOW the physical level envelope (lvl - 0.65) and candle low (bar.low - 0.35)
@@ -1262,11 +1263,12 @@ export class ReplayStrategyEngine {
         }
         // --- SCENARIO 2: TOUCH / INTERACTION FROM BELOW ---
         else if (bar.open <= lvl + 0.20) {
-          const reachedZone = (bar.high >= lvl - 0.80) && (bar.low <= lvl + 0.40);
+          // Touch reach widened symmetrically to 1.20p so fast probes into the level zone are never missed by cents
+          const reachedZone = (bar.high >= lvl - 1.20) && (bar.low <= lvl + 0.50);
           if (reachedZone) {
-            // 2A. Resistance Rejection / Retest Flip: MUST fail to reclaim and close below AND be a confirmed bearish candle (close < open)
+            // 2A. Resistance Rejection / Retest Flip: Bearish close OR Shooting Star pinbar with dominant upper wick (rejecting resistance)
             if (bar.close <= lvl + 0.10) {
-              const isRejection = (bar.close < bar.open);
+              const isRejection = (bar.close < bar.open) || (upperWick >= 1.50 && upperWick >= body * 1.5 && bar.close <= lvl);
               if (isRejection) {
                 const entryPrice = Math.round(bar.close * 100) / 100;
                 // SL anchored strictly ABOVE the physical level envelope (lvl + 0.65) and candle high (bar.high + 0.35)

@@ -4,7 +4,7 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611020210';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611020220';
 import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202610252048';
 import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202611012310';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
@@ -12,7 +12,7 @@ import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { ReplayStrategyEngine } from './replay_engine.js?v=202611020210';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611020220';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
