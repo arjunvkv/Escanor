@@ -161,6 +161,43 @@ def get_candles(symbol: str = "XAUUSD", timeframe: str = "5", count: int = 200, 
         return []
 
 
+def get_replay_ticks(symbol: str = "XAUUSD", start_time: int = 0, end_time: int = 0, max_ticks: int = 15000) -> List[Dict[str, Any]]:
+    """Fetch raw MT5 ticks between start_time (ms or s) and end_time (ms or s) for truthful tick replay."""
+    if not init_mt5():
+        return []
+    try:
+        mt5.symbol_select(symbol, True)
+        sec_start = int(start_time) // 1000 if int(start_time) > 100000000000 else int(start_time)
+        sec_end = int(end_time) // 1000 if int(end_time) > 100000000000 else int(end_time)
+        if sec_end <= sec_start:
+            sec_end = sec_start + 3600  # 1 hour default
+
+        dt_start = datetime.fromtimestamp(sec_start, timezone.utc)
+        dt_end = datetime.fromtimestamp(sec_end, timezone.utc)
+        raw_ticks = mt5.copy_ticks_range(symbol, dt_start, dt_end, mt5.COPY_TICKS_ALL)
+        if raw_ticks is None or len(raw_ticks) == 0:
+            return []
+
+        total = len(raw_ticks)
+        step = max(1, total // max_ticks)
+        sampled = raw_ticks[::step] if step > 1 else raw_ticks
+
+        result = []
+        for t in sampled:
+            bid = round(float(t['bid']), 3)
+            ask = round(float(t['ask']), 3) if t['ask'] > 0 else bid
+            t_ms = int(t['time_msc']) if 'time_msc' in t.dtype.names else int(t['time']) * 1000
+            result.append({
+                "time": t_ms,
+                "bid": bid,
+                "ask": ask
+            })
+        return result
+    except Exception as err:
+        logger.error(f"get_replay_ticks error: {err}")
+        return []
+
+
 def get_account_status() -> Dict[str, Any]:
     """Fetch real-time MT5 account metrics."""
     if not init_mt5():

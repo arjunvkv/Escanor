@@ -12,7 +12,7 @@ import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { ReplayStrategyEngine } from './replay_engine.js?v=202611012230';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611012245';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -1286,6 +1286,9 @@ function connectWebSocket() {
 
         // ⚡ ULTRA-FAST 15ms TICK STREAM: Feed Line Trading & Chart Immediately!
         if (data && data.type === 'TICK') {
+          // ⚡ If Bar Replay is active, DO NOT let live market ticks touch chart or triggers!
+          if (window.__replayActive) return;
+
           const bid = Number(data.bid);
           const ask = Number(data.ask);
           if (bid && !isNaN(bid)) {
@@ -1295,8 +1298,8 @@ function connectWebSocket() {
             if (lineTrading) {
               lineTrading.onPriceTick(bid, ask || bid);
             }
-            // 2. Immediately update candle chart live bar (skip if Replay is active)
-            if (typeof liveBarCallback === 'function' && !window.__replayActive) {
+            // 2. Immediately update candle chart live bar
+            if (typeof liveBarCallback === 'function') {
               liveBarCallback({ bid, ask: ask || bid, time: data.time_msc || Date.now() });
             }
             // 3. ⚡ Real-Time Trap Candle Alert Evaluation (Cyan & Yellow)
@@ -1848,6 +1851,11 @@ function handleLiveTelemetry(tel) {
 
   if (tel.drawdown) {
     updateDrawdownUI(tel.drawdown);
+  }
+
+  // ⚡ Freeze all live market chart updates, active orders, alarms, and live bars during Bar Replay!
+  if (window.__replayActive) {
+    return;
   }
 
   if (tel.server_time || tel.tick_time) {

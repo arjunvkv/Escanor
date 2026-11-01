@@ -56,6 +56,13 @@ export class ReplayStrategyEngine {
     this.hoveredBar = null;
     this.hoveredIndex = -1;
     
+    // Intra-bar Tick Replay Engine
+    this.activeTicks = [];
+    this.currentTickIndex = -1;
+    this.currentLiveHigh = 0;
+    this.currentLiveLow = 0;
+    this.subTickTimerId = null;
+    
     this.initOverlays();
   }
 
@@ -99,6 +106,21 @@ export class ReplayStrategyEngine {
       }
     } catch (err) {
       console.warn('[Replay] appendChartBar error:', err);
+    }
+  }
+
+  /**
+   * Helper to update currently active forming candle in-place in KLineCharts v10
+   */
+  updateLiveChartBar(liveBar) {
+    if (!this.chart || !liveBar) return;
+    try {
+      const cs = this.chart._chartStore || (typeof this.chart.getChartStore === 'function' ? this.chart.getChartStore() : null);
+      if (cs && typeof cs._addData === 'function') {
+        cs._addData(liveBar, 'update', false);
+      }
+    } catch (err) {
+      console.warn('[Replay] updateLiveChartBar error:', err);
     }
   }
 
@@ -514,6 +536,14 @@ export class ReplayStrategyEngine {
     this.isActive = true;
     this.exitScissorsMode();
 
+    // Clear live orders & structural levels from chart so historical view is 100% clean
+    if (window.__activeOrdersEngine && typeof window.__activeOrdersEngine.clearAll === 'function') {
+      window.__activeOrdersEngine.clearAll();
+    }
+    if (window.__structuralLevels && typeof window.__structuralLevels.clearAll === 'function') {
+      window.__structuralLevels.clearAll();
+    }
+
     // Show Floating Replay Bar
     if (this.controlBar) {
       this.controlBar.style.display = 'flex';
@@ -525,6 +555,51 @@ export class ReplayStrategyEngine {
 
     // Initial evaluation of existing boxes at cut point
     this.evaluateBoxesStrategy(trimmed[trimmed.length - 1]);
+  }
+
+  /**
+   * Decompose completed bar into realistic, truthful intra-bar auction path micro-ticks:
+   * Open -> Initial Probe Wick -> Expansion Surge across body -> Opposite Wick -> Close
+   */
+  generateIntraBarTicks(bar) {
+    const O = Number(bar.open);
+    const H = Number(bar.high);
+    const L = Number(bar.low);
+    const C = Number(bar.close);
+
+    const isBull = (C >= O);
+    // 4 Key Auction Milestones
+    const m1 = O;
+    const m2 = isBull ? L : H; // Initial probe / sweep
+    const m3 = isBull ? H : L; // Expansion extreme
+    const m4 = C;             // Close settlement
+
+    const ticks = [];
+
+    // Helper to generate interpolated sub-steps with micro-fluctuations
+    const interpolate = (pStart, pEnd, steps) => {
+      const pts = [];
+      for (let i = 1; i <= steps; i++) {
+        const frac = i / steps;
+        let p = pStart + (pEnd - pStart) * frac;
+        if (i < steps) {
+          const noise = (Math.sin(i * 2.3) * 0.04);
+          p = Math.max(L, Math.min(H, p + noise));
+        }
+        pts.push(Math.round(p * 100) / 100);
+      }
+      return pts;
+    };
+
+    ticks.push(O);
+    // 4 ticks from Open to first extreme
+    ticks.push(...interpolate(m1, m2, 4));
+    // 8 ticks across body to second extreme
+    ticks.push(...interpolate(m2, m3, 8));
+    // 4 ticks to Close
+    ticks.push(...interpolate(m3, m4, 4));
+
+    return ticks;
   }
 
   /**
@@ -546,13 +621,15 @@ export class ReplayStrategyEngine {
       this.playBtn.classList.add('playing');
     }
 
-    this.timerId = setInterval(() => {
-      this.stepForward();
-    }, this.speedMs);
+    this.scheduleNextTick();
   }
 
   pause() {
     this.isPlaying = false;
+    if (this.subTickTimerId) {
+      clearTimeout(this.subTickTimerId);
+      this.subTickTimerId = null;
+    }
     if (this.timerId) {
       clearInterval(this.timerId);
       this.timerId = null;
@@ -564,7 +641,75 @@ export class ReplayStrategyEngine {
   }
 
   /**
-   * Advance 1 Bar Forward
+   * Schedule next smooth intra-bar micro-tick
+   */
+  scheduleNextTick() {
+    if (!this.isPlaying || !this.chart || this.fullCandles.length === 0) return;
+
+    // Check if we need to start a brand new candle
+    if (this.currentTickIndex < 0 || !this.activeTicks || this.currentTickIndex >= this.activeTicks.length) {
+      if (this.currentIndex >= this.fullCandles.length - 1) {
+        this.pause();
+        return;
+      }
+
+      this.currentIndex += 1;
+      const targetBar = this.fullCandles[this.currentIndex];
+      this.activeTicks = this.generateIntraBarTicks(targetBar);
+      this.currentTickIndex = 0;
+      this.currentLiveHigh = targetBar.open;
+      this.currentLiveLow = targetBar.open;
+
+      // Start the new live candle at Open
+      const initialCandle = {
+        timestamp: targetBar.timestamp,
+        open: targetBar.open,
+        high: targetBar.open,
+        low: targetBar.open,
+        close: targetBar.open,
+        volume: 1
+      };
+      this.appendChartBar(initialCandle);
+      this.updateTimeDisplay();
+      this.evaluateBoxesStrategy(initialCandle);
+    }
+
+    // Process current intra-bar sub-tick
+    const targetBar = this.fullCandles[this.currentIndex];
+    const curPrice = this.activeTicks[this.currentTickIndex];
+    this.currentLiveHigh = Math.max(this.currentLiveHigh, curPrice);
+    this.currentLiveLow = Math.min(this.currentLiveLow, curPrice);
+
+    const isLastTick = (this.currentTickIndex >= this.activeTicks.length - 1);
+    const liveCandle = {
+      timestamp: targetBar.timestamp,
+      open: targetBar.open,
+      high: isLastTick ? targetBar.high : this.currentLiveHigh,
+      low: isLastTick ? targetBar.low : this.currentLiveLow,
+      close: isLastTick ? targetBar.close : curPrice,
+      volume: isLastTick ? targetBar.volume : Math.max(1, Math.round(targetBar.volume * ((this.currentTickIndex + 1) / this.activeTicks.length)))
+    };
+
+    // Update candle in-place on chart (living candle breathing animation)
+    this.updateLiveChartBar(liveCandle);
+
+    // Evaluate Strategy Engine on current sub-tick
+    this.evaluateBoxesStrategy(liveCandle);
+
+    this.currentTickIndex += 1;
+
+    // Compute tick interval based on selected speed
+    const tickInterval = Math.max(12, Math.floor(this.speedMs / Math.max(1, this.activeTicks.length)));
+
+    this.subTickTimerId = setTimeout(() => {
+      if (this.isPlaying) {
+        this.scheduleNextTick();
+      }
+    }, tickInterval);
+  }
+
+  /**
+   * Advance 1 Full Bar Forward (Instant Step)
    */
   stepForward() {
     if (!this.chart || this.fullCandles.length === 0) return;
@@ -574,15 +719,23 @@ export class ReplayStrategyEngine {
       return;
     }
 
+    if (this.subTickTimerId) {
+      clearTimeout(this.subTickTimerId);
+      this.subTickTimerId = null;
+    }
+
     this.currentIndex += 1;
     const nextBar = this.fullCandles[this.currentIndex];
 
-    // Smoothly append candle to chart
+    // Smoothly append full completed candle to chart
     this.appendChartBar(nextBar);
+
+    this.activeTicks = [];
+    this.currentTickIndex = -1;
 
     this.updateTimeDisplay();
 
-    // Run Strategy Engine on new bar (Zero Lookahead)
+    // Run Strategy Engine on completed bar
     this.evaluateBoxesStrategy(nextBar);
   }
 
@@ -591,6 +744,8 @@ export class ReplayStrategyEngine {
    */
   resetToCut() {
     this.pause();
+    this.activeTicks = [];
+    this.currentTickIndex = -1;
     this.currentIndex = this.cutIndex;
     const trimmed = this.fullCandles.slice(0, this.cutIndex + 1);
     this.setChartData(trimmed);
@@ -610,6 +765,13 @@ export class ReplayStrategyEngine {
     this.isActive = false;
     this.exitScissorsMode();
     window.__replayActive = false;
+
+    if (this.subTickTimerId) {
+      clearTimeout(this.subTickTimerId);
+      this.subTickTimerId = null;
+    }
+    this.activeTicks = [];
+    this.currentTickIndex = -1;
 
     // Clean up temporary trade overlays
     this.clearReplayTradeMarkings();

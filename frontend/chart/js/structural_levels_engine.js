@@ -16,8 +16,16 @@ export class StructuralLevelsEngine {
     this.levelOverlays = new Map(); // key -> overlayId
   }
 
+  clearAll() {
+    if (!this.chart) return;
+    for (const [key, ovId] of this.levelOverlays.entries()) {
+      try { this.chart.removeOverlay({ id: ovId }); } catch (_) {}
+    }
+    this.levelOverlays.clear();
+  }
+
   updateLevels(tel) {
-    if (!this.chart || !tel) return;
+    if (!this.chart || !tel || window.__replayActive) return;
 
     const spot = tel.spot || {};
     const tape = tel.tape || {};

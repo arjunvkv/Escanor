@@ -37,8 +37,16 @@ export class ActiveOrdersEngine {
     this.render();
   }
 
-  render() {
+  clearAll() {
     if (!this.chart) return;
+    for (const [key, ovId] of this.positionOverlays.entries()) {
+      try { this.chart.removeOverlay({ id: ovId }); } catch (_) {}
+    }
+    this.positionOverlays.clear();
+  }
+
+  render() {
+    if (!this.chart || window.__replayActive) return;
 
     const activeTickets = new Set(this.activePositions.map(p => Number(p.ticket)));
     const pendingTickets = new Set(this.pendingOrders.map(o => Number(o.ticket)));
