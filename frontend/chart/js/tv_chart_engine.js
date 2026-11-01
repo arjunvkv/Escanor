@@ -5145,6 +5145,10 @@ export function syncBoxFulcrumAndVacuumLines(chart) {
       console.warn('[syncBoxFulcrumAndVacuumLines] Vacuum create error:', e);
     }
   });
+
+  if (typeof window !== 'undefined' && window.__replayEngine && typeof window.__replayEngine.recomputeAllBoxTrades === 'function') {
+    try { window.__replayEngine.recomputeAllBoxTrades(); } catch (_) {}
+  }
 }
 window.__syncBoxFulcrumAndVacuumLines = syncBoxFulcrumAndVacuumLines;
 

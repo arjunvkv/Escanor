@@ -26,6 +26,9 @@ export class ReplayStrategyEngine {
   constructor(options = {}) {
     this.chart = options.chart || null;
     this.symbol = options.symbol || 'XAUUSD';
+    if (typeof window !== 'undefined') {
+      window.__replayEngine = this;
+    }
     
     // State
     this.isActive = false;
@@ -139,11 +142,19 @@ export class ReplayStrategyEngine {
         needDefaultPointFigure: false,
         needDefaultXAxisFigure: false,
         needDefaultYAxisFigure: false,
-        zLevel: 150,
+        zLevel: 300,
         fixedZLevel: true,
-        createPointFigures: ({ overlay, coordinates, yAxis }) => {
-          if (!coordinates || coordinates.length === 0) return [];
-          const coord = coordinates[0];
+        createPointFigures: ({ overlay, coordinates, yAxis, xAxis }) => {
+          let x = coordinates?.[0]?.x;
+          let y = coordinates?.[0]?.y;
+          if ((typeof x !== 'number' || isNaN(x)) && overlay.points?.[0] && xAxis && typeof xAxis.convertToPixel === 'function') {
+            x = xAxis.convertToPixel(overlay.points[0].timestamp);
+          }
+          if ((typeof y !== 'number' || isNaN(y)) && overlay.points?.[0] && yAxis && typeof yAxis.convertToPixel === 'function') {
+            y = yAxis.convertToPixel(overlay.points[0].value);
+          }
+          if (typeof x !== 'number' || typeof y !== 'number' || isNaN(x) || isNaN(y)) return [];
+
           const data = overlay.extendData || {};
           const isBuy = (data.dir === 'BUY');
           const price = Number(data.price || overlay.points?.[0]?.value || 0);
@@ -159,8 +170,8 @@ export class ReplayStrategyEngine {
             type: 'line',
             attrs: {
               coordinates: [
-                { x: coord.x, y: coord.y },
-                { x: coord.x, y: coord.y + yOffset }
+                { x, y },
+                { x, y: y + yOffset }
               ]
             },
             styles: {
@@ -174,8 +185,8 @@ export class ReplayStrategyEngine {
           figures.push({
             type: 'text',
             attrs: {
-              x: coord.x,
-              y: coord.y + yOffset,
+              x,
+              y: y + yOffset,
               text: text,
               align: 'center',
               baseline: isBuy ? 'top' : 'bottom'
@@ -209,14 +220,30 @@ export class ReplayStrategyEngine {
         needDefaultPointFigure: false,
         needDefaultXAxisFigure: false,
         needDefaultYAxisFigure: false,
-        zLevel: 25,
+        zLevel: 100,
         fixedZLevel: true,
-        createPointFigures: ({ overlay, coordinates }) => {
-          if (!coordinates || coordinates.length < 2) return [];
-          const x0 = coordinates[0].x;
-          const y0 = coordinates[0].y;
-          const x1 = coordinates[1].x;
-          const y1 = coordinates[1].y;
+        createPointFigures: ({ overlay, coordinates, yAxis, xAxis }) => {
+          let x0 = coordinates?.[0]?.x;
+          let y0 = coordinates?.[0]?.y;
+          let x1 = coordinates?.[1]?.x;
+          let y1 = coordinates?.[1]?.y;
+
+          if ((typeof x0 !== 'number' || isNaN(x0)) && overlay.points?.[0] && xAxis && typeof xAxis.convertToPixel === 'function') {
+            x0 = xAxis.convertToPixel(overlay.points[0].timestamp);
+          }
+          if ((typeof y0 !== 'number' || isNaN(y0)) && overlay.points?.[0] && yAxis && typeof yAxis.convertToPixel === 'function') {
+            y0 = yAxis.convertToPixel(overlay.points[0].value);
+          }
+          if ((typeof x1 !== 'number' || isNaN(x1)) && overlay.points?.[1] && xAxis && typeof xAxis.convertToPixel === 'function') {
+            x1 = xAxis.convertToPixel(overlay.points[1].timestamp);
+          }
+          if ((typeof y1 !== 'number' || isNaN(y1)) && overlay.points?.[1] && yAxis && typeof yAxis.convertToPixel === 'function') {
+            y1 = yAxis.convertToPixel(overlay.points[1].value);
+          }
+
+          if (typeof x0 !== 'number' || typeof y0 !== 'number' || typeof x1 !== 'number' || typeof y1 !== 'number' || isNaN(x0) || isNaN(y0) || isNaN(x1) || isNaN(y1)) {
+            return [];
+          }
 
           const minX = Math.min(x0, x1);
           const maxX = Math.max(x0, x1);
@@ -283,8 +310,8 @@ export class ReplayStrategyEngine {
                 borderRadius: 2,
                 paddingLeft: 5,
                 paddingRight: 5,
-                paddingTop: 1.5,
-                paddingBottom: 1.5
+                paddingTop: 2,
+                paddingBottom: 2
               }
             }
           ];
@@ -549,12 +576,9 @@ export class ReplayStrategyEngine {
       this.controlBar.style.display = 'flex';
     }
 
-    this.clearReplayTradeMarkings();
     this.updateTimeDisplay();
-    this.updateStatsDisplay();
-
-    // Initial evaluation of existing boxes at cut point
-    this.evaluateBoxesStrategy(trimmed[trimmed.length - 1]);
+    // Chronologically evaluate and plot all trades from box inception up to cut point
+    this.recomputeAllBoxTrades();
   }
 
   /**
@@ -749,13 +773,8 @@ export class ReplayStrategyEngine {
     this.currentIndex = this.cutIndex;
     const trimmed = this.fullCandles.slice(0, this.cutIndex + 1);
     this.setChartData(trimmed);
-    this.boxTradeStates.clear();
-    this.clearReplayTradeMarkings();
     this.updateTimeDisplay();
-    this.updateStatsDisplay();
-    if (trimmed.length > 0) {
-      this.evaluateBoxesStrategy(trimmed[trimmed.length - 1], true);
-    }
+    this.recomputeAllBoxTrades();
   }
 
   /**
@@ -839,6 +858,41 @@ export class ReplayStrategyEngine {
   }
 
   /**
+   * Recomputes all box trades chronologically from inception up to currentIndex.
+   * Ensures that all candles that have already moved past the box have their trades
+   * simulated and marked on the chart.
+   */
+  recomputeAllBoxTrades() {
+    if (!this.chart) return;
+    this.clearReplayTradeMarkings();
+    this.boxTradeStates.clear();
+
+    const overlays = this.chart.getOverlays() || [];
+    const rects = overlays.filter((ov) => ov.name === 'rect');
+    if (rects.length === 0) {
+      this.updateStatsDisplay();
+      return;
+    }
+
+    const fullList = (this.fullCandles && this.fullCandles.length > 0)
+      ? this.fullCandles
+      : (this.chart.getDataList?.() || []);
+    if (fullList.length === 0) return;
+
+    const limitIdx = (this.currentIndex >= 0 && this.currentIndex < fullList.length)
+      ? this.currentIndex
+      : fullList.length - 1;
+
+    for (let i = 0; i <= limitIdx; i++) {
+      const b = fullList[i];
+      if (!b) continue;
+      this.evaluateBoxesStrategy(b, true);
+    }
+
+    this.updateStatsDisplay();
+  }
+
+  /**
    * 🦅 BLIND STRATEGY ENGINE EXECUTION (ZERO LOOKAHEAD, ZERO TRAPS, ZERO OVERFIT)
    * Executes strictly according to the two point markings (Retest Fulcrum Axis & Vacuum Void)
    * of user-drawn boxes.
@@ -860,8 +914,12 @@ export class ReplayStrategyEngine {
     rects.forEach((rect) => {
       // 1. Calculate the Two Point Markings (Retest Fulcrum Axis & Vacuum Void)
       let levels = null;
+      const fullList = (this.fullCandles && this.fullCandles.length > 0)
+        ? this.fullCandles
+        : (this.chart.getDataList?.() || []);
+
       if (typeof window !== 'undefined' && typeof window.__computeBoxFulcrumAndVacuum === 'function') {
-        levels = window.__computeBoxFulcrumAndVacuum(rect, this.fullCandles);
+        levels = window.__computeBoxFulcrumAndVacuum(rect, fullList);
       }
 
       if (!levels) {
@@ -888,14 +946,10 @@ export class ReplayStrategyEngine {
       // Setup arms strictly AFTER the box finishes forming (Zero lookahead during box formation)
       if (bar.timestamp < rightTime) return;
 
-      const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
-      const barMs = tfMins * 60 * 1000;
-      const maxHorizonTs = rightTime + 30 * barMs;
-
       // Get or initialize state for this box
       if (!this.boxTradeStates.has(rect.id)) {
         // Determine impulse direction from candles inside the box [leftTime, rightTime]
-        const boxBars = (this.fullCandles || []).filter(
+        const boxBars = fullList.filter(
           (b) => b && b.timestamp >= leftTime && b.timestamp <= rightTime
         );
         let impulse = 'NEUTRAL';
@@ -911,7 +965,6 @@ export class ReplayStrategyEngine {
           activeTrade: null,
           tradesHistory: [],
           lastExitTime: 0,
-          resolved: false,
           impulse,
           fulcrumPrice,
           vacuumPrice
@@ -919,15 +972,6 @@ export class ReplayStrategyEngine {
       }
 
       const state = this.boxTradeStates.get(rect.id);
-
-      // If setup already resolved (trade taken & finished, or horizon expired), do nothing!
-      if (state.resolved && !state.inTrade) return;
-
-      // Horizon expiry: if 30 bars pass after box without arrival, resolve box
-      if (bar.timestamp > maxHorizonTs && !state.inTrade) {
-        state.resolved = true;
-        return;
-      }
 
       // 1. MANAGE ACTIVE TRADE (Evaluated on every intra-bar micro-tick for realistic broker execution)
       if (state.inTrade && state.activeTrade) {
@@ -998,10 +1042,10 @@ export class ReplayStrategyEngine {
       // 2. ENTRY EVALUATION (ZERO LOOKAHEAD, LEVEL ARRIVAL GATE AT THE TWO POINT MARKINGS)
       // Entries are evaluated strictly upon completed bar close to eliminate repaint and intra-bar flickers
       if (!isBarComplete) return;
-      if (state.resolved || state.inTrade) return;
+      if (state.inTrade) return;
 
-      // 30-min cooldown after previous trade exit on this box
-      if (bar.timestamp - state.lastExitTime < 30 * 60 * 1000) return;
+      // 15-min cooldown after previous trade exit on this box
+      if (bar.timestamp - state.lastExitTime < 15 * 60 * 1000) return;
 
       const { impulse } = state;
       const targetLevels = [fulcrumPrice, vacuumPrice];
@@ -1158,7 +1202,6 @@ export class ReplayStrategyEngine {
     state.inTrade = false;
     state.activeTrade = null;
     state.lastExitTime = bar.timestamp;
-    state.resolved = true; // Mark box setup as completed so no subsequent false trades trigger
 
     // Create On-Chart Light Outcome Box spanning entry to exit with clear vertical height
     try {
