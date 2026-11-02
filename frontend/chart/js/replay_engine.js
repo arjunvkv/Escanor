@@ -1387,9 +1387,9 @@ export class ReplayStrategyEngine {
 
         // Strict Wave Order Gate (W1 to W3): Mined physical audit proves W1-W3 has high win rate & asymmetrical RR; W4+ decays into chop
         if (st.waveNum <= 3 && totalDwellSec <= 240 && departSec <= 45) {
-          // PATTERN 1: PINPOINT INSTITUTIONAL REJECTION (Clean Touch, slip <= 0.25p, displacement >= reqDisp)
+          // PATTERN 1: PINPOINT INSTITUTIONAL REJECTION (Clean Touch, slip <= 0.35p, displacement >= reqDisp)
           // 1A: Ceiling Defense Rejection (approached from below, tested level, reversed down) -> SELL
-          if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.25 && disp <= -reqDisp) {
+          if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.35 && disp <= -reqDisp) {
             const entryPrice = Math.round(curPrice * 100) / 100;
             // SL anchored strictly behind the defended line envelope (lvl + 0.50) — Pure Scratch SL
             const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
@@ -1403,7 +1403,7 @@ export class ReplayStrategyEngine {
             }
           }
           // 1B: Floor Defense Bounce (approached from above, tested level, bounced up) -> BUY
-          else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.25 && disp >= +reqDisp) {
+          else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.35 && disp >= +reqDisp) {
             const entryPrice = Math.round(curPrice * 100) / 100;
             // SL anchored strictly behind the defended line envelope (lvl - 0.50) — Pure Scratch SL
             const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
