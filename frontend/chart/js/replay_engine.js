@@ -1115,7 +1115,8 @@ export class ReplayStrategyEngine {
             lastTouchSec: 0,
             minPrice: curPrice,
             maxPrice: curPrice,
-            lastOutside: (curPrice >= lvl) ? 'above' : 'below',
+            prevPrice: curPrice,
+            macroOrigin: (curPrice >= lvl) ? 'above' : 'below',
             approachDir: (curPrice >= lvl) ? 'above' : 'below'
           };
           state.levelStates.set(lvl, st);
@@ -1134,15 +1135,21 @@ export class ReplayStrategyEngine {
           st.canStartWave = true;
         }
 
-        if (curPrice > lvl + 0.25) {
-          st.lastOutside = 'above';
-        } else if (curPrice < lvl - 0.25) {
-          st.lastOutside = 'below';
+        // Macro Origin memory: anchored to genuine multi-point departure outside the line envelope
+        if (curPrice <= lvl - 1.00) {
+          st.macroOrigin = 'below';
+        } else if (curPrice >= lvl + 1.00) {
+          st.macroOrigin = 'above';
         }
 
-        // A. ARRIVAL / LEVEL ENVELOPE TOUCH (dist <= 0.25p, strictly zero lookahead)
+        // Crossing check between prevPrice and curPrice (captures fast velocity ticks that slice across line)
+        const crossedFromBelow = (st.prevPrice > 0 && st.prevPrice <= lvl && curPrice >= lvl);
+        const crossedFromAbove = (st.prevPrice > 0 && st.prevPrice >= lvl && curPrice <= lvl);
+        const isTouch = (dist <= 0.35) || crossedFromBelow || crossedFromAbove;
+
+        // A. ARRIVAL / LEVEL ENVELOPE ENGAGEMENT
         if (!st.inWave) {
-          if (st.canStartWave && dist <= 0.25) {
+          if (st.canStartWave && isTouch) {
             st.inWave = true;
             st.canStartWave = false;
             st.waveNum += 1;
@@ -1150,11 +1157,17 @@ export class ReplayStrategyEngine {
             st.lastTouchSec = curTimeSec;
             st.minPrice = curPrice;
             st.maxPrice = curPrice;
-            st.approachDir = st.lastOutside || ((curPrice >= lvl) ? 'above' : 'below');
+            if (crossedFromBelow) {
+              st.approachDir = 'below';
+            } else if (crossedFromAbove) {
+              st.approachDir = 'above';
+            } else {
+              st.approachDir = st.macroOrigin || (st.prevPrice <= lvl ? 'below' : 'above');
+            }
           }
         } else {
           // B. ACTIVE WAVE: Hovering vs Displacing Away
-          if (dist <= 0.25) {
+          if (isTouch) {
             st.lastTouchSec = curTimeSec;
             st.minPrice = Math.min(st.minPrice, curPrice);
             st.maxPrice = Math.max(st.maxPrice, curPrice);
@@ -1163,6 +1176,7 @@ export class ReplayStrategyEngine {
             st.canStartWave = true;
           }
         }
+        st.prevPrice = curPrice;
       }
 
       // 2. MANAGE ACTIVE TRADE (Evaluated on every intra-bar micro-tick for realistic broker execution)
@@ -1180,7 +1194,7 @@ export class ReplayStrategyEngine {
         // When trade reaches the opposite sovereign boundary with >= 3.00p profit, bank immediately
         const otherLvl = (Math.abs(tr.testedLevel - vacuumPrice) < 0.05) ? fulcrumPrice : vacuumPrice;
         const distToOther = Math.abs(curPrice - otherLvl);
-        if (distToOther <= 0.20 && ((pos === 'BUY' && curPrice >= entry + 3.00) || (pos === 'SELL' && curPrice <= entry - 3.00))) {
+        if (distToOther <= 0.25 && ((pos === 'BUY' && curPrice >= entry + 3.00) || (pos === 'SELL' && curPrice <= entry - 3.00))) {
           const pnlPts = (pos === 'BUY') ? Math.round((curPrice - entry) * 100) / 100 : Math.round((entry - curPrice) * 100) / 100;
           this.closeTrade(rect.id, tr, bar, 'WIN', pnlPts, curPrice);
           return;
@@ -1199,14 +1213,24 @@ export class ReplayStrategyEngine {
             tr.sl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
           }
 
-          // 2. Physical Trail Milestones for Big Impulse Waves
-          if (mfe >= 8.5) {
-            if (tr.milestone < 2) tr.milestone = 2;
+          // 2. Physical Trail Milestones:
+          // Milestone 1: Lock +1.80p profit at MFE >= 3.20p (Protects multi-point runners from scratching!)
+          if (mfe >= 3.20 && tr.milestone < 1) {
+            tr.milestone = 1;
+            tr.sl = Math.min(tr.sl, Math.round((entry - 1.80) * 100) / 100);
+          }
+
+          // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
+          if (mfe >= 5.00 && tr.milestone < 2) {
+            tr.milestone = 2;
+            tr.sl = Math.min(tr.sl, Math.round((entry - 3.00) * 100) / 100);
+          }
+
+          // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
+          if (mfe >= 8.50) {
+            if (tr.milestone < 3) tr.milestone = 3;
             const peakTrailSl = Math.round((tr.peakPrice + 3.00) * 100) / 100;
             tr.sl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100, peakTrailSl);
-          } else if (mfe >= 5.0) {
-            if (tr.milestone < 1) tr.milestone = 1;
-            tr.sl = Math.min(tr.sl, Math.round((entry - 2.50) * 100) / 100);
           }
 
           // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s without expanding past 1.50p
@@ -1246,14 +1270,24 @@ export class ReplayStrategyEngine {
             tr.sl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
           }
 
-          // 2. Physical Trail Milestones for Big Impulse Waves
-          if (mfe >= 8.5) {
-            if (tr.milestone < 2) tr.milestone = 2;
+          // 2. Physical Trail Milestones:
+          // Milestone 1: Lock +1.80p profit at MFE >= 3.20p (Protects multi-point runners from scratching!)
+          if (mfe >= 3.20 && tr.milestone < 1) {
+            tr.milestone = 1;
+            tr.sl = Math.max(tr.sl, Math.round((entry + 1.80) * 100) / 100);
+          }
+
+          // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
+          if (mfe >= 5.00 && tr.milestone < 2) {
+            tr.milestone = 2;
+            tr.sl = Math.max(tr.sl, Math.round((entry + 3.00) * 100) / 100);
+          }
+
+          // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
+          if (mfe >= 8.50) {
+            if (tr.milestone < 3) tr.milestone = 3;
             const peakTrailSl = Math.round((tr.peakPrice - 3.00) * 100) / 100;
             tr.sl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100, peakTrailSl);
-          } else if (mfe >= 5.0) {
-            if (tr.milestone < 1) tr.milestone = 1;
-            tr.sl = Math.max(tr.sl, Math.round((entry + 2.50) * 100) / 100);
           }
 
           // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s without expanding past 1.50p
@@ -1385,7 +1419,7 @@ export class ReplayStrategyEngine {
 
           // PATTERN 2: MOMENTUM VACUUM BREAKAWAY (departSec <= 30)
           // 2A: Floor Sliced Through (Momentum Breakdown) -> SELL
-          else if (st.approachDir === 'above' && disp <= -0.50 && departSec <= 30) {
+          else if (st.approachDir === 'above' && disp <= -reqDisp && departSec <= 30) {
             const entryPrice = Math.round(curPrice * 100) / 100;
             // SL anchored strictly behind broken level envelope (lvl + 0.50) — Pure Scratch SL
             const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
@@ -1399,7 +1433,7 @@ export class ReplayStrategyEngine {
             }
           }
           // 2B: Ceiling Sliced Through (Momentum Breakout) -> BUY
-          else if (st.approachDir === 'below' && disp >= +0.50 && departSec <= 30) {
+          else if (st.approachDir === 'below' && disp >= +reqDisp && departSec <= 30) {
             const entryPrice = Math.round(curPrice * 100) / 100;
             // SL anchored strictly behind broken level envelope (lvl - 0.50) — Pure Scratch SL
             const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
