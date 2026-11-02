@@ -1145,7 +1145,7 @@ export class ReplayStrategyEngine {
         // Crossing check between prevPrice and curPrice (captures fast velocity ticks that slice across line)
         const crossedFromBelow = (st.prevPrice > 0 && st.prevPrice <= lvl && curPrice >= lvl);
         const crossedFromAbove = (st.prevPrice > 0 && st.prevPrice >= lvl && curPrice <= lvl);
-        const isTouch = (dist <= 0.35) || crossedFromBelow || crossedFromAbove;
+        const isTouch = (dist <= 0.50) || crossedFromBelow || crossedFromAbove;
 
         // A. ARRIVAL / LEVEL ENVELOPE ENGAGEMENT
         if (!st.inWave) {
@@ -1380,14 +1380,14 @@ export class ReplayStrategyEngine {
 
         const departSec = curTimeSec - st.lastTouchSec;
         const totalDwellSec = curTimeSec - st.startTimeSec;
-        const disp = curPrice - lvl;
+        const disp = Math.round((curPrice - lvl) * 100) / 100;
         const reqDisp = isFt ? 0.40 : 0.60;
 
         // Strict Wave Order Gate (W1 to W3): Mined physical audit proves W1-W3 has high win rate & asymmetrical RR; W4+ decays into chop
-        if (st.waveNum <= 3 && totalDwellSec <= 240 && departSec <= 45) {
-          // PATTERN 1: PINPOINT INSTITUTIONAL REJECTION (Clean Touch, slip <= 0.35p, displacement >= reqDisp)
+        if (st.waveNum <= 3 && totalDwellSec <= 240 && departSec <= 60) {
+          // PATTERN 1: PINPOINT INSTITUTIONAL REJECTION (Clean Touch, slip <= 0.50p, displacement >= reqDisp)
           // 1A: Ceiling Defense Rejection (approached from below, tested level, reversed down) -> SELL
-          if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.35 && disp <= -reqDisp) {
+          if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.50 && disp <= -reqDisp) {
             const entryPrice = Math.round(curPrice * 100) / 100;
             // SL anchored strictly behind the defended line envelope (lvl + 0.50) — Pure Scratch SL
             const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
@@ -1401,7 +1401,7 @@ export class ReplayStrategyEngine {
             }
           }
           // 1B: Floor Defense Bounce (approached from above, tested level, bounced up) -> BUY
-          else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.35 && disp >= +reqDisp) {
+          else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.50 && disp >= +reqDisp) {
             const entryPrice = Math.round(curPrice * 100) / 100;
             // SL anchored strictly behind the defended line envelope (lvl - 0.50) — Pure Scratch SL
             const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
