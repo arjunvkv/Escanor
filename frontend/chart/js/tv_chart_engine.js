@@ -782,6 +782,11 @@ function registerCustomOverlays() {
       }
     },
     onDrawEnd: ({ overlay, chart }) => {
+      if (overlay?.name === 'rect') {
+        if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
+          window.__liveSovereignEngine.disarmAutoTrading('New box created');
+        }
+      }
       if (overlay?.points && overlay.points.length >= 2) {
         const c = chart || chartInstance;
         const dList = c?.getDataList?.() || [];
@@ -791,12 +796,25 @@ function registerCustomOverlays() {
         } else {
           overlay.points = sixPoints;
         }
+        if (typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
+          window.__syncBoxFulcrumAndVacuumLines(c);
+        }
       }
       recalculateRectZLevels(chart || chartInstance);
       updateExtensionSeriesRibbon(chart || chartInstance);
     },
+    onPressedMoveStart: ({ overlay, chart }) => {
+      if (overlay?.name === 'rect') {
+        if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
+          window.__liveSovereignEngine.disarmAutoTrading('Box move/resize started');
+        }
+      }
+    },
     onPressedMoveEnd: ({ overlay, chart }) => {
       if (overlay?.name === 'rect' && overlay?.points) {
+        if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
+          window.__liveSovereignEngine.disarmAutoTrading('Box moved/resized');
+        }
         const c = chart || chartInstance;
         const dList = c?.getDataList?.() || [];
         const sixPoints = normalizeRectPoints(overlay.points, dList);
@@ -804,6 +822,9 @@ function registerCustomOverlays() {
           c.overrideOverlay({ id: overlay.id, points: sixPoints });
         } else {
           overlay.points = sixPoints;
+        }
+        if (typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
+          window.__syncBoxFulcrumAndVacuumLines(c);
         }
       }
       recalculateRectZLevels(chart || chartInstance);
@@ -4600,10 +4621,12 @@ export function openExtensionNetworkModal(chart = null) {
   updateBoxFulcrumButtonUI();
 
   // Wire Close Buttons & Escape key
-  const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
-  const closeBtnDone = document.getElementById('tvCloseNetworkModalBtnDone');
-  if (closeBtn) closeBtn.onclick = () => { modal.style.display = 'none'; };
-  if (closeBtnDone) closeBtnDone.onclick = () => { modal.style.display = 'none'; };
+  const closeModal = () => {
+    modal.style.display = 'none';
+    window.removeEventListener('keydown', handleKeydown);
+  };
+  if (closeBtn) closeBtn.onclick = closeModal;
+  if (closeBtnDone) closeBtnDone.onclick = closeModal;
 
   const handleKeydown = (e) => {
     if (e.key === 'Escape') {
@@ -4611,7 +4634,7 @@ export function openExtensionNetworkModal(chart = null) {
       if (frame && frame.classList.contains('tv-nexus-maximized')) {
         window.__toggleNexusMaximized();
       } else {
-        modal.style.display = 'none';
+        closeModal();
       }
     }
   };

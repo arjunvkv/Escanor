@@ -106,19 +106,31 @@ export class LiveStrategyEngine {
       });
     }
 
-    // 4. Header Lot Selector Dynamic Listener
+    // 4. Header Lot Selector Dynamic Listener (Debounced to guarantee 0ms typing latency)
     const headerLotInp = document.getElementById('tvHeaderLotInput');
     if (headerLotInp) {
-      const updateLotDisplay = () => {
-        const lot = this.getLotSize();
-        if (this.isAutoTradingEnabled && this.autoToggleBtn) {
-          this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
+      let lotDebounceTimer = null;
+      const updateLotDisplay = (immediate = false) => {
+        const doUpdate = () => {
+          const lot = this.getLotSize();
+          if (this.isAutoTradingEnabled && this.autoToggleBtn) {
+            this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
+          }
+          this.updateStatsDisplay();
+          this.updateManualExitBtnState();
+        };
+        if (immediate) {
+          if (lotDebounceTimer) clearTimeout(lotDebounceTimer);
+          lotDebounceTimer = null;
+          doUpdate();
+        } else {
+          if (lotDebounceTimer) clearTimeout(lotDebounceTimer);
+          lotDebounceTimer = setTimeout(doUpdate, 300);
         }
-        this.updateStatsDisplay();
-        this.updateManualExitBtnState();
       };
-      headerLotInp.addEventListener('input', updateLotDisplay);
-      headerLotInp.addEventListener('change', updateLotDisplay);
+      headerLotInp.addEventListener('input', () => updateLotDisplay(false));
+      headerLotInp.addEventListener('change', () => updateLotDisplay(true));
+      headerLotInp.addEventListener('blur', () => updateLotDisplay(true));
     }
 
     const lotPills = document.querySelectorAll('.tv-top-lot-pill');

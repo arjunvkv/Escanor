@@ -417,19 +417,28 @@ export class ReplayStrategyEngine {
       this.manualExitActiveTrade();
     });
 
-    // Header Lot Size Listeners: recompute and update dollar profits when trader changes lot size
+    // Header Lot Size Listeners: recompute and update dollar profits when trader changes lot size (debounced)
     if (typeof document !== 'undefined') {
       const headerInp = document.getElementById('tvHeaderLotInput');
-      headerInp?.addEventListener('input', () => {
-        if (!this.isActive) return;
-        this.updateStatsDisplay();
-        this.recomputeAllBoxTrades();
-      });
-      headerInp?.addEventListener('change', () => {
-        if (!this.isActive) return;
-        this.updateStatsDisplay();
-        this.recomputeAllBoxTrades();
-      });
+      let replayLotDebounceTimer = null;
+      const updateReplayLot = (immediate = false) => {
+        const doUpdate = () => {
+          if (!this.isActive) return;
+          this.updateStatsDisplay();
+          this.recomputeAllBoxTrades();
+        };
+        if (immediate) {
+          if (replayLotDebounceTimer) clearTimeout(replayLotDebounceTimer);
+          replayLotDebounceTimer = null;
+          doUpdate();
+        } else {
+          if (replayLotDebounceTimer) clearTimeout(replayLotDebounceTimer);
+          replayLotDebounceTimer = setTimeout(doUpdate, 350);
+        }
+      };
+      headerInp?.addEventListener('input', () => updateReplayLot(false));
+      headerInp?.addEventListener('change', () => updateReplayLot(true));
+      headerInp?.addEventListener('blur', () => updateReplayLot(true));
       document.querySelectorAll('.tv-top-lot-pill').forEach((pill) => {
         pill.addEventListener('click', () => {
           if (!this.isActive) return;

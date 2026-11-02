@@ -189,6 +189,11 @@ export function handleRectPressedMove(points, performPointIndex, dataList, tfMin
   if (!points || points.length !== 6) return;
   if (performPointIndex < 0 || performPointIndex > 5) return;
 
+  // Disarm Live Auto-Trading immediately on the exact millisecond any box handle is moved or resized
+  if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
+    window.__liveSovereignEngine.disarmAutoTrading('Box coordinates changed');
+  }
+
   const pt = points[performPointIndex];
   if (!pt) return;
 

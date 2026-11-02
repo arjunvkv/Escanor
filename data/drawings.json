@@ -5,34 +5,34 @@
       "name": "rect",
       "points": [
         {
-          "timestamp": 1793611200000,
-          "value": 3908.6228528225806,
-          "dataIndex": 1990
+          "timestamp": 1793613300000,
+          "value": 3904.66408266129,
+          "dataIndex": 1997
         },
         {
-          "timestamp": 1793613900000,
-          "value": 3908.6228528225806,
-          "dataIndex": 1999
+          "timestamp": 1793615400000,
+          "value": 3904.66408266129,
+          "dataIndex": 2004
         },
         {
-          "timestamp": 1793613900000,
-          "value": 3896.972757776498,
-          "dataIndex": 1999
+          "timestamp": 1793615400000,
+          "value": 3891.4304795506914,
+          "dataIndex": 2004
         },
         {
-          "timestamp": 1793611200000,
-          "value": 3896.972757776498,
-          "dataIndex": 1990
+          "timestamp": 1793613300000,
+          "value": 3891.4304795506914,
+          "dataIndex": 1997
         },
         {
-          "timestamp": 1793611200000,
-          "value": 3902.7978052995395,
-          "dataIndex": 1990
+          "timestamp": 1793613300000,
+          "value": 3898.047281105991,
+          "dataIndex": 1997
         },
         {
-          "timestamp": 1793613900000,
-          "value": 3902.7978052995395,
-          "dataIndex": 1999
+          "timestamp": 1793615400000,
+          "value": 3898.047281105991,
+          "dataIndex": 2004
         }
       ],
       "styles": null,
