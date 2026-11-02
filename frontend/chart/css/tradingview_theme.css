@@ -4895,6 +4895,53 @@ input[type="number"] {
   50% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
 }
 
+/* Floating Live Sovereign Execution Desk Bar */
+.tv-live-control-bar {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1050;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #141824;
+  border: 1px solid #2a334a;
+  border-radius: 8px;
+  padding: 5px 10px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.85), 0 0 1px rgba(255, 255, 255, 0.1);
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+}
+
+.tv-live-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 7px;
+  background-color: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  border-radius: 4px;
+  color: #34d399;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.tv-live-badge.in-trade {
+  background-color: rgba(59, 130, 246, 0.15);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #60a5fa;
+}
+
+.tv-live-pulse-emerald {
+  width: 6px;
+  height: 6px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 6px #10b981;
+  animation: tvDotPulse 1.2s infinite ease-in-out;
+}
+
 .tv-replay-speed-wrap {
   display: flex;
   align-items: center;

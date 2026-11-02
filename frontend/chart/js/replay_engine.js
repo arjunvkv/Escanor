@@ -489,6 +489,9 @@ export class ReplayStrategyEngine {
       } else if (e.key === 'ArrowRight' && this.isActive) {
         e.preventDefault();
         this.stepForward();
+      } else if ((e.ctrlKey || e.altKey) && (e.key === 'End' || e.code === 'End') && this.isActive) {
+        e.preventDefault();
+        this.manualExitActiveTrade();
       }
     });
 

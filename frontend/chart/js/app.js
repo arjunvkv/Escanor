@@ -12,7 +12,8 @@ import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { ReplayStrategyEngine } from './replay_engine.js?v=202611021245';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611021315';
+import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611021315';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -23,6 +24,7 @@ let lastKnownSpot = null;
 let activeOrders = null;
 let lineTrading = null;
 let structuralLevels = null;
+let liveSovereignEngine = null;
 
 const TF_MAP = {
   '1': { mult: 1, type: 'minute', span: 1, label: '1m' },
@@ -197,6 +199,10 @@ async function init() {
   const replayEngine = new ReplayStrategyEngine({ chart, symbol: currentSymbol });
   replayEngine.bindUI();
   window.__replayEngine = replayEngine;
+
+  // 6c. Initialize Live Sovereign Execution Desk & Structural Strategy Engine
+  liveSovereignEngine = new LiveStrategyEngine({ chartEngine: { chart }, symbol: currentSymbol });
+  window.__liveSovereignEngine = liveSovereignEngine;
 
   // 7. Restore Server-Side Drawings
   try {
@@ -644,19 +650,47 @@ function setupQuickOrderPad() {
   // Header Dollar Inputs Initialization (SL $, TP $, LOCK/TRAIL $)
   initHeaderDollarInputs();
 
-  // Hotkeys: Alt + PageUp (Immediate BUY), Alt + PageDown (Immediate SELL), Alt + End (Immediate CLOSE ALL), Alt + B (Breakeven + 0.2 pip), Alt + Home (Move/Trail SL)
-  // Supports both Left Alt and Right Alt (AltGraph on Windows/international keyboards)
+  // Hotkeys:
+  // Alt + PageUp (Immediate BUY), Alt + PageDown (Immediate SELL), Alt + End / Ctrl + End (Immediate CLOSE), Alt + B (Breakeven + 0.2 pip), Alt + Home (Move/Trail SL)
+  // Supports both Left Alt and Right Alt (AltGraph on Windows/international keyboards) and Ctrl/Cmd keys
   let lastHotkeyTriggerTime = 0;
   window.addEventListener('keydown', (e) => {
     const isAltActive = Boolean(e.altKey || (typeof e.getModifierState === 'function' && (e.getModifierState('Alt') || e.getModifierState('AltGraph'))));
+    const isCtrlActive = Boolean(e.ctrlKey || e.metaKey);
+    const isEnd = (e.key === 'End' || e.code === 'End');
+
+    // ⚡ Ctrl + End (or Alt + End): Close Active Sovereign Trade / Close All Immediately
+    if (isEnd && (isCtrlActive || isAltActive)) {
+      e.preventDefault();
+      const now = Date.now();
+      if (now - lastHotkeyTriggerTime < 500) return;
+      lastHotkeyTriggerTime = now;
+
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName)) {
+        document.activeElement.blur();
+      }
+
+      if (window.__replayActive && window.__replayEngine && typeof window.__replayEngine.manualExitActiveTrade === 'function') {
+        window.__replayEngine.manualExitActiveTrade();
+        return;
+      }
+
+      if (window.__liveSovereignEngine && window.__liveSovereignEngine.hasActiveTrade()) {
+        window.__liveSovereignEngine.manualExitActiveTrade();
+        return;
+      }
+
+      executeImmediateCloseAllTrades();
+      return;
+    }
+
     if (!isAltActive) return;
 
     const isPageUp = (e.key === 'PageUp' || e.code === 'PageUp');
     const isPageDown = (e.key === 'PageDown' || e.code === 'PageDown');
-    const isEnd = (e.key === 'End' || e.code === 'End');
     const isB = (e.key === 'b' || e.key === 'B' || e.code === 'KeyB');
     const isHome = (e.key === 'Home' || e.code === 'Home');
-    if (!isPageUp && !isPageDown && !isEnd && !isB && !isHome) return;
+    if (!isPageUp && !isPageDown && !isB && !isHome) return;
 
     // Debounce rapid key bounce / OS repeat
     const now = Date.now();
@@ -683,8 +717,6 @@ function setupQuickOrderPad() {
         return;
       }
       executeImmediateMarketOrder('SELL');
-    } else if (isEnd) {
-      executeImmediateCloseAllTrades();
     } else if (isB) {
       executeTriggerBreakeven();
     } else if (isHome) {
@@ -1297,6 +1329,10 @@ function connectWebSocket() {
             // 1. Immediately evaluate Line Trading triggers (15ms tick cadence!)
             if (lineTrading) {
               lineTrading.onPriceTick(bid, ask || bid);
+            }
+            // 1b. Immediately evaluate Live Sovereign Strategy triggers (<1ms tick cadence!)
+            if (liveSovereignEngine) {
+              liveSovereignEngine.onPriceTick(bid, ask || bid);
             }
             // 2. Immediately update candle chart live bar
             if (typeof liveBarCallback === 'function') {
@@ -1983,6 +2019,11 @@ function handleLiveTelemetry(tel) {
     if (bid) {
       lineTrading.onPriceTick(bid, ask);
     }
+  }
+
+  // 3b. Feed Live Positions to Live Sovereign Strategy Engine
+  if (liveSovereignEngine) {
+    liveSovereignEngine.reconcileWithPositions(activePositions);
   }
 
   // 4. Update Active Trades & Pending Orders on Chart

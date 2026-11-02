@@ -358,6 +358,23 @@
           <button id="tvReplayExitBtn" class="tv-replay-exit-btn" title="Exit Replay & Return to Live MT5 (Esc)">✕</button>
         </div>
 
+        <!-- ⚡ Floating Live Sovereign Execution Desk Bar -->
+        <div id="tvLiveControlBar" class="tv-live-control-bar" style="display: none;">
+          <div class="tv-replay-drag-handle" title="Drag Live Bar">⋮⋮</div>
+          <div id="tvLiveStatusBadge" class="tv-live-badge">
+            <span class="tv-live-pulse-emerald"></span>
+            <span>LIVE DESK</span>
+          </div>
+          <div class="tv-replay-divider"></div>
+          <button id="tvLiveTrailToggleBtn" class="tv-replay-btn tv-replay-trail-btn active" title="Toggle Live Profit Trailing (Milestones & Peak Trail). Breakeven remains always active.">⚡ TRAIL: ON</button>
+          <button id="tvLiveManualExitBtn" class="tv-replay-btn tv-replay-exit-trade-btn" style="display: none;" title="Manually Close Active Trade at Current Market Price (Ctrl+End)">🛑 CLOSE TRADE</button>
+          <div class="tv-replay-divider"></div>
+          <div id="tvLiveStatsBadge" class="tv-replay-stats-badge" title="Live Sovereign Strategy Performance">
+            <span class="tv-strat-dot">📈</span>
+            <span id="tvLiveStatsText">0 Trades | $0.00</span>
+          </div>
+        </div>
+
         <!-- Canvas Container -->
         <div id="klineChart"></div>
       </main>
@@ -1497,6 +1514,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611021245"></script>
+  <script type="module" src="/chart/js/app.js?v=202611021320"></script>
 </body>
 </html>
