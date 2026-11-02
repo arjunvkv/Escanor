@@ -189,7 +189,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         if (window.__replayEngine) {
           window.__replayEngine.onOverlayRemoved(ov.id);
         }
+        if (window.__liveSovereignEngine) {
+          window.__liveSovereignEngine.onOverlayRemoved(ov.id);
+        }
       });
+      if (window.__liveSovereignEngine) {
+        window.__liveSovereignEngine.onClearAllDrawings();
+      }
       if (window.__lineTradingManager) {
         window.__lineTradingManager.clearAllLines();
       }
@@ -658,6 +664,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       }
       if (window.__replayEngine) {
         window.__replayEngine.onOverlayRemoved(id);
+      }
+      if (window.__liveSovereignEngine) {
+        window.__liveSovereignEngine.onOverlayRemoved(id);
       }
       recalculateRectZLevels(chart);
       updateExtensionSeriesRibbon(chart);

@@ -4942,6 +4942,36 @@ input[type="number"] {
   animation: tvDotPulse 1.2s infinite ease-in-out;
 }
 
+.tv-live-auto-btn {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.tv-live-auto-btn.active {
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid rgba(16, 185, 129, 0.6);
+  color: #34d399;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.35);
+}
+.tv-live-auto-btn.active:hover {
+  background: rgba(16, 185, 129, 0.35);
+  color: #6ee7b7;
+}
+.tv-live-auto-btn.off {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #fca5a5;
+}
+.tv-live-auto-btn.off:hover {
+  background: rgba(239, 68, 68, 0.28);
+  color: #ffffff;
+}
+
 .tv-replay-speed-wrap {
   display: flex;
   align-items: center;

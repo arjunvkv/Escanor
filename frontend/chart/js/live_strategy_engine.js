@@ -24,14 +24,17 @@ export class LiveStrategyEngine {
     this.symbol = symbol;
 
     this.boxTradeStates = new Map(); // boxId -> { inTrade, activeTrade, tradesHistory, lastExitTime, fulcrumPrice, vacuumPrice, levelStates }
+    this.isAutoTradingEnabled = false; // Disarmed by default for safety; turns OFF on box move/clear
     this.isTrailingEnabled = true; // Trailing enabled by default; BE is always active
     this.lastEvaluatedPrice = null;
     this.lastEvaluatedTimeSec = null;
     this.lastBrokerModifyTime = 0;
+    this.lastDisarmNotificationTime = 0;
     this.isExecutingOrder = false;
 
     // UI Elements
     this.controlBar = null;
+    this.autoToggleBtn = null;
     this.trailToggleBtn = null;
     this.manualExitBtn = null;
     this.statsBadge = null;
@@ -60,12 +63,24 @@ export class LiveStrategyEngine {
     if (typeof document === 'undefined') return;
 
     this.controlBar = document.getElementById('tvLiveControlBar');
+    this.autoToggleBtn = document.getElementById('tvLiveAutoToggleBtn');
     this.trailToggleBtn = document.getElementById('tvLiveTrailToggleBtn');
     this.manualExitBtn = document.getElementById('tvLiveManualExitBtn');
     this.statsBadge = document.getElementById('tvLiveStatsText');
     this.statusBadge = document.getElementById('tvLiveStatusBadge');
 
-    // 1. Trailing Toggle Switch
+    // 1. Auto Trading Toggle Switch
+    if (this.autoToggleBtn) {
+      this.autoToggleBtn.addEventListener('click', () => {
+        if (this.isAutoTradingEnabled) {
+          this.disarmAutoTrading('Manual User Click');
+        } else {
+          this.armAutoTrading();
+        }
+      });
+    }
+
+    // 2. Trailing Toggle Switch
     if (this.trailToggleBtn) {
       this.trailToggleBtn.addEventListener('click', () => {
         this.isTrailingEnabled = !this.isTrailingEnabled;
@@ -84,17 +99,21 @@ export class LiveStrategyEngine {
       });
     }
 
-    // 2. Manual Exit Button
+    // 3. Manual Exit Button
     if (this.manualExitBtn) {
       this.manualExitBtn.addEventListener('click', () => {
         this.manualExitActiveTrade();
       });
     }
 
-    // 3. Header Lot Selector Dynamic Listener
+    // 4. Header Lot Selector Dynamic Listener
     const headerLotInp = document.getElementById('tvHeaderLotInput');
     if (headerLotInp) {
       const updateLotDisplay = () => {
+        const lot = this.getLotSize();
+        if (this.isAutoTradingEnabled && this.autoToggleBtn) {
+          this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
+        }
         this.updateStatsDisplay();
         this.updateManualExitBtnState();
       };
@@ -106,15 +125,92 @@ export class LiveStrategyEngine {
     lotPills.forEach((p) => {
       p.addEventListener('click', () => {
         setTimeout(() => {
+          const lot = this.getLotSize();
+          if (this.isAutoTradingEnabled && this.autoToggleBtn) {
+            this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
+          }
           this.updateStatsDisplay();
           this.updateManualExitBtnState();
         }, 50);
       });
     });
 
-    // 4. Make Live Bar Draggable
+    // 5. Make Live Bar Draggable
     if (this.controlBar) {
       this.makeDraggable(this.controlBar);
+    }
+  }
+
+  /**
+   * Arm Auto Trading: Enable live MT5 trade entries
+   */
+  armAutoTrading() {
+    this.isAutoTradingEnabled = true;
+    const lot = this.getLotSize();
+    if (this.autoToggleBtn) {
+      this.autoToggleBtn.classList.remove('off');
+      this.autoToggleBtn.classList.add('active');
+      this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
+      this.autoToggleBtn.title = 'Live Auto Trading is ACTIVE. Automatically turns OFF if any box is moved or deleted.';
+    }
+    if (this.statusBadge) {
+      this.statusBadge.classList.add('hunting');
+    }
+    showChartToast(`🟢 Live Auto Trading ARMED & ACTIVE (${lot} L) — Monitoring level entries`);
+  }
+
+  /**
+   * Disarm Auto Trading: Turn OFF entry triggers to prevent accidental execution
+   */
+  disarmAutoTrading(reason = 'Box Modified') {
+    const wasActive = this.isAutoTradingEnabled;
+    this.isAutoTradingEnabled = false;
+    if (this.autoToggleBtn) {
+      this.autoToggleBtn.classList.remove('active');
+      this.autoToggleBtn.classList.add('off');
+      this.autoToggleBtn.textContent = '🤖 AUTO: OFF';
+      this.autoToggleBtn.title = 'Live Auto Trading is OFF. Click to arm once boxes are configured.';
+    }
+    if (this.statusBadge && !this.hasActiveTrade()) {
+      this.statusBadge.classList.remove('hunting');
+    }
+    const now = Date.now();
+    if (wasActive || (now - this.lastDisarmNotificationTime > 2500)) {
+      this.lastDisarmNotificationTime = now;
+      showChartToast(`🛡️ ${reason} — Auto Trading turned OFF. Re-arm AUTO when ready.`);
+    }
+  }
+
+  /**
+   * Hook called when box coordinates are moved or dragged
+   */
+  onBoxCoordinatesChanged() {
+    this.disarmAutoTrading('Box Coordinates Moved / Modified');
+    this.boxTradeStates.forEach((st) => {
+      if (!st.inTrade && st.levelStates) {
+        st.levelStates.clear();
+      }
+    });
+  }
+
+  /**
+   * Hook called when an individual overlay/box is removed or deleted
+   */
+  onOverlayRemoved(overlayId) {
+    if (this.boxTradeStates.has(overlayId)) {
+      this.boxTradeStates.delete(overlayId);
+      this.disarmAutoTrading('Box Cleared / Removed');
+    }
+  }
+
+  /**
+   * Hook called when all drawings are cleared
+   */
+  onClearAllDrawings() {
+    this.boxTradeStates.clear();
+    this.disarmAutoTrading('All Drawings Cleared');
+    if (this.controlBar && !this.hasActiveTrade()) {
+      this.controlBar.style.display = 'none';
     }
   }
 
@@ -238,6 +334,19 @@ export class LiveStrategyEngine {
     }
 
     const state = this.boxTradeStates.get(rect.id);
+
+    // Dual-Layer Safety: If box coordinates moved or shifted, immediately disarm auto trading
+    const ptsKey = (rect.points || []).map(p => `${Math.round(p.value * 100) / 100}_${p.timestamp}`).join('|');
+    if (state.lastKnownPtsKey && state.lastKnownPtsKey !== ptsKey) {
+      state.lastKnownPtsKey = ptsKey;
+      state.fulcrumPrice = fulcrumPrice;
+      state.vacuumPrice = vacuumPrice;
+      this.disarmAutoTrading('Box Coordinates Moved / Shifted');
+      if (state.levelStates) state.levelStates.clear();
+    } else {
+      state.lastKnownPtsKey = ptsKey;
+    }
+
     const targetLevels = [
       { lvl: vacuumPrice, isFastTransit: true, name: 'VACUUM_VOID' },
       { lvl: fulcrumPrice, isFastTransit: false, name: 'RETEST_AXIS' }
@@ -327,8 +436,13 @@ export class LiveStrategyEngine {
       return;
     }
 
-    // 3. EVALUATE ENTRY TRIGGER IF NOT IN TRADE
+    // 3. EVALUATE ENTRY TRIGGER IF NOT IN TRADE (STRICTLY GATED BY AUTO TRADING)
     if (state.inTrade || this.isExecutingOrder) return;
+    if (!this.isAutoTradingEnabled) {
+      // Auto trading is currently OFF: level state tracking continues seamlessly,
+      // but live MT5 market execution is strictly BLOCKED until user turns it ON.
+      return;
+    }
 
     for (const tl of targetLevels) {
       const lvl = tl.lvl;

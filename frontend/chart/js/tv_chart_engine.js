@@ -1890,16 +1890,26 @@ export function initTradingViewChart(containerId = 'klineChart') {
     if (typeof target === 'string' || typeof target === 'number') {
       removedId = String(target);
       const res = rawRemoveOverlay({ id: removedId });
-      if (typeof window !== 'undefined' && window.__replayEngine?.onOverlayRemoved) {
-        try { window.__replayEngine.onOverlayRemoved(removedId); } catch (_) {}
+      if (typeof window !== 'undefined') {
+        if (window.__replayEngine?.onOverlayRemoved) {
+          try { window.__replayEngine.onOverlayRemoved(removedId); } catch (_) {}
+        }
+        if (window.__liveSovereignEngine?.onOverlayRemoved) {
+          try { window.__liveSovereignEngine.onOverlayRemoved(removedId); } catch (_) {}
+        }
       }
       return res;
     }
     if (target && typeof target === 'object' && target.id !== undefined) {
       removedId = String(target.id);
       const res = rawRemoveOverlay({ ...target, id: removedId });
-      if (typeof window !== 'undefined' && window.__replayEngine?.onOverlayRemoved) {
-        try { window.__replayEngine.onOverlayRemoved(removedId); } catch (_) {}
+      if (typeof window !== 'undefined') {
+        if (window.__replayEngine?.onOverlayRemoved) {
+          try { window.__replayEngine.onOverlayRemoved(removedId); } catch (_) {}
+        }
+        if (window.__liveSovereignEngine?.onOverlayRemoved) {
+          try { window.__liveSovereignEngine.onOverlayRemoved(removedId); } catch (_) {}
+        }
       }
       return res;
     }
@@ -5146,8 +5156,13 @@ export function syncBoxFulcrumAndVacuumLines(chart) {
     }
   });
 
-  if (typeof window !== 'undefined' && window.__replayEngine && typeof window.__replayEngine.recomputeAllBoxTrades === 'function') {
-    try { window.__replayEngine.recomputeAllBoxTrades(); } catch (_) {}
+  if (typeof window !== 'undefined') {
+    if (window.__replayEngine && typeof window.__replayEngine.recomputeAllBoxTrades === 'function') {
+      try { window.__replayEngine.recomputeAllBoxTrades(); } catch (_) {}
+    }
+    if (window.__liveSovereignEngine && typeof window.__liveSovereignEngine.onBoxCoordinatesChanged === 'function') {
+      try { window.__liveSovereignEngine.onBoxCoordinatesChanged(); } catch (_) {}
+    }
   }
 }
 window.__syncBoxFulcrumAndVacuumLines = syncBoxFulcrumAndVacuumLines;
