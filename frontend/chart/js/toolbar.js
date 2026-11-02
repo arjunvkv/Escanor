@@ -310,9 +310,6 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
             window.__lineTradingManager.setDragging(false);
           }
           if (overlayName === 'rect') {
-            if (window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
-              window.__liveSovereignEngine.disarmAutoTrading('Box moved/resized');
-            }
             if (typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
               window.__syncBoxFulcrumAndVacuumLines(chart);
             }

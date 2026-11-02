@@ -4,16 +4,16 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611021405';
-import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202611021405';
-import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202611021405';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611021420';
+import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202611021420';
+import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202611021420';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
 import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { ReplayStrategyEngine } from './replay_engine.js?v=202611021405';
-import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611021405';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611021420';
+import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611021420';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';

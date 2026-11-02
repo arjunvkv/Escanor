@@ -804,17 +804,22 @@ function registerCustomOverlays() {
       updateExtensionSeriesRibbon(chart || chartInstance);
     },
     onPressedMoveStart: ({ overlay, chart }) => {
-      if (overlay?.name === 'rect') {
-        if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
-          window.__liveSovereignEngine.disarmAutoTrading('Box move/resize started');
-        }
+      if (overlay?.name === 'rect' && overlay?.points) {
+        overlay._dragStartPointsSnapshot = JSON.stringify(overlay.points.map(p => ({ t: p.timestamp, v: p.value })));
       }
     },
     onPressedMoveEnd: ({ overlay, chart }) => {
       if (overlay?.name === 'rect' && overlay?.points) {
-        if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
-          window.__liveSovereignEngine.disarmAutoTrading('Box moved/resized');
+        const curSnapshot = JSON.stringify(overlay.points.map(p => ({ t: p.timestamp, v: p.value })));
+        const didActuallyChange = Boolean(overlay._dragStartPointsSnapshot && overlay._dragStartPointsSnapshot !== curSnapshot);
+        overlay._dragStartPointsSnapshot = null;
+
+        if (didActuallyChange) {
+          if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
+            window.__liveSovereignEngine.disarmAutoTrading('Box moved/resized');
+          }
         }
+
         const c = chart || chartInstance;
         const dList = c?.getDataList?.() || [];
         const sixPoints = normalizeRectPoints(overlay.points, dList);
@@ -823,7 +828,7 @@ function registerCustomOverlays() {
         } else {
           overlay.points = sixPoints;
         }
-        if (typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
+        if (didActuallyChange && typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
           window.__syncBoxFulcrumAndVacuumLines(c);
         }
       }
@@ -4621,14 +4626,10 @@ export function openExtensionNetworkModal(chart = null) {
   updateBoxFulcrumButtonUI();
 
   // Wire Close Buttons & Escape key
-  const closeModal = () => {
-    modal.style.display = 'none';
-    window.removeEventListener('keydown', handleKeydown);
-  };
-  if (closeBtn) closeBtn.onclick = closeModal;
-  if (closeBtnDone) closeBtnDone.onclick = closeModal;
+  const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
+  const closeBtnDone = document.getElementById('tvCloseNetworkModalBtnDone');
 
-  const handleKeydown = (e) => {
+  function handleKeydown(e) {
     if (e.key === 'Escape') {
       const frame = modal.querySelector('.tv-nexus-chamfer-frame');
       if (frame && frame.classList.contains('tv-nexus-maximized')) {
@@ -4637,7 +4638,15 @@ export function openExtensionNetworkModal(chart = null) {
         closeModal();
       }
     }
-  };
+  }
+
+  function closeModal() {
+    modal.style.display = 'none';
+    window.removeEventListener('keydown', handleKeydown);
+  }
+
+  if (closeBtn) closeBtn.onclick = closeModal;
+  if (closeBtnDone) closeBtnDone.onclick = closeModal;
   window.addEventListener('keydown', handleKeydown);
 
   // Render initial Network tab on open

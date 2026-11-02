@@ -7,36 +7,36 @@
         {
           "timestamp": 1793613300000,
           "value": 3904.66408266129,
-          "dataIndex": 1997
+          "dataIndex": 1991
         },
         {
           "timestamp": 1793615400000,
           "value": 3904.66408266129,
-          "dataIndex": 2004
+          "dataIndex": 1998
         },
         {
           "timestamp": 1793615400000,
           "value": 3891.4304795506914,
-          "dataIndex": 2004
+          "dataIndex": 1998
         },
         {
           "timestamp": 1793613300000,
           "value": 3891.4304795506914,
-          "dataIndex": 1997
+          "dataIndex": 1991
         },
         {
           "timestamp": 1793613300000,
           "value": 3898.047281105991,
-          "dataIndex": 1997
+          "dataIndex": 1991
         },
         {
           "timestamp": 1793615400000,
           "value": 3898.047281105991,
-          "dataIndex": 2004
+          "dataIndex": 1998
         }
       ],
       "styles": null,
-      "zLevel": 15,
+      "zLevel": 100,
       "extendData": {}
     }
   ]
