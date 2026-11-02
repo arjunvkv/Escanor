@@ -406,7 +406,9 @@ export class ReplayStrategyEngine {
         this.trailToggleBtn.textContent = '🛡️ TRAIL: OFF';
       }
       this.updateManualExitBtnState();
-      this.recomputeAllBoxTrades();
+      if (this.isActive) {
+        this.recomputeAllBoxTrades();
+      }
     });
 
     // Manual Market Exit Button (when trailing is OFF or during active trade)
@@ -419,16 +421,20 @@ export class ReplayStrategyEngine {
     if (typeof document !== 'undefined') {
       const headerInp = document.getElementById('tvHeaderLotInput');
       headerInp?.addEventListener('input', () => {
+        if (!this.isActive) return;
         this.updateStatsDisplay();
         this.recomputeAllBoxTrades();
       });
       headerInp?.addEventListener('change', () => {
+        if (!this.isActive) return;
         this.updateStatsDisplay();
         this.recomputeAllBoxTrades();
       });
       document.querySelectorAll('.tv-top-lot-pill').forEach((pill) => {
         pill.addEventListener('click', () => {
+          if (!this.isActive) return;
           setTimeout(() => {
+            if (!this.isActive) return;
             this.updateStatsDisplay();
             this.recomputeAllBoxTrades();
           }, 50);
@@ -1023,6 +1029,11 @@ export class ReplayStrategyEngine {
    */
   recomputeAllBoxTrades() {
     if (!this.chart) return;
+    if (!this.isActive) {
+      // Replay is inactive — do not draw historical simulation trades on the live chart
+      this.clearReplayTradeMarkings();
+      return;
+    }
     this.clearReplayTradeMarkings();
     this.boxTradeStates.clear();
 

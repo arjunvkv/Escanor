@@ -12,7 +12,7 @@ import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { ReplayStrategyEngine } from './replay_engine.js?v=202611021335';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611021350';
 import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611021335';
 
 let chart = null;
