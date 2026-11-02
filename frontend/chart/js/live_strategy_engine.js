@@ -249,7 +249,7 @@ export class LiveStrategyEngine {
   /**
    * Fast evaluation on every live 15ms MT5 tick
    */
-  onPriceTick(bid, ask) {
+  onPriceTick(bid, ask, tickTimeMs = null) {
     if (typeof window !== 'undefined' && window.__replayActive) {
       if (this.controlBar && this.controlBar.style.display !== 'none') {
         this.controlBar.style.display = 'none';
@@ -260,8 +260,9 @@ export class LiveStrategyEngine {
     const curPrice = Number(bid);
     if (!curPrice || isNaN(curPrice)) return;
     this.lastEvaluatedPrice = curPrice;
+    if (tickTimeMs) this.lastTickTimeMs = Number(tickTimeMs);
 
-    const curTimeSec = Math.floor(Date.now() / 1000);
+    const curTimeSec = Math.floor((tickTimeMs || Date.now()) / 1000);
     this.lastEvaluatedTimeSec = curTimeSec;
 
     const overlays = this.chart?.getOverlays?.() || [];
@@ -327,8 +328,10 @@ export class LiveStrategyEngine {
     const { fulcrumPrice, vacuumPrice, rightTime } = levels;
     if (!fulcrumPrice || !vacuumPrice) return;
 
-    // Zero lookahead: box arms strictly AFTER the box finishes forming
-    if (Date.now() <= rightTime) return;
+    // Zero lookahead: box arms strictly AFTER the box finishes forming on the chart timeline
+    const lastBar = (fullList.length > 0) ? fullList[fullList.length - 1] : null;
+    const currentChartTime = lastBar ? (lastBar.timestamp + 5 * 60 * 1000) : (this.lastTickTimeMs || Date.now());
+    if (currentChartTime < rightTime) return;
 
     if (!this.boxTradeStates.has(rect.id)) {
       this.boxTradeStates.set(rect.id, {
