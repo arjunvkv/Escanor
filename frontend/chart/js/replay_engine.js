@@ -769,6 +769,7 @@ export class ReplayStrategyEngine {
       // Start the new live candle at Open
       const initialCandle = {
         timestamp: targetBar.timestamp,
+        subTickTimestamp: targetBar.timestamp,
         open: targetBar.open,
         high: targetBar.open,
         low: targetBar.open,
@@ -787,8 +788,12 @@ export class ReplayStrategyEngine {
     this.currentLiveLow = Math.min(this.currentLiveLow, curPrice);
 
     const isLastTick = (this.currentTickIndex >= this.activeTicks.length - 1);
+    const frac = (this.activeTicks.length > 1) ? (this.currentTickIndex / (this.activeTicks.length - 1)) : 1.0;
+    const subTickTimestamp = targetBar.timestamp + Math.round(frac * 5 * 60 * 1000);
+
     const liveCandle = {
       timestamp: targetBar.timestamp,
+      subTickTimestamp,
       open: targetBar.open,
       high: isLastTick ? targetBar.high : this.currentLiveHigh,
       low: isLastTick ? targetBar.low : this.currentLiveLow,
@@ -843,13 +848,20 @@ export class ReplayStrategyEngine {
 
     // Run Strategy Engine on intra-bar ticks to guarantee 100% deterministic execution
     const ticks = this.generateIntraBarTicks(nextBar);
+    let runHigh = nextBar.open;
+    let runLow = nextBar.open;
     for (let i = 0; i < ticks.length; i++) {
       const isLast = (i === ticks.length - 1);
+      const frac = (ticks.length > 1) ? (i / (ticks.length - 1)) : 1.0;
+      const subTickTs = nextBar.timestamp + Math.round(frac * 5 * 60 * 1000);
+      runHigh = Math.max(runHigh, ticks[i]);
+      runLow = Math.min(runLow, ticks[i]);
       const subBar = {
         timestamp: nextBar.timestamp,
+        subTickTimestamp: subTickTs,
         open: nextBar.open,
-        high: nextBar.high,
-        low: nextBar.low,
+        high: isLast ? nextBar.high : runHigh,
+        low: isLast ? nextBar.low : runLow,
         close: ticks[i]
       };
       this.evaluateBoxesStrategy(subBar, isLast);
@@ -982,13 +994,20 @@ export class ReplayStrategyEngine {
       const b = fullList[i];
       if (!b) continue;
       const ticks = this.generateIntraBarTicks(b);
+      let runHigh = b.open;
+      let runLow = b.open;
       for (let j = 0; j < ticks.length; j++) {
         const isLast = (j === ticks.length - 1);
+        const frac = (ticks.length > 1) ? (j / (ticks.length - 1)) : 1.0;
+        const subTickTs = b.timestamp + Math.round(frac * 5 * 60 * 1000);
+        runHigh = Math.max(runHigh, ticks[j]);
+        runLow = Math.min(runLow, ticks[j]);
         const subBar = {
           timestamp: b.timestamp,
+          subTickTimestamp: subTickTs,
           open: b.open,
-          high: b.high,
-          low: b.low,
+          high: isLast ? b.high : runHigh,
+          low: isLast ? b.low : runLow,
           close: ticks[j]
         };
         this.evaluateBoxesStrategy(subBar, isLast);
@@ -1069,18 +1088,102 @@ export class ReplayStrategyEngine {
       }
 
       const state = this.boxTradeStates.get(rect.id);
+      const curPrice = Number(bar.close);
+      const curTimeSec = Math.floor((bar.subTickTimestamp || bar.timestamp) / 1000);
 
-      // 1. MANAGE ACTIVE TRADE (Evaluated on every intra-bar micro-tick for realistic broker execution)
+      // Target Levels: Vacuum Void (Fast Transit Point) vs Retest Axis
+      const targetLevels = [
+        { lvl: vacuumPrice, isFastTransit: true, name: 'VACUUM_VOID' },
+        { lvl: fulcrumPrice, isFastTransit: false, name: 'RETEST_AXIS' }
+      ];
+
+      if (!state.levelStates) {
+        state.levelStates = new Map();
+      }
+
+      // 1. ALWAYS UPDATE LEVEL STATES ON EVERY LIVE TICK (Immune to inTrade freeze)
+      for (const tl of targetLevels) {
+        const lvl = tl.lvl;
+        const isFt = tl.isFastTransit;
+        let st = state.levelStates.get(lvl);
+        if (!st) {
+          st = {
+            inWave: false,
+            canStartWave: true,
+            waveNum: 0,
+            startTimeSec: 0,
+            lastTouchSec: 0,
+            minPrice: curPrice,
+            maxPrice: curPrice,
+            lastOutside: (curPrice >= lvl) ? 'above' : 'below',
+            approachDir: (curPrice >= lvl) ? 'above' : 'below'
+          };
+          state.levelStates.set(lvl, st);
+        }
+
+        // Cycle Decay & Reset: if away from level for > 15 mins (900s), wave count resets to 0 (fresh institutional cycle)
+        if (st.lastTouchSec > 0 && (curTimeSec - st.lastTouchSec > 900)) {
+          st.waveNum = 0;
+          st.inWave = false;
+          st.canStartWave = true;
+        }
+
+        const dist = Math.abs(curPrice - lvl);
+        const depThreshold = isFt ? 0.60 : 1.00;
+        if (dist >= depThreshold) {
+          st.canStartWave = true;
+        }
+
+        if (curPrice > lvl + 0.25) {
+          st.lastOutside = 'above';
+        } else if (curPrice < lvl - 0.25) {
+          st.lastOutside = 'below';
+        }
+
+        // A. ARRIVAL / LEVEL ENVELOPE TOUCH (dist <= 0.25p, strictly zero lookahead)
+        if (!st.inWave) {
+          if (st.canStartWave && dist <= 0.25) {
+            st.inWave = true;
+            st.canStartWave = false;
+            st.waveNum += 1;
+            st.startTimeSec = curTimeSec;
+            st.lastTouchSec = curTimeSec;
+            st.minPrice = curPrice;
+            st.maxPrice = curPrice;
+            st.approachDir = st.lastOutside || ((curPrice >= lvl) ? 'above' : 'below');
+          }
+        } else {
+          // B. ACTIVE WAVE: Hovering vs Displacing Away
+          if (dist <= 0.25) {
+            st.lastTouchSec = curTimeSec;
+            st.minPrice = Math.min(st.minPrice, curPrice);
+            st.maxPrice = Math.max(st.maxPrice, curPrice);
+          } else if (dist > 1.20) {
+            st.inWave = false;
+            st.canStartWave = true;
+          }
+        }
+      }
+
+      // 2. MANAGE ACTIVE TRADE (Evaluated on every intra-bar micro-tick for realistic broker execution)
       if (state.inTrade && state.activeTrade) {
         const tr = state.activeTrade;
         const pos = tr.dir;
         const entry = tr.entry;
-        const curPrice = Number(bar.close);
-        const curTimeSec = Math.floor(bar.timestamp / 1000);
         const tradeDwellSec = curTimeSec - Math.floor(tr.entryTime / 1000);
 
         if (tr.peakPrice === undefined) {
           tr.peakPrice = curPrice;
+        }
+
+        // OPPOSITE SOVEREIGN TARGET HARVEST RULE:
+        // When trade reaches the opposite sovereign boundary with >= 3.00p profit, bank immediately
+        const otherLvl = (Math.abs(tr.testedLevel - vacuumPrice) < 0.05) ? fulcrumPrice : vacuumPrice;
+        const distToOther = Math.abs(curPrice - otherLvl);
+        if (distToOther <= 0.20 && ((pos === 'BUY' && curPrice >= entry + 3.00) || (pos === 'SELL' && curPrice <= entry - 3.00))) {
+          const pnlPts = (pos === 'BUY') ? Math.round((curPrice - entry) * 100) / 100 : Math.round((entry - curPrice) * 100) / 100;
+          this.closeTrade(rect.id, tr, bar, 'WIN', pnlPts, curPrice);
+          return;
         }
 
         if (pos === 'SELL') {
@@ -1184,7 +1287,7 @@ export class ReplayStrategyEngine {
           const curTop = Math.max(tr.entry, tr.sl, Number(bar.high || curPrice));
           const curBot = Math.min(tr.entry, tr.sl, Number(bar.low || curPrice));
           const boxPoints = [
-            { timestamp: tr.entryTime, value: curTop },
+            { timestamp: tr.entryBarTimestamp || tr.entryTime, value: curTop },
             { timestamp: bar.timestamp, value: curBot }
           ];
           const boxData = {
@@ -1230,137 +1333,83 @@ export class ReplayStrategyEngine {
         return;
       }
 
-      // 2. TRUE PHYSICAL TRAIL AUCTION ENGINE (ZERO LOOKAHEAD, EVALUATED ON LIVE PRICE STREAM)
+      // 3. TRUE PHYSICAL TRAIL AUCTION ENGINE (ZERO LOOKAHEAD, EVALUATED ON LIVE PRICE STREAM)
       // Evaluates on every incoming price tick around Fulcrum & Vacuum lines. Zero candle color/wick dependencies.
       if (state.inTrade) return;
 
-      const targetLevels = [vacuumPrice, fulcrumPrice];
-      const curPrice = Number(bar.close);
-      const curTimeSec = Math.floor(bar.timestamp / 1000);
-
-      if (!state.levelStates) {
-        state.levelStates = new Map();
-      }
-
-      for (const lvl of targetLevels) {
-        let st = state.levelStates.get(lvl);
-        if (!st) {
-          st = {
-            inWave: false,
-            canStartWave: true,
-            waveNum: 0,
-            startPrice: curPrice,
-            startTimeSec: curTimeSec,
-            lastTouchSec: 0,
-            minPrice: curPrice,
-            maxPrice: curPrice,
-            approachDir: (curPrice >= lvl) ? 'above' : 'below'
-          };
-          state.levelStates.set(lvl, st);
-        }
-
-        // Cycle Decay & Reset: if away from level for > 15 mins (900s), wave count resets to 0 (fresh institutional cycle)
-        if (st.lastTouchSec > 0 && (curTimeSec - st.lastTouchSec > 900)) {
-          st.waveNum = 0;
-          st.inWave = false;
-          st.canStartWave = true;
-        }
+      for (const tl of targetLevels) {
+        const lvl = tl.lvl;
+        const isFt = tl.isFastTransit;
+        const st = state.levelStates.get(lvl);
+        if (!st || !st.inWave) continue;
 
         const dist = Math.abs(curPrice - lvl);
-        if (dist >= 0.60) {
-          st.canStartWave = true;
-        }
-        const touchedInBar = (Number(bar.low || curPrice) <= lvl + 0.20) && (Number(bar.high || curPrice) >= lvl - 0.20);
+        if (dist <= 0.25) continue;
 
-        // A. ARRIVAL / LEVEL ENVELOPE TOUCH ZONE (+- 0.20p of level line)
-        if (!st.inWave) {
-          if (st.canStartWave && (dist <= 0.20 || touchedInBar)) {
-            st.inWave = true;
-            st.canStartWave = false;
-            st.waveNum += 1;
-            st.startTimeSec = curTimeSec;
-            st.lastTouchSec = curTimeSec;
-            st.minPrice = Math.min(curPrice, Number(bar.low || curPrice));
-            st.maxPrice = Math.max(curPrice, Number(bar.high || curPrice));
-            st.approachDir = (Number(bar.open || curPrice) >= lvl) ? 'above' : 'below';
-          }
-        } else {
-          // B. ACTIVE WAVE: Hovering vs Displacing Away
-          if (dist <= 0.20) {
-            st.lastTouchSec = curTimeSec;
-            st.minPrice = Math.min(st.minPrice, curPrice, Number(bar.low || curPrice));
-            st.maxPrice = Math.max(st.maxPrice, curPrice, Number(bar.high || curPrice));
-          } else {
-            const dwellSec = curTimeSec - st.startTimeSec;
-            const disp = curPrice - lvl;
+        const departSec = curTimeSec - st.lastTouchSec;
+        const totalDwellSec = curTimeSec - st.startTimeSec;
+        const disp = curPrice - lvl;
+        const reqDisp = isFt ? 0.40 : 0.60;
 
-            // Strict Wave Order Gate (W1 to W3): Mined physical audit proves W1-W3 has 63.6% win rate & 28.2:1 RR; W4+ decays into chop
-            if (st.waveNum <= 3) {
-              // PATTERN 1: PINPOINT INSTITUTIONAL REJECTION (Clean Touch, slip <= 0.25p, displacement >= 0.35p within 45s)
-              // 1A: Ceiling Defense Rejection (approached from below, tested level, reversed down) -> SELL
-              if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.25 && disp <= -0.35 && dwellSec <= 45) {
-                const entryPrice = Math.round(curPrice * 100) / 100;
-                // SL anchored strictly behind the defended line envelope (lvl + 0.50) — Pure Scratch SL
-                const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
-                const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+        // Strict Wave Order Gate (W1 to W3): Mined physical audit proves W1-W3 has high win rate & asymmetrical RR; W4+ decays into chop
+        if (st.waveNum <= 3 && totalDwellSec <= 240 && departSec <= 45) {
+          // PATTERN 1: PINPOINT INSTITUTIONAL REJECTION (Clean Touch, slip <= 0.25p, displacement >= reqDisp)
+          // 1A: Ceiling Defense Rejection (approached from below, tested level, reversed down) -> SELL
+          if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.25 && disp <= -reqDisp) {
+            const entryPrice = Math.round(curPrice * 100) / 100;
+            // SL anchored strictly behind the defended line envelope (lvl + 0.50) — Pure Scratch SL
+            const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
+            const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
 
-                if (risk >= 0.40 && risk <= 1.60) {
-                  st.inWave = false;
-                  st.canStartWave = false;
-                  this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
-                  return;
-                }
-              }
-              // 1B: Floor Defense Bounce (approached from above, tested level, bounced up) -> BUY
-              else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.25 && disp >= +0.35 && dwellSec <= 45) {
-                const entryPrice = Math.round(curPrice * 100) / 100;
-                // SL anchored strictly behind the defended line envelope (lvl - 0.50) — Pure Scratch SL
-                const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
-                const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
-
-                if (risk >= 0.40 && risk <= 1.60) {
-                  st.inWave = false;
-                  st.canStartWave = false;
-                  this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
-                  return;
-                }
-              }
-
-              // PATTERN 2: MOMENTUM VACUUM BREAKAWAY (Sliced cleanly through level by > 0.55p within 25s without stalling)
-              // 2A: Floor Sliced Through (Momentum Breakdown) -> SELL
-              else if (st.approachDir === 'above' && disp <= -0.55 && dwellSec <= 25) {
-                const entryPrice = Math.round(curPrice * 100) / 100;
-                // SL anchored strictly behind broken level envelope (lvl + 0.50) — Pure Scratch SL
-                const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
-                const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
-
-                if (risk >= 0.40 && risk <= 1.60) {
-                  st.inWave = false;
-                  st.canStartWave = false;
-                  this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
-                  return;
-                }
-              }
-              // 2B: Ceiling Sliced Through (Momentum Breakout) -> BUY
-              else if (st.approachDir === 'below' && disp >= +0.55 && dwellSec <= 25) {
-                const entryPrice = Math.round(curPrice * 100) / 100;
-                // SL anchored strictly behind broken level envelope (lvl - 0.50) — Pure Scratch SL
-                const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
-                const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
-
-                if (risk >= 0.40 && risk <= 1.60) {
-                  st.inWave = false;
-                  st.canStartWave = false;
-                  this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
-                  return;
-                }
-              }
-            }
-
-            // If price moved far away without triggering, reset active wave state
-            if (Math.abs(disp) > 1.20) {
+            if (risk >= 0.40 && risk <= 1.60) {
               st.inWave = false;
-              st.canStartWave = true;
+              st.canStartWave = false;
+              this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
+              return;
+            }
+          }
+          // 1B: Floor Defense Bounce (approached from above, tested level, bounced up) -> BUY
+          else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.25 && disp >= +reqDisp) {
+            const entryPrice = Math.round(curPrice * 100) / 100;
+            // SL anchored strictly behind the defended line envelope (lvl - 0.50) — Pure Scratch SL
+            const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
+            const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
+
+            if (risk >= 0.40 && risk <= 1.60) {
+              st.inWave = false;
+              st.canStartWave = false;
+              this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
+              return;
+            }
+          }
+
+          // PATTERN 2: MOMENTUM VACUUM BREAKAWAY (departSec <= 30)
+          // 2A: Floor Sliced Through (Momentum Breakdown) -> SELL
+          else if (st.approachDir === 'above' && disp <= -0.50 && departSec <= 30) {
+            const entryPrice = Math.round(curPrice * 100) / 100;
+            // SL anchored strictly behind broken level envelope (lvl + 0.50) — Pure Scratch SL
+            const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
+            const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+
+            if (risk >= 0.40 && risk <= 1.60) {
+              st.inWave = false;
+              st.canStartWave = false;
+              this.openTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, bar, lvl);
+              return;
+            }
+          }
+          // 2B: Ceiling Sliced Through (Momentum Breakout) -> BUY
+          else if (st.approachDir === 'below' && disp >= +0.50 && departSec <= 30) {
+            const entryPrice = Math.round(curPrice * 100) / 100;
+            // SL anchored strictly behind broken level envelope (lvl - 0.50) — Pure Scratch SL
+            const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
+            const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
+
+            if (risk >= 0.40 && risk <= 1.60) {
+              st.inWave = false;
+              st.canStartWave = false;
+              this.openTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, bar, lvl);
+              return;
             }
           }
         }
@@ -1376,12 +1425,14 @@ export class ReplayStrategyEngine {
     if (!state) return;
 
     const tradeId = `trade_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const tradeTime = bar.subTickTimestamp || bar.timestamp;
     const trade = {
       id: tradeId,
       parentBoxId: boxId,
       dir,
       entry: entryPrice,
-      entryTime: bar.timestamp,
+      entryTime: tradeTime,
+      entryBarTimestamp: bar.timestamp,
       lastBarTimestamp: bar.timestamp,
       barsInTrade: 0,
       dispHistory: [],
@@ -1446,7 +1497,7 @@ export class ReplayStrategyEngine {
           sl,
           risk,
           testedLevel,
-          entryTime: bar.timestamp,
+          entryTime: trade.entryTime,
           isLive: true,
           outcome: 'ACTIVE'
         }
@@ -1471,11 +1522,13 @@ export class ReplayStrategyEngine {
 
     const lot = 0.50; // standard default
     const pnlUsd = pnlPts * 100.0 * lot;
+    const exitTime = bar.subTickTimestamp || bar.timestamp;
 
     trade.outcome = outcome;
     trade.pnlPts = pnlPts;
     trade.pnlUsd = pnlUsd;
-    trade.exitTime = bar.timestamp;
+    trade.exitTime = exitTime;
+    trade.exitBarTimestamp = bar.timestamp;
     trade.exitPrice = exitPrice;
 
     // Update entry marker with exitTime so the dashed green line spans strictly to trade exit
@@ -1502,7 +1555,7 @@ export class ReplayStrategyEngine {
     state.tradesHistory.push({ ...trade });
     state.inTrade = false;
     state.activeTrade = null;
-    state.lastExitTime = bar.timestamp;
+    state.lastExitTime = exitTime;
 
     // Calculate final box bounds spanning entry to exit
     let topVal = Math.max(trade.entry, trade.sl, exitPrice);
@@ -1514,8 +1567,8 @@ export class ReplayStrategyEngine {
 
     const boxPayload = {
       points: [
-        { timestamp: trade.entryTime, value: topVal },
-        { timestamp: bar.timestamp, value: botVal }
+        { timestamp: trade.entryBarTimestamp || trade.entryTime, value: topVal },
+        { timestamp: trade.exitBarTimestamp || bar.timestamp, value: botVal }
       ],
       extendData: {
         parentBoxId: boxId,
