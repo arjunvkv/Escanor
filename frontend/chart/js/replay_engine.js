@@ -54,6 +54,9 @@ export class ReplayStrategyEngine {
     this.statsBadge = null;
     this.playBtn = null;
     this.speedSelect = null;
+    this.trailToggleBtn = null;
+    this.manualExitBtn = null;
+    this.isTrailingEnabled = true;
     
     // Crosshair hover tracker
     this.hoveredBar = null;
@@ -380,12 +383,58 @@ export class ReplayStrategyEngine {
     this.statsBadge = document.getElementById('tvReplayStatsText');
     this.playBtn = document.getElementById('tvReplayPlayBtn');
     this.speedSelect = document.getElementById('tvReplaySpeedSelect');
+    this.trailToggleBtn = document.getElementById('tvReplayTrailToggleBtn');
+    this.manualExitBtn = document.getElementById('tvReplayManualExitBtn');
 
     const jumpBtn = document.getElementById('tvReplayJumpBtn');
     const resetBtn = document.getElementById('tvReplayResetBtn');
     const stepBtn = document.getElementById('tvReplayStepBtn');
     const exitBtn = document.getElementById('tvReplayExitBtn');
     const cancelScissorsBtn = document.getElementById('tvCancelScissorsBtn');
+
+    // Trailing Toggle (Milestones & Peak Trails ON / OFF; Breakeven ALWAYS remains ON)
+    this.trailToggleBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.isTrailingEnabled = !this.isTrailingEnabled;
+      if (this.isTrailingEnabled) {
+        this.trailToggleBtn.classList.remove('off');
+        this.trailToggleBtn.classList.add('active');
+        this.trailToggleBtn.textContent = '⚡ TRAIL: ON';
+      } else {
+        this.trailToggleBtn.classList.remove('active');
+        this.trailToggleBtn.classList.add('off');
+        this.trailToggleBtn.textContent = '🛡️ TRAIL: OFF';
+      }
+      this.updateManualExitBtnState();
+      this.recomputeAllBoxTrades();
+    });
+
+    // Manual Market Exit Button (when trailing is OFF or during active trade)
+    this.manualExitBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.manualExitActiveTrade();
+    });
+
+    // Header Lot Size Listeners: recompute and update dollar profits when trader changes lot size
+    if (typeof document !== 'undefined') {
+      const headerInp = document.getElementById('tvHeaderLotInput');
+      headerInp?.addEventListener('input', () => {
+        this.updateStatsDisplay();
+        this.recomputeAllBoxTrades();
+      });
+      headerInp?.addEventListener('change', () => {
+        this.updateStatsDisplay();
+        this.recomputeAllBoxTrades();
+      });
+      document.querySelectorAll('.tv-top-lot-pill').forEach((pill) => {
+        pill.addEventListener('click', () => {
+          setTimeout(() => {
+            this.updateStatsDisplay();
+            this.recomputeAllBoxTrades();
+          }, 50);
+        });
+      });
+    }
 
     // Header Replay Button Toggle
     this.replayBtn?.addEventListener('click', (e) => {
@@ -1090,6 +1139,8 @@ export class ReplayStrategyEngine {
       const state = this.boxTradeStates.get(rect.id);
       const curPrice = Number(bar.close);
       const curTimeSec = Math.floor((bar.subTickTimestamp || bar.timestamp) / 1000);
+      this.lastEvaluatedBar = bar;
+      this.lastEvaluatedPrice = curPrice;
 
       // Target Levels: Vacuum Void (Fast Transit Point) vs Retest Axis
       const targetLevels = [
@@ -1186,21 +1237,28 @@ export class ReplayStrategyEngine {
         const entry = tr.entry;
         const tradeDwellSec = curTimeSec - Math.floor(tr.entryTime / 1000);
 
+        tr.lastPrice = curPrice;
         if (tr.peakPrice === undefined) {
           tr.peakPrice = curPrice;
         }
 
+        if (this.controlBar && !this.isTrailingEnabled) {
+          this.updateManualExitBtnState();
+        }
+
         // OPPOSITE SOVEREIGN TARGET HARVEST RULE:
-        // When trade reaches the opposite sovereign boundary with >= 3.00p profit, bank immediately
-        const otherLvl = (Math.abs(tr.testedLevel - vacuumPrice) < 0.05) ? fulcrumPrice : vacuumPrice;
-        const isOppositeTarget = (pos === 'BUY' && otherLvl > entry) || (pos === 'SELL' && otherLvl < entry);
-        if (isOppositeTarget) {
-          const targetReached = (pos === 'BUY' && curPrice >= otherLvl - 0.25 && curPrice >= entry + 3.00) ||
-                                (pos === 'SELL' && curPrice <= otherLvl + 0.25 && curPrice <= entry - 3.00);
-          if (targetReached) {
-            const pnlPts = (pos === 'BUY') ? Math.round((curPrice - entry) * 100) / 100 : Math.round((entry - curPrice) * 100) / 100;
-            this.closeTrade(rect.id, tr, bar, 'WIN', pnlPts, curPrice);
-            return;
+        // When trailing is enabled, reaching the opposite sovereign boundary with >= 3.00p profit banks immediately
+        if (this.isTrailingEnabled) {
+          const otherLvl = (Math.abs(tr.testedLevel - vacuumPrice) < 0.05) ? fulcrumPrice : vacuumPrice;
+          const isOppositeTarget = (pos === 'BUY' && otherLvl > entry) || (pos === 'SELL' && otherLvl < entry);
+          if (isOppositeTarget) {
+            const targetReached = (pos === 'BUY' && curPrice >= otherLvl - 0.25 && curPrice >= entry + 3.00) ||
+                                  (pos === 'SELL' && curPrice <= otherLvl + 0.25 && curPrice <= entry - 3.00);
+            if (targetReached) {
+              const pnlPts = (pos === 'BUY') ? Math.round((curPrice - entry) * 100) / 100 : Math.round((entry - curPrice) * 100) / 100;
+              this.closeTrade(rect.id, tr, bar, 'WIN', pnlPts, curPrice);
+              return;
+            }
           }
         }
 
@@ -1217,24 +1275,26 @@ export class ReplayStrategyEngine {
             tr.sl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
           }
 
-          // 2. Physical Trail Milestones:
-          // Milestone 1: Lock +1.80p profit at MFE >= 3.20p (Protects multi-point runners from scratching!)
-          if (mfe >= 3.20 && tr.milestone < 1) {
-            tr.milestone = 1;
-            tr.sl = Math.min(tr.sl, Math.round((entry - 1.80) * 100) / 100);
-          }
+          // 2. Physical Trail Milestones (ONLY IF TRAILING IS ENABLED):
+          if (this.isTrailingEnabled) {
+            // Milestone 1: Lock +1.80p profit at MFE >= 3.20p (Protects multi-point runners from scratching!)
+            if (mfe >= 3.20 && tr.milestone < 1) {
+              tr.milestone = 1;
+              tr.sl = Math.min(tr.sl, Math.round((entry - 1.80) * 100) / 100);
+            }
 
-          // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
-          if (mfe >= 5.00 && tr.milestone < 2) {
-            tr.milestone = 2;
-            tr.sl = Math.min(tr.sl, Math.round((entry - 3.00) * 100) / 100);
-          }
+            // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
+            if (mfe >= 5.00 && tr.milestone < 2) {
+              tr.milestone = 2;
+              tr.sl = Math.min(tr.sl, Math.round((entry - 3.00) * 100) / 100);
+            }
 
-          // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
-          if (mfe >= 8.50) {
-            if (tr.milestone < 3) tr.milestone = 3;
-            const peakTrailSl = Math.round((tr.peakPrice + 3.00) * 100) / 100;
-            tr.sl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100, peakTrailSl);
+            // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
+            if (mfe >= 8.50) {
+              if (tr.milestone < 3) tr.milestone = 3;
+              const peakTrailSl = Math.round((tr.peakPrice + 3.00) * 100) / 100;
+              tr.sl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100, peakTrailSl);
+            }
           }
 
           // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p) but stalled before milestone 1
@@ -1271,24 +1331,26 @@ export class ReplayStrategyEngine {
             tr.sl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
           }
 
-          // 2. Physical Trail Milestones:
-          // Milestone 1: Lock +1.80p profit at MFE >= 3.20p (Protects multi-point runners from scratching!)
-          if (mfe >= 3.20 && tr.milestone < 1) {
-            tr.milestone = 1;
-            tr.sl = Math.max(tr.sl, Math.round((entry + 1.80) * 100) / 100);
-          }
+          // 2. Physical Trail Milestones (ONLY IF TRAILING IS ENABLED):
+          if (this.isTrailingEnabled) {
+            // Milestone 1: Lock +1.80p profit at MFE >= 3.20p (Protects multi-point runners from scratching!)
+            if (mfe >= 3.20 && tr.milestone < 1) {
+              tr.milestone = 1;
+              tr.sl = Math.max(tr.sl, Math.round((entry + 1.80) * 100) / 100);
+            }
 
-          // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
-          if (mfe >= 5.00 && tr.milestone < 2) {
-            tr.milestone = 2;
-            tr.sl = Math.max(tr.sl, Math.round((entry + 3.00) * 100) / 100);
-          }
+            // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
+            if (mfe >= 5.00 && tr.milestone < 2) {
+              tr.milestone = 2;
+              tr.sl = Math.max(tr.sl, Math.round((entry + 3.00) * 100) / 100);
+            }
 
-          // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
-          if (mfe >= 8.50) {
-            if (tr.milestone < 3) tr.milestone = 3;
-            const peakTrailSl = Math.round((tr.peakPrice - 3.00) * 100) / 100;
-            tr.sl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100, peakTrailSl);
+            // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
+            if (mfe >= 8.50) {
+              if (tr.milestone < 3) tr.milestone = 3;
+              const peakTrailSl = Math.round((tr.peakPrice - 3.00) * 100) / 100;
+              tr.sl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100, peakTrailSl);
+            }
           }
 
           // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p) but stalled before milestone 1
@@ -1458,6 +1520,7 @@ export class ReplayStrategyEngine {
 
     const tradeId = `trade_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
     const tradeTime = bar.subTickTimestamp || bar.timestamp;
+    const lot = this.getLotSize();
     const trade = {
       id: tradeId,
       parentBoxId: boxId,
@@ -1471,6 +1534,7 @@ export class ReplayStrategyEngine {
       sl,
       initialSl: sl,
       risk,
+      lot,
       beActive: false,
       runnerActive: false,
       milestone: 0,
@@ -1494,7 +1558,7 @@ export class ReplayStrategyEngine {
           dir,
           price: entryPrice,
           testedLevel,
-          lot: 0.50
+          lot
         }
       });
       if (markerId) {
@@ -1552,10 +1616,11 @@ export class ReplayStrategyEngine {
     const state = this.boxTradeStates.get(boxId);
     if (!state) return;
 
-    const lot = 0.50; // standard default
-    const pnlUsd = pnlPts * 100.0 * lot;
+    const lot = trade.lot || this.getLotSize();
+    const pnlUsd = Math.round(pnlPts * 100.0 * lot * 100) / 100;
     const exitTime = bar.subTickTimestamp || bar.timestamp;
 
+    trade.lot = lot;
     trade.outcome = outcome;
     trade.pnlPts = pnlPts;
     trade.pnlUsd = pnlUsd;
@@ -1665,6 +1730,115 @@ export class ReplayStrategyEngine {
   }
 
   /**
+   * Helper to fetch the current lot size dynamically from the top header input
+   */
+  getLotSize() {
+    if (typeof document !== 'undefined') {
+      const headerInp = document.getElementById('tvHeaderLotInput');
+      const val = parseFloat(headerInp?.value);
+      if (!isNaN(val) && val > 0) return val;
+    }
+    return 0.50; // fallback default
+  }
+
+  /**
+   * Manually exit any active trade at the current replay price (Market Close)
+   */
+  manualExitActiveTrade() {
+    let bar = (this.currentIndex >= 0 && this.currentIndex < this.fullCandles.length)
+      ? this.fullCandles[this.currentIndex]
+      : (this.chart?.getDataList?.()?.slice(-1)[0] || this.lastEvaluatedBar);
+
+    if (!bar) {
+      let anyActive = null;
+      for (const st of this.boxTradeStates.values()) {
+        if (st.inTrade && st.activeTrade) { anyActive = st.activeTrade; break; }
+      }
+      if (anyActive) {
+        bar = {
+          timestamp: anyActive.lastBarTimestamp || anyActive.entryBarTimestamp || Date.now(),
+          close: anyActive.lastPrice ?? anyActive.entry,
+          open: anyActive.entry,
+          high: Math.max(anyActive.entry, anyActive.peakPrice ?? anyActive.entry),
+          low: Math.min(anyActive.entry, anyActive.troughPrice ?? anyActive.entry)
+        };
+      }
+    }
+    if (!bar) return;
+
+    const curPrice = (typeof this.currentTickIndex === 'number' && this.currentTickIndex >= 0 && this.activeTicks?.[this.currentTickIndex])
+      ? this.activeTicks[this.currentTickIndex]
+      : (this.lastEvaluatedPrice ?? Number(bar.close));
+
+    let closed = false;
+    this.boxTradeStates.forEach((state, boxId) => {
+      if (state.inTrade && state.activeTrade) {
+        const tr = state.activeTrade;
+        const pos = tr.dir;
+        const entry = tr.entry;
+        const pnlPts = (pos === 'BUY')
+          ? Math.round((curPrice - entry) * 100) / 100
+          : Math.round((entry - curPrice) * 100) / 100;
+        let outcome = 'LOSS';
+        if (pnlPts >= 0.30) {
+          outcome = 'WIN';
+        } else if (pnlPts >= -0.05) {
+          outcome = 'BE';
+        } else {
+          outcome = 'LOSS';
+        }
+        this.closeTrade(boxId, tr, bar, outcome, pnlPts, curPrice);
+        closed = true;
+      }
+    });
+
+    if (closed) {
+      this.updateStatsDisplay();
+    }
+  }
+
+  /**
+   * Update the visibility and label of the manual exit button
+   */
+  updateManualExitBtnState() {
+    if (!this.manualExitBtn) return;
+    let activeTr = null;
+    for (const st of this.boxTradeStates.values()) {
+      if (st.inTrade && st.activeTrade) {
+        activeTr = st.activeTrade;
+        break;
+      }
+    }
+
+    if (!activeTr) {
+      this.manualExitBtn.style.display = 'none';
+      return;
+    }
+
+    // When trailing is OFF, show the manual exit button prominently with live PnL!
+    if (!this.isTrailingEnabled) {
+      this.manualExitBtn.style.display = 'inline-flex';
+      const curBar = (this.currentIndex >= 0 && this.currentIndex < this.fullCandles.length)
+        ? this.fullCandles[this.currentIndex]
+        : (this.chart?.getDataList?.()?.slice(-1)[0]);
+      const curPrice = (typeof this.currentTickIndex === 'number' && this.currentTickIndex >= 0 && this.activeTicks?.[this.currentTickIndex])
+        ? this.activeTicks[this.currentTickIndex]
+        : Number(curBar?.close || activeTr.entry);
+
+      const pos = activeTr.dir;
+      const curPts = (pos === 'BUY')
+        ? Math.round((curPrice - activeTr.entry) * 100) / 100
+        : Math.round((activeTr.entry - curPrice) * 100) / 100;
+      const curLot = activeTr.lot || this.getLotSize();
+      const curUsd = Math.round(curPts * 100.0 * curLot * 100) / 100;
+      const sign = curUsd >= 0 ? '+' : '-';
+      this.manualExitBtn.textContent = `🛑 CLOSE (${curPts >= 0 ? '+' : ''}${curPts.toFixed(1)}p / ${sign}$${Math.abs(curUsd).toFixed(0)})`;
+    } else {
+      this.manualExitBtn.style.display = 'none';
+    }
+  }
+
+  /**
    * Update Floating Replay Bar Strategy Statistics
    */
   updateStatsDisplay() {
@@ -1673,12 +1847,14 @@ export class ReplayStrategyEngine {
     let totalTrades = 0;
     let netPts = 0.0;
     let netUsd = 0.0;
+    const curLot = this.getLotSize();
 
     this.boxTradeStates.forEach((st) => {
       st.tradesHistory.forEach((t) => {
         totalTrades += 1;
         netPts += (t.pnlPts || 0);
-        netUsd += (t.pnlUsd || 0);
+        const tradeLot = t.lot || curLot;
+        netUsd += (typeof t.pnlUsd === 'number') ? t.pnlUsd : ((t.pnlPts || 0) * 100.0 * tradeLot);
       });
       if (st.inTrade) {
         totalTrades += 1; // 1 active
@@ -1687,6 +1863,8 @@ export class ReplayStrategyEngine {
 
     const sign = netUsd >= 0 ? '+' : '-';
     this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${Math.abs(netUsd).toFixed(0)} (${netPts >= 0 ? '+' : ''}${netPts.toFixed(1)}p)`;
+
+    this.updateManualExitBtnState();
   }
 
   /**

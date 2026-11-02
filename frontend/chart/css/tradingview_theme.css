@@ -4840,6 +4840,61 @@ input[type="number"] {
   color: #fbbf24;
 }
 
+.tv-replay-trail-btn {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+.tv-replay-trail-btn.active {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.5);
+  color: #34d399;
+}
+.tv-replay-trail-btn.active:hover {
+  background: rgba(16, 185, 129, 0.3);
+  color: #6ee7b7;
+}
+.tv-replay-trail-btn.off {
+  background: rgba(100, 116, 139, 0.18);
+  border: 1px solid rgba(100, 116, 139, 0.4);
+  color: #94a3b8;
+}
+.tv-replay-trail-btn.off:hover {
+  background: rgba(100, 116, 139, 0.28);
+  color: #cbd5e1;
+}
+
+.tv-replay-exit-trade-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #f87171;
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  animation: tvPulseCloseBtn 1.5s infinite ease-in-out;
+  transition: all 0.15s ease;
+}
+.tv-replay-exit-trade-btn:hover {
+  background: rgba(239, 68, 68, 0.4);
+  color: #ffffff;
+  border-color: #ef4444;
+}
+@keyframes tvPulseCloseBtn {
+  0%, 100% { box-shadow: 0 0 0 rgba(239, 68, 68, 0); }
+  50% { box-shadow: 0 0 8px rgba(239, 68, 68, 0.5); }
+}
+
 .tv-replay-speed-wrap {
   display: flex;
   align-items: center;
