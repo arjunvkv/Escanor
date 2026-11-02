@@ -1193,11 +1193,15 @@ export class ReplayStrategyEngine {
         // OPPOSITE SOVEREIGN TARGET HARVEST RULE:
         // When trade reaches the opposite sovereign boundary with >= 3.00p profit, bank immediately
         const otherLvl = (Math.abs(tr.testedLevel - vacuumPrice) < 0.05) ? fulcrumPrice : vacuumPrice;
-        const distToOther = Math.abs(curPrice - otherLvl);
-        if (distToOther <= 0.25 && ((pos === 'BUY' && curPrice >= entry + 3.00) || (pos === 'SELL' && curPrice <= entry - 3.00))) {
-          const pnlPts = (pos === 'BUY') ? Math.round((curPrice - entry) * 100) / 100 : Math.round((entry - curPrice) * 100) / 100;
-          this.closeTrade(rect.id, tr, bar, 'WIN', pnlPts, curPrice);
-          return;
+        const isOppositeTarget = (pos === 'BUY' && otherLvl > entry) || (pos === 'SELL' && otherLvl < entry);
+        if (isOppositeTarget) {
+          const targetReached = (pos === 'BUY' && curPrice >= otherLvl - 0.25 && curPrice >= entry + 3.00) ||
+                                (pos === 'SELL' && curPrice <= otherLvl + 0.25 && curPrice <= entry - 3.00);
+          if (targetReached) {
+            const pnlPts = (pos === 'BUY') ? Math.round((curPrice - entry) * 100) / 100 : Math.round((entry - curPrice) * 100) / 100;
+            this.closeTrade(rect.id, tr, bar, 'WIN', pnlPts, curPrice);
+            return;
+          }
         }
 
         if (pos === 'SELL') {
@@ -1233,8 +1237,8 @@ export class ReplayStrategyEngine {
             tr.sl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100, peakTrailSl);
           }
 
-          // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s without expanding past 1.50p
-          if (tradeDwellSec >= 90 && tr.maxMfe < 1.50 && !tr.beActive && mfe <= 0.35) {
+          // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p) but stalled before milestone 1
+          if (tradeDwellSec >= 90 && tr.maxMfe >= 0.80 && tr.maxMfe < 1.50 && !tr.beActive && curPrice <= entry - 0.10) {
             tr.beActive = true;
             tr.sl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
           }
@@ -1242,17 +1246,14 @@ export class ReplayStrategyEngine {
           // Check SL Hit strictly on curPrice
           const slHit = (curPrice >= tr.sl);
           if (slHit) {
+            const pnlPts = Math.round((entry - tr.sl) * 100) / 100;
             let outcome = 'LOSS';
-            let pnlPts = -Math.round((tr.sl - entry) * 100) / 100;
-            if (tr.milestone >= 1) {
+            if (pnlPts >= 0.30) {
               outcome = 'WIN';
-              pnlPts = Math.round((entry - tr.sl) * 100) / 100;
-            } else if (tr.beActive) {
+            } else if (pnlPts >= -0.05) {
               outcome = 'BE';
-              pnlPts = 0.10;
-            } else if (tr.sl < entry) {
-              outcome = 'WIN';
-              pnlPts = Math.round((entry - tr.sl) * 100) / 100;
+            } else {
+              outcome = 'LOSS';
             }
             this.closeTrade(rect.id, tr, bar, outcome, pnlPts, tr.sl);
             return;
@@ -1290,8 +1291,8 @@ export class ReplayStrategyEngine {
             tr.sl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100, peakTrailSl);
           }
 
-          // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s without expanding past 1.50p
-          if (tradeDwellSec >= 90 && tr.maxMfe < 1.50 && !tr.beActive && mfe <= 0.35) {
+          // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p) but stalled before milestone 1
+          if (tradeDwellSec >= 90 && tr.maxMfe >= 0.80 && tr.maxMfe < 1.50 && !tr.beActive && curPrice >= entry + 0.10) {
             tr.beActive = true;
             tr.sl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
           }
@@ -1299,17 +1300,14 @@ export class ReplayStrategyEngine {
           // Check SL Hit strictly on curPrice
           const slHit = (curPrice <= tr.sl);
           if (slHit) {
+            const pnlPts = Math.round((tr.sl - entry) * 100) / 100;
             let outcome = 'LOSS';
-            let pnlPts = -Math.round((entry - tr.sl) * 100) / 100;
-            if (tr.milestone >= 1) {
+            if (pnlPts >= 0.30) {
               outcome = 'WIN';
-              pnlPts = Math.round((tr.sl - entry) * 100) / 100;
-            } else if (tr.beActive) {
+            } else if (pnlPts >= -0.05) {
               outcome = 'BE';
-              pnlPts = 0.10;
-            } else if (tr.sl > entry) {
-              outcome = 'WIN';
-              pnlPts = Math.round((tr.sl - entry) * 100) / 100;
+            } else {
+              outcome = 'LOSS';
             }
             this.closeTrade(rect.id, tr, bar, outcome, pnlPts, tr.sl);
             return;
