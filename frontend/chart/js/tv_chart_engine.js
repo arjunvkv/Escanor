@@ -598,6 +598,164 @@ function registerCustomOverlays() {
           }
         ];
 
+        // --- ORDER FLOW THINNING SHADED ZONES (Sub-bands inside the box) ---
+        const isOrderflowShadingEnabled = Boolean(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
+        if (isOrderflowShadingEnabled && yAxis && typeof yAxis.convertToPixel === 'function') {
+          try {
+            const dataList = chartInstance?.getDataList?.() || [];
+            const ofData = computeBoxOrderflowShading(overlay, dataList);
+            if (ofData) {
+              const clampY = (y) => Math.max(minY, Math.min(maxY, y));
+
+              // 1. Thinned Micro-Shelf (Emerald Green / Purple Launchpad)
+              const yThinTop = clampY(yAxis.convertToPixel(ofData.thinnedTop));
+              const yThinBot = clampY(yAxis.convertToPixel(ofData.thinnedBot));
+              const yThinUpper = Math.min(yThinTop, yThinBot);
+              const yThinLower = Math.max(yThinTop, yThinBot);
+
+              figures.push({
+                type: 'polygon',
+                attrs: {
+                  coordinates: [
+                    { x: minX, y: yThinUpper },
+                    { x: maxX, y: yThinUpper },
+                    { x: maxX, y: yThinLower },
+                    { x: minX, y: yThinLower }
+                  ]
+                },
+                ignoreEvent: true,
+                styles: {
+                  style: 'stroke_fill',
+                  color: ofData.isUp ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)',
+                  borderColor: ofData.isUp ? '#10b981' : '#ef4444',
+                  borderSize: 1.5,
+                  borderStyle: 'dashed'
+                }
+              });
+
+              // Label on Thinned Shelf
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: minX + 6,
+                  y: (yThinUpper + yThinLower) / 2,
+                  text: ofData.isUp ? `⚡ THINNED LAUNCHPAD (${(ofData.thinnedTop - ofData.thinnedBot).toFixed(2)}p)` : `⚡ THINNED DROP ZONE (${(ofData.thinnedTop - ofData.thinnedBot).toFixed(2)}p)`,
+                  align: 'left',
+                  baseline: 'middle'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: ofData.isUp ? '#10b981' : '#f87171',
+                  size: 9.5,
+                  weight: '800',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                  paddingLeft: 3,
+                  paddingRight: 3,
+                  borderRadius: 2
+                }
+              });
+
+              // 2. VPOC Value Area (Cyan / Blue High-Volume Core)
+              const yVpocHi = clampY(yAxis.convertToPixel(ofData.vpocHi));
+              const yVpocLo = clampY(yAxis.convertToPixel(ofData.vpocLo));
+              const yVpocUpper = Math.min(yVpocHi, yVpocLo);
+              const yVpocLower = Math.max(yVpocHi, yVpocLo);
+
+              figures.push({
+                type: 'polygon',
+                attrs: {
+                  coordinates: [
+                    { x: minX, y: yVpocUpper },
+                    { x: maxX, y: yVpocUpper },
+                    { x: maxX, y: yVpocLower },
+                    { x: minX, y: yVpocLower }
+                  ]
+                },
+                ignoreEvent: true,
+                styles: {
+                  style: 'stroke_fill',
+                  color: 'rgba(0, 240, 255, 0.18)',
+                  borderColor: '#00f0ff',
+                  borderSize: 1
+                }
+              });
+
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: maxX - 6,
+                  y: (yVpocUpper + yVpocLower) / 2,
+                  text: `⚓ VPOC CORE $${ofData.vpocCenter.toFixed(2)}`,
+                  align: 'right',
+                  baseline: 'middle'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#00f0ff',
+                  size: 9,
+                  weight: '800',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
+                  paddingLeft: 3,
+                  paddingRight: 3,
+                  borderRadius: 2
+                }
+              });
+
+              // 3. Liquidity Void / Sweep Vacuum (Amber / Orange Shading)
+              const yLvnHi = clampY(yAxis.convertToPixel(ofData.lvnHi));
+              const yLvnLo = clampY(yAxis.convertToPixel(ofData.lvnLo));
+              const yLvnUpper = Math.min(yLvnHi, yLvnLo);
+              const yLvnLower = Math.max(yLvnHi, yLvnLo);
+
+              figures.push({
+                type: 'polygon',
+                attrs: {
+                  coordinates: [
+                    { x: minX, y: yLvnUpper },
+                    { x: maxX, y: yLvnUpper },
+                    { x: maxX, y: yLvnLower },
+                    { x: minX, y: yLvnLower }
+                  ]
+                },
+                ignoreEvent: true,
+                styles: {
+                  style: 'stroke_fill',
+                  color: 'rgba(245, 158, 11, 0.20)',
+                  borderColor: '#f59e0b',
+                  borderSize: 1,
+                  borderStyle: 'dashed'
+                }
+              });
+
+              figures.push({
+                type: 'text',
+                attrs: {
+                  x: (minX + maxX) / 2,
+                  y: (yLvnUpper + yLvnLower) / 2,
+                  text: `░ VACUUM VOID (SPRING/UTAD TRAP) $${ofData.lvnCenter.toFixed(2)}`,
+                  align: 'center',
+                  baseline: 'middle'
+                },
+                ignoreEvent: true,
+                styles: {
+                  color: '#fbbf24',
+                  size: 8.5,
+                  weight: '700',
+                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+                  backgroundColor: 'rgba(13, 17, 26, 0.80)',
+                  paddingLeft: 3,
+                  paddingRight: 3,
+                  borderRadius: 2
+                }
+              });
+            }
+          } catch (e) {
+            console.warn('[rect.createPointFigures] Orderflow shading error:', e);
+          }
+        }
+
         // Visual In-Box Trend Excursion Vector (Clean Canvas: Red ✕ Anchor & Cyan/Blue Trend Vector)
         const isGlobalHidden = Boolean(window.__hideAllRectVolumeOverlays);
         const isThisBoxHidden = Boolean(overlay?.extendData?.hideVolumeOverlay);
@@ -4627,6 +4785,19 @@ export function openExtensionNetworkModal(chart = null) {
   }
   updateBoxFulcrumButtonUI();
 
+  // Wire Box Order Flow Thinning Shaded Zones Button
+  const toggleOrderflowShadingBtn = document.getElementById('tvToggleBoxOrderflowShadingBtn');
+  if (toggleOrderflowShadingBtn) {
+    toggleOrderflowShadingBtn.onclick = function(e) {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+      toggleBoxOrderflowShading(c);
+    };
+  }
+  updateBoxOrderflowShadingButtonUI();
+
   // Wire Close Buttons & Escape key
   const closeBtn = document.getElementById('tvCloseNetworkModalBtn');
   const closeBtnDone = document.getElementById('tvCloseNetworkModalBtnDone');
@@ -5247,4 +5418,173 @@ export function toggleBoxFulcrumLines(chart, forceState = null) {
   }
 }
 window.__toggleBoxFulcrumLines = toggleBoxFulcrumLines;
+
+/**
+ * Computes Order Flow Thinning Shaded Zones for a given drawn box (overlay):
+ * 1. VPOC Value Area (Dense accumulation/distribution core)
+ * 2. Vacuum Pocket / LVN (Zero-interest transit / Spring sweep zone)
+ * 3. Supply/Demand Thinning Shelf (Where the box thinned into)
+ * 4. Liquidity Cliff (Outer exhaustion boundary)
+ */
+export function computeBoxOrderflowShading(overlay, dataList) {
+  if (!overlay || !overlay.points || overlay.points.length < 2 || !dataList || dataList.length === 0) {
+    return null;
+  }
+
+  const p0 = overlay.points[0];
+  const p1 = overlay.points[1];
+  const topPrice = Math.max(p0.value, p1.value);
+  const bottomPrice = Math.min(p0.value, p1.value);
+  const leftTime = Math.min(p0.timestamp, p1.timestamp);
+  const rightTime = Math.max(p0.timestamp, p1.timestamp);
+  const height = topPrice - bottomPrice;
+  if (height <= 0.20) return null;
+
+  // Filter bars inside horizontal span
+  const bars = dataList.filter(b => b.timestamp >= leftTime && b.timestamp <= rightTime);
+  if (bars.length < 2) return null;
+
+  const binStep = Math.max(0.10, Math.min(0.50, height / 20));
+  const numBins = Math.ceil(height / binStep);
+  const bins = new Float32Array(numBins);
+  const deltas = new Float32Array(numBins);
+
+  bars.forEach(b => {
+    const bLo = b.low;
+    const bHi = b.high;
+    const v = b.volume || 1;
+    const span = Math.max(0.01, bHi - bLo);
+    const d = v * ((b.close - b.open) / span);
+
+    for (let idx = 0; idx < numBins; idx++) {
+      const pLo = bottomPrice + idx * binStep;
+      const pHi = pLo + binStep;
+      const overlap = Math.max(0, Math.min(bHi, pHi) - Math.max(bLo, pLo));
+      if (overlap > 0) {
+        const frac = overlap / span;
+        bins[idx] += v * frac;
+        deltas[idx] += d * frac;
+      }
+    }
+  });
+
+  // Find VPOC bin
+  let maxV = 0;
+  let vpocIdx = 0;
+  for (let idx = 0; idx < numBins; idx++) {
+    if (bins[idx] > maxV) {
+      maxV = bins[idx];
+      vpocIdx = idx;
+    }
+  }
+
+  const vpocCenter = bottomPrice + (vpocIdx + 0.5) * binStep;
+  const vpocLo = Math.max(bottomPrice, vpocCenter - binStep * 1.5);
+  const vpocHi = Math.min(topPrice, vpocCenter + binStep * 1.5);
+
+  // Direction: if early bars vs late bars trend up vs down
+  const firstClose = bars[0].close;
+  const lastClose = bars[bars.length - 1].close;
+  const isUp = lastClose >= firstClose;
+
+  // Vacuum (LVN) location (lowest volume bin away from VPOC)
+  let minV = Infinity;
+  let lvnIdx = 0;
+  for (let idx = 1; idx < numBins - 1; idx++) {
+    if (Math.abs(idx - vpocIdx) >= 2) {
+      if (bins[idx] < minV) {
+        minV = bins[idx];
+        lvnIdx = idx;
+      }
+    }
+  }
+  const lvnCenter = bottomPrice + (lvnIdx + 0.5) * binStep;
+  const lvnLo = Math.max(bottomPrice, lvnCenter - binStep);
+  const lvnHi = Math.min(topPrice, lvnCenter + binStep);
+
+  // Thinned Shelf (Where the box converged into: 3.0p - 4.5p micro shelf)
+  let thinnedTop, thinnedBot;
+  if (isUp) {
+    // Accumulation: top thins down toward VPOC, bottom anchored or lifted
+    thinnedTop = Math.min(topPrice, vpocHi + height * 0.15);
+    thinnedBot = Math.max(bottomPrice, vpocLo - height * 0.10);
+  } else {
+    // Distribution: bottom thins up toward VPOC
+    thinnedTop = Math.min(topPrice, vpocHi + height * 0.10);
+    thinnedBot = Math.max(bottomPrice, vpocLo - height * 0.15);
+  }
+
+  return {
+    topPrice,
+    bottomPrice,
+    height,
+    vpocCenter,
+    vpocLo,
+    vpocHi,
+    lvnCenter,
+    lvnLo,
+    lvnHi,
+    thinnedTop,
+    thinnedBot,
+    isUp,
+    leftTime,
+    rightTime
+  };
+}
+window.__computeBoxOrderflowShading = computeBoxOrderflowShading;
+
+/**
+ * Updates UI of the Toggle Box Order Flow Shading button.
+ */
+export function updateBoxOrderflowShadingButtonUI() {
+  const btn = document.getElementById('tvToggleBoxOrderflowShadingBtn');
+  const btnText = document.getElementById('tvToggleBoxOrderflowShadingBtnText');
+  const isActive = !!(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
+
+  if (btn) {
+    if (isActive) {
+      btn.classList.add('active');
+      btn.style.background = 'rgba(168, 85, 247, 0.28)';
+      btn.style.border = '1px solid #c084fc';
+      btn.style.color = '#ffffff';
+      btn.style.boxShadow = '0 0 10px rgba(192, 132, 252, 0.35)';
+    } else {
+      btn.classList.remove('active');
+      btn.style.background = 'rgba(168, 85, 247, 0.12)';
+      btn.style.border = '1px solid #a855f7';
+      btn.style.color = '#c084fc';
+      btn.style.boxShadow = 'none';
+    }
+  }
+
+  if (btnText) {
+    btnText.textContent = isActive ? 'HIDE ORDERFLOW SHADING' : 'SHOW ORDERFLOW SHADING';
+  }
+}
+window.__updateBoxOrderflowShadingButtonUI = updateBoxOrderflowShadingButtonUI;
+
+/**
+ * Toggles Order Flow Thinning Shaded Zones inside all drawn boxes.
+ */
+export function toggleBoxOrderflowShading(chart, forceState = null) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  if (typeof window !== 'undefined') {
+    const curr = !!window.__boxOrderflowShadingEnabled;
+    window.__boxOrderflowShadingEnabled = (forceState !== null) ? !!forceState : !curr;
+  }
+  updateBoxOrderflowShadingButtonUI();
+
+  // Force chart refresh so custom rect figures re-render with/without shaded layers
+  if (c && typeof c.invalidate === 'function') {
+    try { c.invalidate(); } catch (_) {}
+  } else if (c && typeof c.resize === 'function') {
+    try { c.resize(); } catch (_) {}
+  }
+
+  const isNowActive = !!(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
+  if (typeof showChartToast === 'function') {
+    showChartToast(isNowActive ? '🧬 Box Order Flow Thinning Shading Active' : '🧬 Box Order Flow Shading Hidden');
+  }
+}
+window.__toggleBoxOrderflowShading = toggleBoxOrderflowShading;
 
