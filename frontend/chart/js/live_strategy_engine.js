@@ -206,12 +206,44 @@ export class LiveStrategyEngine {
   }
 
   /**
+   * Get current chart timeline timestamp (synchronized with MT5 broker candles)
+   */
+  getChartTimestamp() {
+    if (this.lastTickTimeMs && this.lastTickTimeMs > 1000000000000) {
+      return this.lastTickTimeMs;
+    }
+    const fullList = this.chart?.getDataList?.() || [];
+    if (fullList.length > 0) {
+      return fullList[fullList.length - 1].timestamp;
+    }
+    return Date.now();
+  }
+
+  /**
    * Hook called when an individual overlay/box is removed or deleted
    */
   onOverlayRemoved(overlayId) {
     if (this.boxTradeStates.has(overlayId)) {
+      const state = this.boxTradeStates.get(overlayId);
+      if (state.activeTrade) {
+        if (state.activeTrade.markerId) {
+          try { this.chart.removeOverlay({ id: state.activeTrade.markerId }); } catch (e) {}
+        }
+        if (state.activeTrade.boxOverlayId) {
+          try { this.chart.removeOverlay({ id: state.activeTrade.boxOverlayId }); } catch (e) {}
+        }
+      }
+      (state.tradesHistory || []).forEach((t) => {
+        if (t.markerId) {
+          try { this.chart.removeOverlay({ id: t.markerId }); } catch (e) {}
+        }
+        if (t.boxOverlayId) {
+          try { this.chart.removeOverlay({ id: t.boxOverlayId }); } catch (e) {}
+        }
+      });
       this.boxTradeStates.delete(overlayId);
       this.disarmAutoTrading('Box Cleared / Removed');
+      this.updateStatsDisplay();
     }
   }
 
@@ -219,8 +251,13 @@ export class LiveStrategyEngine {
    * Hook called when all drawings are cleared
    */
   onClearAllDrawings() {
+    this.spawnedOverlayIds.forEach((id) => {
+      try { this.chart.removeOverlay({ id }); } catch (e) {}
+    });
+    this.spawnedOverlayIds.clear();
     this.boxTradeStates.clear();
     this.disarmAutoTrading('All Drawings Cleared');
+    this.updateStatsDisplay();
     if (this.controlBar && !this.hasActiveTrade()) {
       this.controlBar.style.display = 'none';
     }
@@ -262,7 +299,7 @@ export class LiveStrategyEngine {
     this.lastEvaluatedPrice = curPrice;
     if (tickTimeMs) this.lastTickTimeMs = Number(tickTimeMs);
 
-    const curTimeSec = Math.floor((tickTimeMs || Date.now()) / 1000);
+    const curTimeSec = Math.floor((tickTimeMs || this.getChartTimestamp()) / 1000);
     this.lastEvaluatedTimeSec = curTimeSec;
 
     const overlays = this.chart?.getOverlays?.() || [];
@@ -328,10 +365,12 @@ export class LiveStrategyEngine {
     const { fulcrumPrice, vacuumPrice, rightTime } = levels;
     if (!fulcrumPrice || !vacuumPrice) return;
 
-    // Zero lookahead: box arms strictly AFTER the box finishes forming on the chart timeline
+    // In live execution: the box is active as long as the chart timeline has reached its starting point (leftTime)
+    // (We do NOT block when rightTime is extended into the future, as traders routinely extend boxes forward into blank space to see the active zone!)
+    const leftTime = levels.leftTime || 0;
     const lastBar = (fullList.length > 0) ? fullList[fullList.length - 1] : null;
     const currentChartTime = lastBar ? (lastBar.timestamp + 5 * 60 * 1000) : (this.lastTickTimeMs || Date.now());
-    if (currentChartTime < rightTime) return;
+    if (leftTime > 0 && currentChartTime < leftTime) return;
 
     if (!this.boxTradeStates.has(rect.id)) {
       this.boxTradeStates.set(rect.id, {
@@ -400,23 +439,28 @@ export class LiveStrategyEngine {
       }
 
       const dist = Math.abs(curPrice - lvl);
-      const depThreshold = isFt ? 0.60 : 1.00;
-      if (dist >= depThreshold) {
-        st.canStartWave = true;
-      }
-
+      // Macro Origin memory: anchored to genuine multi-point departure outside the line envelope
       if (curPrice <= lvl - 1.00) {
         st.macroOrigin = 'below';
       } else if (curPrice >= lvl + 1.00) {
         st.macroOrigin = 'above';
       }
 
+      const depThreshold = isFt ? 0.60 : 1.00;
+      if (dist >= depThreshold) {
+        st.canStartWave = true;
+      }
+
+      // Crossing check between prevPrice and curPrice (captures fast velocity ticks that slice across line)
       const crossedFromBelow = (st.prevPrice > 0 && st.prevPrice <= lvl && curPrice >= lvl);
       const crossedFromAbove = (st.prevPrice > 0 && st.prevPrice >= lvl && curPrice <= lvl);
       const isTouch = (dist <= 0.50) || crossedFromBelow || crossedFromAbove;
 
+      const timeSinceLastTouch = st.lastTouchSec > 0 ? (curTimeSec - st.lastTouchSec) : 999;
+
       if (!st.inWave) {
-        if (st.canStartWave && isTouch) {
+        // Debounce new waves: require at least 45s between separate wave attempts to prevent micro-tick wave exhaustion
+        if (st.canStartWave && isTouch && (st.lastTouchSec === 0 || timeSinceLastTouch >= 45)) {
           st.inWave = true;
           st.canStartWave = false;
           st.waveNum += 1;
@@ -429,15 +473,16 @@ export class LiveStrategyEngine {
           } else if (crossedFromAbove) {
             st.approachDir = 'above';
           } else {
-            st.approachDir = st.macroOrigin || (st.prevPrice < lvl ? 'below' : 'above');
+            st.approachDir = st.macroOrigin || (st.prevPrice <= lvl ? 'below' : 'above');
           }
         }
       } else {
-        if (dist <= 0.60) {
+        if (isTouch) {
           st.lastTouchSec = curTimeSec;
           st.minPrice = Math.min(st.minPrice, curPrice);
           st.maxPrice = Math.max(st.maxPrice, curPrice);
-        } else if (dist > 1.20) {
+        } else if (dist > 3.00) {
+          // Macro departure: only cancel wave when genuinely 3.00+ points away (not on 1.2p intra-candle noise)
           st.inWave = false;
           st.canStartWave = true;
         }
@@ -473,8 +518,34 @@ export class LiveStrategyEngine {
       const disp = Math.round((curPrice - lvl) * 100) / 100;
       const reqDisp = isFt ? 0.40 : 0.60;
 
-      // Strict Wave Order Gate (W1 to W3)
+      // Strict Wave Order Gate (W1 to W3) with Institutional Dwell & Confirmation Runway
       if (st.waveNum <= 3 && totalDwellSec <= 240 && departSec <= 60) {
+        // PATTERN 3: SOVEREIGN ABSORPTION SWEEP & RECLAIM (Spring Wick / Upthrust Reclaim)
+        // Price sweeps past the level (absorbing liquidity), then reclaims back across the level.
+        if (st.minPrice <= lvl - 0.40 && curPrice >= lvl + 0.35) {
+          const entryPrice = Math.round(curPrice * 100) / 100;
+          const scratchSl = Math.max(Math.round((entryPrice - 1.80) * 100) / 100, Math.round((st.minPrice - 0.20) * 100) / 100);
+          const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
+
+          if (risk >= 0.40 && risk <= 1.80) {
+            st.inWave = false;
+            st.canStartWave = false;
+            this.executeLiveTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, lvl);
+            return;
+          }
+        } else if (st.maxPrice >= lvl + 0.40 && curPrice <= lvl - 0.35) {
+          const entryPrice = Math.round(curPrice * 100) / 100;
+          const scratchSl = Math.min(Math.round((entryPrice + 1.80) * 100) / 100, Math.round((st.maxPrice + 0.20) * 100) / 100);
+          const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+
+          if (risk >= 0.40 && risk <= 1.80) {
+            st.inWave = false;
+            st.canStartWave = false;
+            this.executeLiveTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, lvl);
+            return;
+          }
+        }
+
         // PATTERN 1: PINPOINT REJECTION (Clean Touch, slip <= 0.50p, displacement >= reqDisp)
         if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.50 && disp <= -reqDisp) {
           const entryPrice = Math.round(curPrice * 100) / 100;
@@ -546,7 +617,11 @@ export class LiveStrategyEngine {
         volume: lot,
         sl: scratchSl,
         comment: 'SOVEREIGN_BOX',
-        source: 'live_sovereign_engine'
+        source: 'live_sovereign_engine',
+        auto_be_enabled: true,
+        auto_be_displacement_pips: 18.0, // 1.80 pts physical displacement trigger
+        auto_be_offset_pips: 1.0,         // +0.10 pt Breakeven lock
+        trigger_price: entryPrice
       };
 
       const res = await fetch('/api/trade/execute', {
@@ -567,7 +642,7 @@ export class LiveStrategyEngine {
         }
 
         const tradeId = `trade_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const nowMs = Date.now();
+        const nowMs = this.getChartTimestamp();
         const trade = {
           id: tradeId,
           ticket,
@@ -704,52 +779,52 @@ export class LiveStrategyEngine {
 
       // 1. BE Lock upon Physical Displacement >= 1.80p (MUST-HAVE, ALWAYS ACTIVE)
       if (mfe >= 1.80 && !tr.beActive && tr.milestone === 0) {
-        tr.beActive = true;
         const targetSl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
-        tr.sl = targetSl;
-        this.modifyBrokerSl(tr.ticket, targetSl);
-        showChartToast(`🛡️ Breakeven Locked! #${tr.ticket} SL moved to $${targetSl.toFixed(2)} (+0.10p)`);
+        this.requestBrokerSlModify(tr, targetSl, () => {
+          tr.beActive = true;
+          showChartToast(`🛡️ Breakeven Locked! #${tr.ticket} SL moved to $${targetSl.toFixed(2)} (+0.10p)`);
+        });
       }
 
       // 2. Physical Trail Milestones (ONLY IF TRAILING IS ENABLED)
       if (this.isTrailingEnabled) {
         // Milestone 1: Lock +1.80p profit at MFE >= 3.20p
         if (mfe >= 3.20 && tr.milestone < 1) {
-          tr.milestone = 1;
           const targetSl = Math.min(tr.sl, Math.round((entry - 1.80) * 100) / 100);
-          tr.sl = targetSl;
-          this.modifyBrokerSl(tr.ticket, targetSl);
-          showChartToast(`⚡ Milestone 1 (+1.80p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          this.requestBrokerSlModify(tr, targetSl, () => {
+            tr.milestone = 1;
+            showChartToast(`⚡ Milestone 1 (+1.80p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          });
         }
 
         // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
         if (mfe >= 5.00 && tr.milestone < 2) {
-          tr.milestone = 2;
           const targetSl = Math.min(tr.sl, Math.round((entry - 3.00) * 100) / 100);
-          tr.sl = targetSl;
-          this.modifyBrokerSl(tr.ticket, targetSl);
-          showChartToast(`⚡ Milestone 2 (+3.00p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          this.requestBrokerSlModify(tr, targetSl, () => {
+            tr.milestone = 2;
+            showChartToast(`⚡ Milestone 2 (+3.00p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          });
         }
 
         // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
         if (mfe >= 8.50) {
-          if (tr.milestone < 3) tr.milestone = 3;
           const peakTrailSl = Math.round((tr.peakPrice + 3.00) * 100) / 100;
           const targetSl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100, peakTrailSl);
           if (targetSl < tr.sl) {
-            tr.sl = targetSl;
-            this.modifyBrokerSl(tr.ticket, targetSl);
+            this.requestBrokerSlModify(tr, targetSl, () => {
+              tr.milestone = 3;
+            });
           }
         }
       }
 
       // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p)
       if (tradeDwellSec >= 90 && tr.maxMfe >= 0.80 && tr.maxMfe < 1.50 && !tr.beActive && curPrice <= entry - 0.10) {
-        tr.beActive = true;
         const targetSl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
-        tr.sl = targetSl;
-        this.modifyBrokerSl(tr.ticket, targetSl);
-        showChartToast(`⏱️ Stalling Decay Protection! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+        this.requestBrokerSlModify(tr, targetSl, () => {
+          tr.beActive = true;
+          showChartToast(`⏱️ Stalling Decay Protection! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+        });
       }
     } else if (pos === 'BUY') {
       const mfe = curPrice - entry;
@@ -760,58 +835,58 @@ export class LiveStrategyEngine {
 
       // 1. BE Lock upon Physical Displacement >= 1.80p (MUST-HAVE, ALWAYS ACTIVE)
       if (mfe >= 1.80 && !tr.beActive && tr.milestone === 0) {
-        tr.beActive = true;
         const targetSl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
-        tr.sl = targetSl;
-        this.modifyBrokerSl(tr.ticket, targetSl);
-        showChartToast(`🛡️ Breakeven Locked! #${tr.ticket} SL moved to $${targetSl.toFixed(2)} (+0.10p)`);
+        this.requestBrokerSlModify(tr, targetSl, () => {
+          tr.beActive = true;
+          showChartToast(`🛡️ Breakeven Locked! #${tr.ticket} SL moved to $${targetSl.toFixed(2)} (+0.10p)`);
+        });
       }
 
       // 2. Physical Trail Milestones (ONLY IF TRAILING IS ENABLED)
       if (this.isTrailingEnabled) {
         // Milestone 1: Lock +1.80p profit at MFE >= 3.20p
         if (mfe >= 3.20 && tr.milestone < 1) {
-          tr.milestone = 1;
           const targetSl = Math.max(tr.sl, Math.round((entry + 1.80) * 100) / 100);
-          tr.sl = targetSl;
-          this.modifyBrokerSl(tr.ticket, targetSl);
-          showChartToast(`⚡ Milestone 1 (+1.80p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          this.requestBrokerSlModify(tr, targetSl, () => {
+            tr.milestone = 1;
+            showChartToast(`⚡ Milestone 1 (+1.80p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          });
         }
 
         // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
         if (mfe >= 5.00 && tr.milestone < 2) {
-          tr.milestone = 2;
           const targetSl = Math.max(tr.sl, Math.round((entry + 3.00) * 100) / 100);
-          tr.sl = targetSl;
-          this.modifyBrokerSl(tr.ticket, targetSl);
-          showChartToast(`⚡ Milestone 2 (+3.00p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          this.requestBrokerSlModify(tr, targetSl, () => {
+            tr.milestone = 2;
+            showChartToast(`⚡ Milestone 2 (+3.00p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+          });
         }
 
         // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
         if (mfe >= 8.50) {
-          if (tr.milestone < 3) tr.milestone = 3;
           const peakTrailSl = Math.round((tr.peakPrice - 3.00) * 100) / 100;
           const targetSl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100, peakTrailSl);
           if (targetSl > tr.sl) {
-            tr.sl = targetSl;
-            this.modifyBrokerSl(tr.ticket, targetSl);
+            this.requestBrokerSlModify(tr, targetSl, () => {
+              tr.milestone = 3;
+            });
           }
         }
       }
 
       // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p)
       if (tradeDwellSec >= 90 && tr.maxMfe >= 0.80 && tr.maxMfe < 1.50 && !tr.beActive && curPrice >= entry + 0.10) {
-        tr.beActive = true;
         const targetSl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
-        tr.sl = targetSl;
-        this.modifyBrokerSl(tr.ticket, targetSl);
-        showChartToast(`⏱️ Stalling Decay Protection! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+        this.requestBrokerSlModify(tr, targetSl, () => {
+          tr.beActive = true;
+          showChartToast(`⏱️ Stalling Decay Protection! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
+        });
       }
     }
 
     // Dynamically stretch visual live trade box
     if (this.chart && tr.boxOverlayId) {
-      const nowMs = Date.now();
+      const nowMs = this.getChartTimestamp();
       const curTop = Math.max(tr.entry, tr.sl, curPrice);
       const curBot = Math.min(tr.entry, tr.sl, curPrice);
       try {
@@ -843,23 +918,52 @@ export class LiveStrategyEngine {
   }
 
   /**
+   * Request Broker SL Modify with in-flight lock to prevent duplicate async requests
+   */
+  requestBrokerSlModify(tr, targetSl, onSuccess) {
+    if (!tr || !tr.ticket || tr.isModifyingBrokerSl) return;
+    tr.isModifyingBrokerSl = true;
+
+    this.modifyBrokerSl(tr.ticket, targetSl).then((ok) => {
+      tr.isModifyingBrokerSl = false;
+      if (ok) {
+        tr.sl = targetSl;
+        if (typeof onSuccess === 'function') onSuccess();
+      }
+    }).catch(() => {
+      tr.isModifyingBrokerSl = false;
+    });
+  }
+
+  /**
    * Modify Broker SL on MT5 Server via /api/trade/modify
+   * Returns true IF AND ONLY IF the broker confirmed the modification.
    */
   async modifyBrokerSl(ticket, newSl) {
-    if (!ticket) return;
+    if (!ticket) return false;
     const now = Date.now();
-    // Throttle modifications to at most once per 600ms
-    if (now - this.lastBrokerModifyTime < 600) return;
-    this.lastBrokerModifyTime = now;
+    // Throttle modifications to at most once per 450ms
+    if (now - this.lastBrokerModifyTime < 450) return false;
 
     try {
-      await fetch('/api/trade/modify', {
+      const res = await fetch('/api/trade/modify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket, sl: newSl, symbol: this.symbol })
       });
+      const data = await res.json();
+      this.lastBrokerModifyTime = Date.now();
+
+      if (data && (data.status === 'OK' || data.status === 'MODIFIED' || data.success)) {
+        console.log(`[LiveSovereign] Broker SL modified successfully for #${ticket} -> $${newSl}`);
+        return true;
+      } else {
+        console.warn(`[LiveSovereign] Broker SL modify rejected for #${ticket}:`, data?.error || data);
+        return false;
+      }
     } catch (err) {
       console.warn(`[LiveSovereign] Failed to modify broker SL for #${ticket}:`, err);
+      return false;
     }
   }
 
@@ -867,18 +971,36 @@ export class LiveStrategyEngine {
    * Reconcile Engine State with MT5 Live Positions
    * Called whenever positions list arrives from MT5
    */
-  reconcileWithPositions(positions) {
+  async reconcileWithPositions(positions) {
     const liveTickets = new Set((positions || []).map((p) => Number(p.ticket)));
+    const closingPromises = [];
 
     this.boxTradeStates.forEach((state, boxId) => {
       if (state.inTrade && state.activeTrade) {
         const tr = state.activeTrade;
         if (tr.ticket && !liveTickets.has(Number(tr.ticket))) {
           // Trade was closed on broker (SL hit, TP hit, or closed externally)
-          this.finalizeClosedTrade(boxId, tr);
+          closingPromises.push(this.finalizeClosedTrade(boxId, tr));
+        } else if (tr.ticket) {
+          // Sync live broker SL if it was modified externally (e.g. by server daemon)
+          const livePos = (positions || []).find((p) => Number(p.ticket) === Number(tr.ticket));
+          if (livePos) {
+            const brokerSl = Number(livePos.sl || 0);
+            if (brokerSl > 0 && Math.abs(brokerSl - tr.sl) > 0.01) {
+              tr.sl = brokerSl;
+              const isBuy = tr.dir === 'BUY';
+              if ((isBuy && brokerSl >= tr.entry + 0.05) || (!isBuy && brokerSl <= tr.entry - 0.05)) {
+                tr.beActive = true;
+              }
+            }
+          }
         }
       }
     });
+
+    if (closingPromises.length > 0) {
+      await Promise.all(closingPromises);
+    }
 
     this.updateStatsDisplay();
     this.updateManualExitBtnState();
@@ -925,7 +1047,7 @@ export class LiveStrategyEngine {
       console.warn('[LiveSovereign] Error fetching ticket result:', err);
     }
 
-    const nowMs = Date.now();
+    const nowMs = this.getChartTimestamp();
     trade.outcome = outcome;
     trade.pnlPts = pnlPts;
     trade.pnlUsd = pnlUsd;
@@ -1054,8 +1176,9 @@ export class LiveStrategyEngine {
         : Math.round((activeTr.entry - curPrice) * 100) / 100;
       const lot = activeTr.lot || this.getLotSize();
       const curUsd = Math.round(curPts * 100.0 * lot * 100) / 100;
-      const sign = curUsd >= 0 ? '+' : '-';
-      this.manualExitBtn.textContent = `🛑 CLOSE (${curPts >= 0 ? '+' : ''}${curPts.toFixed(1)}p / ${sign}$${Math.abs(curUsd).toFixed(0)})`;
+      const usdSign = curUsd > 0.005 ? '+' : (curUsd < -0.005 ? '-' : '');
+      const ptsSign = curPts > 0.005 ? '+' : (curPts < -0.005 ? '-' : '');
+      this.manualExitBtn.textContent = `🛑 CLOSE (${ptsSign}${Math.abs(curPts).toFixed(2)}p / ${usdSign}$${Math.abs(curUsd).toFixed(2)})`;
       this.manualExitBtn.title = 'Manually Close Active Trade at Current Market Price (Ctrl+End)';
     } else {
       this.manualExitBtn.style.display = 'none';
@@ -1085,8 +1208,11 @@ export class LiveStrategyEngine {
       }
     });
 
-    const sign = netUsd >= 0 ? '+' : '-';
-    this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${Math.abs(netUsd).toFixed(0)} (${netPts >= 0 ? '+' : ''}${netPts.toFixed(1)}p)`;
+    const sign = netUsd > 0.005 ? '+' : (netUsd < -0.005 ? '-' : '');
+    const usdStr = Math.abs(netUsd).toFixed(2);
+    const ptsSign = netPts > 0.005 ? '+' : (netPts < -0.005 ? '-' : '');
+    const ptsStr = Math.abs(netPts).toFixed(2);
+    this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${usdStr} (${ptsSign}${ptsStr}p)`;
     this.updateManualExitBtnState();
   }
 

@@ -30,6 +30,30 @@ export function setFootprintEnabled(enabled) {
 }
 
 /**
+ * Configure underlying KLineCharts candle styling to exact pink and white / silver
+ */
+export function applyCandleFootprintStyles(chart, enabled = true) {
+  if (!chart || typeof chart.setStyles !== 'function') return;
+  chart.setStyles({
+    candle: {
+      type: 'candle_solid',
+      bar: {
+        upColor: '#d1d4dc',         // Bull silver/white matching image
+        downColor: '#e0457b',       // Bear pink matching image
+        noChangeColor: '#787b86',
+        upBorderColor: '#e0e3eb',   // Crisp HD edge
+        downBorderColor: '#e0457b', // Crisp HD edge
+        noChangeBorderColor: '#787b86',
+        upWickColor: '#d1d4dc',
+        downWickColor: '#e0457b',
+        noChangeWickColor: '#787b86'
+      }
+    }
+  });
+}
+
+
+/**
  * Evaluates whether a candle forms an Electric Cyan (Buyer Absorption) or
  * Burnt Amber / Yellow (Seller Distribution) trap pattern, and whether any
  * part of the candle (body or wicks) touches/spans across linePrice.

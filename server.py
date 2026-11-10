@@ -698,21 +698,20 @@ async def execute_trade_request(data: dict) -> dict:
             if "ticket" in res and "order" not in res:
                 res["order"] = res["ticket"]
 
-            # Auto-Breakeven for Trap Candle Trades (controlled by trap_be_enabled / trap_trade flag, OFF by default):
+            # Auto-Breakeven for Live Sovereign & Trap Candle Trades:
             ticket = int(res.get("ticket") or res.get("order") or 0)
-            is_trap_be = bool(data.get("trap_be_enabled", False)) or bool(data.get("trap_trade", False))
+            is_trap_be = bool(data.get("trap_be_enabled", False)) or bool(data.get("trap_trade", False)) or bool(data.get("auto_be_enabled", False))
             if is_trap_be and ticket > 0:
                 trigger_price = float(data.get("trigger_price") or res.get("price") or 0.0)
                 disp_pips = float(data.get("auto_be_displacement_pips") or 0.0)
                 if disp_pips <= 0:
-                    raw_disp = float(data.get("auto_be_displacement", 1.5))
+                    raw_disp = float(data.get("auto_be_displacement", 1.8))
                     disp_pips = raw_disp * 10.0 if raw_disp < 10 else raw_disp
                 disp_pts = round(disp_pips * 0.10, 2)
-                # 0.3 pips on Gold = 0.03 point ($0.03)
-                offset_pips = float(data.get("auto_be_offset_pips", 0.3))
+                offset_pips = float(data.get("auto_be_offset_pips", 1.0))
                 offset_delta = round(offset_pips * 0.10, 2)
                 if offset_delta < 0.01:
-                    offset_delta = 0.03
+                    offset_delta = 0.10
                 is_buy = (str(side).upper().startswith("BUY"))
                 target_sl = round(trigger_price + offset_delta, 2) if is_buy else round(trigger_price - offset_delta, 2)
                 threshold_price = round(trigger_price + disp_pts, 2) if is_buy else round(trigger_price - disp_pts, 2)
@@ -734,7 +733,7 @@ async def execute_trade_request(data: dict) -> dict:
                     "armed_at": time.time()
                 }
                 logger.info(
-                    f"🛡️ Trap Candle Trade #{ticket} Auto-Breakeven ARMED: Target SL ${target_sl:.2f} (+{offset_pips}p / +${offset_delta:.2f}) "
+                    f"🛡️ Position #{ticket} Auto-Breakeven ARMED on Server: Target SL ${target_sl:.2f} (+{offset_pips}p / +${offset_delta:.2f}) "
                     f"at +{disp_pips}p ({disp_pts}pt) displacement (threshold ${threshold_price:.2f}, trigger ${trigger_price:.2f})"
                 )
         return res
@@ -862,14 +861,22 @@ async def trade_probe_order(request: Request):
 @app.post("/api/trade/modify")
 async def trade_modify(request: Request):
     """Modify SL/TP of an active position."""
-    data = await request.json()
-    ticket = int(data.get("ticket"))
-    sl = float(data["sl"]) if "sl" in data and data["sl"] is not None else None
-    tp = float(data["tp"]) if "tp" in data and data["tp"] is not None else None
-    res = modify_position(ticket=ticket, sl=sl, tp=tp)
-    if res and res.get("status") == "MODIFIED":
-        res["status"] = "OK"
-    return JSONResponse(content=res)
+    try:
+        data = await request.json()
+        ticket = int(data.get("ticket", 0))
+        sl = float(data["sl"]) if "sl" in data and data["sl"] is not None else None
+        tp = float(data["tp"]) if "tp" in data and data["tp"] is not None else None
+        logger.info(f"⚡ [TradeModify] Incoming SL/TP modify request: ticket #{ticket}, SL={sl}, TP={tp}")
+        res = modify_position(ticket=ticket, sl=sl, tp=tp)
+        if res and res.get("status") in ("MODIFIED", "OK"):
+            res["status"] = "OK"
+            logger.info(f"✅ [TradeModify] Broker SL/TP modified successfully for ticket #{ticket}: SL={sl}, TP={tp}")
+        else:
+            logger.warning(f"❌ [TradeModify] Failed modifying broker SL/TP for ticket #{ticket}: {res}")
+        return JSONResponse(content=res)
+    except Exception as e:
+        logger.error(f"🚨 [TradeModify] Exception modifying position: {e}", exc_info=True)
+        return JSONResponse(status_code=500, content={"status": "FAILED", "error": str(e)})
 
 
 # In-memory registry of armed auto-breakeven positions:
@@ -1997,6 +2004,14 @@ async def get_provenance_scratchpad_ui():
     return FileResponse(str(provenance_path))
 
 
+@app.get("/auction")
+@app.get("/auction_canvas")
+async def get_auction_canvas_ui():
+    """Serve the Candle-Free Sovereign Physical Auction Canvas."""
+    canvas_path = BASE_DIR / "frontend" / "chart" / "auction_canvas.html"
+    return FileResponse(str(canvas_path))
+
+
 @app.get("/")
 async def root_redirect(request: Request):
     """Smart router: Mobile user-agents go to /mobile, desktops go to /chart."""
@@ -2273,6 +2288,11 @@ async def fast_tick_stream_loop():
                     ask = float(tick.ask)
                     # Broadcast immediately whenever bid or ask changes
                     if bid != last_bid or ask != last_ask:
+                        if armed_breakeven_positions:
+                            try:
+                                await check_armed_breakevens()
+                            except Exception as _be_err:
+                                logger.warning(f"Fast tick BE check error: {_be_err}")
                         # Extract physical tick volume from current M1 bar
                         step_vol = 1
                         try:

@@ -5,7 +5,7 @@
  */
 
 import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202610241430';
-import { registerLivingFootprintIndicator } from './living_candle_engine.js?v=202610140655';
+import { registerLivingFootprintIndicator, applyCandleFootprintStyles, isFootprintEnabled } from './living_candle_engine.js?v=202611031455';
 
 // Global reference for chart instance
 let chartInstance = null;
@@ -2041,8 +2041,8 @@ export function initTradingViewChart(containerId = 'klineChart') {
     candle: {
       type: 'candle_solid',
       bar: {
-        upColor: '#d1d4dc',         // Bull silver
-        downColor: '#e0457b',       // Bear rose/pink matching image 1 & 2
+        upColor: '#d1d4dc',         // Bull silver/white
+        downColor: '#e0457b',       // Bear rose/pink matching image
         noChangeColor: '#787b86',
         upBorderColor: '#e0e3eb',   // Crisp HD edge
         downBorderColor: '#e0457b', // Crisp HD edge
@@ -2233,6 +2233,7 @@ export function initTradingViewChart(containerId = 'klineChart') {
   // Register and initialize Living Footprint indicator directly on candle pane (single unified chart)
   try {
     registerLivingFootprintIndicator();
+    applyCandleFootprintStyles(chart, true);
     try {
       chart.removeIndicator({ name: 'LivingFootprint' });
     } catch (_e) {}
@@ -2240,6 +2241,7 @@ export function initTradingViewChart(containerId = 'klineChart') {
   } catch (err) {
     console.warn('[TV Engine] LivingFootprint indicator init failed:', err);
   }
+
 
   // Patch Overlay Views to guarantee that all resize handles ('circle') are prioritized above polygon bodies
   try {

@@ -1,0 +1,83 @@
+[
+  {
+    "time": "18:59:00",
+    "type": "SKYROCKET_BULL",
+    "shelf": 4025.43,
+    "triggered": false,
+    "outcome": "DISSOLVED (NO BREAKOUT)"
+  },
+  {
+    "time": "19:28:00",
+    "type": "SKYROCKET_BULL",
+    "shelf": 4017.8,
+    "triggered": false,
+    "outcome": "DISSOLVED (NO BREAKOUT)"
+  },
+  {
+    "time": "19:33:00",
+    "type": "SKYROCKET_BULL",
+    "shelf": 4017.8,
+    "triggered": true,
+    "entry_p": 4018.0,
+    "sl_p": 4015.02,
+    "total_risk": 2.98,
+    "hit_tp_5p": false,
+    "hit_tp_10p": false,
+    "hit_sl": true,
+    "max_fav": 0.51,
+    "max_adv": 2.98,
+    "outcome": "STOPPED OUT (FAKEOUT)"
+  },
+  {
+    "time": "20:57:00",
+    "type": "WATERFALL_BEAR",
+    "shelf": 4007.92,
+    "triggered": true,
+    "entry_p": 4007.38,
+    "sl_p": 4010.78,
+    "total_risk": 3.4,
+    "hit_tp_5p": false,
+    "hit_tp_10p": false,
+    "hit_sl": true,
+    "max_fav": 0.49,
+    "max_adv": 3.48,
+    "outcome": "STOPPED OUT (FAKEOUT)"
+  },
+  {
+    "time": "21:21:00",
+    "type": "WATERFALL_BEAR",
+    "shelf": 4007.99,
+    "triggered": true,
+    "entry_p": 4007.79,
+    "sl_p": 4009.73,
+    "total_risk": 1.94,
+    "hit_tp_5p": false,
+    "hit_tp_10p": false,
+    "hit_sl": true,
+    "max_fav": 1.99,
+    "max_adv": 1.95,
+    "outcome": "STOPPED OUT (FAKEOUT)"
+  },
+  {
+    "time": "05:56:00",
+    "type": "WATERFALL_BEAR",
+    "shelf": 3997.16,
+    "triggered": true,
+    "entry_p": 3996.93,
+    "sl_p": 3999.7,
+    "total_risk": 2.77,
+    "hit_tp_5p": false,
+    "hit_tp_10p": false,
+    "hit_sl": true,
+    "max_fav": 0.31,
+    "max_adv": 2.91,
+    "outcome": "STOPPED OUT (FAKEOUT)"
+  },
+  {
+    "time": "11:59:00",
+    "type": "SKYROCKET_BULL",
+    "shelf": 3999.24,
+    "triggered": false,
+    "outcome": "DISSOLVED (NO BREAKOUT)"
+  }
+]

@@ -1884,8 +1884,11 @@ export class ReplayStrategyEngine {
       }
     });
 
-    const sign = netUsd >= 0 ? '+' : '-';
-    this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${Math.abs(netUsd).toFixed(0)} (${netPts >= 0 ? '+' : ''}${netPts.toFixed(1)}p)`;
+    const sign = netUsd > 0.005 ? '+' : (netUsd < -0.005 ? '-' : '');
+    const usdStr = Math.abs(netUsd).toFixed(2);
+    const ptsSign = netPts > 0.005 ? '+' : (netPts < -0.005 ? '-' : '');
+    const ptsStr = Math.abs(netPts).toFixed(2);
+    this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${usdStr} (${ptsSign}${ptsStr}p)`;
 
     this.updateManualExitBtnState();
   }
@@ -1943,6 +1946,13 @@ export class ReplayStrategyEngine {
       const found = st.tradesHistory?.find(t => t.id === tradeId);
       if (found) return found;
     }
+    if (typeof window !== 'undefined' && window.__liveStrategyEngine) {
+      for (const st of window.__liveStrategyEngine.boxTradeStates.values()) {
+        if (st.activeTrade && st.activeTrade.id === tradeId) return st.activeTrade;
+        const found = st.tradesHistory?.find(t => t.id === tradeId);
+        if (found) return found;
+      }
+    }
     return null;
   }
 
@@ -1951,7 +1961,10 @@ export class ReplayStrategyEngine {
    */
   getTradesForBox(boxId) {
     if (!boxId) return [];
-    const state = this.boxTradeStates.get(boxId);
+    let state = this.boxTradeStates.get(boxId);
+    if (!state && typeof window !== 'undefined' && window.__liveStrategyEngine) {
+      state = window.__liveStrategyEngine.boxTradeStates.get(boxId);
+    }
     if (!state) return [];
     const list = [...(state.tradesHistory || [])];
     if (state.activeTrade) {

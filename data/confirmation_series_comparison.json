@@ -1,0 +1,62 @@
+[
+  {
+    "name": "1. Blind First Touch (Zero Confirmation)",
+    "n": 15,
+    "wins": 7,
+    "losses": 8,
+    "timeouts": 0,
+    "wr": 46.7,
+    "lr": 53.3,
+    "avg_mfe": 2.85,
+    "avg_mae": 1.29,
+    "expectancy": 1.53
+  },
+  {
+    "name": "2. Micro Reversal Confirmation (+0.20p Bounce)",
+    "n": 14,
+    "wins": 6,
+    "losses": 8,
+    "timeouts": 0,
+    "wr": 42.9,
+    "lr": 57.1,
+    "avg_mfe": 2.9,
+    "avg_mae": 1.25,
+    "expectancy": 1.29
+  },
+  {
+    "name": "3. Stall Box Breakout (+0.25p)",
+    "n": 76,
+    "wins": 29,
+    "losses": 47,
+    "timeouts": 0,
+    "wr": 38.2,
+    "lr": 61.8,
+    "avg_mfe": 2.96,
+    "avg_mae": 1.2,
+    "expectancy": 0.98
+  },
+  {
+    "name": "4. Penetration Taper (Shallow Retest)",
+    "n": 118,
+    "wins": 16,
+    "losses": 102,
+    "timeouts": 0,
+    "wr": 13.6,
+    "lr": 86.4,
+    "avg_mfe": 1.17,
+    "avg_mae": 1.79,
+    "expectancy": -0.62
+  },
+  {
+    "name": "6. HTF Macro & Pivot Aligned (Filtered)",
+    "n": 56,
+    "wins": 22,
+    "losses": 34,
+    "timeouts": 0,
+    "wr": 39.3,
+    "lr": 60.7,
+    "avg_mfe": 2.94,
+    "avg_mae": 1.21,
+    "expectancy": 1.05
+  }
+]

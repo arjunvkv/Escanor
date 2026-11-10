@@ -1,0 +1,1442 @@
+[
+  {
+    "date": "2026-09-11",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4331.74,
+    "net_disp": 20.11,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-11",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4343.76,
+    "net_disp": 6.2,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-11",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4337.5,
+    "net_disp": 7.35,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-11",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4388.52,
+    "net_disp": 13.95,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-14",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4329.5,
+    "net_disp": 7.95,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-14",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4287.89,
+    "net_disp": 9.77,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-14",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4294.68,
+    "net_disp": 10.39,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-14",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4270.97,
+    "net_disp": 17.38,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-15",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4304.75,
+    "net_disp": 15.54,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-15",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4266.91,
+    "net_disp": 10.8,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-15",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4281.59,
+    "net_disp": 5.19,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-15",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4290.42,
+    "net_disp": 7.95,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-16",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4321.94,
+    "net_disp": 11.76,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-16",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4329.72,
+    "net_disp": 19.35,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-16",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4350.29,
+    "net_disp": 8.58,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-16",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4347.65,
+    "net_disp": 12.71,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-17",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4297.4,
+    "net_disp": 11.97,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-17",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4306.47,
+    "net_disp": 9.12,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-17",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4324.32,
+    "net_disp": 28.92,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-17",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4373.36,
+    "net_disp": 17.9,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-18",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4366.83,
+    "net_disp": 11.37,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-18",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4387.83,
+    "net_disp": 14.67,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-18",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4381.79,
+    "net_disp": 9.18,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-18",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4368.93,
+    "net_disp": 21.65,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-21",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4355.75,
+    "net_disp": 6.55,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-21",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4346.62,
+    "net_disp": 10.07,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-21",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4342.58,
+    "net_disp": 28.46,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-21",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4359.7,
+    "net_disp": 13.72,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-22",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4342.79,
+    "net_disp": 26.54,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-22",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4314.58,
+    "net_disp": 23.5,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-22",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4321.73,
+    "net_disp": 12.71,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-22",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4333.88,
+    "net_disp": 10.18,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-23",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4344.06,
+    "net_disp": 16.01,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-23",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4316.95,
+    "net_disp": 8.58,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-23",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4315.51,
+    "net_disp": 20.94,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-23",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4309.84,
+    "net_disp": 29.07,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-24",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4289.49,
+    "net_disp": 12.06,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-24",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4255.6,
+    "net_disp": 10.68,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-24",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4258.29,
+    "net_disp": 9.61,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-24",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4281.12,
+    "net_disp": 16.32,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-25",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4262.87,
+    "net_disp": 12.99,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-25",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4290.73,
+    "net_disp": 18.88,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-25",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4311.06,
+    "net_disp": 11.18,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-25",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4298.13,
+    "net_disp": 24.78,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-28",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4194.67,
+    "net_disp": 15.74,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-28",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4146.42,
+    "net_disp": 12.58,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-28",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4155.44,
+    "net_disp": 7.73,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-28",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4154.3,
+    "net_disp": 17.86,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-29",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4126.6,
+    "net_disp": 18.45,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-29",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4140.33,
+    "net_disp": 10.4,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-29",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4153.46,
+    "net_disp": 7.8,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-29",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4151.13,
+    "net_disp": 13.22,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-30",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4179.03,
+    "net_disp": 13.38,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-09-30",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4185.89,
+    "net_disp": 4.81,
+    "dir": "BULL",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-09-30",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4184.74,
+    "net_disp": 8.25,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-09-30",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4208.29,
+    "net_disp": 31.64,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-01",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4179.91,
+    "net_disp": 12.93,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-01",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4159.78,
+    "net_disp": 9.55,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-01",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4176.05,
+    "net_disp": 9.77,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-01",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4178.74,
+    "net_disp": 19.54,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-02",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4184.99,
+    "net_disp": 7.14,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-02",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4186.61,
+    "net_disp": 20.63,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-02",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4182.59,
+    "net_disp": 5.83,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-02",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4217.76,
+    "net_disp": 39.41,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-05",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4131.25,
+    "net_disp": 9.39,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-05",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4165.94,
+    "net_disp": 10.26,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-05",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4161.94,
+    "net_disp": 10.93,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-05",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4156.64,
+    "net_disp": 25.22,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-06",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4121.5,
+    "net_disp": 4.78,
+    "dir": "BEAR",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-06",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4156.67,
+    "net_disp": 7.9,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-06",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4158.83,
+    "net_disp": 15.9,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-06",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4170.05,
+    "net_disp": 18.24,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-07",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4135.19,
+    "net_disp": 6.58,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-07",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4120.67,
+    "net_disp": 6.74,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-07",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4116.88,
+    "net_disp": 5.72,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-07",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4087.42,
+    "net_disp": 11.98,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-08",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4133.41,
+    "net_disp": 17.42,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-08",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4124.35,
+    "net_disp": 8.52,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-08",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4121.98,
+    "net_disp": 8.47,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-08",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4118.75,
+    "net_disp": 15.12,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-09",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4181.86,
+    "net_disp": 25.68,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-09",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4186.8,
+    "net_disp": 3.99,
+    "dir": "BEAR",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-09",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4179.47,
+    "net_disp": 6.98,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-09",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4175.47,
+    "net_disp": 21.07,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-12",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4194.68,
+    "net_disp": 15.3,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-12",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4177.07,
+    "net_disp": 8.44,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-12",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4177.38,
+    "net_disp": 9.97,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-12",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4165.26,
+    "net_disp": 10.13,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-13",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4195.62,
+    "net_disp": 6.3,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-13",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4183.07,
+    "net_disp": 6.28,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-13",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4181.62,
+    "net_disp": 7.38,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-13",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4179.52,
+    "net_disp": 10.86,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-14",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4165.58,
+    "net_disp": 17.07,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-14",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4141.77,
+    "net_disp": 3.79,
+    "dir": "BULL",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-14",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4140.81,
+    "net_disp": 4.95,
+    "dir": "BEAR",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-14",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4097.81,
+    "net_disp": 18.27,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-15",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4145.23,
+    "net_disp": 9.04,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-15",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4158.99,
+    "net_disp": 6.83,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-15",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4154.71,
+    "net_disp": 10.04,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-15",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4152.16,
+    "net_disp": 16.46,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-16",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4174.35,
+    "net_disp": 4.91,
+    "dir": "BEAR",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-16",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4182.47,
+    "net_disp": 7.31,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-16",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4173.84,
+    "net_disp": 8.12,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-16",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4166.66,
+    "net_disp": 23.28,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-19",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4183.58,
+    "net_disp": 9.48,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-19",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4168.75,
+    "net_disp": 4.12,
+    "dir": "BEAR",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-19",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4169.76,
+    "net_disp": 8.51,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-19",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4161.71,
+    "net_disp": 18.45,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-20",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4143.8,
+    "net_disp": 24.7,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-20",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4121.01,
+    "net_disp": 9.29,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-20",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4120.92,
+    "net_disp": 6.16,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-20",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4119.34,
+    "net_disp": 14.98,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-21",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4114.61,
+    "net_disp": 14.86,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-21",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4122.83,
+    "net_disp": 11.16,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-21",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4126.95,
+    "net_disp": 14.01,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-21",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4129.62,
+    "net_disp": 11.1,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-22",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4091.57,
+    "net_disp": 24.84,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-22",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4083.7,
+    "net_disp": 8.87,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-22",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4080.11,
+    "net_disp": 22.71,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-22",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4088.04,
+    "net_disp": 34.04,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-23",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4004.36,
+    "net_disp": 24.21,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-23",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4026.41,
+    "net_disp": 5.76,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-23",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4023.37,
+    "net_disp": 7.64,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-23",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4026.14,
+    "net_disp": 10.0,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-26",
+    "day": "Monday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4015.88,
+    "net_disp": 6.37,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-26",
+    "day": "Monday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4016.22,
+    "net_disp": 4.29,
+    "dir": "BULL",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-26",
+    "day": "Monday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4015.2,
+    "net_disp": 5.36,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-26",
+    "day": "Monday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4015.64,
+    "net_disp": 26.93,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-27",
+    "day": "Tuesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4010.61,
+    "net_disp": 10.6,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-27",
+    "day": "Tuesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 3997.11,
+    "net_disp": 6.09,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-27",
+    "day": "Tuesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4008.69,
+    "net_disp": 5.56,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-27",
+    "day": "Tuesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4023.23,
+    "net_disp": 8.92,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-28",
+    "day": "Wednesday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4036.6,
+    "net_disp": 6.47,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-28",
+    "day": "Wednesday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4051.54,
+    "net_disp": 5.74,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-28",
+    "day": "Wednesday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4045.03,
+    "net_disp": 4.23,
+    "dir": "BULL",
+    "category": "DUD / CHOP (<5p)"
+  },
+  {
+    "date": "2026-10-28",
+    "day": "Wednesday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4053.32,
+    "net_disp": 7.53,
+    "dir": "BEAR",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-29",
+    "day": "Thursday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 4038.08,
+    "net_disp": 16.0,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-29",
+    "day": "Thursday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 4026.01,
+    "net_disp": 7.99,
+    "dir": "BULL",
+    "category": "SOLID MOVE (5p-9.9p)"
+  },
+  {
+    "date": "2026-10-29",
+    "day": "Thursday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 4031.21,
+    "net_disp": 12.8,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-29",
+    "day": "Thursday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 4020.58,
+    "net_disp": 17.18,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-30",
+    "day": "Friday",
+    "gate": "08:00 UTC",
+    "desc": "London Open / Fix Preparation",
+    "p_entry": 3996.73,
+    "net_disp": 14.82,
+    "dir": "BULL",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-30",
+    "day": "Friday",
+    "gate": "12:30 UTC",
+    "desc": "US Tier-1 Economic Data (8:30 AM EDT)",
+    "p_entry": 3990.45,
+    "net_disp": 10.1,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-30",
+    "day": "Friday",
+    "gate": "14:00 UTC",
+    "desc": "US Cash Open & 10 AM Data",
+    "p_entry": 3979.16,
+    "net_disp": 15.07,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  },
+  {
+    "date": "2026-10-30",
+    "day": "Friday",
+    "gate": "16:00 UTC",
+    "desc": "London Close & Sovereign Rebalance",
+    "p_entry": 3954.35,
+    "net_disp": 38.81,
+    "dir": "BEAR",
+    "category": "MONSTER MOVE (>=10p)"
+  }
+]

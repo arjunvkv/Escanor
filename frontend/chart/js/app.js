@@ -10,10 +10,10 @@ import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToSer
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
 import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
-import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202610141510';
+import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202611031455';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
-import { ReplayStrategyEngine } from './replay_engine.js?v=202611021505';
-import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611021505';
+import { ReplayStrategyEngine } from './replay_engine.js?v=202611021832';
+import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611031445';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -315,15 +315,15 @@ async function init() {
     }
   });
 
-  // 5-Hour Living Footprint & POC Toggle Button
+  // Physical Trail Candle Anatomy Toggle Button
   const fpToggleBtn = document.getElementById('toggleFootprintBtn');
   fpToggleBtn?.addEventListener('click', () => {
     const next = !isFootprintEnabled();
-    setFootprintEnabled(next);
+    setFootprintEnabled(next, chart);
     fpToggleBtn.classList.toggle('active', next);
     const labelSpan = fpToggleBtn.querySelector('span:last-child');
     if (labelSpan) {
-      labelSpan.textContent = next ? '5H FOOTPRINT: ON' : '5H FOOTPRINT: OFF';
+      labelSpan.textContent = next ? 'PHYSICAL TRAIL: ON' : 'PHYSICAL TRAIL: OFF';
     }
     if (chart) {
       try {
@@ -331,22 +331,6 @@ async function init() {
       } catch (_e) {}
       chart.resize();
     }
-  });
-
-  // 5-Hour Footprint Visual Guide Modal & Ribbon (i) Button
-  const fpModal = document.getElementById('tvFootprintLegendModal');
-  const openFootprintLegend = () => {
-    if (fpModal) fpModal.style.display = 'flex';
-  };
-  const closeFootprintLegend = () => {
-    if (fpModal) fpModal.style.display = 'none';
-  };
-
-  document.getElementById('tvFootprintInfoBtn')?.addEventListener('click', openFootprintLegend);
-  document.getElementById('tvCloseFootprintModalBtn')?.addEventListener('click', closeFootprintLegend);
-  document.getElementById('tvCloseFootprintModalDoneBtn')?.addEventListener('click', closeFootprintLegend);
-  fpModal?.addEventListener('click', (e) => {
-    if (e.target === fpModal) closeFootprintLegend();
   });
 
   // 12. Legendary AI Sovereign Evaluate Button

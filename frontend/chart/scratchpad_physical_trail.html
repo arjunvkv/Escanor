@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escanor — Physical Trail Candle Scratchpad UI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700;800&display=swap');
+    * { font-family: 'JetBrains Mono', monospace; box-sizing: border-box; }
+    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #12151c; color: #d1d4dc; }
+    
+    .neon-cyan { color: #00f0ff; text-shadow: 0 0 8px rgba(0,240,255,0.4); }
+    .neon-gold { color: #ffd600; text-shadow: 0 0 8px rgba(255,214,0,0.4); }
+    
+    /* Chart Viewport */
+    #chartArea { position: absolute; top: 44px; left: 0; right: 0; bottom: 0; }
+    canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+    
+    /* Cyberpunk Glass Floating Inspector */
+    .glass-inspector {
+      background: rgba(8, 14, 22, 0.94);
+      backdrop-filter: blur(12px);
+      border: 1.5px solid rgba(0, 240, 255, 0.5);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 240, 255, 0.15);
+    }
+  </style>
+</head>
+<body class="select-none flex flex-col h-screen w-screen overflow-hidden bg-[#12151c]">
+
+  <!-- TOP TRADINGVIEW-STYLE HEADER BAR -->
+  <header class="h-11 bg-[#181b24] border-b border-[#252936] flex items-center justify-between px-3 z-30 select-none">
+    <div class="flex items-center gap-3">
+      <!-- Order Pad Pill -->
+      <div class="flex items-center gap-1 bg-[#11131a] rounded p-0.5 border border-[#2a2f3f]">
+        <button class="px-2.5 py-0.5 rounded bg-rose-600/80 text-white font-bold text-xs hover:bg-rose-500">SELL <span class="text-[10px] text-rose-200">3967.17</span></button>
+        <span class="text-[10px] text-slate-400 px-1 font-semibold">1.2p</span>
+        <button class="px-2.5 py-0.5 rounded bg-blue-600/80 text-white font-bold text-xs hover:bg-blue-500">BUY <span class="text-[10px] text-blue-200">3967.55</span></button>
+      </div>
+
+      <div class="h-4 w-[1px] bg-[#2a2f3f]"></div>
+
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-extrabold text-white">XAUUSD <span class="text-cyan-400">5M</span></span>
+        <span class="text-[10px] bg-[#1a2332] text-cyan-400 px-2 py-0.5 rounded border border-cyan-800/60 font-bold">PHYSICAL TRAIL CANDLES</span>
+      </div>
+
+      <!-- Quick Preset Switcher -->
+      <div class="hidden md:flex items-center gap-1.5 ml-2 text-xs">
+        <span class="text-slate-500 text-[11px]">SCENARIO:</span>
+        <button id="btnPresetA" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 text-[10px]">#1 ABSORPTION WALL DECAY ($3967)</button>
+        <button id="btnPresetB" class="px-2 py-0.5 rounded text-slate-400 hover:text-white text-[10px]">#2 VACUUM RUNWAY BREAKOUT ($3903)</button>
+      </div>
+    </div>
+
+    <!-- RIGHT CONTROLS -->
+    <div class="flex items-center gap-3 text-xs">
+      <!-- Tool Buttons -->
+      <div class="flex items-center bg-[#11131a] rounded border border-[#2a2f3f] p-0.5">
+        <button id="btnToolBox" class="px-2.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold border border-cyan-500/40 text-xs flex items-center gap-1">
+          <span>📐</span> DRAW BOX
+        </button>
+        <button id="btnToggleInspector" class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 text-xs ml-1">
+          <span>🛰️</span> INSPECTOR: ON
+        </button>
+      </div>
+
+      <div class="text-right pl-2 border-l border-[#2a2f3f]">
+        <div class="text-cyan-400 font-bold text-xs tracking-wider" id="hdrLivePrice">$3967.02</div>
+        <div class="text-[9px] text-slate-500">TRUE TICK TRAIL</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- SECONDARY MICRO RIBBON (Matching Image 1) -->
+  <div class="h-6 bg-[#131620] border-b border-[#202534] flex items-center justify-between px-3 text-[10px] font-mono z-20">
+    <div class="flex items-center gap-3">
+      <span class="text-slate-400 font-bold">5H PHYSICAL FP:</span>
+      <span class="text-amber-400 font-bold flex items-center gap-1">
+        <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse"></span> ABSORPTION WALLS: 4 ACTIVE
+      </span>
+      <span class="text-slate-600">|</span>
+      <span class="text-cyan-400 font-bold">VACUUM CORRIDORS: 2 OPEN</span>
+      <span class="text-slate-600">|</span>
+      <span class="text-purple-400 font-bold">VWAP: $3964.80 (MARKUP)</span>
+    </div>
+
+    <div class="flex items-center gap-2 text-slate-400">
+      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span>HOVER OVER ANY CANDLE TO AUDIT TRUE PHYSICAL TRAIL</span>
+    </div>
+  </div>
+
+  <!-- MAIN CHART WORKSPACE -->
+  <div id="chartArea" class="w-full flex-1 relative">
+    <canvas id="candleCanvas"></canvas>
+
+    <!-- 🛰️ THE FLOATING TRUE PHYSICAL TRAIL HOVER INSPECTOR (Matches Image 2 Exactly!) -->
+    <div id="physicalTrailInspector" class="glass-inspector absolute top-3 right-20 rounded-xl p-3 z-30 w-[640px] text-xs pointer-events-auto transition-all duration-150">
+      
+      <!-- Top Row -->
+      <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+        <div class="flex items-center gap-2">
+          <span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-cyan-950 text-cyan-400 border border-cyan-800" id="inspTypeTag">PIVOT</span>
+          <span class="text-lg font-bold text-white tracking-wide" id="inspPriceText">$3967.02 <span class="text-rose-400 text-sm">▼</span></span>
+          <span class="px-2 py-0.5 rounded text-[9px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold" id="inspVpocBadge">VPOC</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-200 bg-[#0c1622] px-2 py-0.5 rounded border border-[#16354c] font-bold" id="inspVolTag">3v (LIVE PIVOT)</span>
+          <span class="text-[10px] text-cyan-400 font-bold uppercase tracking-wider">HOVER INSPECTOR</span>
+          <button id="btnCloseInsp" class="text-slate-500 hover:text-white text-xs ml-1">✕</button>
+        </div>
+      </div>
+
+      <!-- Role / State Banner -->
+      <div class="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-black/60 border border-slate-800 my-2 text-[11px]">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span class="text-slate-400 font-semibold uppercase text-[10px]">TRUE PHYSICAL TRAIL:</span>
+        </div>
+        <span id="inspRoleText" class="text-amber-300 font-bold uppercase tracking-wide">ABSORPTION WALL DECAY</span>
+      </div>
+
+      <!-- 8-Column Audited Table (Exact Replica of User's Image 2) -->
+      <div class="overflow-x-auto my-1">
+        <table class="w-full text-left text-xs border-collapse">
+          <thead class="bg-black/80 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+            <tr>
+              <th class="py-1.5 px-2">WAVE</th>
+              <th class="py-1.5 px-1.5 text-center">GAP</th>
+              <th class="py-1.5 px-2">ORIGIN</th>
+              <th class="py-1.5 px-1.5 text-center text-amber-300">DWELL</th>
+              <th class="py-1.5 px-2 text-right">VOL (Δ)</th>
+              <th class="py-1.5 px-2 text-right">SLIP</th>
+              <th class="py-1.5 px-2 text-right">EXIT DISP</th>
+              <th class="py-1.5 px-2 text-right text-cyan-300">EFFORT/RES</th>
+            </tr>
+          </thead>
+          <tbody id="trailWavesTbody" class="divide-y divide-slate-800/60 font-mono text-xs">
+            <!-- Dynamically populated from hovered candle's wave history -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Displacement Vector Box (From Image 2) -->
+      <div class="px-3 py-1.5 rounded bg-black/80 border border-slate-800 flex items-center justify-between text-xs font-mono my-1.5">
+        <span class="text-slate-400 text-[10px] font-bold">DISPLACEMENT VECTOR:</span>
+        <span id="inspVectorText" class="text-amber-300 font-bold text-xs tracking-wider">
+          +3.08p → +3.08p → -0.98p → +0.00p (DECAY/ABSORBED)
+        </span>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex items-center justify-between text-[9px] text-slate-500 font-mono pt-1 border-t border-slate-800">
+        <span class="text-cyan-400 font-semibold">100% AUDITED TICK AUCTION TRAIL</span>
+        <span>GLIDE CURSOR OVER CANDLES TO AUDIT REAL WAVES</span>
+      </div>
+    </div>
+
+    <!-- AUDITED BOX TELEMETRY HUD -->
+    <div id="boxHud" class="glass-inspector absolute hidden rounded-lg p-2.5 z-20 w-[280px] text-xs pointer-events-auto border border-cyan-400">
+      <div class="flex items-center justify-between pb-1 border-b border-slate-800">
+        <span class="font-extrabold text-cyan-400 flex items-center gap-1">📐 AUDITED ZONE</span>
+        <span id="boxHeightLabel" class="text-white font-bold">$4.20 (42p)</span>
+      </div>
+      <div class="grid grid-cols-2 gap-2 my-1.5 text-[10px]">
+        <div class="bg-black/50 p-1 rounded border border-slate-800">
+          <div class="text-slate-500">VACUUM ROOF</div>
+          <div id="boxRoofVal" class="font-bold text-white">$3966.50</div>
+        </div>
+        <div class="bg-black/50 p-1 rounded border border-slate-800">
+          <div class="text-slate-500">FULCRUM FLOOR</div>
+          <div id="boxFloorVal" class="font-bold text-amber-300">$3962.30</div>
+        </div>
+      </div>
+      <div class="text-[10px] text-slate-300 space-y-0.5">
+        <div class="flex justify-between"><span>ZONE VOLUME:</span> <span id="boxVolVal" class="font-bold text-white">4,820v</span></div>
+        <div class="flex justify-between"><span>ZONE DELTA:</span> <span id="boxDeltaVal" class="font-bold text-emerald-400">+620v (BULL)</span></div>
+      </div>
+      <div id="boxChopWarning" class="mt-1 text-center py-0.5 rounded font-bold text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
+        🚀 UNCONTESTED VACUUM RUNWAY ABOVE
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // =========================================================================
+    // 🏛️ ESCANOR PHYSICAL TRAIL CANDLE SCRATCHPAD ENGINE
+    // Every candle is constructed directly from:
+    // Dwell Time • Volume & Delta • Effort vs Result (v/pt) • Intra-Bar POC Notch
+    // Exit Displacement & Decay • Continuous Wave Trail • Image 2 Hover Inspector
+    // =========================================================================
+
+    const canvas = document.getElementById('candleCanvas');
+    const chartArea = document.getElementById('chartArea');
+    const ctx = canvas.getContext('2d');
+
+    // High-Conviction Physical Candle Dataset (Scenario A: Absorption Wall Decay into $3967 peak)
+    const scenarioACandles = [
+      {
+        time: '23:45', open: 3960.50, high: 3963.80, low: 3960.10, close: 3963.50,
+        volume: 1240, effortPerPoint: 335, dwellSec: 45, dwellStr: '45s', delta: 420, deltaStr: '+420',
+        exitDisp: 2.10, exitDispStr: '+2.10p', isAbsorption: false, isVacuum: false, isDecay: false,
+        pocOffset: 0.65
+      },
+      {
+        time: '23:50', open: 3963.50, high: 3965.90, low: 3963.00, close: 3965.60,
+        volume: 1580, effortPerPoint: 544, dwellSec: 68, dwellStr: '1m 8s', delta: 610, deltaStr: '+610',
+        exitDisp: 2.10, exitDispStr: '+2.10p', isAbsorption: false, isVacuum: false, isDecay: false,
+        pocOffset: 0.70
+      },
+      // W1 00:02 (Init)
+      {
+        time: '00:02', open: 3965.60, high: 3967.40, low: 3965.20, close: 3967.24,
+        volume: 340, effortPerPoint: 154, dwellSec: 1, dwellStr: '1s', delta: -12, deltaStr: '-12',
+        exitDisp: 2.69, exitDispStr: '+2.69p', isAbsorption: false, isVacuum: true, isDecay: false,
+        pocOffset: 0.80, waveId: 'W1', role: 'KINETIC VACUUM FLIGHT'
+      },
+      // W2 00:17 (+14m)
+      {
+        time: '00:17', open: 3967.24, high: 3968.10, low: 3966.80, close: 3967.21,
+        volume: 780, effortPerPoint: 600, dwellSec: 22, dwellStr: '22s', delta: 84, deltaStr: '+84',
+        exitDisp: 2.97, exitDispStr: '+2.97p', isAbsorption: true, isVacuum: false, isDecay: false,
+        pocOffset: 0.60, waveId: 'W2', role: 'CEILING DEFENSE WALL'
+      },
+      // W3 00:26 (+9m) - Massive Dwell 2m 3s, Effort 50 v/pt
+      {
+        time: '00:26', open: 3967.21, high: 3968.40, low: 3966.70, close: 3967.18,
+        volume: 2450, effortPerPoint: 1441, dwellSec: 123, dwellStr: '2m 3s', delta: 280, deltaStr: '+280',
+        exitDisp: 3.08, exitDispStr: '+3.08p', isAbsorption: true, isVacuum: false, isDecay: false,
+        pocOffset: 0.55, waveId: 'W3', role: 'PRIMARY ABSORPTION SHELF'
+      },
+      // W4 00:30 (+1m) - Quick 2s rejection
+      {
+        time: '00:30', open: 3967.18, high: 3967.90, low: 3966.90, close: 3967.17,
+        volume: 480, effortPerPoint: 480, dwellSec: 2, dwellStr: '2s', delta: 120, deltaStr: '+120',
+        exitDisp: 3.08, exitDispStr: '+3.08p', isAbsorption: false, isVacuum: false, isDecay: false,
+        pocOffset: 0.50, waveId: 'W4', role: 'EFFORT REJECTION'
+      },
+      // W5 00:45 (+14m) - Dip & Re-auction
+      {
+        time: '00:45', open: 3967.17, high: 3967.50, low: 3966.10, close: 3967.09,
+        volume: 380, effortPerPoint: 271, dwellSec: 1, dwellStr: '1s', delta: -85, deltaStr: '-85',
+        exitDisp: -0.98, exitDispStr: '-0.98p', isAbsorption: false, isVacuum: false, isDecay: false,
+        pocOffset: 0.45, waveId: 'W5', role: 'LIQUIDITY TEST'
+      },
+      // W6 00:46 (+52s) - Extreme 210 v/pt Absorption Wall Decay!
+      {
+        time: '00:46', open: 3967.09, high: 3967.35, low: 3966.75, close: 3966.81,
+        volume: 1890, effortPerPoint: 3150, dwellSec: 22, dwellStr: '22s', delta: -110, deltaStr: '-110',
+        exitDisp: 0.00, exitDispStr: '+0.00p', isAbsorption: true, isVacuum: false, isDecay: true,
+        pocOffset: 0.50, waveId: 'W6', role: 'ABSORPTION WALL DECAY'
+      },
+      // Resolution Drop
+      {
+        time: '00:50', open: 3966.81, high: 3967.00, low: 3963.20, close: 3963.80,
+        volume: 2100, effortPerPoint: 552, dwellSec: 15, dwellStr: '15s', delta: -1420, deltaStr: '-1.4K',
+        exitDisp: -3.01, exitDispStr: '-3.01p', isAbsorption: false, isVacuum: true, isDecay: false,
+        pocOffset: 0.35, role: 'BEAR REVENUE EXPANSION'
+      },
+      {
+        time: '00:55', open: 3963.80, high: 3964.50, low: 3961.00, close: 3961.40,
+        volume: 1850, effortPerPoint: 528, dwellSec: 25, dwellStr: '25s', delta: -980, deltaStr: '-980',
+        exitDisp: -2.40, exitDispStr: '-2.40p', isAbsorption: false, isVacuum: false, isDecay: false,
+        pocOffset: 0.40
+      }
+    ];
+
+    let candles = [...scenarioACandles];
+
+    // Table History from User Image 2
+    const auditedWaveHistory = [
+      { wave: 'W1 00:02', gap: 'Init', origin: '$3967.24 (▼0.22)', dwell: '1s', vol: '3v (Δ-1)', slip: '-0.02p', disp: '+2.69p', eff: '1 v/pt' },
+      { wave: 'W2 00:17', gap: '+14m', origin: '$3967.21 (▼0.19)', dwell: '22s', vol: '48v (Δ+2)', slip: '-0.05p', disp: '+2.97p', eff: '16 v/pt' },
+      { wave: 'W3 00:26', gap: '+9m', origin: '$3967.18 (▼0.16)', dwell: '2m 3s', vol: '153v (Δ+11)', slip: '-0.05p', disp: '+3.08p', eff: '50 v/pt' },
+      { wave: 'W4 00:30', gap: '+1m', origin: '$3967.17 (▼0.15)', dwell: '2s', vol: '29v (Δ+9)', slip: '-0.05p', disp: '+3.08p', eff: '9 v/pt' },
+      { wave: 'W5 00:45', gap: '+14m', origin: '$3967.09 (▼0.07)', dwell: '1s', vol: '11v (Δ-5)', slip: '-0.02p', disp: '-0.98p', eff: '11 v/pt' },
+      { wave: 'W6 00:46', gap: '+52s', origin: '$3966.81 (▲0.21)', dwell: '22s', vol: '21v (Δ-3)', slip: '+0.05p', disp: '+0.00p', eff: '210 v/pt' }
+    ];
+
+    // Viewport State
+    let view = {
+      priceMin: 3959.00,
+      priceMax: 3970.00,
+      barSpacing: 52,        // comfortable reading width
+      offsetX: 0,
+      isPanning: false,
+      lastX: 0,
+      lastY: 0
+    };
+
+    // Manual Box
+    let userBox = {
+      active: true,
+      pFloor: 3966.00,
+      pRoof: 3968.50,
+      startIdx: 2,
+      endIdx: 7,
+      isDrawing: false,
+      startY: 0
+    };
+
+    let hoveredCandleIdx = 7; // W6 by default
+    let showInspector = true;
+
+    function resize() {
+      const dpr = window.devicePixelRatio || 1;
+      const rect = chartArea.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      render();
+    }
+    window.addEventListener('resize', resize);
+
+    function priceToY(p, h) {
+      return (view.priceMax - p) / (view.priceMax - view.priceMin) * (h - 60) + 20;
+    }
+
+    function yToPrice(y, h) {
+      const pct = (y - 20) / (h - 60);
+      return view.priceMax - pct * (view.priceMax - view.priceMin);
+    }
+
+    function indexToX(idx, w) {
+      const rightMargin = 90;
+      return (w - rightMargin) - (candles.length - 1 - idx) * view.barSpacing + view.offsetX;
+    }
+
+    function xToIndex(x, w) {
+      const rightMargin = 90;
+      const distFromRight = (w - rightMargin) - x + view.offsetX;
+      return candles.length - 1 - Math.round(distFromRight / view.barSpacing);
+    }
+
+    // =========================================================================
+    // 🎨 RENDER ENGINE: PHYSICAL TRAIL CANDLE ANATOMY
+    // =========================================================================
+    function render() {
+      const w = chartArea.clientWidth;
+      const h = chartArea.clientHeight;
+      if (!w || !h) return;
+
+      ctx.clearRect(0, 0, w, h);
+
+      // 1. PRICE GRID & LABELS
+      ctx.strokeStyle = '#1b1f2b';
+      ctx.lineWidth = 1;
+      const priceStep = 1.0;
+      const startP = Math.floor(view.priceMin / priceStep) * priceStep;
+
+      for (let p = startP; p <= view.priceMax; p += priceStep) {
+        const y = priceToY(p, h);
+        if (y < 10 || y > h - 30) continue;
+
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w - 75, y);
+        ctx.stroke();
+
+        ctx.fillStyle = '#64748b';
+        ctx.font = '10px JetBrains Mono';
+        ctx.textAlign = 'right';
+        ctx.fillText(`$${p.toFixed(2)}`, w - 12, y + 3);
+      }
+
+      // 2. SESSION VWAP LINE
+      const vwapPrice = 3964.80;
+      const vwapY = priceToY(vwapPrice, h);
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, vwapY);
+      ctx.lineTo(w - 75, vwapY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#c084fc';
+      ctx.font = 'bold 9px JetBrains Mono';
+      ctx.textAlign = 'right';
+      ctx.fillText('VWAP $3964.80', w - 80, vwapY - 4);
+
+      // 3. RENDER EACH PHYSICAL TRAIL CANDLE
+      candles.forEach((c, i) => {
+        const x = indexToX(i, w);
+        if (x < -view.barSpacing || x > w) return; // culling
+
+        const yHigh = priceToY(c.high, h);
+        const yLow = priceToY(c.low, h);
+        const yOpen = priceToY(c.open, h);
+        const yClose = priceToY(c.close, h);
+
+        const topY = Math.min(yOpen, yClose);
+        const botY = Math.max(yOpen, yClose);
+        const bHeight = Math.max(2, botY - topY);
+
+        const isUp = c.close >= c.open;
+
+        // DWELL-ADAPTED BODY WIDTH
+        // High dwell (>60s) = wider density shelf; fast transit (<5s) = sleek aerodynamic
+        let bodyWidth = Math.max(6, Math.min(22, view.barSpacing * 0.42));
+        if (c.dwellSec >= 60) bodyWidth += 6; // wide accumulation body
+        if (c.dwellSec <= 2) bodyWidth = Math.max(4, bodyWidth - 4); // sleek velocity profile
+
+        const halfW = bodyWidth / 2;
+
+        // Physical Color Construction
+        let bodyFill = isUp ? '#d1d4dc' : '#ec407a';
+        let wickColor = isUp ? '#94a3b8' : '#e0457b';
+        let isSpecial = false;
+
+        if (c.isAbsorption) {
+          bodyFill = '#ffd600'; // Pure Vibrant Yellow (Absorption Wall)
+          wickColor = '#ffd600';
+          isSpecial = true;
+        } else if (c.isVacuum) {
+          bodyFill = '#00f0ff'; // Electric Frost Cyan (Vacuum Glide)
+          wickColor = '#00f0ff';
+          isSpecial = true;
+        }
+
+        // Draw Solid Physical Wicks
+        ctx.strokeStyle = wickColor;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, yHigh);
+        ctx.lineTo(x, yLow);
+        ctx.stroke();
+
+        // Glowing Wick Spine for Absorption Walls
+        if (c.isAbsorption) {
+          ctx.strokeStyle = '#ffd600';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(x, topY);
+          ctx.lineTo(x, yHigh);
+          ctx.stroke();
+
+          // White Sniper Dot at Wick Tip
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(x, yHigh, 2.0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Draw Physical Candle Body
+        ctx.fillStyle = bodyFill;
+        ctx.fillRect(x - halfW, topY, bodyWidth, bHeight);
+
+        // Highlight Hovered Candle with glowing cyan border
+        if (i === hoveredCandleIdx) {
+          ctx.strokeStyle = '#00f0ff';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x - halfW - 2, topY - 2, bodyWidth + 4, bHeight + 4);
+        }
+
+        // INTRA-BAR POINT OF CONTROL (POC) SHELF
+        const pocPrice = c.low + (c.high - c.low) * (c.pocOffset || 0.5);
+        const yPoc = Math.max(topY + 1.5, Math.min(botY - 1.5, priceToY(pocPrice, h)));
+        ctx.strokeStyle = c.isAbsorption ? '#000000' : '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x - halfW + 1, yPoc);
+        ctx.lineTo(x + halfW - 1, yPoc);
+        ctx.stroke();
+
+        // COMPACT IN-CHART MICRO BADGES (ABOVE & BELOW CANDLE)
+        ctx.font = 'bold 8.5px JetBrains Mono';
+        ctx.textAlign = 'center';
+
+        // Top Badges
+        if (c.isAbsorption) {
+          // Yellow Wall Badge
+          ctx.fillStyle = '#ffd600';
+          ctx.fillText(`⚡ ${c.effortPerPoint >= 3000 ? '210v/p' : '50v/p'}`, x, yHigh - 7);
+        } else if (c.isVacuum) {
+          ctx.fillStyle = '#00f0ff';
+          ctx.fillText('🚀 VAC', x, yHigh - 7);
+        }
+
+        // Decay Marker
+        if (c.isDecay) {
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('◆ DECAY', x, yHigh - 17);
+        }
+
+        // Bottom Inscription: Dwell & Delta
+        ctx.fillStyle = '#64748b';
+        ctx.font = '8px JetBrains Mono';
+        ctx.fillText(c.dwellStr, x, yLow + 11);
+        ctx.fillStyle = c.delta >= 0 ? '#10b981' : '#f43f5e';
+        ctx.fillText(`(${c.deltaStr})`, x, yLow + 21);
+      });
+
+      // 4. DRAW MANUAL AUDITED BOX (Matching User's Image 1)
+      if (userBox.active) {
+        const yTop = priceToY(userBox.pRoof, h);
+        const yBot = priceToY(userBox.pFloor, h);
+        const bH = yBot - yTop;
+
+        const xStart = indexToX(userBox.startIdx, w);
+        const xEnd = indexToX(userBox.endIdx, w) + 20;
+        const bW = xEnd - xStart;
+
+        // Red Translucent Box Frame (Matching Image 1)
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
+        ctx.fillRect(xStart, yTop, bW, bH);
+
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 1.8;
+        ctx.strokeRect(xStart, yTop, bW, bH);
+
+        // Retest Axis Midline (Cyan Line from Image 1)
+        const midY = (yTop + yBot) / 2;
+        ctx.strokeStyle = '#00e5ff';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(xStart, midY);
+        ctx.lineTo(w - 75, midY);
+        ctx.stroke();
+
+        ctx.fillStyle = '#00e5ff';
+        ctx.font = 'bold 9.5px JetBrains Mono';
+        ctx.textAlign = 'left';
+        ctx.fillText(`★ B1 RETEST AXIS ($${((userBox.pRoof + userBox.pFloor)/2).toFixed(2)}) — 3x Bounce/Flip`, xStart + 8, midY - 5);
+
+        // Vacuum Void Baseline (Orange Dashed Line from Image 1)
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(xStart, yBot);
+        ctx.lineTo(w - 75, yBot);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.fillText(`⚡ B1 VACUUM VOID ($${userBox.pFloor.toFixed(2)}) — Zero Interest / Fast Transit`, xStart + 8, yBot + 12);
+
+        // Displacement Arrow inside Box
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 11px JetBrains Mono';
+        ctx.fillText('▲ +4.8p', (xStart + xEnd) / 2 - 20, (yTop + midY) / 2 + 4);
+      }
+
+      // 5. TIME AXIS AT BOTTOM
+      const timeY = h - 15;
+      ctx.fillStyle = '#64748b';
+      ctx.font = '9px JetBrains Mono';
+      ctx.textAlign = 'center';
+
+      candles.forEach((c, idx) => {
+        const tx = indexToX(idx, w);
+        if (tx < 30 || tx > w - 85) return;
+        ctx.fillText(c.time, tx, timeY);
+      });
+    }
+
+    // =========================================================================
+    // 🛰️ DYNAMIC TRUE PHYSICAL TRAIL INSPECTOR UPDATER (Image 2 on Hover)
+    // =========================================================================
+    function updateInspectorForCandle(c, idx) {
+      if (!c) return;
+
+      document.getElementById('inspPriceText').innerHTML = `$${c.close.toFixed(2)} <span class="${c.close >= c.open ? 'text-emerald-400' : 'text-rose-400'} text-sm">${c.close >= c.open ? '▲' : '▼'}</span>`;
+      document.getElementById('inspVolTag').textContent = `${c.volume}v (${c.dwellStr})`;
+      document.getElementById('inspRoleText').textContent = c.role || (c.isAbsorption ? 'ABSORPTION WALL DECAY' : (c.isVacuum ? 'UNCONTESTED VACUUM RUNWAY' : 'AUCTION DISPLACEMENT'));
+
+      // Populate 8-Column Table
+      const tbody = document.getElementById('trailWavesTbody');
+      tbody.innerHTML = auditedWaveHistory.map((row, rIdx) => {
+        const isCurrentWave = (c.waveId && row.wave.includes(c.waveId)) || (rIdx === 5);
+        return `
+          <tr class="${isCurrentWave ? 'bg-cyan-950/40 text-white font-bold' : 'hover:bg-slate-900/60'} transition">
+            <td class="py-1 px-2 ${isCurrentWave ? 'text-cyan-300' : 'text-white'}">${row.wave}</td>
+            <td class="py-1 px-1.5 text-center text-slate-400">${row.gap}</td>
+            <td class="py-1 px-2 text-white">${row.origin}</td>
+            <td class="py-1 px-1.5 text-center text-amber-300 font-bold">${row.dwell}</td>
+            <td class="py-1 px-2 text-right text-slate-200">${row.vol}</td>
+            <td class="py-1 px-2 text-right ${row.slip.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'}">${row.slip}</td>
+            <td class="py-1 px-2 text-right ${row.disp.startsWith('+') ? 'text-emerald-400' : 'text-rose-400'} font-bold">${row.disp}</td>
+            <td class="py-1 px-2 text-right text-cyan-300 font-bold">${row.eff}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 🖱️ MOUSE CROSSHAIR & HOVER LISTENER
+    // =========================================================================
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = chartArea.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      const idx = xToIndex(x, rect.width);
+      if (idx >= 0 && idx < candles.length && idx !== hoveredCandleIdx) {
+        hoveredCandleIdx = idx;
+        const c = candles[idx];
+        updateInspectorForCandle(c, idx);
+        render();
+      }
+    });
+
+    // Inspector Toggle
+    const btnToggle = document.getElementById('btnToggleInspector');
+    const insp = document.getElementById('physicalTrailInspector');
+    btnToggle.addEventListener('click', () => {
+      showInspector = !showInspector;
+      insp.style.display = showInspector ? 'block' : 'none';
+      btnToggle.textContent = `🛰️ INSPECTOR: ${showInspector ? 'ON' : 'OFF'}`;
+      btnToggle.className = showInspector ? "px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold border border-amber-500/40 text-xs ml-1" : "px-2 py-0.5 rounded text-slate-400 text-xs ml-1";
+    });
+
+    document.getElementById('btnCloseInsp').addEventListener('click', () => {
+      showInspector = false;
+      insp.style.display = 'none';
+      btnToggle.textContent = '🛰️ INSPECTOR: OFF';
+      btnToggle.className = "px-2 py-0.5 rounded text-slate-400 text-xs ml-1";
+    });
+
+    // Scenario Switcher Buttons
+    document.getElementById('btnPresetA').addEventListener('click', function() {
+      candles = [...scenarioACandles];
+      userBox.pFloor = 3966.00;
+      userBox.pRoof = 3968.50;
+      userBox.startIdx = 2;
+      userBox.endIdx = 7;
+      view.priceMin = 3959.00;
+      view.priceMax = 3970.00;
+      hoveredCandleIdx = 7;
+      updateInspectorForCandle(candles[hoveredCandleIdx], hoveredCandleIdx);
+      render();
+    });
+
+    document.getElementById('btnPresetB').addEventListener('click', function() {
+      // Scenario B: Vacuum Breakout Shelf matching Image 1 ($3903)
+      userBox.pFloor = 3901.33;
+      userBox.pRoof = 3903.81;
+      view.priceMin = 3895.00;
+      view.priceMax = 3915.00;
+      render();
+    });
+
+    // Initial Trigger
+    updateInspectorForCandle(candles[hoveredCandleIdx], hoveredCandleIdx);
+    setTimeout(resize, 60);
+  </script>
+</body>
+</html>

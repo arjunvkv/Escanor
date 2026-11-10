@@ -267,6 +267,7 @@ def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float]
             "tp": clean_tp
         }
         res = mt5.order_send(req)
+        logger.info(f"MT5 order_send TRADE_ACTION_SLTP pos #{pos.ticket}: req={req} -> res={getattr(res, 'retcode', None)} ({getattr(res, 'comment', 'None')})")
         # 10009: DONE, 10008: PLACED, 10025: NO CHANGES (already set)
         if res and res.retcode in (mt5.TRADE_RETCODE_DONE, 10008, 10009, 10025):
             return {"status": "MODIFIED", "ticket": ticket, "sl": clean_sl, "tp": clean_tp}

@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611012345">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611031455">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -171,11 +171,10 @@
       </div>
 
       <div class="tv-macro-right">
-        <button id="toggleFootprintBtn" class="tv-footprint-toggle active" title="Toggle 5-Hour Living Footprint & POC morphology on Candles">
+        <button id="toggleFootprintBtn" class="tv-footprint-toggle active" title="Toggle 5H Footprint (Absorption Wick Spines, POC, Traps)">
           <span class="tv-fp-icon">⚡</span>
           <span>5H FOOTPRINT: ON</span>
         </button>
-        <button id="tvFootprintInfoBtn" class="tv-footprint-info-icon" title="What do these Footprint colors, dots and lines mean? (Click for Visual Guide)">ⓘ</button>
       </div>
     </div>
 
@@ -378,6 +377,7 @@
 
         <!-- Canvas Container -->
         <div id="klineChart"></div>
+
       </main>
 
     </div>
@@ -1392,129 +1392,11 @@
       </div>
     </div>
 
-    <!-- ========================================================================= -->
-    <!-- ⚡ 5H FOOTPRINT VISUAL GUIDE MODAL (COLORS, DOTS, LINES EXPLAINED)        -->
-    <!-- ========================================================================= -->
-    <div id="tvFootprintLegendModal" class="tv-modal-backdrop" style="display: none;">
-      <div class="tv-modal-card" style="max-width: 440px; border: 1px solid #38bdf8; box-shadow: 0 10px 40px rgba(0, 240, 255, 0.2);">
-        <div class="tv-modal-header" style="background: linear-gradient(90deg, #091224, #0e1e38);">
-          <div class="tv-modal-header-left" style="display: flex; align-items: center; gap: 8px;">
-            <span style="font-size: 16px;">⚡</span>
-            <span class="tv-modal-header-title" style="color: #38bdf8; font-weight: 800;">5H FOOTPRINT VISUAL GUIDE</span>
-          </div>
-          <button id="tvCloseFootprintModalBtn" class="tv-modal-close" title="Close">✕</button>
-        </div>
-
-        <div class="tv-modal-body" style="padding: 14px; max-height: 75vh; overflow-y: auto; font-family: -apple-system, sans-serif; font-size: 12px; line-height: 1.5; color: #cbd5e1;">
-          
-          <!-- Section 1: CANDLE BODY COLORS -->
-          <div style="margin-bottom: 14px;">
-            <div style="font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">1. Candle Colors (Who Is Trading)</div>
-            
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              <!-- Cyan: Bottom Trap -->
-              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(0, 240, 255, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(0, 240, 255, 0.3);">
-                <div style="width: 14px; height: 18px; background: rgba(0, 240, 255, 0.6); border: 1.5px solid #00f0ff; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
-                <div>
-                  <div style="font-weight: 800; color: #38bdf8;">Electric Cyan — Bottom Trap (Buyers Absorbed Selling)</div>
-                  <div style="font-size: 11.5px; color: #94a3b8;">Sellers tried dumping the market, but big institutional limit buys soaked up all contracts. Price refused to fall. Often a bottom reversal.</div>
-                </div>
-              </div>
-
-              <!-- Amber: Top Trap -->
-              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(245, 158, 11, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(245, 158, 11, 0.3);">
-                <div style="width: 14px; height: 18px; background: rgba(245, 158, 11, 0.6); border: 1.5px solid #f59e0b; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
-                <div>
-                  <div style="font-weight: 800; color: #fbbf24;">Burnt Amber — Top Trap (Sellers Absorbed Buying)</div>
-                  <div style="font-size: 11.5px; color: #94a3b8;">Buyers chased higher, but institutional limit sells absorbed every order. Price stalled and capped. Often a top reversal.</div>
-                </div>
-              </div>
-
-              <!-- Green: Real Buyers -->
-              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(16, 185, 129, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">
-                <div style="width: 14px; height: 18px; background: #10b981; border: 1.5px solid #34d399; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
-                <div>
-                  <div style="font-weight: 800; color: #34d399;">Vibrant Emerald — Strong Bull Momentum</div>
-                  <div style="font-size: 11.5px; color: #94a3b8;">Large directional volume pushing price up aggressively. Real buyer control. Do not short this.</div>
-                </div>
-              </div>
-
-              <!-- Red: Real Sellers -->
-              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(224, 69, 123, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(224, 69, 123, 0.3);">
-                <div style="width: 14px; height: 18px; background: #e0457b; border: 1.5px solid #f43f5e; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
-                <div>
-                  <div style="font-weight: 800; color: #f43f5e;">Deep Rose / Crimson — Strong Bear Momentum</div>
-                  <div style="font-size: 11.5px; color: #94a3b8;">Heavy selling displacing price down with speed. Real seller control. Do not buy this.</div>
-                </div>
-              </div>
-
-              <!-- Slate Grey: Chop -->
-              <div style="display: flex; align-items: flex-start; gap: 10px; background: rgba(71, 85, 105, 0.08); padding: 8px; border-radius: 6px; border: 1px solid rgba(71, 85, 105, 0.25);">
-                <div style="width: 14px; height: 18px; background: rgba(71, 85, 105, 0.5); border: 1.5px solid #64748b; border-radius: 2px; flex-shrink: 0; margin-top: 2px;"></div>
-                <div>
-                  <div style="font-weight: 800; color: #94a3b8;">Desaturated Slate — Low-Volume Chop / Noise</div>
-                  <div style="font-size: 11.5px; color: #64748b;">Thin retail churn with zero institutional participation. Stay out and protect capital.</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Section 2: LINES & DOTS (ANATOMY) -->
-          <div style="margin-bottom: 14px;">
-            <div style="font-size: 11px; font-weight: 900; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">2. Lines, Dots & Marks (What They Mean)</div>
-            
-            <div style="display: flex; flex-direction: column; gap: 6px;">
-              <!-- White Dash: POC -->
-              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                <div style="width: 22px; height: 2px; background: #ffffff; box-shadow: 0 0 4px #ffffff; flex-shrink: 0;"></div>
-                <div>
-                  <span style="font-weight: 800; color: #ffffff;">White Line inside Body (POC):</span>
-                  <span style="font-size: 11.5px; color: #94a3b8;"> Point of Control. The exact price where the biggest volume traded in that candle.</span>
-                </div>
-              </div>
-
-              <!-- Glowing Spine: Absorption Wick -->
-              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                <div style="width: 22px; height: 4px; background: #00f0ff; box-shadow: 0 0 6px #00f0ff; border-radius: 2px; flex-shrink: 0;"></div>
-                <div>
-                  <span style="font-weight: 800; color: #38bdf8;">Glowing Wick Core:</span>
-                  <span style="font-size: 11.5px; color: #94a3b8;"> 70%+ of the aggressive volume was absorbed inside this wick. Shows institutional rejection.</span>
-                </div>
-              </div>
-
-              <!-- White Tip Dot: Rejection Speed -->
-              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                <div style="width: 8px; height: 8px; background: #ffffff; border-radius: 50%; box-shadow: 0 0 6px #ffffff; flex-shrink: 0; margin-left: 7px;"></div>
-                <div>
-                  <span style="font-weight: 800; color: #ffffff;">White Dot at Wick Tip:</span>
-                  <span style="font-size: 11.5px; color: #94a3b8;"> Fast rejection velocity. Price probed the high/low and bounced away in under 45 seconds.</span>
-                </div>
-              </div>
-
-              <!-- Arrow: Ignition -->
-              <div style="display: flex; align-items: center; gap: 10px; background: #141926; padding: 7px 9px; border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.08);">
-                <span style="font-size: 14px; color: #10b981; flex-shrink: 0; width: 22px; text-align: center;">▲ / ▼</span>
-                <div>
-                  <span style="font-weight: 800; color: #34d399;">Micro Triangles (Ignition):</span>
-                  <span style="font-size: 11.5px; color: #94a3b8;"> Ignition candle displacing immediately out of an absorption wick. Confirmation trigger.</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-        </div>
-
-        <div class="tv-modal-footer" style="padding: 10px 14px; background: #0c101c; border-top: 1px solid #1e293b; display: flex; justify-content: flex-end;">
-          <button type="button" id="tvCloseFootprintModalDoneBtn" class="tv-btn-primary" style="padding: 5px 16px; font-weight: 800; border-radius: 6px; background: #2563eb; color: #ffffff;">Got it</button>
-        </div>
-      </div>
-    </div>
-
     <!-- Notification Toast -->
     <div id="tvToast" class="tv-toast">Drawing Saved</div>
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611021505"></script>
+  <script type="module" src="/chart/js/app.js?v=202611031455"></script>
 </body>
 </html>
