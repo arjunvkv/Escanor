@@ -1478,6 +1478,114 @@ function registerCustomOverlays() {
     });
   }
 
+  // 1c. Box Order Flow Thinning Shaded Zone Overlay (VPOC, Vacuum LVN, and Thinned Shelf bands)
+  if (!supported.includes('boxOrderflowZone')) {
+    klinecharts.registerOverlay({
+      name: 'boxOrderflowZone',
+      totalStep: 2,
+      needDefaultPointFigure: false,
+      needDefaultXAxisFigure: false,
+      needDefaultYAxisFigure: false,
+      zLevel: 15,
+      fixedZLevel: true,
+      createPointFigures: ({ overlay, coordinates, bounding, yAxis, xAxis }) => {
+        const data = overlay.extendData || {};
+        const pTop = data.topPrice;
+        const pBot = data.bottomPrice;
+        const tLeft = data.leftTime;
+        const tRight = data.rightTime;
+        const color = data.color || 'rgba(168, 85, 247, 0.20)';
+        const borderColor = data.borderColor || '#a855f7';
+        const borderStyle = data.borderStyle || 'dashed';
+        const label = data.label || '';
+        const align = data.align || 'left';
+
+        if (typeof pTop !== 'number' || typeof pBot !== 'number' || !yAxis || typeof yAxis.convertToPixel !== 'function') {
+          return [];
+        }
+
+        const y1 = yAxis.convertToPixel(pTop);
+        const y2 = yAxis.convertToPixel(pBot);
+        const yMin = Math.min(y1, y2);
+        const yMax = Math.max(y1, y2);
+
+        let xMin = 0;
+        let xMax = bounding.width;
+        if (xAxis && typeof xAxis.convertToPixel === 'function' && tLeft && tRight) {
+          const dataList = chartInstance?.getDataList?.() || [];
+          const idx0 = dataList.findIndex(b => b.timestamp >= tLeft);
+          const idx1 = dataList.findIndex(b => b.timestamp >= tRight);
+          if (idx0 >= 0 && idx1 >= 0) {
+            xMin = Math.min(xAxis.convertToPixel(idx0), xAxis.convertToPixel(idx1));
+            xMax = Math.max(xAxis.convertToPixel(idx0), xAxis.convertToPixel(idx1));
+          } else if (coordinates && coordinates.length >= 2) {
+            xMin = Math.min(coordinates[0].x, coordinates[1].x);
+            xMax = Math.max(coordinates[0].x, coordinates[1].x);
+          }
+        } else if (coordinates && coordinates.length >= 2) {
+          xMin = Math.min(coordinates[0].x, coordinates[1].x);
+          xMax = Math.max(coordinates[0].x, coordinates[1].x);
+        }
+
+        const figures = [];
+
+        // 1. Shaded polygon zone
+        figures.push({
+          type: 'polygon',
+          attrs: {
+            coordinates: [
+              { x: xMin, y: yMin },
+              { x: xMax, y: yMin },
+              { x: xMax, y: yMax },
+              { x: xMin, y: yMax }
+            ]
+          },
+          ignoreEvent: true,
+          styles: {
+            style: 'stroke_fill',
+            color: color,
+            borderColor: borderColor,
+            borderSize: 1.2,
+            borderStyle: borderStyle
+          }
+        });
+
+        // 2. Text label
+        if (label) {
+          let textX = xMin + 6;
+          if (align === 'right') textX = xMax - 6;
+          else if (align === 'center') textX = (xMin + xMax) / 2;
+
+          figures.push({
+            type: 'text',
+            attrs: {
+              x: textX,
+              y: (yMin + yMax) / 2,
+              text: label,
+              align: align,
+              baseline: 'middle'
+            },
+            ignoreEvent: true,
+            styles: {
+              color: borderColor,
+              size: 9.0,
+              weight: '800',
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+              backgroundColor: 'rgba(13, 17, 26, 0.85)',
+              paddingLeft: 4,
+              paddingRight: 4,
+              paddingTop: 1.5,
+              paddingBottom: 1.5,
+              borderRadius: 2
+            }
+          });
+        }
+
+        return figures;
+      }
+    });
+  }
+
   // 1c. Selected Line SL & TP Projection Markings (Thin draggable lines with dollar calculations)
   if (!supported.includes('lineSlTpMarking')) {
     klinecharts.registerOverlay({
@@ -5361,6 +5469,11 @@ export function syncBoxFulcrumAndVacuumLines(chart) {
     }
   });
 
+  // Also sync order flow thinning shaded zones if active
+  if (typeof syncBoxOrderflowShading === 'function') {
+    try { syncBoxOrderflowShading(c); } catch (_) {}
+  }
+
   if (typeof window !== 'undefined') {
     if (window.__replayEngine && typeof window.__replayEngine.recomputeAllBoxTrades === 'function') {
       try { window.__replayEngine.recomputeAllBoxTrades(); } catch (_) {}
@@ -5431,14 +5544,43 @@ export function computeBoxOrderflowShading(overlay, dataList) {
     return null;
   }
 
-  const p0 = overlay.points[0];
-  const p1 = overlay.points[1];
-  const topPrice = Math.max(p0.value, p1.value);
-  const bottomPrice = Math.min(p0.value, p1.value);
-  const leftTime = Math.min(p0.timestamp, p1.timestamp);
-  const rightTime = Math.max(p0.timestamp, p1.timestamp);
+  const validPoints = overlay.points.filter(p => p && typeof p.value === 'number' && !isNaN(p.value));
+  if (validPoints.length < 2) return null;
+
+  const values = validPoints.map(p => p.value);
+  const topPrice = Math.max(...values);
+  const bottomPrice = Math.min(...values);
   const height = topPrice - bottomPrice;
-  if (height <= 0.20) return null;
+  if (height <= 0.05) return null;
+
+  const timestamps = validPoints
+    .map(p => p.timestamp)
+    .filter(t => typeof t === 'number' && !isNaN(t) && t > 0);
+
+  let leftTime = 0;
+  let rightTime = Infinity;
+
+  if (timestamps.length >= 2) {
+    leftTime = Math.min(...timestamps);
+    rightTime = Math.max(...timestamps);
+  } else if (timestamps.length === 1) {
+    leftTime = timestamps[0];
+    rightTime = leftTime + 30 * 60 * 1000;
+  } else {
+    const indices = validPoints.map(p => p.dataIndex).filter(idx => typeof idx === 'number' && idx >= 0);
+    if (indices.length >= 2) {
+      const minIdx = Math.max(0, Math.min(...indices));
+      const maxIdx = Math.min(dataList.length - 1, Math.max(...indices));
+      if (dataList[minIdx]) leftTime = dataList[minIdx].timestamp;
+      if (dataList[maxIdx]) rightTime = dataList[maxIdx].timestamp;
+    } else {
+      return null;
+    }
+  }
+
+  if (leftTime === rightTime) {
+    rightTime = leftTime + 5 * 60 * 1000;
+  }
 
   // Filter bars inside horizontal span
   const bars = dataList.filter(b => b.timestamp >= leftTime && b.timestamp <= rightTime);
@@ -5534,6 +5676,121 @@ export function computeBoxOrderflowShading(overlay, dataList) {
 window.__computeBoxOrderflowShading = computeBoxOrderflowShading;
 
 /**
+ * Synchronizes Order Flow Thinning Shaded Zones directly onto the chart canvas
+ * as dedicated boxOrderflowZone overlays.
+ */
+export function syncBoxOrderflowShading(chart) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  if (!c || typeof c.getOverlays !== 'function') return;
+
+  const isEnabled = !!(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
+
+  // Clean up any existing orderflow shaded overlays
+  const existing = c.getOverlays() || [];
+  existing.forEach(o => {
+    if (o.id && (o.id.startsWith('box_of_vpoc_') || o.id.startsWith('box_of_vac_') || o.id.startsWith('box_of_shelf_'))) {
+      try { c.removeOverlay({ id: o.id }); } catch (_) {}
+    }
+  });
+
+  if (!isEnabled) return;
+
+  const dataList = c.getDataList?.() || [];
+  if (!dataList || dataList.length === 0) return;
+
+  const rects = existing.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+  if (rects.length === 0) return;
+
+  rects.forEach((rect, idx) => {
+    const boxNum = idx + 1;
+    const res = computeBoxOrderflowShading(rect, dataList);
+    if (!res) return;
+
+    const baseId = rect.id || idx;
+
+    // 1. VPOC Value Area (Cyan High Volume Core)
+    try {
+      c.createOverlay({
+        id: `box_of_vpoc_${baseId}`,
+        name: 'boxOrderflowZone',
+        points: [
+          { timestamp: res.leftTime, value: res.vpocHi },
+          { timestamp: res.rightTime, value: res.vpocLo }
+        ],
+        lock: true,
+        extendData: {
+          topPrice: res.vpocHi,
+          bottomPrice: res.vpocLo,
+          leftTime: res.leftTime,
+          rightTime: res.rightTime,
+          color: 'rgba(0, 240, 255, 0.18)',
+          borderColor: '#00f0ff',
+          borderStyle: 'solid',
+          label: `⚓ B${boxNum} VPOC CORE $${res.vpocCenter.toFixed(2)}`,
+          align: 'right'
+        }
+      });
+    } catch (e) {
+      console.warn('[syncBoxOrderflowShading] VPOC zone create error:', e);
+    }
+
+    // 2. Liquidity Vacuum Void (Amber / Orange Low Volume Trap)
+    try {
+      c.createOverlay({
+        id: `box_of_vac_${baseId}`,
+        name: 'boxOrderflowZone',
+        points: [
+          { timestamp: res.leftTime, value: res.lvnHi },
+          { timestamp: res.rightTime, value: res.lvnLo }
+        ],
+        lock: true,
+        extendData: {
+          topPrice: res.lvnHi,
+          bottomPrice: res.lvnLo,
+          leftTime: res.leftTime,
+          rightTime: res.rightTime,
+          color: 'rgba(245, 158, 11, 0.20)',
+          borderColor: '#f59e0b',
+          borderStyle: 'dashed',
+          label: `░ B${boxNum} VACUUM VOID $${res.lvnCenter.toFixed(2)}`,
+          align: 'center'
+        }
+      });
+    } catch (e) {
+      console.warn('[syncBoxOrderflowShading] Vacuum zone create error:', e);
+    }
+
+    // 3. Thinned Micro-Shelf (Emerald Green / Coral Red Launchpad)
+    try {
+      const shelfH = res.thinnedTop - res.thinnedBot;
+      c.createOverlay({
+        id: `box_of_shelf_${baseId}`,
+        name: 'boxOrderflowZone',
+        points: [
+          { timestamp: res.leftTime, value: res.thinnedTop },
+          { timestamp: res.rightTime, value: res.thinnedBot }
+        ],
+        lock: true,
+        extendData: {
+          topPrice: res.thinnedTop,
+          bottomPrice: res.thinnedBot,
+          leftTime: res.leftTime,
+          rightTime: res.rightTime,
+          color: res.isUp ? 'rgba(16, 185, 129, 0.24)' : 'rgba(239, 68, 68, 0.24)',
+          borderColor: res.isUp ? '#10b981' : '#ef4444',
+          borderStyle: 'dashed',
+          label: res.isUp ? `⚡ B${boxNum} THINNED LAUNCHPAD (${shelfH.toFixed(2)}p)` : `⚡ B${boxNum} THINNED DROP ZONE (${shelfH.toFixed(2)}p)`,
+          align: 'left'
+        }
+      });
+    } catch (e) {
+      console.warn('[syncBoxOrderflowShading] Thinned shelf create error:', e);
+    }
+  });
+}
+window.__syncBoxOrderflowShading = syncBoxOrderflowShading;
+
+/**
  * Updates UI of the Toggle Box Order Flow Shading button.
  */
 export function updateBoxOrderflowShadingButtonUI() {
@@ -5554,6 +5811,7 @@ export function updateBoxOrderflowShadingButtonUI() {
       btn.style.border = '1px solid #a855f7';
       btn.style.color = '#c084fc';
       btn.style.boxShadow = 'none';
+      btn.style.fontWeight = '800';
     }
   }
 
@@ -5572,18 +5830,12 @@ export function toggleBoxOrderflowShading(chart, forceState = null) {
     const curr = !!window.__boxOrderflowShadingEnabled;
     window.__boxOrderflowShadingEnabled = (forceState !== null) ? !!forceState : !curr;
   }
+  syncBoxOrderflowShading(c);
   updateBoxOrderflowShadingButtonUI();
-
-  // Force chart refresh so custom rect figures re-render with/without shaded layers
-  if (c && typeof c.invalidate === 'function') {
-    try { c.invalidate(); } catch (_) {}
-  } else if (c && typeof c.resize === 'function') {
-    try { c.resize(); } catch (_) {}
-  }
 
   const isNowActive = !!(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
   if (typeof showChartToast === 'function') {
-    showChartToast(isNowActive ? '🧬 Box Order Flow Thinning Shading Active' : '🧬 Box Order Flow Shading Hidden');
+    showChartToast(isNowActive ? '🧬 Box Order Flow Thinning Shaded Bands Plotted' : '🧬 Box Order Flow Shaded Bands Hidden');
   }
 }
 window.__toggleBoxOrderflowShading = toggleBoxOrderflowShading;

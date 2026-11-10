@@ -334,7 +334,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     const ovName = params.name;
 
     // Internal execution & structural overlays bypass user drawing wrappers
-    if (ovName === 'lineSlTpMarking' || ovName === 'activeTradeOrder' || ovName === 'structuralLevel') {
+    if (ovName === 'lineSlTpMarking' || ovName === 'activeTradeOrder' || ovName === 'structuralLevel' || ovName === 'boxOrderflowZone') {
       return origCreateOverlay(params);
     }
 
