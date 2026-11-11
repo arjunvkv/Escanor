@@ -5682,10 +5682,10 @@ export function syncBoxOrderflowShading(chart) {
 
   const isEnabled = !!(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
 
-  // Clean up any existing orderflow shaded/line overlays
+  // Clean up any existing orderflow line overlays
   const existing = c.getOverlays() || [];
   existing.forEach(o => {
-    if (o.id && (o.id.startsWith('box_of_vpoc_') || o.id.startsWith('box_of_vac_') || o.id.startsWith('box_of_shelf_') || o.id.startsWith('box_of_lines_'))) {
+    if (o.name === 'boxOrderflowZone' || (o.id && o.id.startsWith('box_of_'))) {
       try { c.removeOverlay({ id: o.id }); } catch (_) {}
     }
   });

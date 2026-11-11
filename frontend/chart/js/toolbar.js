@@ -186,6 +186,12 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     showTvConfirm('Clear Chart Drawings', `Remove all ${userDrawings.length} line and box drawing(s) on chart?`, () => {
       userDrawings.forEach(ov => {
         chart.removeOverlay({ id: ov.id });
+        try { chart.removeOverlay({ id: `box_of_lines_${ov.id}` }); } catch (_) {}
+        try { chart.removeOverlay({ id: `box_of_vpoc_${ov.id}` }); } catch (_) {}
+        try { chart.removeOverlay({ id: `box_of_vac_${ov.id}` }); } catch (_) {}
+        try { chart.removeOverlay({ id: `box_of_shelf_${ov.id}` }); } catch (_) {}
+        try { chart.removeOverlay({ id: `box_vacuum_${ov.id}` }); } catch (_) {}
+        try { chart.removeOverlay({ id: `box_fulcrum_${ov.id}` }); } catch (_) {}
         if (window.__replayEngine) {
           window.__replayEngine.onOverlayRemoved(ov.id);
         }
@@ -193,6 +199,19 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           window.__liveSovereignEngine.onOverlayRemoved(ov.id);
         }
       });
+      // Purge any remaining orphaned orderflow or fulcrum lines
+      const allOverlays = chart.getOverlays() || [];
+      allOverlays.forEach(o => {
+        if (o.id && (o.id.startsWith('box_of_') || o.id.startsWith('box_vacuum_') || o.id.startsWith('box_fulcrum_') || o.name === 'boxOrderflowZone')) {
+          try { chart.removeOverlay({ id: o.id }); } catch (_) {}
+        }
+      });
+      if (typeof window.__syncBoxOrderflowShading === 'function') {
+        window.__syncBoxOrderflowShading(chart);
+      }
+      if (typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
+        window.__syncBoxFulcrumAndVacuumLines(chart);
+      }
       if (window.__liveSovereignEngine) {
         window.__liveSovereignEngine.onClearAllDrawings();
       }
@@ -687,6 +706,27 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     try {
       const id = selectedOverlay.id;
       chart.removeOverlay({ id });
+
+      // Clean up all child order flow lines and fulcrum overlays associated with this box
+      try { chart.removeOverlay({ id: `box_of_lines_${id}` }); } catch (_) {}
+      try { chart.removeOverlay({ id: `box_of_vpoc_${id}` }); } catch (_) {}
+      try { chart.removeOverlay({ id: `box_of_vac_${id}` }); } catch (_) {}
+      try { chart.removeOverlay({ id: `box_of_shelf_${id}` }); } catch (_) {}
+      try { chart.removeOverlay({ id: `box_vacuum_${id}` }); } catch (_) {}
+      try { chart.removeOverlay({ id: `box_fulcrum_${id}` }); } catch (_) {}
+
+      // Clean up any orphaned box orderflow / fulcrum overlays whose parent rect no longer exists
+      const allOverlays = chart.getOverlays() || [];
+      const remainingRectIds = new Set(allOverlays.filter(o => o.name === 'rect' && o.id !== id).map(o => o.id));
+      allOverlays.forEach(o => {
+        if (o.id && (o.id.startsWith('box_of_') || o.id.startsWith('box_vacuum_') || o.id.startsWith('box_fulcrum_') || o.name === 'boxOrderflowZone')) {
+          const isOrphan = !Array.from(remainingRectIds).some(rId => o.id.includes(rId));
+          if (isOrphan || remainingRectIds.size === 0) {
+            try { chart.removeOverlay({ id: o.id }); } catch (_) {}
+          }
+        }
+      });
+
       if (window.__lineTradingManager) {
         window.__lineTradingManager.removeLineOverlay(id);
       }
@@ -698,6 +738,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       }
       if (typeof window.__syncBoxFulcrumAndVacuumLines === 'function') {
         window.__syncBoxFulcrumAndVacuumLines(chart);
+      }
+      if (typeof window.__syncBoxOrderflowShading === 'function') {
+        window.__syncBoxOrderflowShading(chart);
       }
       recalculateRectZLevels(chart);
       updateExtensionSeriesRibbon(chart);

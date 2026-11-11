@@ -28,7 +28,8 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
       const allOverlays = chart.getOverlays() || [];
       // Filter out temporary measure boxes, structural levels, session timeline, or system markers
       const userDrawings = allOverlays
-        .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && ov.name !== 'replayTradeMarker' && ov.name !== 'replayTradeBox' && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_') && !ov.id?.startsWith('box_fulcrum_') && !ov.id?.startsWith('box_vacuum_') && !ov.id?.startsWith('trade_'))
+        .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && ov.name !== 'replayTradeMarker' && ov.name !== 'replayTradeBox' && ov.name !== 'boxOrderflowZone' && !ov.id?.startsWith('box_of_') && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_') && !ov.id?.startsWith('box_fulcrum_') && !ov.id?.startsWith('box_vacuum_') && !ov.id?.startsWith('trade_'))
+
         .map(ov => {
           // Strictly clean points: NEVER persist volatile in-memory dataIndex to server!
           // Points must be cleanly anchored by real timestamp and price value only.
@@ -339,7 +340,13 @@ export function restoreDrawings(chart, drawingsList) {
   try {
     drawingsList.forEach(d => {
       try {
+        if (!d || !d.name) return;
+        // Never restore internal computed overlays from server
+        if (d.name === 'boxOrderflowZone' || d.name === 'structuralLevel' || d.id?.startsWith('box_of_') || d.id?.startsWith('box_fulcrum_') || d.id?.startsWith('box_vacuum_')) {
+          return;
+        }
         const isLine = ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine', 'verticalStraightLine'].includes(d.name);
+
         const isRect = (d.name === 'rect');
         const zLvl = isLine ? 200 : (d.zLevel !== undefined ? d.zLevel : (isRect ? 10 : 20));
         const rawPoints = (isRect && d.points)
