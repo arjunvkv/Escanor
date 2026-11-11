@@ -598,7 +598,7 @@ function registerCustomOverlays() {
           }
         ];
 
-        // --- ORDER FLOW THINNING SHADED ZONES (Sub-bands inside the box) ---
+        // --- ORDER FLOW THINNING PURE LINES (Inside Box - 100% Transparent Interior, Zero Text Labels) ---
         const isOrderflowShadingEnabled = Boolean(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
         if (isOrderflowShadingEnabled && yAxis && typeof yAxis.convertToPixel === 'function') {
           try {
@@ -606,153 +606,57 @@ function registerCustomOverlays() {
             const ofData = computeBoxOrderflowShading(overlay, dataList);
             if (ofData) {
               const clampY = (y) => Math.max(minY, Math.min(maxY, y));
+              const fulcrumPrice = (ofData.thinnedTop + ofData.thinnedBot) / 2;
 
-              // 1. Thinned Micro-Shelf (Emerald Green / Purple Launchpad)
-              const yThinTop = clampY(yAxis.convertToPixel(ofData.thinnedTop));
-              const yThinBot = clampY(yAxis.convertToPixel(ofData.thinnedBot));
-              const yThinUpper = Math.min(yThinTop, yThinBot);
-              const yThinLower = Math.max(yThinTop, yThinBot);
+              const shelfColor = ofData.isUp ? '#10b981' : '#ef4444';
+              const rawLines = [
+                // 1. Solid Cyan: VPOC Core Anchor
+                { id: 'vpoc', price: ofData.vpocCenter, color: '#00f0ff', style: 'solid', size: 1.6 },
+                // 2. Dashed Emerald / Crimson: Thinned Shelf Bounds (Compression Ceiling & Floor)
+                { id: 'shelf_top', price: ofData.thinnedTop, color: shelfColor, style: 'dashed', dashedValue: [6, 4], size: 1.5 },
+                { id: 'shelf_bot', price: ofData.thinnedBot, color: shelfColor, style: 'dashed', dashedValue: [6, 4], size: 1.5 },
+                // 3. Dashed Amber: Vacuum Void Pocket (Sweep Trap / Fast Transit)
+                { id: 'vacuum', price: ofData.lvnCenter, color: '#f59e0b', style: 'dashed', dashedValue: [4, 4], size: 1.4 },
+                // 4. Dotted Gold: Invariant Retest Fulcrum (Mean-Reversion Pivot)
+                { id: 'fulcrum', price: fulcrumPrice, color: '#fbbf24', style: 'dashed', dashedValue: [2, 3], size: 1.4 }
+              ];
 
-              figures.push({
-                type: 'polygon',
-                attrs: {
-                  coordinates: [
-                    { x: minX, y: yThinUpper },
-                    { x: maxX, y: yThinUpper },
-                    { x: maxX, y: yThinLower },
-                    { x: minX, y: yThinLower }
-                  ]
-                },
-                ignoreEvent: true,
-                styles: {
-                  style: 'stroke_fill',
-                  color: ofData.isUp ? 'rgba(16, 185, 129, 0.22)' : 'rgba(239, 68, 68, 0.22)',
-                  borderColor: ofData.isUp ? '#10b981' : '#ef4444',
-                  borderSize: 1.5,
-                  borderStyle: 'dashed'
+              // Map each line to pixel Y
+              const mapped = rawLines.map(l => ({
+                ...l,
+                y: clampY(yAxis.convertToPixel(l.price))
+              })).filter(l => typeof l.y === 'number' && !isNaN(l.y));
+
+              // Anti-overlap spacing: sort by Y and ensure minimum 4px separation so lines don't collide
+              mapped.sort((a, b) => a.y - b.y);
+              for (let i = 1; i < mapped.length; i++) {
+                if (mapped[i].y - mapped[i - 1].y < 4) {
+                  mapped[i].y = Math.min(maxY, mapped[i - 1].y + 4);
                 }
-              });
+              }
 
-              // Label on Thinned Shelf
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: minX + 6,
-                  y: (yThinUpper + yThinLower) / 2,
-                  text: ofData.isUp ? `⚡ THINNED LAUNCHPAD (${(ofData.thinnedTop - ofData.thinnedBot).toFixed(2)}p)` : `⚡ THINNED DROP ZONE (${(ofData.thinnedTop - ofData.thinnedBot).toFixed(2)}p)`,
-                  align: 'left',
-                  baseline: 'middle'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: ofData.isUp ? '#10b981' : '#f87171',
-                  size: 9.5,
-                  weight: '800',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                  paddingLeft: 3,
-                  paddingRight: 3,
-                  borderRadius: 2
-                }
-              });
-
-              // 2. VPOC Value Area (Cyan / Blue High-Volume Core)
-              const yVpocHi = clampY(yAxis.convertToPixel(ofData.vpocHi));
-              const yVpocLo = clampY(yAxis.convertToPixel(ofData.vpocLo));
-              const yVpocUpper = Math.min(yVpocHi, yVpocLo);
-              const yVpocLower = Math.max(yVpocHi, yVpocLo);
-
-              figures.push({
-                type: 'polygon',
-                attrs: {
-                  coordinates: [
-                    { x: minX, y: yVpocUpper },
-                    { x: maxX, y: yVpocUpper },
-                    { x: maxX, y: yVpocLower },
-                    { x: minX, y: yVpocLower }
-                  ]
-                },
-                ignoreEvent: true,
-                styles: {
-                  style: 'stroke_fill',
-                  color: 'rgba(0, 240, 255, 0.18)',
-                  borderColor: '#00f0ff',
-                  borderSize: 1
-                }
-              });
-
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: maxX - 6,
-                  y: (yVpocUpper + yVpocLower) / 2,
-                  text: `⚓ VPOC CORE $${ofData.vpocCenter.toFixed(2)}`,
-                  align: 'right',
-                  baseline: 'middle'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#00f0ff',
-                  size: 9,
-                  weight: '800',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.85)',
-                  paddingLeft: 3,
-                  paddingRight: 3,
-                  borderRadius: 2
-                }
-              });
-
-              // 3. Liquidity Void / Sweep Vacuum (Amber / Orange Shading)
-              const yLvnHi = clampY(yAxis.convertToPixel(ofData.lvnHi));
-              const yLvnLo = clampY(yAxis.convertToPixel(ofData.lvnLo));
-              const yLvnUpper = Math.min(yLvnHi, yLvnLo);
-              const yLvnLower = Math.max(yLvnHi, yLvnLo);
-
-              figures.push({
-                type: 'polygon',
-                attrs: {
-                  coordinates: [
-                    { x: minX, y: yLvnUpper },
-                    { x: maxX, y: yLvnUpper },
-                    { x: maxX, y: yLvnLower },
-                    { x: minX, y: yLvnLower }
-                  ]
-                },
-                ignoreEvent: true,
-                styles: {
-                  style: 'stroke_fill',
-                  color: 'rgba(245, 158, 11, 0.20)',
-                  borderColor: '#f59e0b',
-                  borderSize: 1,
-                  borderStyle: 'dashed'
-                }
-              });
-
-              figures.push({
-                type: 'text',
-                attrs: {
-                  x: (minX + maxX) / 2,
-                  y: (yLvnUpper + yLvnLower) / 2,
-                  text: `░ VACUUM VOID (SPRING/UTAD TRAP) $${ofData.lvnCenter.toFixed(2)}`,
-                  align: 'center',
-                  baseline: 'middle'
-                },
-                ignoreEvent: true,
-                styles: {
-                  color: '#fbbf24',
-                  size: 8.5,
-                  weight: '700',
-                  family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
-                  backgroundColor: 'rgba(13, 17, 26, 0.80)',
-                  paddingLeft: 3,
-                  paddingRight: 3,
-                  borderRadius: 2
-                }
+              // Push pure line figures strictly inside [minX, maxX] (NO polygon fills, NO text labels)
+              mapped.forEach(l => {
+                figures.push({
+                  type: 'line',
+                  attrs: {
+                    coordinates: [
+                      { x: minX, y: l.y },
+                      { x: maxX, y: l.y }
+                    ]
+                  },
+                  ignoreEvent: true,
+                  styles: {
+                    color: l.color,
+                    size: l.size,
+                    style: l.style,
+                    dashedValue: l.dashedValue || [6, 4]
+                  }
+                });
               });
             }
           } catch (e) {
-            console.warn('[rect.createPointFigures] Orderflow shading error:', e);
+            console.warn('[rect.createPointFigures] Orderflow lines error:', e);
           }
         }
 
@@ -5680,9 +5584,7 @@ export function syncBoxOrderflowShading(chart) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
   if (!c || typeof c.getOverlays !== 'function') return;
 
-  const isEnabled = !!(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
-
-  // Clean up any existing orderflow line overlays
+  // Clean up any old external orderflow line overlays
   const existing = c.getOverlays() || [];
   existing.forEach(o => {
     if (o.name === 'boxOrderflowZone' || (o.id && o.id.startsWith('box_of_'))) {
@@ -5690,49 +5592,12 @@ export function syncBoxOrderflowShading(chart) {
     }
   });
 
-  if (!isEnabled) return;
-
-  const dataList = c.getDataList?.() || [];
-  if (!dataList || dataList.length === 0) return;
-
-  const rects = existing.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
-  if (rects.length === 0) return;
-
-  rects.forEach((rect, idx) => {
-    const res = computeBoxOrderflowShading(rect, dataList);
-    if (!res) return;
-
-    const baseId = rect.id || idx;
-    const fulcrumPrice = (res.thinnedTop + res.thinnedBot) / 2;
-
+  // Force KlineCharts to re-render all rect overlays so lines show/hide synchronously
+  const rects = existing.filter(o => o.name === 'rect');
+  rects.forEach(rect => {
     try {
-      c.createOverlay({
-        id: `box_of_lines_${baseId}`,
-        name: 'boxOrderflowZone',
-        points: [
-          { timestamp: res.leftTime, value: res.topPrice },
-          { timestamp: res.rightTime, value: res.bottomPrice }
-        ],
-        lock: true,
-        extendData: {
-          leftTime: res.leftTime,
-          rightTime: res.rightTime,
-          lines: [
-            // 1. Solid Cyan: VPOC Core Anchor
-            { id: 'vpoc', price: res.vpocCenter, color: '#00f0ff', style: 'solid', size: 1.6 },
-            // 2. Dashed Emerald / Crimson: Thinned Shelf Ceiling & Floor
-            { id: 'shelf_top', price: res.thinnedTop, color: res.isUp ? '#10b981' : '#ef4444', style: 'dashed', dashedValue: [6, 4], size: 1.5 },
-            { id: 'shelf_bot', price: res.thinnedBot, color: res.isUp ? '#10b981' : '#ef4444', style: 'dashed', dashedValue: [6, 4], size: 1.5 },
-            // 3. Dashed Amber: Vacuum Void Pocket
-            { id: 'vacuum', price: res.lvnCenter, color: '#f59e0b', style: 'dashed', dashedValue: [4, 4], size: 1.4 },
-            // 4. Dotted Gold: Invariant Retest Fulcrum (Next Anchor Point)
-            { id: 'fulcrum', price: fulcrumPrice, color: '#fbbf24', style: 'dashed', dashedValue: [2, 3], size: 1.4 }
-          ]
-        }
-      });
-    } catch (e) {
-      console.warn('[syncBoxOrderflowShading] Orderflow lines create error:', e);
-    }
+      c.overrideOverlay({ id: rect.id });
+    } catch (_) {}
   });
 }
 window.__syncBoxOrderflowShading = syncBoxOrderflowShading;
