@@ -598,6 +598,11 @@ function registerCustomOverlays() {
           }
         ];
 
+        // --- REAL-TIME INTERACTIVE HUD SYNC ON DRAG / RESIZE ---
+        if (typeof window !== 'undefined' && typeof window.__scheduleBoxOfHudUpdate === 'function') {
+          window.__scheduleBoxOfHudUpdate(overlay);
+        }
+
         // --- ORDER FLOW THINNING PURE LINES (Inside Box - 100% Transparent Interior, Zero Text Labels) ---
         const isOrderflowShadingEnabled = Boolean(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
         if (isOrderflowShadingEnabled && yAxis && typeof yAxis.convertToPixel === 'function') {
@@ -5618,6 +5623,28 @@ export function computeBoxOrderflowShading(overlay, dataList) {
   const ker = pathSum > 0 ? parseFloat((netExcursion / pathSum).toFixed(2)) : 0;
   const frictionPct = Math.max(0, Math.min(100, Math.round((1 - ker) * 100)));
 
+  // 8. Individual Line Tests (Touch count) & Buyer Aggression %
+  const calcNodeStats = (targetPrice, tol) => {
+    const t = tol || binStep * 0.7;
+    let tests = 0;
+    bars.forEach(b => {
+      if (b.low <= targetPrice + t && b.high >= targetPrice - t) {
+        tests++;
+      }
+    });
+    const bIdx = Math.max(0, Math.min(numBins - 1, Math.round((targetPrice - bottomPrice) / binStep)));
+    const bV = bins[bIdx] || 0;
+    const bD = deltas[bIdx] || 0;
+    const bBuyPct = bV > 0 ? Math.round(((bV + bD) / (2 * bV)) * 100) : 50;
+    return { tests, buyPct: Math.max(0, Math.min(100, bBuyPct)), delta: Math.round(bD) };
+  };
+
+  const vpocStats = calcNodeStats(vpocCenter, binStep * 0.7);
+  const shelfTopStats = calcNodeStats(thinnedTop, binStep * 0.6);
+  const shelfBotStats = calcNodeStats(thinnedBot, binStep * 0.6);
+  const lvnStats = calcNodeStats(lvnCenter, binStep * 0.6);
+  const fulcrumStats = calcNodeStats(fulcrumPrice, binStep * 0.6);
+
   return {
     topPrice,
     bottomPrice,
@@ -5628,6 +5655,8 @@ export function computeBoxOrderflowShading(overlay, dataList) {
     vpocVol,
     vpocDelta,
     vpocSharePct,
+    vpocTests: vpocStats.tests,
+    vpocBuyPct: vpocStats.buyPct,
     lvnCenter,
     lvnLo,
     lvnHi,
@@ -5635,14 +5664,23 @@ export function computeBoxOrderflowShading(overlay, dataList) {
     lvnDelta,
     lvnDeficitPct,
     lvnSharePct,
+    lvnTests: lvnStats.tests,
+    lvnBuyPct: lvnStats.buyPct,
     thinnedTop,
     thinnedBot,
     shelfHeight,
     shelfVol,
     shelfDelta,
     shelfDropRatio,
+    shelfTopTests: shelfTopStats.tests,
+    shelfTopBuyPct: shelfTopStats.buyPct,
+    shelfBotTests: shelfBotStats.tests,
+    shelfBotBuyPct: shelfBotStats.buyPct,
     fulcrumPrice,
     retestCount,
+    fulcrumTests: fulcrumStats.tests,
+    fulcrumBuyPct: fulcrumStats.buyPct,
+    fulcrumDelta: fulcrumStats.delta,
     totalVol,
     totalDelta,
     buyVol,
@@ -5697,7 +5735,26 @@ window.__syncBoxOrderflowShading = syncBoxOrderflowShading;
  * Renders real physical numbers (NOT labels) for VPOC, Thinned Shelf, Vacuum,
  * Fulcrum, and Global Box Domination/Efficiency.
  */
-export function updateBoxOrderflowMetricsHud(chart) {
+let _hudUpdateTimer = null;
+/**
+ * Schedules a throttled HUD update during interactive drag/resize events.
+ */
+export function scheduleBoxOfHudUpdate(overlay) {
+  if (_hudUpdateTimer) clearTimeout(_hudUpdateTimer);
+  _hudUpdateTimer = setTimeout(() => {
+    _hudUpdateTimer = null;
+    updateBoxOrderflowMetricsHud(null, overlay);
+  }, 35);
+}
+window.__scheduleBoxOfHudUpdate = scheduleBoxOfHudUpdate;
+
+/**
+ * Updates the floating In-Box Orderflow & Physical Trail Metrics Table HUD
+ * positioned directly under the MT5 LIVE pill.
+ * Renders pure numbers (zero text labels): PRICE, VOL, SHARE%, DELTA, BUY%, TESTS, DIST.
+ * Keeps HUD compact (~375px) without obscuring candles.
+ */
+export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
   const hudEl = document.getElementById('tvBoxOrderflowMetricsHud');
   if (!hudEl) return;
@@ -5710,7 +5767,7 @@ export function updateBoxOrderflowMetricsHud(chart) {
   const existing = c.getOverlays() || [];
   const rects = existing.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
 
-  if (rects.length === 0) {
+  if (rects.length === 0 && !targetOverlay) {
     hudEl.style.display = 'none';
     return;
   }
@@ -5721,9 +5778,14 @@ export function updateBoxOrderflowMetricsHud(chart) {
     return;
   }
 
-  // Use the latest drawn box
-  const rect = rects[rects.length - 1];
-  const boxIdx = rects.length;
+  // Use target overlay or the latest drawn box
+  const rect = targetOverlay || (rects.length > 0 ? rects[rects.length - 1] : null);
+  if (!rect) {
+    hudEl.style.display = 'none';
+    return;
+  }
+
+  const boxIdx = rects.indexOf(rect) >= 0 ? (rects.indexOf(rect) + 1) : rects.length;
   const res = computeBoxOrderflowShading(rect, dataList);
   if (!res) {
     hudEl.style.display = 'none';
@@ -5737,6 +5799,12 @@ export function updateBoxOrderflowMetricsHud(chart) {
   const fmtVol = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v.toString());
   const fmtDelta = (d) => (d > 0 ? `+${d}` : d.toString());
   const deltaClass = (d) => (d > 0 ? 'delta-pos' : (d < 0 ? 'delta-neg' : ''));
+  const fmtDist = (p) => {
+    const diff = (spotPrice - p).toFixed(1);
+    const num = parseFloat(diff);
+    if (Math.abs(num) < 0.2) return '<span style="color:#00f0ff;font-weight:800;">AT LVL</span>';
+    return (num > 0 ? `+${num}` : num.toString()) + 'p';
+  };
 
   // Update Badge
   const badgeEl = document.getElementById('tvBoxOfHudBadge');
@@ -5771,59 +5839,67 @@ export function updateBoxOrderflowMetricsHud(chart) {
   }
   if (statSpan) statSpan.textContent = `Box: ${res.height.toFixed(2)}p`;
 
-  // Update Lines Table Rows
+  // Update Lines Table Rows with 9 Pure Numeric Columns (No descriptive labels)
   const tbody = document.getElementById('tvBoxOfTableRows');
   if (tbody) {
     const shelfColor = res.isUp ? '#10b981' : '#ef4444';
-    const shelfName = res.isUp ? 'Launchpad' : 'Drop Shelf';
-    const distToFulcrum = (spotPrice - res.fulcrumPrice).toFixed(2);
-    const distSign = spotPrice >= res.fulcrumPrice ? '+' : '';
+    const shelfLabel = res.isUp ? 'Launch' : 'Drop';
 
     tbody.innerHTML = `
       <tr>
         <td><span class="tv-box-of-swatch" style="background: #00f0ff; box-shadow: 0 0 5px #00f0ff;"></span></td>
-        <td style="color: #00f0ff; font-weight: 700;">VPOC Anchor</td>
+        <td style="color: #00f0ff; font-weight: 700;">VPOC</td>
         <td style="text-align: right; color: #ffffff; font-weight: 700;">$${res.vpocCenter.toFixed(2)}</td>
         <td style="text-align: right; color: #e2e8f0;">${fmtVol(res.vpocVol)}</td>
         <td style="text-align: right; color: #00f0ff; font-weight: 700;">${res.vpocSharePct}%</td>
         <td style="text-align: right;" class="${deltaClass(res.vpocDelta)}">${fmtDelta(res.vpocDelta)}</td>
-        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">Max Auction Consensus • Heavyweight Anchor</td>
+        <td style="text-align: right; color: ${res.vpocBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.vpocBuyPct}%</td>
+        <td style="text-align: right; color: #e2e8f0;">${res.vpocTests}x</td>
+        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.vpocCenter)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
-        <td style="color: ${shelfColor}; font-weight: 700;">${shelfName} Top</td>
+        <td style="color: ${shelfColor}; font-weight: 700;">${shelfLabel} Top</td>
         <td style="text-align: right; color: #ffffff;">$${res.thinnedTop.toFixed(2)}</td>
         <td style="text-align: right; color: #e2e8f0;">${fmtVol(res.shelfVol)}</td>
         <td style="text-align: right; color: ${shelfColor};">-${res.shelfDropRatio}%</td>
         <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
-        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">Compression Bound (${res.shelfHeight}p) • ${res.isUp ? 'Breakout Gate' : 'Breakdown Bound'}</td>
+        <td style="text-align: right; color: ${res.shelfTopBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.shelfTopBuyPct}%</td>
+        <td style="text-align: right; color: #e2e8f0;">${res.shelfTopTests}x</td>
+        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.thinnedTop)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
-        <td style="color: ${shelfColor}; font-weight: 700;">${shelfName} Bot</td>
+        <td style="color: ${shelfColor}; font-weight: 700;">${shelfLabel} Bot</td>
         <td style="text-align: right; color: #ffffff;">$${res.thinnedBot.toFixed(2)}</td>
         <td style="text-align: right; color: #94a3b8;">${res.shelfHeight}p</td>
         <td style="text-align: right; color: #94a3b8;">Shelf</td>
         <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
-        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">${res.isUp ? 'Demand Micro-Shelf Base' : 'Supply Liquidity Base'}</td>
+        <td style="text-align: right; color: ${res.shelfBotBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.shelfBotBuyPct}%</td>
+        <td style="text-align: right; color: #e2e8f0;">${res.shelfBotTests}x</td>
+        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.thinnedBot)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dashed #f59e0b;"></span></td>
-        <td style="color: #f59e0b; font-weight: 700;">Vacuum Void (LVN)</td>
+        <td style="color: #f59e0b; font-weight: 700;">Vacuum</td>
         <td style="text-align: right; color: #ffffff;">$${res.lvnCenter.toFixed(2)}</td>
         <td style="text-align: right; color: #f59e0b;">${fmtVol(res.lvnVol)}</td>
         <td style="text-align: right; color: #f59e0b; font-weight: 700;">${res.lvnSharePct}%</td>
         <td style="text-align: right;" class="${deltaClass(res.lvnDelta)}">${fmtDelta(res.lvnDelta)}</td>
-        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">Liquidity Hole (${res.lvnDeficitPct}% Deficit) • Fast Slip / Trap</td>
+        <td style="text-align: right; color: ${res.lvnBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.lvnBuyPct}%</td>
+        <td style="text-align: right; color: #f59e0b; font-weight: 700;">${res.lvnTests}x</td>
+        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.lvnCenter)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dotted #fbbf24;"></span></td>
-        <td style="color: #fbbf24; font-weight: 700;">Retest Fulcrum</td>
+        <td style="color: #fbbf24; font-weight: 700;">Fulcrum</td>
         <td style="text-align: right; color: #ffffff; font-weight: 700;">$${res.fulcrumPrice.toFixed(2)}</td>
         <td style="text-align: right; color: #fbbf24; font-weight: 700;">${res.retestCount}x</td>
         <td style="text-align: right; color: #fbbf24;">50% Mean</td>
-        <td style="text-align: right; color: #38bdf8;">${distSign}${distToFulcrum}p</td>
-        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">50% Structural Pivot Axis • Primary Bounce/Flip Trigger</td>
+        <td style="text-align: right;" class="${deltaClass(res.fulcrumDelta)}">${fmtDelta(res.fulcrumDelta)}</td>
+        <td style="text-align: right; color: ${res.fulcrumBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.fulcrumBuyPct}%</td>
+        <td style="text-align: right; color: #fbbf24; font-weight: 700;">${res.fulcrumTests}x</td>
+        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.fulcrumPrice)}</td>
       </tr>
     `;
   }
@@ -5832,11 +5908,11 @@ export function updateBoxOrderflowMetricsHud(chart) {
   const fpState = document.getElementById('tvBoxOfFootprintState');
   const spotDist = document.getElementById('tvBoxOfSpotDist');
   if (fpState) {
-    const stateStr = res.ker >= 0.65 ? 'DIRECTIONAL CONVICTION EXPANSION' : (res.frictionPct >= 50 ? 'HIGH FRICTION TWO-SIDED CHURN' : 'BALANCED VALUE ROTATION');
+    const stateStr = res.ker >= 0.65 ? 'DIRECTIONAL CONVICTION' : (res.frictionPct >= 50 ? 'HIGH FRICTION CHURN' : 'BALANCED VALUE ROTATION');
     fpState.innerHTML = `AUCTION: <strong style="color: ${res.isUp ? '#10b981' : '#ef4444'};">${stateStr}</strong>`;
   }
   if (spotDist) {
-    const distToVpoc = (spotPrice - res.vpocCenter).toFixed(2);
+    const distToVpoc = (spotPrice - res.vpocCenter).toFixed(1);
     const distSign = spotPrice >= res.vpocCenter ? '+' : '';
     spotDist.textContent = `SPOT: $${spotPrice.toFixed(2)} (${distSign}${distToVpoc}p to VPOC)`;
   }

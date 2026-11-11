@@ -908,7 +908,7 @@ input[type="number"] {
   position: absolute;
   top: 40px;
   left: 12px;
-  width: 570px;
+  width: 375px;
   background: rgba(11, 15, 24, 0.96);
   border: 1.5px solid #1e293b;
   border-radius: 8px;
@@ -921,7 +921,7 @@ input[type="number"] {
 }
 
 .tv-box-of-hud.collapsed {
-  width: 280px;
+  width: 250px;
 }
 
 .tv-box-of-hud.collapsed .tv-box-of-hud-body {
@@ -932,7 +932,7 @@ input[type="number"] {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 10px;
+  padding: 5px 8px;
   background: rgba(15, 23, 42, 0.75);
   border-bottom: 1px solid #1e293b;
   cursor: pointer;
@@ -942,8 +942,8 @@ input[type="number"] {
 .tv-box-of-hud-title {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
+  gap: 5px;
+  font-size: 10px;
   font-weight: 800;
   color: #00f0ff;
   letter-spacing: 0.5px;
@@ -994,18 +994,18 @@ input[type="number"] {
 }
 
 .tv-box-of-hud-body {
-  padding: 8px 10px;
+  padding: 6px 8px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .tv-box-of-area-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 5px;
   background: rgba(15, 23, 42, 0.45);
-  padding: 6px 8px;
+  padding: 5px 6px;
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
@@ -1017,21 +1017,21 @@ input[type="number"] {
 }
 
 .tv-box-of-stat-label {
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 700;
   color: #64748b;
   text-transform: uppercase;
 }
 
 .tv-box-of-stat-val {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   color: #e2e8f0;
   font-family: monospace;
 }
 
 .tv-box-of-stat-sub {
-  font-size: 8.5px;
+  font-size: 8px;
   color: #94a3b8;
   font-family: monospace;
 }
@@ -1050,14 +1050,14 @@ input[type="number"] {
 .tv-box-of-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10px;
+  font-size: 9.5px;
   font-family: monospace;
 }
 
 .tv-box-of-table th {
-  padding: 4px 5px;
+  padding: 3px 3px;
   color: #64748b;
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 800;
   border-bottom: 1px solid #1e293b;
   text-transform: uppercase;
@@ -1065,7 +1065,7 @@ input[type="number"] {
 }
 
 .tv-box-of-table td {
-  padding: 3.5px 5px;
+  padding: 3px 3px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.03);
   white-space: nowrap;
   vertical-align: middle;

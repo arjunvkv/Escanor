@@ -294,6 +294,16 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     });
   }
 
+  // Global mouseup listener to guarantee HUD recalculation when box resize/drag handle is released
+  if (typeof window !== 'undefined' && !window.__boxOfMouseUpBound) {
+    window.__boxOfMouseUpBound = true;
+    document.addEventListener('mouseup', () => {
+      if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+        window.__updateBoxOrderflowMetricsHud(chart);
+      }
+    });
+  }
+
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);
 
   // Create Drawing with Shift Snapping & Event Hooks
@@ -498,8 +508,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           }
         }
 
-        if (ovName === 'rect' && args.points?.length === 6) {
-          handleRectPressedMove(args.points, args.performPointIndex, chart.getDataList(), window.__currentTimeframeMinutes || 5);
+        if (ovName === 'rect') {
+          if (args.points?.length === 6) {
+            handleRectPressedMove(args.points, args.performPointIndex, chart.getDataList(), window.__currentTimeframeMinutes || 5);
+          }
+          if (typeof window.__scheduleBoxOfHudUpdate === 'function') {
+            window.__scheduleBoxOfHudUpdate(args.overlay || { points: args.points });
+          }
         }
       },
       performEventMoveForDrawing: (args) => {
@@ -525,6 +540,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
             }
           }
         }
+        if (ovName === 'rect' && typeof window.__scheduleBoxOfHudUpdate === 'function') {
+          window.__scheduleBoxOfHudUpdate(args.overlay || { points: args.points });
+        }
       },
       onPressedMoveEnd: (args) => {
         if (params.onPressedMoveEnd) params.onPressedMoveEnd(args);
@@ -535,6 +553,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
           const sixPoints = normalizeRectPoints(args.overlay.points, chart.getDataList());
           chart.overrideOverlay({ id: args.overlay.id, points: sixPoints });
           updateExtensionSeriesRibbon(chart);
+          if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+            window.__updateBoxOrderflowMetricsHud(chart, args.overlay);
+          }
         }
         syncDrawingsToServer(currentSymbolRef, chart);
       },

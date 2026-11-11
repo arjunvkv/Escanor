@@ -1,42 +1,42 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1794396080023_1",
+      "id": "overlay_1794397794982_1",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1794284100000,
-          "value": 4135.017589861751,
-          "dataIndex": 1614
+          "timestamp": 1794210000000,
+          "value": 4103.471883116883,
+          "dataIndex": 1352
         },
         {
-          "timestamp": 1794305400000,
-          "value": 4135.017589861751,
-          "dataIndex": 1685
+          "timestamp": 1794222900000,
+          "value": 4103.471883116883,
+          "dataIndex": 1395
         },
         {
-          "timestamp": 1794305400000,
-          "value": 4107.70399078341,
-          "dataIndex": 1685
+          "timestamp": 1794222900000,
+          "value": 4084.3121505376344,
+          "dataIndex": 1395
         },
         {
-          "timestamp": 1794284100000,
-          "value": 4107.70399078341,
-          "dataIndex": 1614
+          "timestamp": 1794210000000,
+          "value": 4084.3121505376344,
+          "dataIndex": 1352
         },
         {
-          "timestamp": 1794284100000,
-          "value": 4121.36079032258,
-          "dataIndex": 1614
+          "timestamp": 1794210000000,
+          "value": 4093.892016827259,
+          "dataIndex": 1352
         },
         {
-          "timestamp": 1794305400000,
-          "value": 4121.36079032258,
-          "dataIndex": 1685
+          "timestamp": 1794222900000,
+          "value": 4093.892016827259,
+          "dataIndex": 1395
         }
       ],
       "styles": null,
-      "zLevel": 100,
+      "zLevel": 15,
       "extendData": {}
     }
   ]
