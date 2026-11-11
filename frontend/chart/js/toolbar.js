@@ -260,12 +260,21 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     const tooltipEl = tooltipId ? document.getElementById(tooltipId) : null;
     if (!tooltipEl) return;
 
-    btn.addEventListener('mouseenter', () => {
+    let hideTimer = null;
+    const show = () => {
+      clearTimeout(hideTimer);
       tooltipEl.style.display = 'block';
-    });
-    btn.addEventListener('mouseleave', () => {
-      tooltipEl.style.display = 'none';
-    });
+    };
+    const hide = () => {
+      hideTimer = setTimeout(() => {
+        tooltipEl.style.display = 'none';
+      }, 150);
+    };
+
+    btn.addEventListener('mouseenter', show);
+    btn.addEventListener('mouseleave', hide);
+    tooltipEl.addEventListener('mouseenter', show);
+    tooltipEl.addEventListener('mouseleave', hide);
   });
 
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);

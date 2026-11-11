@@ -123,27 +123,41 @@
           <button type="button" class="tv-of-info-trigger" data-tooltip="tvTopOrderflowLinesTooltip" style="background: #181c28; border: 1px solid #2e374d; color: #94a3b8; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;" title="Hover to view what each order flow line color means">ℹ️</button>
           
           <!-- Hover Tooltip Popover -->
-          <div id="tvTopOrderflowLinesTooltip" class="tv-of-info-popover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; background: rgba(11, 15, 24, 0.96); border: 1.5px solid #00f0ff; border-radius: 8px; padding: 12px 14px; width: 340px; box-shadow: 0 12px 36px rgba(0,0,0,0.9), 0 0 15px rgba(0,240,255,0.2); backdrop-filter: blur(10px); z-index: 9999; text-align: left;">
+          <div id="tvTopOrderflowLinesTooltip" class="tv-of-info-popover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; background: rgba(11, 15, 24, 0.98); border: 1.5px solid #00f0ff; border-radius: 8px; padding: 12px 14px; width: 360px; box-shadow: 0 12px 36px rgba(0,0,0,0.95), 0 0 16px rgba(0,240,255,0.25); backdrop-filter: blur(12px); z-index: 9999; text-align: left;">
             <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222a3d; padding-bottom: 6px; margin-bottom: 8px;">
               <span style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">⚡ ORDER FLOW LINE COLOR MEANINGS</span>
               <span style="font-size: 9.5px; color: #00f0ff; font-weight: 700;">TRUE PHYSICAL TRAIL</span>
             </div>
-            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-family: monospace;">
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;">
+              <!-- 1. VPOC -->
               <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <span style="display: inline-block; width: 18px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff;"></span>
-                <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction density & contract volume hand-off.</span></div>
+                <span style="display: inline-block; width: 20px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff; border-radius: 1px;"></span>
+                <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0; font-weight: 600;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction volume & institutional consensus.</span></div>
               </div>
+              <!-- 2. Thinned Drop Shelf (Red) -->
               <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
-                <div><strong style="color: #10b981;">Dashed Emerald / Crimson:</strong> <span style="color: #e2e8f0;">Thinned Shelf Bounds</span><br><span style="color: #94a3b8; font-size: 10px;">Compression ceiling & floor. Where the box is thinned.</span></div>
+                <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #ef4444; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #ef4444;">Dashed Red (Crimson):</strong> <span style="color: #e2e8f0; font-weight: 600;">Thinned Drop Shelf (Distribution)</span><br><span style="color: #94a3b8; font-size: 10px;">Ceiling & floor where bids thinned out into a downward breakdown.</span></div>
               </div>
+              <!-- 3. Thinned Launchpad Shelf (Green) -->
               <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
-                <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0;">Vacuum Void Pocket</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru zone.</span></div>
+                <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #10b981;">Dashed Emerald Green:</strong> <span style="color: #e2e8f0; font-weight: 600;">Thinned Launchpad Shelf (Accumulation)</span><br><span style="color: #94a3b8; font-size: 10px;">Ceiling & floor where asks thinned out into an upward launch.</span></div>
               </div>
+              <!-- 4. Vacuum Void -->
               <div style="display: flex; align-items: flex-start; gap: 8px;">
-                <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
-                <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Next trigger.</span></div>
+                <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0; font-weight: 600;">Vacuum Void Pocket (LVN)</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru / sweep trap.</span></div>
+              </div>
+              <!-- 5. Retest Fulcrum -->
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0; font-weight: 600;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Pivot trigger.</span></div>
+              </div>
+              <!-- 6. In-Box Vector & Anchor -->
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; margin-top: 2px; flex-shrink: 0; font-size: 11px; font-weight: 900; color: #ef4444;">✕ ➔</span>
+                <div><strong style="color: #00e5ff;">Red ✕ Anchor & Cyan Vector:</strong> <span style="color: #e2e8f0; font-weight: 600;">Trend Excursion Trajectory</span><br><span style="color: #94a3b8; font-size: 10px;">Red ✕ marks entry origin; Cyan arrow shows volume excursion push.</span></div>
               </div>
             </div>
             <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #1a2233; color: #10b981; font-size: 9.5px; font-weight: 700; text-align: center;">
@@ -1328,27 +1342,41 @@
                 <button type="button" class="tv-of-info-trigger" data-tooltip="tvModalOrderflowLinesTooltip" style="background: #181c28; border: 1px solid #2e374d; color: #94a3b8; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;" title="Hover to view what each order flow line color means">ℹ️</button>
                 
                 <!-- Info Hover Card Popover -->
-                <div id="tvModalOrderflowLinesTooltip" class="tv-of-info-popover" style="display: none; position: absolute; bottom: calc(100% + 8px); right: 0; background: rgba(11, 15, 24, 0.96); border: 1.5px solid #00f0ff; border-radius: 8px; padding: 12px 14px; width: 340px; box-shadow: 0 12px 36px rgba(0,0,0,0.9), 0 0 15px rgba(0,240,255,0.2); backdrop-filter: blur(10px); z-index: 9999; text-align: left;">
+                <div id="tvModalOrderflowLinesTooltip" class="tv-of-info-popover" style="display: none; position: absolute; bottom: calc(100% + 8px); right: 0; background: rgba(11, 15, 24, 0.98); border: 1.5px solid #00f0ff; border-radius: 8px; padding: 12px 14px; width: 360px; box-shadow: 0 12px 36px rgba(0,0,0,0.95), 0 0 16px rgba(0,240,255,0.25); backdrop-filter: blur(12px); z-index: 9999; text-align: left;">
                   <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222a3d; padding-bottom: 6px; margin-bottom: 8px;">
                     <span style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">⚡ ORDER FLOW LINE COLOR MEANINGS</span>
                     <span style="font-size: 9.5px; color: #00f0ff; font-weight: 700;">TRUE PHYSICAL TRAIL</span>
                   </div>
-                  <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-family: monospace;">
+                  <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, monospace;">
+                    <!-- 1. VPOC -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 18px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff;"></span>
-                      <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction density & contract volume hand-off.</span></div>
+                      <span style="display: inline-block; width: 20px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff; border-radius: 1px;"></span>
+                      <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0; font-weight: 600;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction volume & institutional consensus.</span></div>
                     </div>
+                    <!-- 2. Thinned Drop Shelf (Red) -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #10b981;">Dashed Emerald / Crimson:</strong> <span style="color: #e2e8f0;">Thinned Shelf Bounds</span><br><span style="color: #94a3b8; font-size: 10px;">Compression ceiling & floor. Where the box is thinned.</span></div>
+                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #ef4444; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #ef4444;">Dashed Red (Crimson):</strong> <span style="color: #e2e8f0; font-weight: 600;">Thinned Drop Shelf (Distribution)</span><br><span style="color: #94a3b8; font-size: 10px;">Ceiling & floor where bids thinned out into a downward breakdown.</span></div>
                     </div>
+                    <!-- 3. Thinned Launchpad Shelf (Green) -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0;">Vacuum Void Pocket</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru zone.</span></div>
+                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #10b981;">Dashed Emerald Green:</strong> <span style="color: #e2e8f0; font-weight: 600;">Thinned Launchpad Shelf (Accumulation)</span><br><span style="color: #94a3b8; font-size: 10px;">Ceiling & floor where asks thinned out into an upward launch.</span></div>
                     </div>
+                    <!-- 4. Vacuum Void -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Next trigger.</span></div>
+                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0; font-weight: 600;">Vacuum Void Pocket (LVN)</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru / sweep trap.</span></div>
+                    </div>
+                    <!-- 5. Retest Fulcrum -->
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0; font-weight: 600;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Pivot trigger.</span></div>
+                    </div>
+                    <!-- 6. In-Box Vector & Anchor -->
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                      <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; margin-top: 2px; flex-shrink: 0; font-size: 11px; font-weight: 900; color: #ef4444;">✕ ➔</span>
+                      <div><strong style="color: #00e5ff;">Red ✕ Anchor & Cyan Vector:</strong> <span style="color: #e2e8f0; font-weight: 600;">Trend Excursion Trajectory</span><br><span style="color: #94a3b8; font-size: 10px;">Red ✕ marks entry origin; Cyan arrow shows volume excursion push.</span></div>
                     </div>
                   </div>
                   <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #1a2233; color: #10b981; font-size: 9.5px; font-weight: 700; text-align: center;">
@@ -1471,6 +1499,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611111700"></script>
+  <script type="module" src="/chart/js/app.js?v=202611111726"></script>
 </body>
 </html>
