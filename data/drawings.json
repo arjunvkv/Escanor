@@ -6,33 +6,33 @@
       "points": [
         {
           "timestamp": 1794210000000,
-          "value": 4103.471883116883,
-          "dataIndex": 1352
+          "value": 4098.603248314454,
+          "dataIndex": 1348
         },
         {
-          "timestamp": 1794222900000,
-          "value": 4103.471883116883,
-          "dataIndex": 1395
+          "timestamp": 1794222600000,
+          "value": 4098.603248314454,
+          "dataIndex": 1390
         },
         {
-          "timestamp": 1794222900000,
+          "timestamp": 1794222600000,
           "value": 4084.3121505376344,
-          "dataIndex": 1395
+          "dataIndex": 1390
         },
         {
           "timestamp": 1794210000000,
           "value": 4084.3121505376344,
-          "dataIndex": 1352
+          "dataIndex": 1348
         },
         {
           "timestamp": 1794210000000,
-          "value": 4093.892016827259,
-          "dataIndex": 1352
+          "value": 4091.457699426044,
+          "dataIndex": 1348
         },
         {
-          "timestamp": 1794222900000,
-          "value": 4093.892016827259,
-          "dataIndex": 1395
+          "timestamp": 1794222600000,
+          "value": 4091.457699426044,
+          "dataIndex": 1390
         }
       ],
       "styles": null,

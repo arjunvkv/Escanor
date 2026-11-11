@@ -5645,7 +5645,39 @@ export function computeBoxOrderflowShading(overlay, dataList) {
   const lvnStats = calcNodeStats(lvnCenter, binStep * 0.6);
   const fulcrumStats = calcNodeStats(fulcrumPrice, binStep * 0.6);
 
+  // 9. Physical Trail Big Move Launch Impulse Calculation
+  // Reveals the directional displacement (in points) that launches from each node
+  const maxBarHigh = Math.max(...bars.map(b => b.high));
+  const minBarLow = Math.min(...bars.map(b => b.low));
+  const boxSpan = Math.max(0.5, height);
+
+  // VPOC: Magnetic absorption attractor (minimal breakout impulse, heavy chop)
+  const vpocImpulse = parseFloat((boxSpan * 0.15).toFixed(1));
+
+  // Shelf Top: Bullish launchpad impulse (displacement upwards from upper shelf boundary)
+  const topDisp = maxBarHigh - thinnedTop;
+  const shelfTopImpulse = parseFloat((topDisp > 0.5 ? topDisp : (boxSpan * 0.70)).toFixed(1));
+
+  // Shelf Bot: Bearish launchpad impulse (displacement downwards from lower shelf boundary)
+  const botDisp = thinnedBot - minBarLow;
+  const shelfBotImpulse = -parseFloat((botDisp > 0.5 ? botDisp : (boxSpan * 0.70)).toFixed(1));
+
+  // Vacuum (LVN): Liquidity void with zero friction - price accelerates across the gap
+  const lvnGap = Math.max(boxSpan * 0.80, Math.abs(thinnedTop - thinnedBot) * 1.1);
+  const lvnDirection = (isUp || (lvnStats.buyPct >= 50)) ? 1 : -1;
+  const lvnImpulse = parseFloat((lvnDirection * lvnGap).toFixed(1));
+
+  // Fulcrum: Mean reversion rotational impulse to the nearest boundary
+  const fulcrumDist = Math.max(0.5, Math.abs(thinnedTop - fulcrumPrice));
+  const fulcrumDirection = isUp ? 1 : -1;
+  const fulcrumImpulse = parseFloat((fulcrumDirection * fulcrumDist).toFixed(1));
+
   return {
+    vpocImpulse,
+    shelfTopImpulse,
+    shelfBotImpulse,
+    lvnImpulse,
+    fulcrumImpulse,
     topPrice,
     bottomPrice,
     height,
@@ -5799,11 +5831,16 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
   const fmtVol = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v.toString());
   const fmtDelta = (d) => (d > 0 ? `+${d}` : d.toString());
   const deltaClass = (d) => (d > 0 ? 'delta-pos' : (d < 0 ? 'delta-neg' : ''));
-  const fmtDist = (p) => {
-    const diff = (spotPrice - p).toFixed(1);
-    const num = parseFloat(diff);
-    if (Math.abs(num) < 0.2) return '<span style="color:#00f0ff;font-weight:800;">AT LVL</span>';
-    return (num > 0 ? `+${num}` : num.toString()) + 'p';
+  // Helper: Format Big Move Launch Impulse & Entry Trigger
+  const fmtImpulse = (impulseVal, linePrice) => {
+    const isAtTrigger = Math.abs(spotPrice - linePrice) <= 1.5;
+    const sign = impulseVal > 0 ? '+' : '';
+    const formatted = `${sign}${impulseVal.toFixed(1)}p`;
+    if (isAtTrigger) {
+      return `<span style="color: #00f0ff; font-weight: 900; text-shadow: 0 0 6px rgba(0, 240, 255, 0.75);">⚡${formatted}</span>`;
+    }
+    const color = impulseVal > 0 ? '#10b981' : (impulseVal < 0 ? '#ef4444' : '#94a3b8');
+    return `<span style="color: ${color}; font-weight: 700;">${formatted}</span>`;
   };
 
   // Update Badge
@@ -5855,7 +5892,7 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
         <td style="text-align: right;" class="${deltaClass(res.vpocDelta)}">${fmtDelta(res.vpocDelta)}</td>
         <td style="text-align: right; color: ${res.vpocBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.vpocBuyPct}%</td>
         <td style="text-align: right; color: #e2e8f0;">${res.vpocTests}x</td>
-        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.vpocCenter)}</td>
+        <td style="text-align: right;">${fmtImpulse(res.vpocImpulse, res.vpocCenter)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
@@ -5866,7 +5903,7 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
         <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
         <td style="text-align: right; color: ${res.shelfTopBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.shelfTopBuyPct}%</td>
         <td style="text-align: right; color: #e2e8f0;">${res.shelfTopTests}x</td>
-        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.thinnedTop)}</td>
+        <td style="text-align: right;">${fmtImpulse(res.shelfTopImpulse, res.thinnedTop)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
@@ -5877,7 +5914,7 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
         <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
         <td style="text-align: right; color: ${res.shelfBotBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.shelfBotBuyPct}%</td>
         <td style="text-align: right; color: #e2e8f0;">${res.shelfBotTests}x</td>
-        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.thinnedBot)}</td>
+        <td style="text-align: right;">${fmtImpulse(res.shelfBotImpulse, res.thinnedBot)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dashed #f59e0b;"></span></td>
@@ -5888,7 +5925,7 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
         <td style="text-align: right;" class="${deltaClass(res.lvnDelta)}">${fmtDelta(res.lvnDelta)}</td>
         <td style="text-align: right; color: ${res.lvnBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.lvnBuyPct}%</td>
         <td style="text-align: right; color: #f59e0b; font-weight: 700;">${res.lvnTests}x</td>
-        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.lvnCenter)}</td>
+        <td style="text-align: right;">${fmtImpulse(res.lvnImpulse, res.lvnCenter)}</td>
       </tr>
       <tr>
         <td><span class="tv-box-of-swatch" style="border-top: 2px dotted #fbbf24;"></span></td>
@@ -5899,7 +5936,7 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
         <td style="text-align: right;" class="${deltaClass(res.fulcrumDelta)}">${fmtDelta(res.fulcrumDelta)}</td>
         <td style="text-align: right; color: ${res.fulcrumBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.fulcrumBuyPct}%</td>
         <td style="text-align: right; color: #fbbf24; font-weight: 700;">${res.fulcrumTests}x</td>
-        <td style="text-align: right; color: #38bdf8; font-weight: 700;">${fmtDist(res.fulcrumPrice)}</td>
+        <td style="text-align: right;">${fmtImpulse(res.fulcrumImpulse, res.fulcrumPrice)}</td>
       </tr>
     `;
   }
