@@ -604,30 +604,18 @@ function registerCustomOverlays() {
         }
 
         // --- ORDER FLOW THINNING PURE LINES (Inside Box - 100% Transparent Interior, Zero Text Labels) ---
+        // ONLY renders if the box physically intersects candles with real order flow.
+        // If the box is drawn in empty space, ZERO fake lines are rendered!
         const isOrderflowShadingEnabled = Boolean(typeof window !== 'undefined' && window.__boxOrderflowShadingEnabled);
         if (isOrderflowShadingEnabled && yAxis && typeof yAxis.convertToPixel === 'function') {
           try {
             const dataList = chartInstance?.getDataList?.() || [];
             const ofData = computeBoxOrderflowShading(overlay, dataList);
-            if (ofData) {
+            if (ofData && !ofData.isEmpty && Array.isArray(ofData.lines) && ofData.lines.length > 0) {
               const clampY = (y) => Math.max(minY, Math.min(maxY, y));
-              const fulcrumPrice = (ofData.thinnedTop + ofData.thinnedBot) / 2;
 
-              const shelfColor = ofData.isUp ? '#10b981' : '#ef4444';
-              const rawLines = [
-                // 1. Solid Cyan: VPOC Core Anchor
-                { id: 'vpoc', price: ofData.vpocCenter, color: '#00f0ff', style: 'solid', size: 1.6 },
-                // 2. Dashed Emerald / Crimson: Thinned Shelf Bounds (Compression Ceiling & Floor)
-                { id: 'shelf_top', price: ofData.thinnedTop, color: shelfColor, style: 'dashed', dashedValue: [6, 4], size: 1.5 },
-                { id: 'shelf_bot', price: ofData.thinnedBot, color: shelfColor, style: 'dashed', dashedValue: [6, 4], size: 1.5 },
-                // 3. Dashed Amber: Vacuum Void Pocket (Sweep Trap / Fast Transit)
-                { id: 'vacuum', price: ofData.lvnCenter, color: '#f59e0b', style: 'dashed', dashedValue: [4, 4], size: 1.4 },
-                // 4. Dotted Gold: Invariant Retest Fulcrum (Mean-Reversion Pivot)
-                { id: 'fulcrum', price: fulcrumPrice, color: '#fbbf24', style: 'dashed', dashedValue: [2, 3], size: 1.4 }
-              ];
-
-              // Map each line to pixel Y
-              const mapped = rawLines.map(l => ({
+              // Map each genuine line to pixel Y
+              const mapped = ofData.lines.map(l => ({
                 ...l,
                 y: clampY(yAxis.convertToPixel(l.price))
               })).filter(l => typeof l.y === 'number' && !isNaN(l.y));
@@ -5163,6 +5151,10 @@ export function computeBoxFulcrumAndVacuum(overlay, dataList) {
 
   if (bars.length < 2) return null;
 
+  // True Physical Check: Only analyze if candles actually enter or touch the box price range
+  const intersectingBars = bars.filter(b => b.high >= bottomPrice && b.low <= topPrice);
+  if (intersectingBars.length === 0) return null;
+
   // 2. Discretize box vertical range into fine $0.05-$0.10 steps
   const numSteps = Math.min(80, Math.max(30, Math.round(priceRange / 0.10)));
   const step = priceRange / numSteps;
@@ -5485,21 +5477,33 @@ export function computeBoxOrderflowShading(overlay, dataList) {
     rightTime = leftTime + 5 * 60 * 1000;
   }
 
-  // Filter bars inside horizontal span
-  const bars = dataList.filter(b => b.timestamp >= leftTime && b.timestamp <= rightTime);
-  if (bars.length < 2) return null;
+  // 1. Time-window candles
+  const timeBars = dataList.filter(b => b.timestamp >= leftTime && b.timestamp <= rightTime);
 
-  const binStep = Math.max(0.10, Math.min(0.50, height / 20));
+  // 2. TRUE PHYSICAL FILTER: Only candles that physically enter or intersect the box price range [bottomPrice, topPrice]
+  const intersectingBars = timeBars.filter(b => b.high >= bottomPrice && b.low <= topPrice);
+
+  const binStep = Math.max(0.10, Math.min(0.50, height / 25));
   const numBins = Math.ceil(height / binStep);
   const bins = new Float32Array(numBins);
   const deltas = new Float32Array(numBins);
 
-  bars.forEach(b => {
+  let totalVol = 0;
+  let totalDelta = 0;
+  let buyVol = 0;
+  let sellVol = 0;
+
+  // 3. True physical tick volume and CVD distributed strictly inside the box boundaries
+  intersectingBars.forEach(b => {
     const bLo = b.low;
     const bHi = b.high;
-    const v = b.volume || 1;
+    const v = Number(b.volume || b.tick_volume || 1);
     const span = Math.max(0.01, bHi - bLo);
-    const d = v * ((b.close - b.open) / span);
+    const boxOverlap = Math.max(0, Math.min(bHi, topPrice) - Math.max(bLo, bottomPrice));
+    if (boxOverlap <= 0) return;
+
+    const barDeltaSign = b.close >= b.open ? 1 : -1;
+    const barDeltaRatio = span > 0 ? (b.close - b.open) / span : 0;
 
     for (let idx = 0; idx < numBins; idx++) {
       const pLo = bottomPrice + idx * binStep;
@@ -5507,13 +5511,56 @@ export function computeBoxOrderflowShading(overlay, dataList) {
       const overlap = Math.max(0, Math.min(bHi, pHi) - Math.max(bLo, pLo));
       if (overlap > 0) {
         const frac = overlap / span;
-        bins[idx] += v * frac;
-        deltas[idx] += d * frac;
+        const binV = v * frac;
+        const binD = binV * barDeltaRatio;
+        bins[idx] += binV;
+        deltas[idx] += binD;
+        totalVol += binV;
+        totalDelta += binD;
+        if (barDeltaSign > 0) buyVol += binV;
+        else sellVol += binV;
       }
     }
   });
 
-  // Find VPOC bin
+  totalVol = Math.round(totalVol);
+  totalDelta = Math.round(totalDelta);
+  buyVol = Math.round(buyVol);
+  sellVol = Math.round(sellVol);
+
+  // 4. If ZERO candles physically entered this box: EMPTY SPACE! Zero fake lines!
+  if (intersectingBars.length === 0 || totalVol === 0) {
+    return {
+      isEmpty: true,
+      topPrice,
+      bottomPrice,
+      height,
+      totalVol: 0,
+      totalDelta: 0,
+      buyVol: 0,
+      sellVol: 0,
+      buyPct: 50,
+      sellPct: 50,
+      barCount: 0,
+      totalSpanBars: timeBars.length,
+      ker: 0,
+      frictionPct: 0,
+      waveExcursion: 0,
+      isUp: false,
+      lines: [], // ZERO lines in empty space!
+      leftTime,
+      rightTime
+    };
+  }
+
+  // 5. Direction of the auction inside the box (based strictly on intersecting bars)
+  const firstBar = intersectingBars[0];
+  const lastBar = intersectingBars[intersectingBars.length - 1];
+  const isUp = lastBar.close >= firstBar.open;
+  const shelfColor = isUp ? '#10b981' : '#ef4444';
+  const shelfLabel = isUp ? 'Launch' : 'Drop';
+
+  // 6. Real VPOC: bin with the highest transacted volume
   let maxV = 0;
   let vpocIdx = 0;
   for (let idx = 0; idx < numBins; idx++) {
@@ -5522,112 +5569,72 @@ export function computeBoxOrderflowShading(overlay, dataList) {
       vpocIdx = idx;
     }
   }
+  const vpocCenter = parseFloat((bottomPrice + (vpocIdx + 0.5) * binStep).toFixed(2));
+  const vpocVol = Math.round(maxV);
+  const vpocDelta = Math.round(deltas[vpocIdx] || 0);
+  const vpocSharePct = parseFloat(((vpocVol / totalVol) * 100).toFixed(1));
 
-  const vpocCenter = bottomPrice + (vpocIdx + 0.5) * binStep;
-  const vpocLo = Math.max(bottomPrice, vpocCenter - binStep * 1.5);
-  const vpocHi = Math.min(topPrice, vpocCenter + binStep * 1.5);
+  // 7. Real Thinned Shelves: Physical Volume Cliffs where volume drops below 35% of peak
+  const cliffThreshold = maxV * 0.35;
+  let topShelfIdx = vpocIdx;
+  for (let idx = vpocIdx + 1; idx < numBins; idx++) {
+    if (bins[idx] <= cliffThreshold) {
+      topShelfIdx = idx;
+      break;
+    }
+    topShelfIdx = idx;
+  }
+  const thinnedTop = parseFloat((bottomPrice + (topShelfIdx + 0.5) * binStep).toFixed(2));
+  const shelfTopVol = Math.round(bins[topShelfIdx] || 0);
+  const shelfTopDelta = Math.round(deltas[topShelfIdx] || 0);
 
-  // Direction: if early bars vs late bars trend up vs down
-  const firstClose = bars[0].close;
-  const lastClose = bars[bars.length - 1].close;
-  const isUp = lastClose >= firstClose;
+  let botShelfIdx = vpocIdx;
+  for (let idx = vpocIdx - 1; idx >= 0; idx--) {
+    if (bins[idx] <= cliffThreshold) {
+      botShelfIdx = idx;
+      break;
+    }
+    botShelfIdx = idx;
+  }
+  const thinnedBot = parseFloat((bottomPrice + (botShelfIdx + 0.5) * binStep).toFixed(2));
+  const shelfBotVol = Math.round(bins[botShelfIdx] || 0);
+  const shelfBotDelta = Math.round(deltas[botShelfIdx] || 0);
 
-  // Vacuum (LVN) location (lowest volume bin away from VPOC)
+  // 8. Real Vacuum (LVN): Internal liquidity deficit valley between high-volume traded clusters
+  let firstTradedIdx = 0;
+  while (firstTradedIdx < numBins && bins[firstTradedIdx] === 0) firstTradedIdx++;
+  let lastTradedIdx = numBins - 1;
+  while (lastTradedIdx >= 0 && bins[lastTradedIdx] === 0) lastTradedIdx--;
+
   let minV = Infinity;
-  let lvnIdx = 0;
-  for (let idx = 1; idx < numBins - 1; idx++) {
-    if (Math.abs(idx - vpocIdx) >= 2) {
-      if (bins[idx] < minV) {
+  let lvnIdx = -1;
+  if (lastTradedIdx - firstTradedIdx >= 4) {
+    for (let idx = firstTradedIdx + 1; idx < lastTradedIdx; idx++) {
+      if (Math.abs(idx - vpocIdx) >= 2 && bins[idx] < minV && bins[idx] < maxV * 0.45) {
         minV = bins[idx];
         lvnIdx = idx;
       }
     }
   }
-  const lvnCenter = bottomPrice + (lvnIdx + 0.5) * binStep;
-  const lvnLo = Math.max(bottomPrice, lvnCenter - binStep);
-  const lvnHi = Math.min(topPrice, lvnCenter + binStep);
+  const hasVacuum = (lvnIdx >= 0);
+  const lvnCenter = hasVacuum ? parseFloat((bottomPrice + (lvnIdx + 0.5) * binStep).toFixed(2)) : null;
+  const lvnVol = hasVacuum ? Math.round(bins[lvnIdx] || 0) : 0;
+  const lvnDelta = hasVacuum ? Math.round(deltas[lvnIdx] || 0) : 0;
+  const lvnSharePct = hasVacuum ? parseFloat(((lvnVol / totalVol) * 100).toFixed(1)) : 0;
 
-  // Thinned Shelf (Where the box converged into: 3.0p - 4.5p micro shelf)
-  let thinnedTop, thinnedBot;
-  if (isUp) {
-    // Accumulation: top thins down toward VPOC, bottom anchored or lifted
-    thinnedTop = Math.min(topPrice, vpocHi + height * 0.15);
-    thinnedBot = Math.max(bottomPrice, vpocLo - height * 0.10);
-  } else {
-    // Distribution: bottom thins up toward VPOC
-    thinnedTop = Math.min(topPrice, vpocHi + height * 0.10);
-    thinnedBot = Math.max(bottomPrice, vpocLo - height * 0.15);
-  }
-
-  // 1. Total Box Volume and Net CVD across all bins
-  let totalVol = 0;
-  let totalDelta = 0;
+  // 9. Real Fulcrum: True Volume-Weighted Average Price (VWAP) equilibrium of the box
+  let weightedPriceSum = 0;
   for (let idx = 0; idx < numBins; idx++) {
-    totalVol += bins[idx];
-    totalDelta += deltas[idx];
+    const p = bottomPrice + (idx + 0.5) * binStep;
+    weightedPriceSum += p * bins[idx];
   }
-  totalVol = Math.max(1, Math.round(totalVol));
-  totalDelta = Math.round(totalDelta);
+  const fulcrumPrice = totalVol > 0 ? parseFloat((weightedPriceSum / totalVol).toFixed(2)) : vpocCenter;
 
-  // 2. Buyer vs Seller split
-  const buyVol = Math.round(Math.max(0, (totalVol + totalDelta) / 2));
-  const sellVol = Math.round(Math.max(0, totalVol - buyVol));
-  const buyPct = Math.round((buyVol / totalVol) * 100);
-  const sellPct = 100 - buyPct;
-
-  // 3. VPOC Node Metrics
-  const vpocVol = Math.round(maxV);
-  const vpocDelta = Math.round(deltas[vpocIdx] || 0);
-  const vpocSharePct = parseFloat(((vpocVol / totalVol) * 100).toFixed(1));
-
-  // 4. Vacuum / LVN Node Metrics
-  const lvnVol = Math.round(minV === Infinity ? 0 : minV);
-  const lvnDelta = Math.round(deltas[lvnIdx] || 0);
-  const avgBinVol = totalVol / Math.max(1, numBins);
-  const lvnDeficitPct = Math.max(0, Math.round(((avgBinVol - lvnVol) / Math.max(1, avgBinVol)) * 100));
-  const lvnSharePct = parseFloat(((lvnVol / totalVol) * 100).toFixed(1));
-
-  // 5. Thinned Shelf Metrics
-  const shelfHeight = parseFloat(Math.abs(thinnedTop - thinnedBot).toFixed(2));
-  const sMin = Math.min(thinnedTop, thinnedBot);
-  const sMax = Math.max(thinnedTop, thinnedBot);
-  let shelfVol = 0;
-  let shelfDelta = 0;
-  for (let idx = 0; idx < numBins; idx++) {
-    const pLo = bottomPrice + idx * binStep;
-    const pHi = pLo + binStep;
-    if (pHi >= sMin && pLo <= sMax) {
-      shelfVol += bins[idx];
-      shelfDelta += deltas[idx];
-    }
-  }
-  shelfVol = Math.round(shelfVol);
-  shelfDelta = Math.round(shelfDelta);
-  const shelfDropRatio = Math.max(0, Math.round((1 - (shelfVol / Math.max(1, maxV * 2))) * 100));
-
-  // 6. Invariant Retest Fulcrum & Bounce Count
-  const fulcrumPrice = parseFloat(((thinnedTop + thinnedBot) / 2).toFixed(2));
-  let retestCount = 0;
-  bars.forEach(b => {
-    if (b.low <= fulcrumPrice + binStep * 1.2 && b.high >= fulcrumPrice - binStep * 1.2) {
-      retestCount++;
-    }
-  });
-
-  // 7. Efficiency & Physical Friction
-  let pathSum = 0;
-  bars.forEach(b => {
-    pathSum += Math.max(0.01, b.high - b.low);
-  });
-  const netExcursion = Math.abs(bars[bars.length - 1].close - bars[0].open);
-  const ker = pathSum > 0 ? parseFloat((netExcursion / pathSum).toFixed(2)) : 0;
-  const frictionPct = Math.max(0, Math.min(100, Math.round((1 - ker) * 100)));
-
-  // 8. Individual Line Tests (Touch count) & Buyer Aggression %
+  // 10. Node Tests & Buyer Aggression Helper
   const calcNodeStats = (targetPrice, tol) => {
     const t = tol || binStep * 0.7;
     let tests = 0;
-    bars.forEach(b => {
+    intersectingBars.forEach(b => {
       if (b.low <= targetPrice + t && b.high >= targetPrice - t) {
         tests++;
       }
@@ -5642,87 +5649,150 @@ export function computeBoxOrderflowShading(overlay, dataList) {
   const vpocStats = calcNodeStats(vpocCenter, binStep * 0.7);
   const shelfTopStats = calcNodeStats(thinnedTop, binStep * 0.6);
   const shelfBotStats = calcNodeStats(thinnedBot, binStep * 0.6);
-  const lvnStats = calcNodeStats(lvnCenter, binStep * 0.6);
+  const lvnStats = hasVacuum ? calcNodeStats(lvnCenter, binStep * 0.6) : { tests: 0, buyPct: 50, delta: 0 };
   const fulcrumStats = calcNodeStats(fulcrumPrice, binStep * 0.6);
 
-  // 9. Physical Trail Big Move Launch Impulse Calculation
-  // Reveals the directional displacement (in points) that launches from each node
-  const maxBarHigh = Math.max(...bars.map(b => b.high));
-  const minBarLow = Math.min(...bars.map(b => b.low));
-  const boxSpan = Math.max(0.5, height);
+  // 11. Physical Trail Big Move Launch Impulse Calculation
+  const maxBarHigh = Math.max(...intersectingBars.map(b => b.high));
+  const minBarLow = Math.min(...intersectingBars.map(b => b.low));
+  const tradedRange = Math.max(0.5, maxBarHigh - minBarLow);
 
-  // VPOC: Magnetic absorption attractor (minimal breakout impulse, heavy chop)
-  const vpocImpulse = parseFloat((boxSpan * 0.15).toFixed(1));
-
-  // Shelf Top: Bullish launchpad impulse (displacement upwards from upper shelf boundary)
+  const vpocImpulse = parseFloat((tradedRange * 0.15).toFixed(1));
   const topDisp = maxBarHigh - thinnedTop;
-  const shelfTopImpulse = parseFloat((topDisp > 0.5 ? topDisp : (boxSpan * 0.70)).toFixed(1));
-
-  // Shelf Bot: Bearish launchpad impulse (displacement downwards from lower shelf boundary)
+  const shelfTopImpulse = parseFloat((topDisp > 0.5 ? topDisp : (tradedRange * 0.75)).toFixed(1));
   const botDisp = thinnedBot - minBarLow;
-  const shelfBotImpulse = -parseFloat((botDisp > 0.5 ? botDisp : (boxSpan * 0.70)).toFixed(1));
-
-  // Vacuum (LVN): Liquidity void with zero friction - price accelerates across the gap
-  const lvnGap = Math.max(boxSpan * 0.80, Math.abs(thinnedTop - thinnedBot) * 1.1);
+  const shelfBotImpulse = -parseFloat((botDisp > 0.5 ? botDisp : (tradedRange * 0.75)).toFixed(1));
+  const lvnGap = Math.max(tradedRange * 0.85, Math.abs(thinnedTop - thinnedBot) * 1.1);
   const lvnDirection = (isUp || (lvnStats.buyPct >= 50)) ? 1 : -1;
   const lvnImpulse = parseFloat((lvnDirection * lvnGap).toFixed(1));
-
-  // Fulcrum: Mean reversion rotational impulse to the nearest boundary
   const fulcrumDist = Math.max(0.5, Math.abs(thinnedTop - fulcrumPrice));
   const fulcrumDirection = isUp ? 1 : -1;
   const fulcrumImpulse = parseFloat((fulcrumDirection * fulcrumDist).toFixed(1));
 
+  // 12. Efficiency (KER) & Friction strictly across intersecting bars
+  let pathSum = 0;
+  intersectingBars.forEach(b => {
+    pathSum += Math.max(0.01, b.high - b.low);
+  });
+  const netExcursion = Math.abs(lastBar.close - firstBar.open);
+  const ker = pathSum > 0 ? parseFloat((netExcursion / pathSum).toFixed(2)) : 0;
+  const frictionPct = Math.max(0, Math.min(100, Math.round((1 - ker) * 100)));
+  const waveExcursion = parseFloat((lastBar.close - firstBar.open).toFixed(2));
+
+  // 13. Dynamic Lines Array (Only genuine physical lines backed by real volume)
+  const lines = [];
+  // Line 1: VPOC (peak volume anchor)
+  lines.push({
+    id: 'vpoc',
+    name: 'VPOC',
+    price: vpocCenter,
+    color: '#00f0ff',
+    style: 'solid',
+    size: 1.6,
+    vol: vpocVol,
+    sharePct: `${vpocSharePct}%`,
+    delta: vpocDelta,
+    buyPct: vpocStats.buyPct,
+    tests: vpocStats.tests,
+    impulse: vpocImpulse
+  });
+
+  // Line 2: Shelf Top (if distinct from VPOC)
+  if (Math.abs(thinnedTop - vpocCenter) >= binStep * 0.8) {
+    const topShare = parseFloat(((shelfTopVol / totalVol) * 100).toFixed(1));
+    lines.push({
+      id: 'shelf_top',
+      name: `${shelfLabel} Top`,
+      price: thinnedTop,
+      color: shelfColor,
+      style: 'dashed',
+      dashedValue: [6, 4],
+      size: 1.5,
+      vol: shelfTopVol,
+      sharePct: `${topShare}%`,
+      delta: shelfTopDelta,
+      buyPct: shelfTopStats.buyPct,
+      tests: shelfTopStats.tests,
+      impulse: shelfTopImpulse
+    });
+  }
+
+  // Line 3: Shelf Bot (if distinct from VPOC and Shelf Top)
+  if (Math.abs(thinnedBot - vpocCenter) >= binStep * 0.8 && Math.abs(thinnedBot - thinnedTop) >= binStep * 0.8) {
+    const botShare = parseFloat(((shelfBotVol / totalVol) * 100).toFixed(1));
+    lines.push({
+      id: 'shelf_bot',
+      name: `${shelfLabel} Bot`,
+      price: thinnedBot,
+      color: shelfColor,
+      style: 'dashed',
+      dashedValue: [6, 4],
+      size: 1.5,
+      vol: shelfBotVol,
+      sharePct: `${botShare}%`,
+      delta: shelfBotDelta,
+      buyPct: shelfBotStats.buyPct,
+      tests: shelfBotStats.tests,
+      impulse: shelfBotImpulse
+    });
+  }
+
+  // Line 4: Vacuum LVN (ONLY if real void exists)
+  if (hasVacuum && lvnCenter !== null && Math.abs(lvnCenter - vpocCenter) >= binStep * 1.5) {
+    lines.push({
+      id: 'vacuum',
+      name: 'Vacuum',
+      price: lvnCenter,
+      color: '#f59e0b',
+      style: 'dashed',
+      dashedValue: [4, 4],
+      size: 1.4,
+      vol: lvnVol,
+      sharePct: `${lvnSharePct}%`,
+      delta: lvnDelta,
+      buyPct: lvnStats.buyPct,
+      tests: lvnStats.tests,
+      impulse: lvnImpulse
+    });
+  }
+
+  // Line 5: Fulcrum (True VWAP center of mass)
+  if (Math.abs(fulcrumPrice - vpocCenter) >= binStep * 0.5) {
+    lines.push({
+      id: 'fulcrum',
+      name: 'Fulcrum',
+      price: fulcrumPrice,
+      color: '#fbbf24',
+      style: 'dashed',
+      dashedValue: [2, 3],
+      size: 1.4,
+      vol: fulcrumStats.tests,
+      sharePct: 'VWAP',
+      delta: fulcrumStats.delta,
+      buyPct: fulcrumStats.buyPct,
+      tests: fulcrumStats.tests,
+      impulse: fulcrumImpulse
+    });
+  }
+
   return {
-    vpocImpulse,
-    shelfTopImpulse,
-    shelfBotImpulse,
-    lvnImpulse,
-    fulcrumImpulse,
+    isEmpty: false,
     topPrice,
     bottomPrice,
     height,
-    vpocCenter,
-    vpocLo,
-    vpocHi,
-    vpocVol,
-    vpocDelta,
-    vpocSharePct,
-    vpocTests: vpocStats.tests,
-    vpocBuyPct: vpocStats.buyPct,
-    lvnCenter,
-    lvnLo,
-    lvnHi,
-    lvnVol,
-    lvnDelta,
-    lvnDeficitPct,
-    lvnSharePct,
-    lvnTests: lvnStats.tests,
-    lvnBuyPct: lvnStats.buyPct,
-    thinnedTop,
-    thinnedBot,
-    shelfHeight,
-    shelfVol,
-    shelfDelta,
-    shelfDropRatio,
-    shelfTopTests: shelfTopStats.tests,
-    shelfTopBuyPct: shelfTopStats.buyPct,
-    shelfBotTests: shelfBotStats.tests,
-    shelfBotBuyPct: shelfBotStats.buyPct,
-    fulcrumPrice,
-    retestCount,
-    fulcrumTests: fulcrumStats.tests,
-    fulcrumBuyPct: fulcrumStats.buyPct,
-    fulcrumDelta: fulcrumStats.delta,
     totalVol,
     totalDelta,
     buyVol,
     sellVol,
-    buyPct,
-    sellPct,
+    buyPct: totalVol > 0 ? Math.round((buyVol / totalVol) * 100) : 50,
+    sellPct: totalVol > 0 ? Math.round((sellVol / totalVol) * 100) : 50,
+    barCount: intersectingBars.length,
+    totalSpanBars: timeBars.length,
     ker,
     frictionPct,
-    barCount: bars.length,
+    waveExcursion,
     isUp,
+    lines,
     leftTime,
     rightTime
   };
@@ -5843,11 +5913,8 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
     return `<span style="color: ${color}; font-weight: 700;">${formatted}</span>`;
   };
 
-  // Update Badge
+  // Handle Empty Box (drawn in empty space where no candles touched or traded)
   const badgeEl = document.getElementById('tvBoxOfHudBadge');
-  if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (${res.isUp ? 'ACCUM' : 'DISTRIB'})`;
-
-  // Update Global Area Stats
   const statVol = document.getElementById('tvBoxOfStatVol');
   const statBars = document.getElementById('tvBoxOfStatBars');
   const statDelta = document.getElementById('tvBoxOfStatDelta');
@@ -5856,9 +5923,54 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
   const statFriction = document.getElementById('tvBoxOfStatFriction');
   const statExcursion = document.getElementById('tvBoxOfStatExcursion');
   const statSpan = document.getElementById('tvBoxOfStatSpan');
+  const tbody = document.getElementById('tvBoxOfTableRows');
+  const fpState = document.getElementById('tvBoxOfFootprintState');
+  const spotDist = document.getElementById('tvBoxOfSpotDist');
+
+  if (res.isEmpty) {
+    if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (EMPTY)`;
+    if (statVol) statVol.textContent = '0';
+    if (statBars) statBars.textContent = `0 bars (${res.totalSpanBars} span)`;
+    if (statDelta) {
+      statDelta.textContent = '0 CVD';
+      statDelta.className = 'tv-box-of-stat-val';
+    }
+    if (statDeltaRatio) statDeltaRatio.textContent = '--';
+    if (statKer) statKer.textContent = '-- (No Trades)';
+    if (statFriction) statFriction.textContent = '0% Friction';
+    if (statExcursion) {
+      statExcursion.textContent = '0.00 pts';
+      statExcursion.className = 'tv-box-of-stat-val';
+    }
+    if (statSpan) statSpan.textContent = `Box: ${res.height.toFixed(2)}p`;
+
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="9" style="text-align: center; padding: 18px 8px; color: #64748b; font-family: monospace;">
+            <div style="font-weight: 800; color: #94a3b8; font-size: 10.5px; margin-bottom: 4px;">⚠️ EMPTY SPACE — ZERO CANDLES IN RANGE</div>
+            <div style="font-size: 9px; color: #64748b;">Traded Price Window: $${res.bottomPrice.toFixed(2)} — $${res.topPrice.toFixed(2)}</div>
+            <div style="margin-top: 5px; font-size: 8.5px; color: #475569;">No order flow executed inside this box. Drag or resize over active candles.</div>
+          </td>
+        </tr>
+      `;
+    }
+
+    if (fpState) {
+      fpState.innerHTML = `AUCTION: <strong style="color: #64748b;">EMPTY SPACE (NO TRADES)</strong>`;
+    }
+    if (spotDist) {
+      spotDist.textContent = `SPOT: $${spotPrice.toFixed(2)} (Empty Box)`;
+    }
+    hudEl.style.display = 'block';
+    return;
+  }
+
+  // --- NON-EMPTY BOX: True Physical Orderflow Rendering ---
+  if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (${res.isUp ? 'ACCUM' : 'DISTRIB'})`;
 
   if (statVol) statVol.textContent = fmtVol(res.totalVol);
-  if (statBars) statBars.textContent = `${res.barCount} bars`;
+  if (statBars) statBars.textContent = `${res.barCount} bars in box`;
   if (statDelta) {
     statDelta.textContent = `${fmtDelta(res.totalDelta)} CVD`;
     statDelta.className = `tv-box-of-stat-val ${deltaClass(res.totalDelta)}`;
@@ -5870,87 +5982,39 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
   }
   if (statFriction) statFriction.textContent = `+${res.frictionPct}% Friction`;
   if (statExcursion) {
-    const excDir = res.isUp ? '+' : '-';
-    statExcursion.textContent = `${excDir}${res.height.toFixed(2)} pts`;
-    statExcursion.className = `tv-box-of-stat-val ${res.isUp ? 'delta-pos' : 'delta-neg'}`;
+    const excDir = res.waveExcursion >= 0 ? '+' : '';
+    statExcursion.textContent = `${excDir}${res.waveExcursion.toFixed(2)} pts`;
+    statExcursion.className = `tv-box-of-stat-val ${res.waveExcursion >= 0 ? 'delta-pos' : 'delta-neg'}`;
   }
   if (statSpan) statSpan.textContent = `Box: ${res.height.toFixed(2)}p`;
 
-  // Update Lines Table Rows with 9 Pure Numeric Columns (No descriptive labels)
-  const tbody = document.getElementById('tvBoxOfTableRows');
+  // Update Dynamic Table Rows strictly from genuine physical lines
   if (tbody) {
-    const shelfColor = res.isUp ? '#10b981' : '#ef4444';
-    const shelfLabel = res.isUp ? 'Launch' : 'Drop';
-
-    tbody.innerHTML = `
+    tbody.innerHTML = (res.lines || []).map(line => `
       <tr>
-        <td><span class="tv-box-of-swatch" style="background: #00f0ff; box-shadow: 0 0 5px #00f0ff;"></span></td>
-        <td style="color: #00f0ff; font-weight: 700;">VPOC</td>
-        <td style="text-align: right; color: #ffffff; font-weight: 700;">$${res.vpocCenter.toFixed(2)}</td>
-        <td style="text-align: right; color: #e2e8f0;">${fmtVol(res.vpocVol)}</td>
-        <td style="text-align: right; color: #00f0ff; font-weight: 700;">${res.vpocSharePct}%</td>
-        <td style="text-align: right;" class="${deltaClass(res.vpocDelta)}">${fmtDelta(res.vpocDelta)}</td>
-        <td style="text-align: right; color: ${res.vpocBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.vpocBuyPct}%</td>
-        <td style="text-align: right; color: #e2e8f0;">${res.vpocTests}x</td>
-        <td style="text-align: right;">${fmtImpulse(res.vpocImpulse, res.vpocCenter)}</td>
+        <td><span class="tv-box-of-swatch" style="${line.style === 'solid' ? `background: ${line.color}; box-shadow: 0 0 5px ${line.color};` : `border-top: 2px ${line.style} ${line.color};`}"></span></td>
+        <td style="color: ${line.color}; font-weight: 700;">${line.name}</td>
+        <td style="text-align: right; color: #ffffff; font-weight: 700;">$${line.price.toFixed(2)}</td>
+        <td style="text-align: right; color: #e2e8f0;">${fmtVol(line.vol)}</td>
+        <td style="text-align: right; color: ${line.color}; font-weight: 700;">${line.sharePct}</td>
+        <td style="text-align: right;" class="${deltaClass(line.delta)}">${fmtDelta(line.delta)}</td>
+        <td style="text-align: right; color: ${line.buyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${line.buyPct}%</td>
+        <td style="text-align: right; color: #e2e8f0;">${line.tests}x</td>
+        <td style="text-align: right;">${fmtImpulse(line.impulse, line.price)}</td>
       </tr>
-      <tr>
-        <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
-        <td style="color: ${shelfColor}; font-weight: 700;">${shelfLabel} Top</td>
-        <td style="text-align: right; color: #ffffff;">$${res.thinnedTop.toFixed(2)}</td>
-        <td style="text-align: right; color: #e2e8f0;">${fmtVol(res.shelfVol)}</td>
-        <td style="text-align: right; color: ${shelfColor};">-${res.shelfDropRatio}%</td>
-        <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
-        <td style="text-align: right; color: ${res.shelfTopBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.shelfTopBuyPct}%</td>
-        <td style="text-align: right; color: #e2e8f0;">${res.shelfTopTests}x</td>
-        <td style="text-align: right;">${fmtImpulse(res.shelfTopImpulse, res.thinnedTop)}</td>
-      </tr>
-      <tr>
-        <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
-        <td style="color: ${shelfColor}; font-weight: 700;">${shelfLabel} Bot</td>
-        <td style="text-align: right; color: #ffffff;">$${res.thinnedBot.toFixed(2)}</td>
-        <td style="text-align: right; color: #94a3b8;">${res.shelfHeight}p</td>
-        <td style="text-align: right; color: #94a3b8;">Shelf</td>
-        <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
-        <td style="text-align: right; color: ${res.shelfBotBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.shelfBotBuyPct}%</td>
-        <td style="text-align: right; color: #e2e8f0;">${res.shelfBotTests}x</td>
-        <td style="text-align: right;">${fmtImpulse(res.shelfBotImpulse, res.thinnedBot)}</td>
-      </tr>
-      <tr>
-        <td><span class="tv-box-of-swatch" style="border-top: 2px dashed #f59e0b;"></span></td>
-        <td style="color: #f59e0b; font-weight: 700;">Vacuum</td>
-        <td style="text-align: right; color: #ffffff;">$${res.lvnCenter.toFixed(2)}</td>
-        <td style="text-align: right; color: #f59e0b;">${fmtVol(res.lvnVol)}</td>
-        <td style="text-align: right; color: #f59e0b; font-weight: 700;">${res.lvnSharePct}%</td>
-        <td style="text-align: right;" class="${deltaClass(res.lvnDelta)}">${fmtDelta(res.lvnDelta)}</td>
-        <td style="text-align: right; color: ${res.lvnBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.lvnBuyPct}%</td>
-        <td style="text-align: right; color: #f59e0b; font-weight: 700;">${res.lvnTests}x</td>
-        <td style="text-align: right;">${fmtImpulse(res.lvnImpulse, res.lvnCenter)}</td>
-      </tr>
-      <tr>
-        <td><span class="tv-box-of-swatch" style="border-top: 2px dotted #fbbf24;"></span></td>
-        <td style="color: #fbbf24; font-weight: 700;">Fulcrum</td>
-        <td style="text-align: right; color: #ffffff; font-weight: 700;">$${res.fulcrumPrice.toFixed(2)}</td>
-        <td style="text-align: right; color: #fbbf24; font-weight: 700;">${res.retestCount}x</td>
-        <td style="text-align: right; color: #fbbf24;">50% Mean</td>
-        <td style="text-align: right;" class="${deltaClass(res.fulcrumDelta)}">${fmtDelta(res.fulcrumDelta)}</td>
-        <td style="text-align: right; color: ${res.fulcrumBuyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${res.fulcrumBuyPct}%</td>
-        <td style="text-align: right; color: #fbbf24; font-weight: 700;">${res.fulcrumTests}x</td>
-        <td style="text-align: right;">${fmtImpulse(res.fulcrumImpulse, res.fulcrumPrice)}</td>
-      </tr>
-    `;
+    `).join('');
   }
 
   // Update Footer
-  const fpState = document.getElementById('tvBoxOfFootprintState');
-  const spotDist = document.getElementById('tvBoxOfSpotDist');
   if (fpState) {
     const stateStr = res.ker >= 0.65 ? 'DIRECTIONAL CONVICTION' : (res.frictionPct >= 50 ? 'HIGH FRICTION CHURN' : 'BALANCED VALUE ROTATION');
     fpState.innerHTML = `AUCTION: <strong style="color: ${res.isUp ? '#10b981' : '#ef4444'};">${stateStr}</strong>`;
   }
   if (spotDist) {
-    const distToVpoc = (spotPrice - res.vpocCenter).toFixed(1);
-    const distSign = spotPrice >= res.vpocCenter ? '+' : '';
+    const vpocLine = (res.lines || []).find(l => l.id === 'vpoc');
+    const vpocP = vpocLine ? vpocLine.price : res.bottomPrice;
+    const distToVpoc = (spotPrice - vpocP).toFixed(1);
+    const distSign = spotPrice >= vpocP ? '+' : '';
     spotDist.textContent = `SPOT: $${spotPrice.toFixed(2)} (${distSign}${distToVpoc}p to VPOC)`;
   }
 

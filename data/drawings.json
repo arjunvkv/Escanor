@@ -5,38 +5,38 @@
       "name": "rect",
       "points": [
         {
-          "timestamp": 1794210000000,
-          "value": 4098.603248314454,
-          "dataIndex": 1348
+          "timestamp": 1794241800000,
+          "value": 4096.21643625192,
+          "dataIndex": 1417
         },
         {
-          "timestamp": 1794222600000,
-          "value": 4098.603248314454,
-          "dataIndex": 1390
+          "timestamp": 1794260100000,
+          "value": 4096.21643625192,
+          "dataIndex": 1478
         },
         {
-          "timestamp": 1794222600000,
-          "value": 4084.3121505376344,
-          "dataIndex": 1390
+          "timestamp": 1794260100000,
+          "value": 4087.7682334869432,
+          "dataIndex": 1478
         },
         {
-          "timestamp": 1794210000000,
-          "value": 4084.3121505376344,
-          "dataIndex": 1348
+          "timestamp": 1794241800000,
+          "value": 4087.7682334869432,
+          "dataIndex": 1417
         },
         {
-          "timestamp": 1794210000000,
-          "value": 4091.457699426044,
-          "dataIndex": 1348
+          "timestamp": 1794241800000,
+          "value": 4091.9923348694315,
+          "dataIndex": 1417
         },
         {
-          "timestamp": 1794222600000,
-          "value": 4091.457699426044,
-          "dataIndex": 1390
+          "timestamp": 1794260100000,
+          "value": 4091.9923348694315,
+          "dataIndex": 1478
         }
       ],
       "styles": null,
-      "zLevel": 15,
+      "zLevel": 100,
       "extendData": {}
     }
   ]
