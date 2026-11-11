@@ -114,6 +114,44 @@
           <span>Replay</span>
         </button>
 
+        <!-- Box Order Flow Thinning Lines Quick Toggle & Info Tooltip -->
+        <div class="tv-of-control-wrap" style="position: relative; display: inline-flex; align-items: center; gap: 4px;">
+          <button type="button" id="tvTopToggleOrderflowLinesBtn" class="tv-top-trap-alert-btn" style="background: rgba(0, 240, 255, 0.10); border: 1px solid #00f0ff; color: #00f0ff; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 4px;" title="Toggle Order Flow Thinning Lines inside drawn boxes (VPOC, Vacuum, Shelf Bounds, Retest Fulcrum)">
+            <span>⚡</span>
+            <span id="tvTopToggleOrderflowLinesBtnText">OF LINES: OFF</span>
+          </button>
+          <button type="button" class="tv-of-info-trigger" data-tooltip="tvTopOrderflowLinesTooltip" style="background: #181c28; border: 1px solid #2e374d; color: #94a3b8; width: 20px; height: 20px; border-radius: 50%; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;" title="Hover to view what each order flow line color means">ℹ️</button>
+          
+          <!-- Hover Tooltip Popover -->
+          <div id="tvTopOrderflowLinesTooltip" class="tv-of-info-popover" style="display: none; position: absolute; top: calc(100% + 8px); right: 0; background: rgba(11, 15, 24, 0.96); border: 1.5px solid #00f0ff; border-radius: 8px; padding: 12px 14px; width: 340px; box-shadow: 0 12px 36px rgba(0,0,0,0.9), 0 0 15px rgba(0,240,255,0.2); backdrop-filter: blur(10px); z-index: 9999; text-align: left;">
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222a3d; padding-bottom: 6px; margin-bottom: 8px;">
+              <span style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">⚡ ORDER FLOW LINE COLOR MEANINGS</span>
+              <span style="font-size: 9.5px; color: #00f0ff; font-weight: 700;">TRUE PHYSICAL TRAIL</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-family: monospace;">
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="display: inline-block; width: 18px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff;"></span>
+                <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction density & contract volume hand-off.</span></div>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #10b981;">Dashed Emerald / Crimson:</strong> <span style="color: #e2e8f0;">Thinned Shelf Bounds</span><br><span style="color: #94a3b8; font-size: 10px;">Compression ceiling & floor. Where the box is thinned.</span></div>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0;">Vacuum Void Pocket</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru zone.</span></div>
+              </div>
+              <div style="display: flex; align-items: flex-start; gap: 8px;">
+                <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
+                <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Next trigger.</span></div>
+              </div>
+            </div>
+            <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #1a2233; color: #10b981; font-size: 9.5px; font-weight: 700; text-align: center;">
+              ✓ 100% UN-OBSCURED CANDLES • ZERO LABEL CLUTTER
+            </div>
+          </div>
+        </div>
+
         <button id="tvClearAllDrawingsTopBtn" class="tv-top-clear-btn" title="Remove all line and box drawings">
           <svg viewBox="0 0 24 24" width="13" height="13" fill="currentColor">
             <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
@@ -1282,10 +1320,42 @@
                 <span class="tv-plot-icon">🎯</span>
                 <span id="tvToggleBoxFulcrumLinesBtnText">SHOW FULCRUM & VACUUM</span>
               </button>
-              <button type="button" id="tvToggleBoxOrderflowShadingBtn" class="tv-btn-plot-levels" style="background: rgba(168,85,247,0.14); border: 1px solid #a855f7; color: #c084fc; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;" title="Toggle Order Flow Thinning Shaded Zones inside drawn boxes (HVN, Vacuum, Absorption, Cliff)">
-                <span class="tv-plot-icon">🧬</span>
-                <span id="tvToggleBoxOrderflowShadingBtnText">SHOW ORDERFLOW SHADING</span>
-              </button>
+              <div class="tv-of-control-wrap" style="position: relative; display: inline-flex; align-items: center; gap: 4px;">
+                <button type="button" id="tvToggleBoxOrderflowShadingBtn" class="tv-btn-plot-levels" style="background: rgba(0, 240, 255, 0.12); border: 1px solid #00f0ff; color: #00f0ff; padding: 4px 10px; border-radius: 6px; font-size: 10px; font-weight: 800; cursor: pointer;" title="Toggle Order Flow Thinning Lines inside drawn boxes (VPOC, Vacuum, Shelf Bounds, Retest Fulcrum)">
+                  <span class="tv-plot-icon">⚡</span>
+                  <span id="tvToggleBoxOrderflowShadingBtnText">SHOW ORDERFLOW LINES</span>
+                </button>
+                <button type="button" class="tv-of-info-trigger" data-tooltip="tvModalOrderflowLinesTooltip" style="background: #181c28; border: 1px solid #2e374d; color: #94a3b8; width: 22px; height: 22px; border-radius: 50%; font-size: 11px; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;" title="Hover to view what each order flow line color means">ℹ️</button>
+                
+                <!-- Info Hover Card Popover -->
+                <div id="tvModalOrderflowLinesTooltip" class="tv-of-info-popover" style="display: none; position: absolute; bottom: calc(100% + 8px); right: 0; background: rgba(11, 15, 24, 0.96); border: 1.5px solid #00f0ff; border-radius: 8px; padding: 12px 14px; width: 340px; box-shadow: 0 12px 36px rgba(0,0,0,0.9), 0 0 15px rgba(0,240,255,0.2); backdrop-filter: blur(10px); z-index: 9999; text-align: left;">
+                  <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #222a3d; padding-bottom: 6px; margin-bottom: 8px;">
+                    <span style="font-size: 11px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">⚡ ORDER FLOW LINE COLOR MEANINGS</span>
+                    <span style="font-size: 9.5px; color: #00f0ff; font-weight: 700;">TRUE PHYSICAL TRAIL</span>
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 8px; font-size: 11px; font-family: monospace;">
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                      <span style="display: inline-block; width: 18px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff;"></span>
+                      <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction density & contract volume hand-off.</span></div>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                      <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #10b981;">Dashed Emerald / Crimson:</strong> <span style="color: #e2e8f0;">Thinned Shelf Bounds</span><br><span style="color: #94a3b8; font-size: 10px;">Compression ceiling & floor. Where the box is thinned.</span></div>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                      <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0;">Vacuum Void Pocket</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru zone.</span></div>
+                    </div>
+                    <div style="display: flex; align-items: flex-start; gap: 8px;">
+                      <span style="display: inline-block; width: 18px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Next trigger.</span></div>
+                    </div>
+                  </div>
+                  <div style="margin-top: 8px; padding-top: 6px; border-top: 1px solid #1a2233; color: #10b981; font-size: 9.5px; font-weight: 700; text-align: center;">
+                    ✓ 100% UN-OBSCURED CANDLES • ZERO LABEL CLUTTER
+                  </div>
+                </div>
+              </div>
               <button type="button" id="tvCloseNetworkModalBtnDone" class="tv-btn-modal-arm" style="background: #1e293b; color: #ffffff; border: 1px solid #334155; padding: 4px 12px; border-radius: 6px; font-size: 10px; font-weight: 700; cursor: pointer;">Close</button>
             </div>
           </div>

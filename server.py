@@ -2012,6 +2012,14 @@ async def get_auction_canvas_ui():
     return FileResponse(str(canvas_path))
 
 
+@app.get("/scratchpad_lines")
+async def get_scratchpad_lines_ui():
+    """Serve the Precise Orderflow Lines Architecture Scratchpad UI."""
+    lines_path = BASE_DIR / "frontend" / "chart" / "scratchpad_orderflow_lines.html"
+    return FileResponse(str(lines_path))
+
+
+
 @app.get("/")
 async def root_redirect(request: Request):
     """Smart router: Mobile user-agents go to /mobile, desktops go to /chart."""

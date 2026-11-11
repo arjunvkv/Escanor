@@ -226,6 +226,29 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     clearAllUserDrawings();
   });
 
+  // Top Bar Toggle Box Order Flow Lines Button
+  const tvTopToggleOrderflowLinesBtn = document.getElementById('tvTopToggleOrderflowLinesBtn');
+  tvTopToggleOrderflowLinesBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (typeof window.__toggleBoxOrderflowShading === 'function') {
+      window.__toggleBoxOrderflowShading(chart);
+    }
+  });
+
+  // Setup Info Tooltips for Order Flow Lines
+  document.querySelectorAll('.tv-of-info-trigger').forEach(btn => {
+    const tooltipId = btn.getAttribute('data-tooltip');
+    const tooltipEl = tooltipId ? document.getElementById(tooltipId) : null;
+    if (!tooltipEl) return;
+
+    btn.addEventListener('mouseenter', () => {
+      tooltipEl.style.display = 'block';
+    });
+    btn.addEventListener('mouseleave', () => {
+      tooltipEl.style.display = 'none';
+    });
+  });
+
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);
 
   // Create Drawing with Shift Snapping & Event Hooks
