@@ -4,9 +4,9 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611111726';
-import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202611111726';
-import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202611111726';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611111840';
+import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202611111840';
+import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202611111840';
 import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
 import { LineTradingManager } from './line_trading.js?v=202610141545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
@@ -257,8 +257,14 @@ async function init() {
         }
       }
       lineTrading.reconcileWithChart(allOverlays);
+      if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+        window.__updateBoxOrderflowMetricsHud(chart);
+      }
     } else {
       lineTrading.reconcileWithChart([]);
+      if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+        window.__updateBoxOrderflowMetricsHud(chart);
+      }
     }
   } catch (err) {
     console.warn('[Escanor TV] Error restoring server drawings:', err);
@@ -351,6 +357,9 @@ async function reloadChartDrawingsFromServer() {
       }
     });
     restoreDrawings(chart, drawings);
+    if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+      window.__updateBoxOrderflowMetricsHud(chart);
+    }
     showChartToast(`🦅 Sovereign Boxes Synchronized (${drawings.length} Zones)`);
   } catch (err) {
     console.warn('[Escanor TV] Reload drawings failed:', err);

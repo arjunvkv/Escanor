@@ -277,6 +277,23 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     tooltipEl.addEventListener('mouseleave', hide);
   });
 
+  // Setup Collapse / Expand Toggle for Box Orderflow Metrics Table HUD
+  const boxOfHud = document.getElementById('tvBoxOrderflowMetricsHud');
+  const boxOfCollapseBtn = document.getElementById('tvBoxOfHudCollapseBtn');
+  const boxOfHeader = document.getElementById('tvBoxOfHudHeader');
+  if (boxOfHud && boxOfCollapseBtn) {
+    const toggleHud = (e) => {
+      e?.stopPropagation?.();
+      const isCollapsed = boxOfHud.classList.toggle('collapsed');
+      boxOfCollapseBtn.textContent = isCollapsed ? '+' : '−';
+      boxOfCollapseBtn.title = isCollapsed ? 'Expand Table HUD' : 'Collapse Table HUD';
+    };
+    boxOfCollapseBtn.addEventListener('click', toggleHud);
+    boxOfHeader?.addEventListener('click', (e) => {
+      if (e.target !== boxOfCollapseBtn) toggleHud(e);
+    });
+  }
+
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);
 
   // Create Drawing with Shift Snapping & Event Hooks
@@ -416,6 +433,9 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
             chart.overrideOverlay({ id: ov.id, points: sixPoints });
           }
           recalculateRectZLevels(chart);
+          if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+            window.__updateBoxOrderflowMetricsHud(chart);
+          }
         }
         if ((ovName === 'longPosition' || ovName === 'shortPosition') && args?.overlay) {
           const ov = args.overlay;

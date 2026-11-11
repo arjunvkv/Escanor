@@ -343,6 +343,70 @@
           <span id="tvLatencyBadge" style="color: var(--tv-text-secondary);">-- ms</span>
         </div>
 
+        <!-- Floating In-Box Order Flow & Physical Trail Metrics Table HUD (Under MT5 LIVE Pill) -->
+        <div id="tvBoxOrderflowMetricsHud" class="tv-box-of-hud" style="display: none;">
+          <div id="tvBoxOfHudHeader" class="tv-box-of-hud-header">
+            <div class="tv-box-of-hud-title">
+              <span class="tv-box-of-hud-pulse"></span>
+              <span class="tv-box-of-hud-icon">⚡</span>
+              <span class="tv-box-of-hud-text">IN-BOX ORDERFLOW & PHYSICAL TRAIL</span>
+            </div>
+            <div class="tv-box-of-hud-controls">
+              <span id="tvBoxOfHudBadge" class="tv-box-of-badge">BOX 1</span>
+              <button type="button" id="tvBoxOfHudCollapseBtn" class="tv-box-of-btn" title="Collapse / Expand Table HUD">−</button>
+            </div>
+          </div>
+          <div id="tvBoxOfHudBody" class="tv-box-of-hud-body">
+            <!-- Global Box Area Physical Trail Metrics Grid -->
+            <div class="tv-box-of-area-grid">
+              <div class="tv-box-of-stat-item">
+                <span class="tv-box-of-stat-label">BOX VOLUME</span>
+                <span id="tvBoxOfStatVol" class="tv-box-of-stat-val">--</span>
+                <span id="tvBoxOfStatBars" class="tv-box-of-stat-sub">-- bars</span>
+              </div>
+              <div class="tv-box-of-stat-item">
+                <span class="tv-box-of-stat-label">NET CVD / DELTA</span>
+                <span id="tvBoxOfStatDelta" class="tv-box-of-stat-val">-- CVD</span>
+                <span id="tvBoxOfStatDeltaRatio" class="tv-box-of-stat-sub">--% B / --% S</span>
+              </div>
+              <div class="tv-box-of-stat-item">
+                <span class="tv-box-of-stat-label">EFFICIENCY (KER)</span>
+                <span id="tvBoxOfStatKer" class="tv-box-of-stat-val text-cyan">--</span>
+                <span id="tvBoxOfStatFriction" class="tv-box-of-stat-sub">+0% Friction</span>
+              </div>
+              <div class="tv-box-of-stat-item">
+                <span class="tv-box-of-stat-label">WAVE EXCURSION</span>
+                <span id="tvBoxOfStatExcursion" class="tv-box-of-stat-val text-amber">-- pts</span>
+                <span id="tvBoxOfStatSpan" class="tv-box-of-stat-sub">Box: --p</span>
+              </div>
+            </div>
+            <!-- Lines Orderflow Table: Pure Numbers & Physical Values -->
+            <div class="tv-box-of-table-wrap">
+              <table class="tv-box-of-table">
+                <thead>
+                  <tr>
+                    <th style="width: 18px;">LINE</th>
+                    <th style="text-align: left;">LEVEL / TYPE</th>
+                    <th style="text-align: right;">PRICE</th>
+                    <th style="text-align: right;">NODE VOL</th>
+                    <th style="text-align: right;">SHARE %</th>
+                    <th style="text-align: right;">DELTA CVD</th>
+                    <th style="text-align: left; padding-left: 10px;">AUCTION IMPORTANCE</th>
+                  </tr>
+                </thead>
+                <tbody id="tvBoxOfTableRows">
+                  <!-- Dynamically populated -->
+                </tbody>
+              </table>
+            </div>
+            <!-- Bottom Physical Footprint Trail Bar -->
+            <div class="tv-box-of-hud-footer">
+              <span id="tvBoxOfFootprintState">AUCTION: <strong>ANALYZING...</strong></span>
+              <span id="tvBoxOfSpotDist">SPOT: --</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Live Candle Countdown Timer Badge -->
         <div id="tvCountdownTimer" class="tv-countdown-badge" style="bottom: 30px;">
           --:--
@@ -1499,6 +1563,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611111726"></script>
+  <script type="module" src="/chart/js/app.js?v=202611111840"></script>
 </body>
 </html>

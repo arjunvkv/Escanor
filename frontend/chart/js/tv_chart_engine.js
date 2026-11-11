@@ -5554,6 +5554,70 @@ export function computeBoxOrderflowShading(overlay, dataList) {
     thinnedBot = Math.max(bottomPrice, vpocLo - height * 0.15);
   }
 
+  // 1. Total Box Volume and Net CVD across all bins
+  let totalVol = 0;
+  let totalDelta = 0;
+  for (let idx = 0; idx < numBins; idx++) {
+    totalVol += bins[idx];
+    totalDelta += deltas[idx];
+  }
+  totalVol = Math.max(1, Math.round(totalVol));
+  totalDelta = Math.round(totalDelta);
+
+  // 2. Buyer vs Seller split
+  const buyVol = Math.round(Math.max(0, (totalVol + totalDelta) / 2));
+  const sellVol = Math.round(Math.max(0, totalVol - buyVol));
+  const buyPct = Math.round((buyVol / totalVol) * 100);
+  const sellPct = 100 - buyPct;
+
+  // 3. VPOC Node Metrics
+  const vpocVol = Math.round(maxV);
+  const vpocDelta = Math.round(deltas[vpocIdx] || 0);
+  const vpocSharePct = parseFloat(((vpocVol / totalVol) * 100).toFixed(1));
+
+  // 4. Vacuum / LVN Node Metrics
+  const lvnVol = Math.round(minV === Infinity ? 0 : minV);
+  const lvnDelta = Math.round(deltas[lvnIdx] || 0);
+  const avgBinVol = totalVol / Math.max(1, numBins);
+  const lvnDeficitPct = Math.max(0, Math.round(((avgBinVol - lvnVol) / Math.max(1, avgBinVol)) * 100));
+  const lvnSharePct = parseFloat(((lvnVol / totalVol) * 100).toFixed(1));
+
+  // 5. Thinned Shelf Metrics
+  const shelfHeight = parseFloat(Math.abs(thinnedTop - thinnedBot).toFixed(2));
+  const sMin = Math.min(thinnedTop, thinnedBot);
+  const sMax = Math.max(thinnedTop, thinnedBot);
+  let shelfVol = 0;
+  let shelfDelta = 0;
+  for (let idx = 0; idx < numBins; idx++) {
+    const pLo = bottomPrice + idx * binStep;
+    const pHi = pLo + binStep;
+    if (pHi >= sMin && pLo <= sMax) {
+      shelfVol += bins[idx];
+      shelfDelta += deltas[idx];
+    }
+  }
+  shelfVol = Math.round(shelfVol);
+  shelfDelta = Math.round(shelfDelta);
+  const shelfDropRatio = Math.max(0, Math.round((1 - (shelfVol / Math.max(1, maxV * 2))) * 100));
+
+  // 6. Invariant Retest Fulcrum & Bounce Count
+  const fulcrumPrice = parseFloat(((thinnedTop + thinnedBot) / 2).toFixed(2));
+  let retestCount = 0;
+  bars.forEach(b => {
+    if (b.low <= fulcrumPrice + binStep * 1.2 && b.high >= fulcrumPrice - binStep * 1.2) {
+      retestCount++;
+    }
+  });
+
+  // 7. Efficiency & Physical Friction
+  let pathSum = 0;
+  bars.forEach(b => {
+    pathSum += Math.max(0.01, b.high - b.low);
+  });
+  const netExcursion = Math.abs(bars[bars.length - 1].close - bars[0].open);
+  const ker = pathSum > 0 ? parseFloat((netExcursion / pathSum).toFixed(2)) : 0;
+  const frictionPct = Math.max(0, Math.min(100, Math.round((1 - ker) * 100)));
+
   return {
     topPrice,
     bottomPrice,
@@ -5561,11 +5625,33 @@ export function computeBoxOrderflowShading(overlay, dataList) {
     vpocCenter,
     vpocLo,
     vpocHi,
+    vpocVol,
+    vpocDelta,
+    vpocSharePct,
     lvnCenter,
     lvnLo,
     lvnHi,
+    lvnVol,
+    lvnDelta,
+    lvnDeficitPct,
+    lvnSharePct,
     thinnedTop,
     thinnedBot,
+    shelfHeight,
+    shelfVol,
+    shelfDelta,
+    shelfDropRatio,
+    fulcrumPrice,
+    retestCount,
+    totalVol,
+    totalDelta,
+    buyVol,
+    sellVol,
+    buyPct,
+    sellPct,
+    ker,
+    frictionPct,
+    barCount: bars.length,
     isUp,
     leftTime,
     rightTime
@@ -5599,8 +5685,165 @@ export function syncBoxOrderflowShading(chart) {
       c.overrideOverlay({ id: rect.id });
     } catch (_) {}
   });
+
+  // Update In-Box Orderflow & Physical Metrics Table HUD
+  updateBoxOrderflowMetricsHud(c);
 }
 window.__syncBoxOrderflowShading = syncBoxOrderflowShading;
+
+/**
+ * Updates the floating In-Box Orderflow & Physical Trail Metrics Table HUD
+ * positioned directly under the MT5 LIVE pill.
+ * Renders real physical numbers (NOT labels) for VPOC, Thinned Shelf, Vacuum,
+ * Fulcrum, and Global Box Domination/Efficiency.
+ */
+export function updateBoxOrderflowMetricsHud(chart) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
+  const hudEl = document.getElementById('tvBoxOrderflowMetricsHud');
+  if (!hudEl) return;
+
+  if (!c || typeof c.getOverlays !== 'function') {
+    hudEl.style.display = 'none';
+    return;
+  }
+
+  const existing = c.getOverlays() || [];
+  const rects = existing.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
+
+  if (rects.length === 0) {
+    hudEl.style.display = 'none';
+    return;
+  }
+
+  const dataList = c.getDataList?.() || [];
+  if (!dataList || dataList.length < 2) {
+    hudEl.style.display = 'none';
+    return;
+  }
+
+  // Use the latest drawn box
+  const rect = rects[rects.length - 1];
+  const boxIdx = rects.length;
+  const res = computeBoxOrderflowShading(rect, dataList);
+  if (!res) {
+    hudEl.style.display = 'none';
+    return;
+  }
+
+  const lastBar = dataList[dataList.length - 1];
+  const spotPrice = (lastBar && lastBar.close) ? lastBar.close : ((typeof window !== 'undefined' && window.__lastKnownSpot) || res.vpocCenter);
+
+  // Format Helpers
+  const fmtVol = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v.toString());
+  const fmtDelta = (d) => (d > 0 ? `+${d}` : d.toString());
+  const deltaClass = (d) => (d > 0 ? 'delta-pos' : (d < 0 ? 'delta-neg' : ''));
+
+  // Update Badge
+  const badgeEl = document.getElementById('tvBoxOfHudBadge');
+  if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (${res.isUp ? 'ACCUM' : 'DISTRIB'})`;
+
+  // Update Global Area Stats
+  const statVol = document.getElementById('tvBoxOfStatVol');
+  const statBars = document.getElementById('tvBoxOfStatBars');
+  const statDelta = document.getElementById('tvBoxOfStatDelta');
+  const statDeltaRatio = document.getElementById('tvBoxOfStatDeltaRatio');
+  const statKer = document.getElementById('tvBoxOfStatKer');
+  const statFriction = document.getElementById('tvBoxOfStatFriction');
+  const statExcursion = document.getElementById('tvBoxOfStatExcursion');
+  const statSpan = document.getElementById('tvBoxOfStatSpan');
+
+  if (statVol) statVol.textContent = fmtVol(res.totalVol);
+  if (statBars) statBars.textContent = `${res.barCount} bars`;
+  if (statDelta) {
+    statDelta.textContent = `${fmtDelta(res.totalDelta)} CVD`;
+    statDelta.className = `tv-box-of-stat-val ${deltaClass(res.totalDelta)}`;
+  }
+  if (statDeltaRatio) statDeltaRatio.textContent = `${res.buyPct}% B / ${res.sellPct}% S`;
+  if (statKer) {
+    const kerTag = res.ker >= 0.65 ? 'Slick' : (res.ker <= 0.35 ? 'Churn' : 'Normal');
+    statKer.textContent = `${res.ker.toFixed(2)} (${kerTag})`;
+  }
+  if (statFriction) statFriction.textContent = `+${res.frictionPct}% Friction`;
+  if (statExcursion) {
+    const excDir = res.isUp ? '+' : '-';
+    statExcursion.textContent = `${excDir}${res.height.toFixed(2)} pts`;
+    statExcursion.className = `tv-box-of-stat-val ${res.isUp ? 'delta-pos' : 'delta-neg'}`;
+  }
+  if (statSpan) statSpan.textContent = `Box: ${res.height.toFixed(2)}p`;
+
+  // Update Lines Table Rows
+  const tbody = document.getElementById('tvBoxOfTableRows');
+  if (tbody) {
+    const shelfColor = res.isUp ? '#10b981' : '#ef4444';
+    const shelfName = res.isUp ? 'Launchpad' : 'Drop Shelf';
+    const distToFulcrum = (spotPrice - res.fulcrumPrice).toFixed(2);
+    const distSign = spotPrice >= res.fulcrumPrice ? '+' : '';
+
+    tbody.innerHTML = `
+      <tr>
+        <td><span class="tv-box-of-swatch" style="background: #00f0ff; box-shadow: 0 0 5px #00f0ff;"></span></td>
+        <td style="color: #00f0ff; font-weight: 700;">VPOC Anchor</td>
+        <td style="text-align: right; color: #ffffff; font-weight: 700;">$${res.vpocCenter.toFixed(2)}</td>
+        <td style="text-align: right; color: #e2e8f0;">${fmtVol(res.vpocVol)}</td>
+        <td style="text-align: right; color: #00f0ff; font-weight: 700;">${res.vpocSharePct}%</td>
+        <td style="text-align: right;" class="${deltaClass(res.vpocDelta)}">${fmtDelta(res.vpocDelta)}</td>
+        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">Max Auction Consensus • Heavyweight Anchor</td>
+      </tr>
+      <tr>
+        <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
+        <td style="color: ${shelfColor}; font-weight: 700;">${shelfName} Top</td>
+        <td style="text-align: right; color: #ffffff;">$${res.thinnedTop.toFixed(2)}</td>
+        <td style="text-align: right; color: #e2e8f0;">${fmtVol(res.shelfVol)}</td>
+        <td style="text-align: right; color: ${shelfColor};">-${res.shelfDropRatio}%</td>
+        <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
+        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">Compression Bound (${res.shelfHeight}p) • ${res.isUp ? 'Breakout Gate' : 'Breakdown Bound'}</td>
+      </tr>
+      <tr>
+        <td><span class="tv-box-of-swatch" style="border-top: 2px dashed ${shelfColor};"></span></td>
+        <td style="color: ${shelfColor}; font-weight: 700;">${shelfName} Bot</td>
+        <td style="text-align: right; color: #ffffff;">$${res.thinnedBot.toFixed(2)}</td>
+        <td style="text-align: right; color: #94a3b8;">${res.shelfHeight}p</td>
+        <td style="text-align: right; color: #94a3b8;">Shelf</td>
+        <td style="text-align: right;" class="${deltaClass(res.shelfDelta)}">${fmtDelta(res.shelfDelta)}</td>
+        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">${res.isUp ? 'Demand Micro-Shelf Base' : 'Supply Liquidity Base'}</td>
+      </tr>
+      <tr>
+        <td><span class="tv-box-of-swatch" style="border-top: 2px dashed #f59e0b;"></span></td>
+        <td style="color: #f59e0b; font-weight: 700;">Vacuum Void (LVN)</td>
+        <td style="text-align: right; color: #ffffff;">$${res.lvnCenter.toFixed(2)}</td>
+        <td style="text-align: right; color: #f59e0b;">${fmtVol(res.lvnVol)}</td>
+        <td style="text-align: right; color: #f59e0b; font-weight: 700;">${res.lvnSharePct}%</td>
+        <td style="text-align: right;" class="${deltaClass(res.lvnDelta)}">${fmtDelta(res.lvnDelta)}</td>
+        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">Liquidity Hole (${res.lvnDeficitPct}% Deficit) • Fast Slip / Trap</td>
+      </tr>
+      <tr>
+        <td><span class="tv-box-of-swatch" style="border-top: 2px dotted #fbbf24;"></span></td>
+        <td style="color: #fbbf24; font-weight: 700;">Retest Fulcrum</td>
+        <td style="text-align: right; color: #ffffff; font-weight: 700;">$${res.fulcrumPrice.toFixed(2)}</td>
+        <td style="text-align: right; color: #fbbf24; font-weight: 700;">${res.retestCount}x</td>
+        <td style="text-align: right; color: #fbbf24;">50% Mean</td>
+        <td style="text-align: right; color: #38bdf8;">${distSign}${distToFulcrum}p</td>
+        <td style="color: #94a3b8; font-size: 8.5px; padding-left: 10px;">50% Structural Pivot Axis • Primary Bounce/Flip Trigger</td>
+      </tr>
+    `;
+  }
+
+  // Update Footer
+  const fpState = document.getElementById('tvBoxOfFootprintState');
+  const spotDist = document.getElementById('tvBoxOfSpotDist');
+  if (fpState) {
+    const stateStr = res.ker >= 0.65 ? 'DIRECTIONAL CONVICTION EXPANSION' : (res.frictionPct >= 50 ? 'HIGH FRICTION TWO-SIDED CHURN' : 'BALANCED VALUE ROTATION');
+    fpState.innerHTML = `AUCTION: <strong style="color: ${res.isUp ? '#10b981' : '#ef4444'};">${stateStr}</strong>`;
+  }
+  if (spotDist) {
+    const distToVpoc = (spotPrice - res.vpocCenter).toFixed(2);
+    const distSign = spotPrice >= res.vpocCenter ? '+' : '';
+    spotDist.textContent = `SPOT: $${spotPrice.toFixed(2)} (${distSign}${distToVpoc}p to VPOC)`;
+  }
+
+  hudEl.style.display = 'block';
+}
+window.__updateBoxOrderflowMetricsHud = updateBoxOrderflowMetricsHud;
 
 /**
  * Updates UI of the Toggle Box Order Flow Lines button.

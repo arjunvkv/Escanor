@@ -903,6 +903,205 @@ input[type="number"] {
   background-color: #10b981;
 }
 
+/* Floating In-Box Order Flow & Physical Trail Metrics Table HUD */
+.tv-box-of-hud {
+  position: absolute;
+  top: 40px;
+  left: 12px;
+  width: 570px;
+  background: rgba(11, 15, 24, 0.96);
+  border: 1.5px solid #1e293b;
+  border-radius: 8px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.95), 0 0 16px rgba(0, 240, 255, 0.12);
+  z-index: 25;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  overflow: hidden;
+  transition: width 0.2s ease, opacity 0.2s ease;
+}
+
+.tv-box-of-hud.collapsed {
+  width: 280px;
+}
+
+.tv-box-of-hud.collapsed .tv-box-of-hud-body {
+  display: none;
+}
+
+.tv-box-of-hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(15, 23, 42, 0.75);
+  border-bottom: 1px solid #1e293b;
+  cursor: pointer;
+  user-select: none;
+}
+
+.tv-box-of-hud-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #00f0ff;
+  letter-spacing: 0.5px;
+}
+
+.tv-box-of-hud-pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #00f0ff;
+  box-shadow: 0 0 8px #00f0ff;
+  animation: tvOfPulse 2s infinite ease-in-out;
+}
+
+@keyframes tvOfPulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.tv-box-of-hud-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tv-box-of-badge {
+  background: rgba(0, 240, 255, 0.15);
+  border: 1px solid #00f0ff;
+  color: #00f0ff;
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.tv-box-of-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+}
+.tv-box-of-btn:hover {
+  color: #ffffff;
+}
+
+.tv-box-of-hud-body {
+  padding: 8px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tv-box-of-area-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.45);
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.tv-box-of-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.tv-box-of-stat-label {
+  font-size: 8px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+}
+
+.tv-box-of-stat-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e2e8f0;
+  font-family: monospace;
+}
+
+.tv-box-of-stat-sub {
+  font-size: 8.5px;
+  color: #94a3b8;
+  font-family: monospace;
+}
+
+.tv-box-of-stat-val.delta-pos { color: #10b981; }
+.tv-box-of-stat-val.delta-neg { color: #ef4444; }
+.tv-box-of-stat-val.text-cyan { color: #00f0ff; }
+.tv-box-of-stat-val.text-amber { color: #f59e0b; }
+
+.tv-box-of-table-wrap {
+  overflow: hidden;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.tv-box-of-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10px;
+  font-family: monospace;
+}
+
+.tv-box-of-table th {
+  padding: 4px 5px;
+  color: #64748b;
+  font-size: 8px;
+  font-weight: 800;
+  border-bottom: 1px solid #1e293b;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tv-box-of-table td {
+  padding: 3.5px 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.tv-box-of-table tr:last-child td {
+  border-bottom: none;
+}
+
+.tv-box-of-table tr:hover td {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.tv-box-of-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 1px;
+  vertical-align: middle;
+}
+
+.tv-box-of-hud-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 5px;
+  border-top: 1px solid #1e293b;
+  font-size: 9px;
+  color: #64748b;
+  font-family: monospace;
+}
+
+.tv-box-of-hud-footer strong {
+  color: #10b981;
+}
+
 /* Toast Banner */
 .tv-toast {
   position: fixed;
