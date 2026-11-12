@@ -28,7 +28,7 @@ export function syncDrawingsToServer(symbol = 'XAUUSD', chart = null, showToast 
       const allOverlays = chart.getOverlays() || [];
       // Filter out temporary measure boxes, structural levels, session timeline, or system markers
       const userDrawings = allOverlays
-        .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && ov.name !== 'replayTradeMarker' && ov.name !== 'replayTradeBox' && ov.name !== 'boxOrderflowZone' && !ov.id?.startsWith('box_of_') && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_') && !ov.id?.startsWith('box_fulcrum_') && !ov.id?.startsWith('box_vacuum_') && !ov.id?.startsWith('trade_'))
+        .filter(ov => ov.name !== 'sessionTimeline' && ov.name !== 'measureBox' && ov.name !== 'activeTradeOrder' && ov.name !== 'structuralLevel' && ov.name !== 'lineSlTpMarking' && ov.name !== 'replayTradeMarker' && ov.name !== 'replayTradeBox' && ov.name !== 'boxOrderflowZone' && ov.name !== 'boxUserItemDottedLine' && !ov.id?.startsWith('box_user_item_line_') && !ov.id?.startsWith('box_of_') && !ov.id?.startsWith('sys_') && !ov.id?.startsWith('pos_') && !ov.id?.startsWith('ord_') && !ov.id?.startsWith('lvl_') && !ov.id?.startsWith('sltp_') && !ov.id?.startsWith('box_fulcrum_') && !ov.id?.startsWith('box_vacuum_') && !ov.id?.startsWith('trade_'))
 
         .map(ov => {
           // Strictly clean points: NEVER persist volatile in-memory dataIndex to server!

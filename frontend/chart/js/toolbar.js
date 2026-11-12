@@ -373,29 +373,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     });
   }
 
-  // Delegated capture click listener for True Physical Trail section items (waves & header node price)
-  if (typeof window !== 'undefined' && !window.__boxTrailClickDelegated) {
-    window.__boxTrailClickDelegated = true;
-    document.addEventListener('click', (e) => {
-      // 1. Trail Waves Row clicked
-      const waveRow = e.target.closest('#tvBoxTrailWavesRows tr, .tv-box-trail-wave-row');
-      if (waveRow) {
-        if (typeof window.__toggleBoxTrailWaveClick === 'function') {
-          window.__toggleBoxTrailWaveClick(waveRow, e);
-        }
-        return;
-      }
-
-      // 2. Trail Node Header Price clicked
-      const trailPriceEl = e.target.closest('#tvBoxTrailNodePrice');
-      if (trailPriceEl) {
-        if (typeof window.__toggleBoxTrailNodePriceClick === 'function') {
-          window.__toggleBoxTrailNodePriceClick(trailPriceEl, e);
-        }
-        return;
-      }
-    }, true); // Capture phase guarantees no element can swallow the click event
-  }
+  // True Physical Trail click handlers are cleanly bound via inline and direct event dispatchers
 
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);
 

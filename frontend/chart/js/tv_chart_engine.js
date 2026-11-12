@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202610241430';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121400';
 import { registerLivingFootprintIndicator, applyCandleFootprintStyles, isFootprintEnabled } from './living_candle_engine.js?v=202611031455';
 
 // Global reference for chart instance
@@ -6002,6 +6002,14 @@ export function toggleBoxItemLine(chart, price, label) {
   }
 
   const priceKey = price.toFixed(2);
+  const now = Date.now();
+  // Anti-bounce lock: prevent duplicate click events within 300ms on the exact same price
+  if (window.__lastBoxLineToggle && (now - window.__lastBoxLineToggle.time < 300) && window.__lastBoxLineToggle.key === priceKey) {
+    console.log('[toggleBoxItemLine] Debounced duplicate click for', priceKey);
+    return;
+  }
+  window.__lastBoxLineToggle = { time: now, key: priceKey };
+
   const overlayId = `box_user_item_line_${priceKey.replace('.', '_')}`;
   const isAlreadyActive = window.__activeBoxItemLines.has(priceKey);
 
@@ -6019,24 +6027,27 @@ export function toggleBoxItemLine(chart, price, label) {
   } else {
     // Turn ON
     const color = window.__boxItemLineColor || '#00f0ff';
-    const dataList = (typeof c.getDataList === 'function' ? c.getDataList() : []) || [];
-    const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
-    const lastTs = lastBar?.timestamp || Date.now();
 
+    // Native horizontalStraightLine with dashed styling (guaranteed visible across all devices)
     const overlayOptions = {
       id: overlayId,
-      name: 'boxUserItemDottedLine',
-      points: [{ timestamp: lastTs, value: price }],
+      name: 'horizontalStraightLine',
+      points: [{ value: price }],
       lock: true,
+      styles: {
+        line: {
+          style: 'dashed',
+          dashedValue: [2, 3],
+          color: color,
+          size: 1.5
+        }
+      },
       extendData: {
         key: overlayId,
+        isBoxItemLine: true,
         title: `┄ ${label} $${priceKey}`,
         yLabel: `$${priceKey}`,
-        color: color,
-        lineStyle: 'dotted',
-        dashedValue: [2, 3],
-        lineSize: 1.5,
-        opacity: 0.95
+        color: color
       }
     };
 
@@ -6059,7 +6070,7 @@ export function toggleBoxItemLine(chart, price, label) {
     });
 
     if (typeof showChartToast === 'function') {
-      showChartToast(`Added Extended Dotted Line at $${priceKey}`);
+      showChartToast(`⚡ Plotted Extended Dotted Line at $${priceKey}`);
     }
   }
 
@@ -6084,7 +6095,7 @@ window.__toggleBoxItemLine = toggleBoxItemLine;
  */
 window.__toggleBoxTrailWaveClick = function(rowEl, evt) {
   if (evt) {
-    try { evt.stopPropagation(); } catch (_) {}
+    try { evt.stopPropagation(); evt.preventDefault(); } catch (_) {}
   }
   if (!rowEl) return;
   const waveKey = rowEl.getAttribute('data-wave-key') || 'W';
@@ -6109,7 +6120,7 @@ window.__toggleBoxTrailWaveClick = function(rowEl, evt) {
  */
 window.__toggleBoxTrailNodePriceClick = function(priceEl, evt) {
   if (evt) {
-    try { evt.stopPropagation(); } catch (_) {}
+    try { evt.stopPropagation(); evt.preventDefault(); } catch (_) {}
   }
   if (!priceEl) return;
   const rawText = priceEl.textContent.replace(/[^0-9.]/g, '');
@@ -6142,16 +6153,20 @@ export function setBoxItemLinesColor(newColor, chart) {
       try {
         c.overrideOverlay({
           id: item.overlayId,
-          name: 'boxUserItemDottedLine',
+          styles: {
+            line: {
+              style: 'dashed',
+              dashedValue: [2, 3],
+              color: newColor,
+              size: 1.5
+            }
+          },
           extendData: {
             key: item.overlayId,
+            isBoxItemLine: true,
             title: `┄ ${item.label} $${item.priceKey}`,
             yLabel: `$${item.priceKey}`,
-            color: newColor,
-            lineStyle: 'dotted',
-            dashedValue: [2, 3],
-            lineSize: 1.5,
-            opacity: 0.95
+            color: newColor
           }
         });
       } catch (_) {}
@@ -6509,13 +6524,7 @@ function renderTrailWavesPanel(res, targetRank) {
     if (activeMap.has(nodePriceStr)) {
       priceEl.classList.add('active-line-on');
       priceEl.style.color = color;
-    } else {
-      priceEl.classList.remove('active-line-on');
-      priceEl.style.color = '#ffffff';
     }
-    priceEl.onclick = (e) => {
-      window.__toggleBoxTrailNodePriceClick(priceEl, e);
-    };
   }
 
   const vpocEl = document.getElementById('tvBoxTrailNodeVpoc');
@@ -6586,13 +6595,6 @@ function renderTrailWavesPanel(res, targetRank) {
           </tr>
         `;
       }).join('');
-
-      // Wire click listener on each wave row to toggle extended dotted line
-      wavesTbody.querySelectorAll('.tv-box-trail-wave-row').forEach(row => {
-        row.onclick = (e) => {
-          window.__toggleBoxTrailWaveClick(row, e);
-        };
-      });
     }
   }
 

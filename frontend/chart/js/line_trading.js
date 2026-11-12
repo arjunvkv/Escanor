@@ -418,6 +418,7 @@ export class LineTradingManager {
   registerLineOverlay(overlay, lineType = 'segment') {
     if (!overlay || !overlay.id || overlay.name === 'verticalStraightLine' || lineType === 'verticalStraightLine') return;
     const idStr = String(overlay.id);
+    if (idStr.startsWith('box_user_item_line_') || overlay.extendData?.isBoxItemLine) return;
 
     if (!this.lines.has(idStr)) {
       const defLots = (typeof window.getGlobalLot === 'function') ? window.getGlobalLot() : Number(localStorage.getItem('escanor_global_lot') || 1.00);
