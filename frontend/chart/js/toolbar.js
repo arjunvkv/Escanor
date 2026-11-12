@@ -366,17 +366,22 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
   // Global mouseup listener to guarantee HUD recalculation when box resize/drag handle is released
   if (typeof window !== 'undefined' && !window.__boxOfMouseUpBound) {
     window.__boxOfMouseUpBound = true;
-    document.addEventListener('mouseup', () => {
+    document.addEventListener('mouseup', (e) => {
+      // CRITICAL FIX: If mouseup occurred inside the HUD sidebar itself, NEVER re-render!
+      // Re-rendering inside mouseup destroys the target element and prevents the browser from dispatching click events!
+      if (e && e.target && e.target.closest && e.target.closest('#tvBoxOrderflowMetricsHud')) {
+        return;
+      }
       if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
         window.__updateBoxOrderflowMetricsHud(chart);
       }
     });
   }
 
-  // Permanent delegated click listener on HUD sidebar to guarantee 100% reliable clicks on wave rows and header price
+  // Permanent delegated listener on HUD sidebar to guarantee 100% reliable clicks on wave rows and header price
   if (boxOfHud && !boxOfHud.__trailClicksDelegated) {
     boxOfHud.__trailClicksDelegated = true;
-    boxOfHud.addEventListener('click', (e) => {
+    const handleTrailToggle = (e) => {
       // 1. Check if clicked inside a wave row in Section 2
       const waveRow = e.target.closest('#tvBoxTrailWavesRows tr, .tv-box-trail-wave-row');
       if (waveRow && typeof window.__toggleBoxTrailWaveClick === 'function') {
@@ -390,7 +395,10 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         window.__toggleBoxTrailNodePriceClick(trailHdr, e);
         return;
       }
-    });
+    };
+    // Listen to BOTH pointerdown (instant, immune to DOM churn) and click
+    boxOfHud.addEventListener('pointerdown', handleTrailToggle, true);
+    boxOfHud.addEventListener('click', handleTrailToggle);
   }
 
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);

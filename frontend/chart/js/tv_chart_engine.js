@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121510';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121525';
 import { registerLivingFootprintIndicator, applyCandleFootprintStyles, isFootprintEnabled } from './living_candle_engine.js?v=202611031455';
 
 // Global reference for chart instance
@@ -6544,6 +6544,9 @@ function renderTrailWavesPanel(res, targetRank) {
     priceEl.onclick = (e) => {
       window.__toggleBoxTrailNodePriceClick(priceEl, e);
     };
+    priceEl.onpointerdown = (e) => {
+      window.__toggleBoxTrailNodePriceClick(priceEl, e);
+    };
     if (activeMap.has(nodePriceStr)) {
       priceEl.classList.add('active-line-on');
       priceEl.style.color = color;
@@ -6558,6 +6561,9 @@ function renderTrailWavesPanel(res, targetRank) {
     hdrLeft.style.cursor = 'pointer';
     hdrLeft.title = `Click to toggle extended dotted line at $${node.price.toFixed(2)}`;
     hdrLeft.onclick = (e) => {
+      window.__toggleBoxTrailNodePriceClick(hdrLeft, e);
+    };
+    hdrLeft.onpointerdown = (e) => {
       window.__toggleBoxTrailNodePriceClick(hdrLeft, e);
     };
   }
@@ -6614,6 +6620,7 @@ function renderTrailWavesPanel(res, targetRank) {
               data-wave-key="${waveKey}"
               data-origin-price="${origPriceStr}"
               onclick="window.__toggleBoxTrailWaveClick(this, event)"
+              onpointerdown="window.__toggleBoxTrailWaveClick(this, event)"
               style="cursor: pointer; ${isWaveActive ? `border-left: 3px solid ${color};` : ''}"
               title="Click to toggle extended dotted line at $${origPriceStr}">
             <td style="color: #00f0ff; font-weight: 700;">
