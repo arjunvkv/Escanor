@@ -1,38 +1,38 @@
 {
   "XAUUSD": [
     {
-      "id": "overlay_1794474947772_1",
+      "id": "overlay_1794476095237_1",
       "name": "rect",
       "points": [
         {
-          "timestamp": 1794448500000,
-          "value": 3999.425018320611,
-          "dataIndex": 1887
+          "timestamp": 1794340200000,
+          "value": 4036.1522295573395,
+          "dataIndex": 1548
         },
         {
-          "timestamp": 1794461700000,
-          "value": 3999.425018320611,
-          "dataIndex": 1931
+          "timestamp": 1794353400000,
+          "value": 4036.1522295573395,
+          "dataIndex": 1592
         },
         {
-          "timestamp": 1794461700000,
-          "value": 3968.833596946565,
-          "dataIndex": 1931
+          "timestamp": 1794353400000,
+          "value": 4015.2522526560974,
+          "dataIndex": 1592
         },
         {
-          "timestamp": 1794448500000,
-          "value": 3968.833596946565,
-          "dataIndex": 1887
+          "timestamp": 1794340200000,
+          "value": 4015.2522526560974,
+          "dataIndex": 1548
         },
         {
-          "timestamp": 1794448500000,
-          "value": 3984.129307633588,
-          "dataIndex": 1887
+          "timestamp": 1794340200000,
+          "value": 4025.7022411067182,
+          "dataIndex": 1548
         },
         {
-          "timestamp": 1794461700000,
-          "value": 3984.129307633588,
-          "dataIndex": 1931
+          "timestamp": 1794353400000,
+          "value": 4025.7022411067182,
+          "dataIndex": 1592
         }
       ],
       "styles": null,

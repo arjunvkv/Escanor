@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121525';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121535';
 import { registerLivingFootprintIndicator, applyCandleFootprintStyles, isFootprintEnabled } from './living_candle_engine.js?v=202611031455';
 
 // Global reference for chart instance
@@ -6279,25 +6279,14 @@ export function updateBoxItemLinesUI(chart) {
 
     const isActive = activeMap.has(priceStr);
     const existingBadge = row.querySelector('.tv-box-row-line-badge');
+    if (existingBadge) existingBadge.remove();
+
+    row.style.borderLeft = '';
+    row.style.setProperty('--box-item-line-color', color);
     if (isActive) {
       row.classList.add('active-line-on');
-      row.style.borderLeft = `3px solid ${color}`;
-      if (!existingBadge) {
-        const waveCell = row.cells[0];
-        if (waveCell) {
-          const badgeEl = document.createElement('span');
-          badgeEl.className = 'tv-box-row-line-badge';
-          badgeEl.style.color = color;
-          badgeEl.textContent = '┄┄';
-          waveCell.appendChild(badgeEl);
-        }
-      } else {
-        existingBadge.style.color = color;
-      }
     } else {
       row.classList.remove('active-line-on');
-      row.style.borderLeft = '';
-      if (existingBadge) existingBadge.remove();
     }
   });
 }
@@ -6621,11 +6610,10 @@ function renderTrailWavesPanel(res, targetRank) {
               data-origin-price="${origPriceStr}"
               onclick="window.__toggleBoxTrailWaveClick(this, event)"
               onpointerdown="window.__toggleBoxTrailWaveClick(this, event)"
-              style="cursor: pointer; ${isWaveActive ? `border-left: 3px solid ${color};` : ''}"
+              style="cursor: pointer; --box-item-line-color: ${color};"
               title="Click to toggle extended dotted line at $${origPriceStr}">
             <td style="color: #00f0ff; font-weight: 700;">
               ${w.wave}
-              ${isWaveActive ? `<span class="tv-box-row-line-badge" style="color: ${color};">┄┄</span>` : ''}
             </td>
             <td style="text-align: center; color: #94a3b8;">${w.gap}</td>
             <td style="color: #ffffff;">${w.origin}</td>
