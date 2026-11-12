@@ -1505,8 +1505,14 @@ input[type="number"] {
   vertical-align: middle;
 }
 
+.tv-box-trail-table tr {
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.15s ease;
+}
+
 .tv-box-trail-table tr:hover td {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 240, 255, 0.08) !important;
 }
 
 .tv-box-trail-table tr.active-wave td {
@@ -1515,7 +1521,7 @@ input[type="number"] {
 }
 
 .tv-box-trail-table tr.active-line-on td {
-  background: rgba(0, 240, 255, 0.18) !important;
+  background: rgba(0, 240, 255, 0.22) !important;
   font-weight: bold;
 }
 

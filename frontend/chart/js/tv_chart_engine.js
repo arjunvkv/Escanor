@@ -1376,6 +1376,109 @@ function registerCustomOverlays() {
     });
   }
 
+  // 1b-2. Dedicated Extended Dotted Line for True Physical Trail Items
+  try {
+    klinecharts.registerOverlay({
+      name: 'boxUserItemDottedLine',
+      totalStep: 2,
+      needDefaultPointFigure: false,
+      needDefaultXAxisFigure: false,
+      needDefaultYAxisFigure: true,
+      zLevel: 250,
+      fixedZLevel: true,
+      createPointFigures: ({ overlay, coordinates, bounding, yAxis }) => {
+        const data = overlay.extendData || {};
+        const price = overlay.points?.[0]?.value;
+        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+          ? yAxis.convertToPixel(price)
+          : (coordinates[0]?.y ?? 0);
+
+        const width = bounding?.width || 2000;
+        const color = data.color || '#00f0ff';
+        const title = data.title || '';
+
+        function hexToRgba(hex, a) {
+          if (!hex) return `rgba(0, 240, 255, ${a})`;
+          if (hex.startsWith('rgba')) return hex;
+          let c = hex.replace('#', '');
+          if (c.length === 3) c = c.split('').map(x => x + x).join('');
+          const num = parseInt(c, 16);
+          return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${a})`;
+        }
+
+        const lineRgba = hexToRgba(color, 0.95);
+        const badgeBg = hexToRgba(color, 0.45);
+
+        const figures = [];
+
+        // Full-width horizontal dotted line
+        figures.push({
+          type: 'line',
+          attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
+          styles: {
+            style: 'dashed',
+            dashedValue: [2, 3],
+            color: lineRgba,
+            size: 1.5
+          }
+        });
+
+        // Pill text badge on the left side of the chart
+        if (title) {
+          figures.push({
+            type: 'text',
+            attrs: { x: 14, y: y - 11, text: title, baseline: 'top' },
+            styles: {
+              color: '#ffffff',
+              size: 10,
+              family: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace',
+              weight: 'bold',
+              backgroundColor: badgeBg,
+              borderRadius: 3,
+              paddingLeft: 6,
+              paddingRight: 6,
+              paddingTop: 2,
+              paddingBottom: 2
+            }
+          });
+        }
+
+        return figures;
+      },
+      createYAxisFigures: ({ overlay, coordinates, yAxis }) => {
+        const data = overlay.extendData || {};
+        const price = overlay.points?.[0]?.value;
+        const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
+          ? yAxis.convertToPixel(price)
+          : (coordinates[0]?.y ?? 0);
+
+        const color = data.color || '#00f0ff';
+        const label = data.yLabel || (typeof price === 'number' ? `$${price.toFixed(2)}` : '');
+
+        return [
+          {
+            type: 'text',
+            attrs: { x: 0, y, text: label, baseline: 'middle', align: 'left' },
+            styles: {
+              color: '#000000',
+              size: 10,
+              weight: 'bold',
+              family: 'monospace',
+              backgroundColor: color,
+              borderRadius: 2,
+              paddingLeft: 4,
+              paddingRight: 4,
+              paddingTop: 2,
+              paddingBottom: 2
+            }
+          }
+        ];
+      }
+    });
+  } catch (err) {
+    console.warn('[TV Engine] boxUserItemDottedLine registration failed:', err);
+  }
+
   // 1c. Box Order Flow Thinning Lines Overlay (Pure Lines Only: VPOC, Vacuum, Shelf Bounds, Retest Fulcrum)
   // 100% Transparent Interior, Zero Polygon Fill, Zero Obtrusive Text Labels Over Candles
   if (!supported.includes('boxOrderflowZone')) {
@@ -5888,7 +5991,10 @@ if (typeof window !== 'undefined' && !window.__boxItemLineColor) {
  */
 export function toggleBoxItemLine(chart, price, label) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
-  if (!c || typeof price !== 'number' || isNaN(price)) return;
+  if (!c || typeof price !== 'number' || isNaN(price) || price <= 0) {
+    console.warn('[toggleBoxItemLine] Invalid chart or price:', { c, price });
+    return;
+  }
 
   if (typeof window === 'undefined') return;
   if (!window.__activeBoxItemLines) {
@@ -5899,9 +6005,13 @@ export function toggleBoxItemLine(chart, price, label) {
   const overlayId = `box_user_item_line_${priceKey.replace('.', '_')}`;
   const isAlreadyActive = window.__activeBoxItemLines.has(priceKey);
 
+  console.log(`[toggleBoxItemLine] ${isAlreadyActive ? 'TURNING OFF' : 'TURNING ON'} line at $${priceKey} (${label})`);
+
   if (isAlreadyActive) {
     // Turn OFF
-    try { c.removeOverlay({ id: overlayId }); } catch (_) {}
+    try { c.removeOverlay({ id: overlayId }); } catch (err) {
+      console.warn('[toggleBoxItemLine] removeOverlay failed:', err);
+    }
     window.__activeBoxItemLines.delete(priceKey);
     if (typeof showChartToast === 'function') {
       showChartToast(`Removed Dotted Line at $${priceKey}`);
@@ -5909,27 +6019,34 @@ export function toggleBoxItemLine(chart, price, label) {
   } else {
     // Turn ON
     const color = window.__boxItemLineColor || '#00f0ff';
-    const dataList = c.getDataList?.() || [];
+    const dataList = (typeof c.getDataList === 'function' ? c.getDataList() : []) || [];
     const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
     const lastTs = lastBar?.timestamp || Date.now();
 
+    const overlayOptions = {
+      id: overlayId,
+      name: 'boxUserItemDottedLine',
+      points: [{ timestamp: lastTs, value: price }],
+      lock: true,
+      extendData: {
+        key: overlayId,
+        title: `┄ ${label} $${priceKey}`,
+        yLabel: `$${priceKey}`,
+        color: color,
+        lineStyle: 'dotted',
+        dashedValue: [2, 3],
+        lineSize: 1.5,
+        opacity: 0.95
+      }
+    };
+
     try {
-      c.createOverlay({
-        id: overlayId,
-        name: 'structuralLevel',
-        points: [{ timestamp: lastTs, value: price }],
-        lock: true,
-        extendData: {
-          key: overlayId,
-          title: `┄ ${label} $${priceKey}`,
-          yLabel: `$${priceKey}`,
-          color: color,
-          lineStyle: 'dotted',
-          dashedValue: [2, 3],
-          lineSize: 1.5,
-          opacity: 0.95
-        }
-      });
+      const existing = (typeof c.getOverlays === 'function' ? c.getOverlays() : []) || [];
+      if (existing.some(o => o.id === overlayId)) {
+        c.overrideOverlay(overlayOptions);
+      } else {
+        c.createOverlay(overlayOptions);
+      }
     } catch (e) {
       console.warn('[toggleBoxItemLine] Overlay create error:', e);
     }
@@ -5946,9 +6063,67 @@ export function toggleBoxItemLine(chart, price, label) {
     }
   }
 
+  // Force Klinecharts to repaint canvas immediately
+  try {
+    if (typeof c.updatePane === 'function') {
+      c.updatePane(0);
+    }
+    const existing = (typeof c.getOverlays === 'function' ? c.getOverlays() : []) || [];
+    const rect = existing.find(o => o.name === 'rect');
+    if (rect) {
+      c.overrideOverlay({ id: rect.id });
+    }
+  } catch (_) {}
+
   updateBoxItemLinesUI(c);
 }
 window.__toggleBoxItemLine = toggleBoxItemLine;
+
+/**
+ * Global click dispatcher for True Physical Trail wave rows
+ */
+window.__toggleBoxTrailWaveClick = function(rowEl, evt) {
+  if (evt) {
+    try { evt.stopPropagation(); } catch (_) {}
+  }
+  if (!rowEl) return;
+  const waveKey = rowEl.getAttribute('data-wave-key') || 'W';
+  let price = parseFloat(rowEl.getAttribute('data-origin-price'));
+  if (isNaN(price) || price <= 0) {
+    const originCell = rowEl.cells?.[2];
+    if (originCell) {
+      const match = originCell.textContent.match(/\$([0-9.]+)/);
+      if (match) price = parseFloat(match[1]);
+    }
+  }
+
+  console.log('[Trail Wave Click]', { waveKey, price });
+  if (!isNaN(price) && price > 0) {
+    const c = chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+    toggleBoxItemLine(c, price, `TRAIL ${waveKey}`);
+  }
+};
+
+/**
+ * Global click dispatcher for True Physical Trail header node price
+ */
+window.__toggleBoxTrailNodePriceClick = function(priceEl, evt) {
+  if (evt) {
+    try { evt.stopPropagation(); } catch (_) {}
+  }
+  if (!priceEl) return;
+  const rawText = priceEl.textContent.replace(/[^0-9.]/g, '');
+  const price = parseFloat(rawText);
+  if (!isNaN(price) && price > 0) {
+    const rankEl = document.getElementById('tvBoxTrailNodeRank');
+    const rankText = rankEl ? rankEl.textContent.trim() : '#1';
+    const vpocEl = document.getElementById('tvBoxTrailNodeVpoc');
+    const isVpoc = vpocEl && vpocEl.style.display !== 'none';
+    const lbl = isVpoc ? '#1 VPOC' : (`NODE ${rankText}`);
+    const c = chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+    toggleBoxItemLine(c, price, lbl);
+  }
+};
 
 /**
  * Updates color of all active item lines on chart and in sidebar.
@@ -5967,6 +6142,7 @@ export function setBoxItemLinesColor(newColor, chart) {
       try {
         c.overrideOverlay({
           id: item.overlayId,
+          name: 'boxUserItemDottedLine',
           extendData: {
             key: item.overlayId,
             title: `┄ ${item.label} $${item.priceKey}`,
@@ -6055,8 +6231,16 @@ export function updateBoxItemLinesUI(chart) {
 
   // 4. Trail Waves Rows (Only Physical Trail items mark lines)
   document.querySelectorAll('#tvBoxTrailWavesRows tr').forEach(row => {
-    const priceStr = row.getAttribute('data-origin-price');
+    let priceStr = row.getAttribute('data-origin-price');
+    if (!priceStr) {
+      const originCell = row.cells?.[2];
+      if (originCell) {
+        const match = originCell.textContent.match(/\$([0-9.]+)/);
+        if (match) priceStr = parseFloat(match[1]).toFixed(2);
+      }
+    }
     if (!priceStr) return;
+
     const isActive = activeMap.has(priceStr);
     const existingBadge = row.querySelector('.tv-box-row-line-badge');
     if (isActive) {
@@ -6081,6 +6265,7 @@ export function updateBoxItemLinesUI(chart) {
     }
   });
 }
+window.__updateBoxItemLinesUI = updateBoxItemLinesUI;
 window.__updateBoxItemLinesUI = updateBoxItemLinesUI;
 
 /**
@@ -6320,6 +6505,7 @@ function renderTrailWavesPanel(res, targetRank) {
     priceEl.textContent = `$${nodePriceStr}`;
     priceEl.style.cursor = 'pointer';
     priceEl.title = `Click to toggle extended dotted line at $${nodePriceStr}`;
+    priceEl.setAttribute('onclick', 'window.__toggleBoxTrailNodePriceClick(this, event)');
     if (activeMap.has(nodePriceStr)) {
       priceEl.classList.add('active-line-on');
       priceEl.style.color = color;
@@ -6328,10 +6514,7 @@ function renderTrailWavesPanel(res, targetRank) {
       priceEl.style.color = '#ffffff';
     }
     priceEl.onclick = (e) => {
-      e.stopPropagation();
-      const c = chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
-      const lbl = node.isVpoc ? '#1 VPOC' : (`NODE #${node.rank}`);
-      toggleBoxItemLine(c, node.price, lbl);
+      window.__toggleBoxTrailNodePriceClick(priceEl, e);
     };
   }
 
@@ -6372,15 +6555,23 @@ function renderTrailWavesPanel(res, targetRank) {
     } else {
       wavesTbody.innerHTML = wavesData.waves.map((w, idx) => {
         const isLatest = (idx === wavesData.waves.length - 1);
-        const origPrice = (typeof w.originPrice === 'number' && !isNaN(w.originPrice))
-          ? w.originPrice
-          : parseFloat(w.origin.replace(/[^0-9.]/g, ''));
+        let origPrice = (typeof w.originPrice === 'number' && !isNaN(w.originPrice)) ? w.originPrice : null;
+        if (origPrice === null && w.origin) {
+          const m = w.origin.match(/\$([0-9.]+)/);
+          if (m) origPrice = parseFloat(m[1]);
+        }
+        if (origPrice === null) origPrice = node.price;
         const origPriceStr = origPrice.toFixed(2);
         const isWaveActive = activeMap.has(origPriceStr);
         const waveKey = w.waveKey || (`W${idx + 1}`);
 
         return `
-          <tr class="tv-box-trail-wave-row ${isLatest ? 'active-wave' : ''} ${isWaveActive ? 'active-line-on' : ''}" data-wave-key="${waveKey}" data-origin-price="${origPriceStr}" style="cursor: pointer; ${isWaveActive ? `border-left: 3px solid ${color};` : ''}" title="Click to toggle extended dotted line at $${origPriceStr}">
+          <tr class="tv-box-trail-wave-row ${isLatest ? 'active-wave' : ''} ${isWaveActive ? 'active-line-on' : ''}"
+              data-wave-key="${waveKey}"
+              data-origin-price="${origPriceStr}"
+              onclick="window.__toggleBoxTrailWaveClick(this, event)"
+              style="cursor: pointer; ${isWaveActive ? `border-left: 3px solid ${color};` : ''}"
+              title="Click to toggle extended dotted line at $${origPriceStr}">
             <td style="color: #00f0ff; font-weight: 700;">
               ${w.wave}
               ${isWaveActive ? `<span class="tv-box-row-line-badge" style="color: ${color};">┄┄</span>` : ''}
@@ -6398,13 +6589,9 @@ function renderTrailWavesPanel(res, targetRank) {
 
       // Wire click listener on each wave row to toggle extended dotted line
       wavesTbody.querySelectorAll('.tv-box-trail-wave-row').forEach(row => {
-        const waveKey = row.getAttribute('data-wave-key');
-        const price = parseFloat(row.getAttribute('data-origin-price'));
-        row.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const c = chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
-          toggleBoxItemLine(c, price, `TRAIL ${waveKey}`);
-        });
+        row.onclick = (e) => {
+          window.__toggleBoxTrailWaveClick(row, e);
+        };
       });
     }
   }

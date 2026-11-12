@@ -9,8 +9,8 @@
  * - In-app confirmation dialog (Zero browser alert/confirm popups)
  */
 
-import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202610241430';
-import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal, toggleStructuralInflectionLines, syncStructuralInflectionLines } from './tv_chart_engine.js?v=202610252048';
+import { syncDrawingsToServer, showChartToast, expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels } from './drawings_storage.js?v=202611121330';
+import { computeRectangleVolumeMetrics, patchOverlayViews, updateExtensionSeriesRibbon, openExtensionNetworkModal, toggleStructuralInflectionLines, syncStructuralInflectionLines } from './tv_chart_engine.js?v=202611121330';
 
 let activeTool = 'crosshair';
 let selectedOverlay = null;
@@ -371,6 +371,30 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
         window.__updateBoxOrderflowMetricsHud(chart);
       }
     });
+  }
+
+  // Delegated capture click listener for True Physical Trail section items (waves & header node price)
+  if (typeof window !== 'undefined' && !window.__boxTrailClickDelegated) {
+    window.__boxTrailClickDelegated = true;
+    document.addEventListener('click', (e) => {
+      // 1. Trail Waves Row clicked
+      const waveRow = e.target.closest('#tvBoxTrailWavesRows tr, .tv-box-trail-wave-row');
+      if (waveRow) {
+        if (typeof window.__toggleBoxTrailWaveClick === 'function') {
+          window.__toggleBoxTrailWaveClick(waveRow, e);
+        }
+        return;
+      }
+
+      // 2. Trail Node Header Price clicked
+      const trailPriceEl = e.target.closest('#tvBoxTrailNodePrice');
+      if (trailPriceEl) {
+        if (typeof window.__toggleBoxTrailNodePriceClick === 'function') {
+          window.__toggleBoxTrailNodePriceClick(trailPriceEl, e);
+        }
+        return;
+      }
+    }, true); // Capture phase guarantees no element can swallow the click event
   }
 
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);
