@@ -5483,316 +5483,187 @@ export function computeBoxOrderflowShading(overlay, dataList) {
   // 2. TRUE PHYSICAL FILTER: Only candles that physically enter or intersect the box price range [bottomPrice, topPrice]
   const intersectingBars = timeBars.filter(b => b.high >= bottomPrice && b.low <= topPrice);
 
-  const binStep = Math.max(0.10, Math.min(0.50, height / 25));
-  const numBins = Math.ceil(height / binStep);
-  const bins = new Float32Array(numBins);
-  const deltas = new Float32Array(numBins);
-
-  let totalVol = 0;
-  let totalDelta = 0;
-  let buyVol = 0;
-  let sellVol = 0;
-
-  // 3. True physical tick volume and CVD distributed strictly inside the box boundaries
-  intersectingBars.forEach(b => {
-    const bLo = b.low;
-    const bHi = b.high;
-    const v = Number(b.volume || b.tick_volume || 1);
-    const span = Math.max(0.01, bHi - bLo);
-    const boxOverlap = Math.max(0, Math.min(bHi, topPrice) - Math.max(bLo, bottomPrice));
-    if (boxOverlap <= 0) return;
-
-    const barDeltaSign = b.close >= b.open ? 1 : -1;
-    const barDeltaRatio = span > 0 ? (b.close - b.open) / span : 0;
-
-    for (let idx = 0; idx < numBins; idx++) {
-      const pLo = bottomPrice + idx * binStep;
-      const pHi = pLo + binStep;
-      const overlap = Math.max(0, Math.min(bHi, pHi) - Math.max(bLo, pLo));
-      if (overlap > 0) {
-        const frac = overlap / span;
-        const binV = v * frac;
-        const binD = binV * barDeltaRatio;
-        bins[idx] += binV;
-        deltas[idx] += binD;
-        totalVol += binV;
-        totalDelta += binD;
-        if (barDeltaSign > 0) buyVol += binV;
-        else sellVol += binV;
-      }
-    }
-  });
-
-  totalVol = Math.round(totalVol);
-  totalDelta = Math.round(totalDelta);
-  buyVol = Math.round(buyVol);
-  sellVol = Math.round(sellVol);
-
-  // 4. If ZERO candles physically entered this box: EMPTY SPACE! Zero fake lines!
-  if (intersectingBars.length === 0 || totalVol === 0) {
+  // 3. If ZERO candles physically entered this box: EMPTY SPACE! Zero fake lines!
+  if (intersectingBars.length === 0) {
     return {
       isEmpty: true,
       topPrice,
       bottomPrice,
       height,
-      totalVol: 0,
-      totalDelta: 0,
-      buyVol: 0,
-      sellVol: 0,
-      buyPct: 50,
-      sellPct: 50,
+      totalRangeVol: 0,
+      totalBullVol: 0,
+      totalBearVol: 0,
+      bullRatio: 50,
+      bearRatio: 50,
       barCount: 0,
       totalSpanBars: timeBars.length,
-      ker: 0,
-      frictionPct: 0,
-      waveExcursion: 0,
-      isUp: false,
       lines: [], // ZERO lines in empty space!
+      topNodes: [],
+      wavesMap: {},
       leftTime,
       rightTime
     };
   }
 
-  // 5. Direction of the auction inside the box (based strictly on intersecting bars)
-  const firstBar = intersectingBars[0];
-  const lastBar = intersectingBars[intersectingBars.length - 1];
-  const isUp = lastBar.close >= firstBar.open;
-  const shelfColor = isUp ? '#10b981' : '#ef4444';
-  const shelfLabel = isUp ? 'Launch' : 'Drop';
+  // 4. Determine discrete price bin step for gold
+  let binStep = 0.10;
+  if (height > 40) binStep = 0.50;
+  else if (height > 15) binStep = 0.20;
 
-  // 6. Real VPOC: bin with the highest transacted volume
-  let maxV = 0;
-  let vpocIdx = 0;
-  for (let idx = 0; idx < numBins; idx++) {
-    if (bins[idx] > maxV) {
-      maxV = bins[idx];
-      vpocIdx = idx;
-    }
-  }
-  const vpocCenter = parseFloat((bottomPrice + (vpocIdx + 0.5) * binStep).toFixed(2));
-  const vpocVol = Math.round(maxV);
-  const vpocDelta = Math.round(deltas[vpocIdx] || 0);
-  const vpocSharePct = parseFloat(((vpocVol / totalVol) * 100).toFixed(1));
+  const startPrice = Math.floor(bottomPrice / binStep) * binStep;
+  const endPrice = Math.ceil(topPrice / binStep) * binStep;
+  const numBins = Math.max(1, Math.round((endPrice - startPrice) / binStep) + 1);
+  const binArray = [];
 
-  // 7. Real Thinned Shelves: Physical Volume Cliffs where volume drops below 35% of peak
-  const cliffThreshold = maxV * 0.35;
-  let topShelfIdx = vpocIdx;
-  for (let idx = vpocIdx + 1; idx < numBins; idx++) {
-    if (bins[idx] <= cliffThreshold) {
-      topShelfIdx = idx;
-      break;
-    }
-    topShelfIdx = idx;
-  }
-  const thinnedTop = parseFloat((bottomPrice + (topShelfIdx + 0.5) * binStep).toFixed(2));
-  const shelfTopVol = Math.round(bins[topShelfIdx] || 0);
-  const shelfTopDelta = Math.round(deltas[topShelfIdx] || 0);
-
-  let botShelfIdx = vpocIdx;
-  for (let idx = vpocIdx - 1; idx >= 0; idx--) {
-    if (bins[idx] <= cliffThreshold) {
-      botShelfIdx = idx;
-      break;
-    }
-    botShelfIdx = idx;
-  }
-  const thinnedBot = parseFloat((bottomPrice + (botShelfIdx + 0.5) * binStep).toFixed(2));
-  const shelfBotVol = Math.round(bins[botShelfIdx] || 0);
-  const shelfBotDelta = Math.round(deltas[botShelfIdx] || 0);
-
-  // 8. Real Vacuum (LVN): Internal liquidity deficit valley between high-volume traded clusters
-  let firstTradedIdx = 0;
-  while (firstTradedIdx < numBins && bins[firstTradedIdx] === 0) firstTradedIdx++;
-  let lastTradedIdx = numBins - 1;
-  while (lastTradedIdx >= 0 && bins[lastTradedIdx] === 0) lastTradedIdx--;
-
-  let minV = Infinity;
-  let lvnIdx = -1;
-  if (lastTradedIdx - firstTradedIdx >= 4) {
-    for (let idx = firstTradedIdx + 1; idx < lastTradedIdx; idx++) {
-      if (Math.abs(idx - vpocIdx) >= 2 && bins[idx] < minV && bins[idx] < maxV * 0.45) {
-        minV = bins[idx];
-        lvnIdx = idx;
-      }
-    }
-  }
-  const hasVacuum = (lvnIdx >= 0);
-  const lvnCenter = hasVacuum ? parseFloat((bottomPrice + (lvnIdx + 0.5) * binStep).toFixed(2)) : null;
-  const lvnVol = hasVacuum ? Math.round(bins[lvnIdx] || 0) : 0;
-  const lvnDelta = hasVacuum ? Math.round(deltas[lvnIdx] || 0) : 0;
-  const lvnSharePct = hasVacuum ? parseFloat(((lvnVol / totalVol) * 100).toFixed(1)) : 0;
-
-  // 9. Real Fulcrum: True Volume-Weighted Average Price (VWAP) equilibrium of the box
-  let weightedPriceSum = 0;
-  for (let idx = 0; idx < numBins; idx++) {
-    const p = bottomPrice + (idx + 0.5) * binStep;
-    weightedPriceSum += p * bins[idx];
-  }
-  const fulcrumPrice = totalVol > 0 ? parseFloat((weightedPriceSum / totalVol).toFixed(2)) : vpocCenter;
-
-  // 10. Node Tests & Buyer Aggression Helper
-  const calcNodeStats = (targetPrice, tol) => {
-    const t = tol || binStep * 0.7;
-    let tests = 0;
-    intersectingBars.forEach(b => {
-      if (b.low <= targetPrice + t && b.high >= targetPrice - t) {
-        tests++;
-      }
+  for (let i = 0; i < numBins; i++) {
+    binArray.push({
+      index: i,
+      price: parseFloat((startPrice + i * binStep).toFixed(2)),
+      vol: 0,
+      bullVol: 0,
+      bearVol: 0,
+      touchBars: []
     });
-    const bIdx = Math.max(0, Math.min(numBins - 1, Math.round((targetPrice - bottomPrice) / binStep)));
-    const bV = bins[bIdx] || 0;
-    const bD = deltas[bIdx] || 0;
-    const bBuyPct = bV > 0 ? Math.round(((bV + bD) / (2 * bV)) * 100) : 50;
-    return { tests, buyPct: Math.max(0, Math.min(100, bBuyPct)), delta: Math.round(bD) };
-  };
+  }
 
-  const vpocStats = calcNodeStats(vpocCenter, binStep * 0.7);
-  const shelfTopStats = calcNodeStats(thinnedTop, binStep * 0.6);
-  const shelfBotStats = calcNodeStats(thinnedBot, binStep * 0.6);
-  const lvnStats = hasVacuum ? calcNodeStats(lvnCenter, binStep * 0.6) : { tests: 0, buyPct: 50, delta: 0 };
-  const fulcrumStats = calcNodeStats(fulcrumPrice, binStep * 0.6);
+  let totalRangeVol = 0;
+  let totalBullVol = 0;
+  let totalBearVol = 0;
 
-  // 11. Physical Trail Big Move Launch Impulse Calculation
-  const maxBarHigh = Math.max(...intersectingBars.map(b => b.high));
-  const minBarLow = Math.min(...intersectingBars.map(b => b.low));
-  const tradedRange = Math.max(0.5, maxBarHigh - minBarLow);
-
-  const vpocImpulse = parseFloat((tradedRange * 0.15).toFixed(1));
-  const topDisp = maxBarHigh - thinnedTop;
-  const shelfTopImpulse = parseFloat((topDisp > 0.5 ? topDisp : (tradedRange * 0.75)).toFixed(1));
-  const botDisp = thinnedBot - minBarLow;
-  const shelfBotImpulse = -parseFloat((botDisp > 0.5 ? botDisp : (tradedRange * 0.75)).toFixed(1));
-  const lvnGap = Math.max(tradedRange * 0.85, Math.abs(thinnedTop - thinnedBot) * 1.1);
-  const lvnDirection = (isUp || (lvnStats.buyPct >= 50)) ? 1 : -1;
-  const lvnImpulse = parseFloat((lvnDirection * lvnGap).toFixed(1));
-  const fulcrumDist = Math.max(0.5, Math.abs(thinnedTop - fulcrumPrice));
-  const fulcrumDirection = isUp ? 1 : -1;
-  const fulcrumImpulse = parseFloat((fulcrumDirection * fulcrumDist).toFixed(1));
-
-  // 12. Efficiency (KER) & Friction strictly across intersecting bars
-  let pathSum = 0;
+  // 5. Calculate Volume Profile strictly inside box boundaries
   intersectingBars.forEach(b => {
-    pathSum += Math.max(0.01, b.high - b.low);
-  });
-  const netExcursion = Math.abs(lastBar.close - firstBar.open);
-  const ker = pathSum > 0 ? parseFloat((netExcursion / pathSum).toFixed(2)) : 0;
-  const frictionPct = Math.max(0, Math.min(100, Math.round((1 - ker) * 100)));
-  const waveExcursion = parseFloat((lastBar.close - firstBar.open).toFixed(2));
+    const bLo = b.low;
+    const bHi = b.high;
+    const span = Math.max(0.01, bHi - bLo);
+    const vol = Number(b.volume || b.tick_volume || 1);
+    const closeRatio = (b.close - bLo) / span;
+    const isUp = b.close >= b.open;
+    const bullWeight = Math.max(0.05, Math.min(0.95, closeRatio * 0.70 + (isUp ? 0.30 : 0.00)));
+    const bearWeight = 1.0 - bullWeight;
 
-  // 13. Dynamic Lines Array (Only genuine physical lines backed by real volume)
+    const minBinIdx = Math.max(0, Math.floor((Math.max(bLo, bottomPrice) - startPrice) / binStep));
+    const maxBinIdx = Math.min(numBins - 1, Math.ceil((Math.min(bHi, topPrice) - startPrice) / binStep));
+
+    for (let bi = minBinIdx; bi <= maxBinIdx; bi++) {
+      const binObj = binArray[bi];
+      if (!binObj) continue;
+      const binLow = binObj.price - binStep / 2;
+      const binHigh = binObj.price + binStep / 2;
+      const overlap = Math.max(0, Math.min(bHi, binHigh) - Math.max(bLo, binLow));
+      if (overlap > 0) {
+        const frac = overlap / span;
+        const v = vol * frac;
+        const bV = v * bullWeight;
+        const sV = v * bearWeight;
+        binObj.vol += v;
+        binObj.bullVol += bV;
+        binObj.bearVol += sV;
+        binObj.touchBars.push({
+          bar: b,
+          frac,
+          vol: v,
+          bullVol: bV,
+          bearVol: sV
+        });
+        totalRangeVol += v;
+        totalBullVol += bV;
+        totalBearVol += sV;
+      }
+    }
+  });
+
+  totalRangeVol = Math.round(totalRangeVol);
+  totalBullVol = Math.round(totalBullVol);
+  totalBearVol = Math.round(totalBearVol);
+  const bullRatio = totalRangeVol > 0 ? Math.round((totalBullVol / totalRangeVol) * 100) : 50;
+  const bearRatio = 100 - bullRatio;
+
+  // 6. Filter active bins and sort by volume descending to extract TOP NODES
+  const activeBins = binArray.filter(b => b.vol > 0);
+  activeBins.forEach(b => {
+    b.vol = Math.round(b.vol);
+    b.bullVol = Math.round(b.bullVol);
+    b.bearVol = Math.round(b.bearVol);
+    b.delta = b.bullVol - b.bearVol;
+    b.bias = b.bullVol >= b.bearVol ? '▲' : '▼';
+  });
+  activeBins.sort((a, b) => b.vol - a.vol);
+
+  const topNodes = activeBins.slice(0, 8).map((node, idx) => {
+    const rank = idx + 1;
+    return {
+      rank,
+      price: node.price,
+      priceStr: `$${node.price.toFixed(2)}`,
+      isVpoc: rank === 1,
+      vol: node.vol,
+      volStr: `${node.vol}v`,
+      bullVol: node.bullVol,
+      bullStr: `${node.bullVol}v`,
+      bearVol: node.bearVol,
+      bearStr: `${node.bearVol}v`,
+      delta: node.delta,
+      bias: node.bias,
+      touchBars: node.touchBars
+    };
+  });
+
+  // 7. Dynamic Order Flow Lines marked strictly on chart inside [minX, maxX]
+  // Node #1 (VPOC): Solid Cyan (#00f0ff, size 1.8)
+  // Secondary Top Nodes: Dashed lines colored by Bias (#10b981 Bull / #ef4444 Bear)
   const lines = [];
-  // Line 1: VPOC (peak volume anchor)
-  lines.push({
-    id: 'vpoc',
-    name: 'VPOC',
-    price: vpocCenter,
-    color: '#00f0ff',
-    style: 'solid',
-    size: 1.6,
-    vol: vpocVol,
-    sharePct: `${vpocSharePct}%`,
-    delta: vpocDelta,
-    buyPct: vpocStats.buyPct,
-    tests: vpocStats.tests,
-    impulse: vpocImpulse
+  if (topNodes.length > 0) {
+    const vpoc = topNodes[0];
+    lines.push({
+      id: 'vpoc',
+      name: '#1 VPOC',
+      price: vpoc.price,
+      color: '#00f0ff',
+      style: 'solid',
+      size: 1.8,
+      node: vpoc
+    });
+
+    const minPriceDist = binStep * 2;
+    for (let i = 1; i < topNodes.length && lines.length < 4; i++) {
+      const node = topNodes[i];
+      const isTooClose = lines.some(l => Math.abs(l.price - node.price) < minPriceDist);
+      if (!isTooClose) {
+        lines.push({
+          id: `node_${node.rank}`,
+          name: `#${node.rank} Node`,
+          price: node.price,
+          color: node.bias === '▲' ? '#10b981' : '#ef4444',
+          style: 'dashed',
+          dashedValue: [6, 4],
+          size: 1.4,
+          node
+        });
+      }
+    }
+  }
+
+  // 8. Physical Trail Wave Ledger Calculator for Top Nodes
+  const wavesMap = {};
+  topNodes.forEach(node => {
+    wavesMap[node.rank] = computeNodeWaves(node, intersectingBars, binStep);
   });
-
-  // Line 2: Shelf Top (if distinct from VPOC)
-  if (Math.abs(thinnedTop - vpocCenter) >= binStep * 0.8) {
-    const topShare = parseFloat(((shelfTopVol / totalVol) * 100).toFixed(1));
-    lines.push({
-      id: 'shelf_top',
-      name: `${shelfLabel} Top`,
-      price: thinnedTop,
-      color: shelfColor,
-      style: 'dashed',
-      dashedValue: [6, 4],
-      size: 1.5,
-      vol: shelfTopVol,
-      sharePct: `${topShare}%`,
-      delta: shelfTopDelta,
-      buyPct: shelfTopStats.buyPct,
-      tests: shelfTopStats.tests,
-      impulse: shelfTopImpulse
-    });
-  }
-
-  // Line 3: Shelf Bot (if distinct from VPOC and Shelf Top)
-  if (Math.abs(thinnedBot - vpocCenter) >= binStep * 0.8 && Math.abs(thinnedBot - thinnedTop) >= binStep * 0.8) {
-    const botShare = parseFloat(((shelfBotVol / totalVol) * 100).toFixed(1));
-    lines.push({
-      id: 'shelf_bot',
-      name: `${shelfLabel} Bot`,
-      price: thinnedBot,
-      color: shelfColor,
-      style: 'dashed',
-      dashedValue: [6, 4],
-      size: 1.5,
-      vol: shelfBotVol,
-      sharePct: `${botShare}%`,
-      delta: shelfBotDelta,
-      buyPct: shelfBotStats.buyPct,
-      tests: shelfBotStats.tests,
-      impulse: shelfBotImpulse
-    });
-  }
-
-  // Line 4: Vacuum LVN (ONLY if real void exists)
-  if (hasVacuum && lvnCenter !== null && Math.abs(lvnCenter - vpocCenter) >= binStep * 1.5) {
-    lines.push({
-      id: 'vacuum',
-      name: 'Vacuum',
-      price: lvnCenter,
-      color: '#f59e0b',
-      style: 'dashed',
-      dashedValue: [4, 4],
-      size: 1.4,
-      vol: lvnVol,
-      sharePct: `${lvnSharePct}%`,
-      delta: lvnDelta,
-      buyPct: lvnStats.buyPct,
-      tests: lvnStats.tests,
-      impulse: lvnImpulse
-    });
-  }
-
-  // Line 5: Fulcrum (True VWAP center of mass)
-  if (Math.abs(fulcrumPrice - vpocCenter) >= binStep * 0.5) {
-    lines.push({
-      id: 'fulcrum',
-      name: 'Fulcrum',
-      price: fulcrumPrice,
-      color: '#fbbf24',
-      style: 'dashed',
-      dashedValue: [2, 3],
-      size: 1.4,
-      vol: fulcrumStats.tests,
-      sharePct: 'VWAP',
-      delta: fulcrumStats.delta,
-      buyPct: fulcrumStats.buyPct,
-      tests: fulcrumStats.tests,
-      impulse: fulcrumImpulse
-    });
-  }
 
   return {
     isEmpty: false,
     topPrice,
     bottomPrice,
     height,
-    totalVol,
-    totalDelta,
-    buyVol,
-    sellVol,
-    buyPct: totalVol > 0 ? Math.round((buyVol / totalVol) * 100) : 50,
-    sellPct: totalVol > 0 ? Math.round((sellVol / totalVol) * 100) : 50,
+    totalRangeVol,
+    totalBullVol,
+    totalBearVol,
+    bullRatio,
+    bearRatio,
     barCount: intersectingBars.length,
     totalSpanBars: timeBars.length,
-    ker,
-    frictionPct,
-    waveExcursion,
-    isUp,
     lines,
+    topNodes,
+    wavesMap,
     leftTime,
     rightTime
   };
@@ -5800,17 +5671,171 @@ export function computeBoxOrderflowShading(overlay, dataList) {
 window.__computeBoxOrderflowShading = computeBoxOrderflowShading;
 
 /**
+ * Computes the True Physical Trail Wave Ledger (W1...WN, GAP, ORIGIN, DWELL, VOL, SLIP, EXIT DISP, EFFORT)
+ * for a specific price node based on intersecting bars.
+ */
+function computeNodeWaves(node, intersectingBars, binStep) {
+  if (!node || !intersectingBars || intersectingBars.length === 0) {
+    return { waves: [], pattern: 'AUCTION ROTATION', vectorStr: '+0.00p (BALANCED)' };
+  }
+
+  const targetPrice = node.price;
+  const tol = Math.max(0.08, binStep * 0.85);
+
+  // Group contiguous touches or tests into discrete waves
+  const rawWaves = [];
+  let curGroup = [];
+
+  intersectingBars.forEach(b => {
+    const touches = (b.low <= targetPrice + tol && b.high >= targetPrice - tol);
+    if (touches) {
+      curGroup.push(b);
+    } else if (curGroup.length > 0) {
+      rawWaves.push([...curGroup]);
+      curGroup = [];
+    }
+  });
+  if (curGroup.length > 0) {
+    rawWaves.push([...curGroup]);
+  }
+
+  // Fallback to nearest bars if no discrete separate waves
+  if (rawWaves.length === 0) {
+    const sortedByDist = [...intersectingBars].sort((a, b) => {
+      const distA = Math.min(Math.abs(a.high - targetPrice), Math.abs(a.low - targetPrice));
+      const distB = Math.min(Math.abs(b.high - targetPrice), Math.abs(b.low - targetPrice));
+      return distA - distB;
+    });
+    const topClosest = sortedByDist.slice(0, 3);
+    topClosest.sort((a, b) => a.timestamp - b.timestamp);
+    topClosest.forEach(b => rawWaves.push([b]));
+  }
+
+  const waveRows = [];
+  const dispVector = [];
+  let prevEndTime = null;
+
+  const displayWaves = rawWaves.slice(-5);
+  displayWaves.forEach((wBars, idx) => {
+    const waveNum = `W${idx + 1}`;
+    const firstB = wBars[0];
+    const lastB = wBars[wBars.length - 1];
+    const timeStr = new Date(firstB.timestamp).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+
+    // GAP
+    let gapStr = 'Init';
+    if (prevEndTime !== null) {
+      const diffMins = Math.round((firstB.timestamp - prevEndTime) / 60000);
+      if (diffMins >= 1) gapStr = `+${diffMins}m`;
+      else {
+        const diffSecs = Math.max(1, Math.round((firstB.timestamp - prevEndTime) / 1000));
+        gapStr = `+${diffSecs}s`;
+      }
+    }
+    prevEndTime = lastB.timestamp;
+
+    // ORIGIN
+    const originDelta = firstB.open - targetPrice;
+    const originSign = originDelta >= 0 ? '▲' : '▼';
+    const originStr = `$${firstB.open.toFixed(2)} (${originSign}${Math.abs(originDelta).toFixed(2)})`;
+
+    // DWELL
+    const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
+    const dwellSec = Math.max(1, wBars.length * (tfMins >= 5 ? 45 : 15));
+    let dwellStr = `${dwellSec}s`;
+    if (dwellSec >= 60) {
+      const m = Math.floor(dwellSec / 60);
+      const s = dwellSec % 60;
+      dwellStr = s > 0 ? `${m}m ${s}s` : `${m}m`;
+    }
+
+    // VOL (Δ)
+    let wVol = 0;
+    let wBull = 0;
+    let wBear = 0;
+    wBars.forEach(b => {
+      const v = Number(b.volume || b.tick_volume || 1);
+      wVol += v;
+      if (b.close >= b.open) wBull += v * 0.6;
+      else wBear += v * 0.6;
+    });
+    wVol = Math.round(wVol);
+    const wDelta = Math.round(wBull - wBear);
+    const dSign = wDelta >= 0 ? '+' : '';
+    const volStr = `${wVol}v (Δ${dSign}${wDelta})`;
+
+    // SLIP
+    const minLow = Math.min(...wBars.map(b => b.low));
+    const maxHigh = Math.max(...wBars.map(b => b.high));
+    const slipVal = (targetPrice >= (firstB.open + firstB.close) / 2)
+      ? (targetPrice - minLow)
+      : (maxHigh - targetPrice);
+    const slipSign = slipVal >= 0 ? '+' : '-';
+    const slipStr = `${slipSign}${Math.abs(slipVal).toFixed(2)}p`;
+
+    // EXIT DISP
+    const exitDispVal = parseFloat((lastB.close - targetPrice).toFixed(2));
+    const exitSign = exitDispVal >= 0 ? '+' : '';
+    const exitDispStr = `${exitSign}${exitDispVal.toFixed(2)}p`;
+    dispVector.push(exitDispStr);
+
+    // EFFORT/RES (v/pt)
+    const effPt = Math.max(0.1, Math.abs(exitDispVal));
+    const effortVal = Math.round(wVol / effPt);
+    const effStr = `${effortVal} v/pt`;
+
+    waveRows.push({
+      wave: `${waveNum} ${timeStr}`,
+      gap: gapStr,
+      origin: originStr,
+      dwell: dwellStr,
+      vol: volStr,
+      slip: slipStr,
+      disp: exitDispStr,
+      dispVal: exitDispVal,
+      eff: effStr,
+      effortVal
+    });
+  });
+
+  // Classify pattern matching Image 2
+  let pattern = 'ABSORPTION WALL DECAY';
+  if (waveRows.length >= 2) {
+    const lastDisp = Math.abs(waveRows[waveRows.length - 1].dispVal);
+    const lastEffort = waveRows[waveRows.length - 1].effortVal;
+
+    if (lastDisp <= 0.20 && lastEffort >= 80) {
+      pattern = 'ABSORPTION WALL DECAY';
+    } else if (lastDisp >= 1.5 && lastEffort < 50) {
+      pattern = 'KINETIC VACUUM FLIGHT';
+    } else if (waveRows[waveRows.length - 1].dispVal < -0.5) {
+      pattern = 'CEILING DEFENSE WALL';
+    } else if (waveRows[waveRows.length - 1].dispVal > +0.5) {
+      pattern = 'PRIMARY ACCUMULATION SHELF';
+    } else {
+      pattern = 'ABSORPTION WALL DECAY';
+    }
+  }
+
+  const vectorStr = dispVector.length > 0
+    ? `${dispVector.join(' → ')} (${pattern.split(' ')[0]}/ABSORBED)`
+    : '+0.00p (BALANCED)';
+
+  return {
+    waves: waveRows,
+    pattern,
+    vectorStr
+  };
+}
+
+/**
  * Synchronizes Order Flow Thinning Lines directly onto the chart canvas
  * as dedicated boxOrderflowZone overlays.
- * Pure lines only: VPOC (Solid Cyan), Thinned Shelf Bounds (Dashed Emerald/Crimson),
- * Vacuum Void (Dashed Amber), Invariant Retest Fulcrum (Dotted Gold).
- * Zero polygon fills, zero text labels over candles.
  */
 export function syncBoxOrderflowShading(chart) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
   if (!c || typeof c.getOverlays !== 'function') return;
 
-  // Clean up any old external orderflow line overlays
   const existing = c.getOverlays() || [];
   existing.forEach(o => {
     if (o.name === 'boxOrderflowZone' || (o.id && o.id.startsWith('box_of_'))) {
@@ -5818,7 +5843,6 @@ export function syncBoxOrderflowShading(chart) {
     }
   });
 
-  // Force KlineCharts to re-render all rect overlays so lines show/hide synchronously
   const rects = existing.filter(o => o.name === 'rect');
   rects.forEach(rect => {
     try {
@@ -5826,21 +5850,11 @@ export function syncBoxOrderflowShading(chart) {
     } catch (_) {}
   });
 
-  // Update In-Box Orderflow & Physical Metrics Table HUD
   updateBoxOrderflowMetricsHud(c);
 }
 window.__syncBoxOrderflowShading = syncBoxOrderflowShading;
 
-/**
- * Updates the floating In-Box Orderflow & Physical Trail Metrics Table HUD
- * positioned directly under the MT5 LIVE pill.
- * Renders real physical numbers (NOT labels) for VPOC, Thinned Shelf, Vacuum,
- * Fulcrum, and Global Box Domination/Efficiency.
- */
 let _hudUpdateTimer = null;
-/**
- * Schedules a throttled HUD update during interactive drag/resize events.
- */
 export function scheduleBoxOfHudUpdate(overlay) {
   if (_hudUpdateTimer) clearTimeout(_hudUpdateTimer);
   _hudUpdateTimer = setTimeout(() => {
@@ -5850,13 +5864,14 @@ export function scheduleBoxOfHudUpdate(overlay) {
 }
 window.__scheduleBoxOfHudUpdate = scheduleBoxOfHudUpdate;
 
+// Current inspected node rank inside HUD (defaults to 1 = VPOC)
+let _currentInspectedNodeRank = 1;
+
 /**
- * Updates the floating In-Box Orderflow & Physical Trail Metrics Table HUD
+ * Updates the floating In-Box Volume Profile // Top 8 Nodes & True Physical Trail Waves Inspector HUD
  * positioned directly under the MT5 LIVE pill.
- * Renders pure numbers (zero text labels): PRICE, VOL, SHARE%, DELTA, BUY%, TESTS, DIST.
- * Keeps HUD compact (~375px) without obscuring candles.
  */
-export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
+export function updateBoxOrderflowMetricsHud(chart, targetOverlay, inspectRankOverride = null) {
   const c = chart || chartInstance || (typeof window !== 'undefined' && window.__chartInstance);
   const hudEl = document.getElementById('tvBoxOrderflowMetricsHud');
   if (!hudEl) return;
@@ -5880,7 +5895,6 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
     return;
   }
 
-  // Use target overlay or the latest drawn box
   const rect = targetOverlay || (rects.length > 0 ? rects[rects.length - 1] : null);
   if (!rect) {
     hudEl.style.display = 'none';
@@ -5894,131 +5908,223 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay) {
     return;
   }
 
-  const lastBar = dataList[dataList.length - 1];
-  const spotPrice = (lastBar && lastBar.close) ? lastBar.close : ((typeof window !== 'undefined' && window.__lastKnownSpot) || res.vpocCenter);
+  if (inspectRankOverride !== null) {
+    _currentInspectedNodeRank = inspectRankOverride;
+  }
 
-  // Format Helpers
-  const fmtVol = (v) => (v >= 1000 ? (v / 1000).toFixed(1) + 'K' : v.toString());
-  const fmtDelta = (d) => (d > 0 ? `+${d}` : d.toString());
-  const deltaClass = (d) => (d > 0 ? 'delta-pos' : (d < 0 ? 'delta-neg' : ''));
-  // Helper: Format Big Move Launch Impulse & Entry Trigger
-  const fmtImpulse = (impulseVal, linePrice) => {
-    const isAtTrigger = Math.abs(spotPrice - linePrice) <= 1.5;
-    const sign = impulseVal > 0 ? '+' : '';
-    const formatted = `${sign}${impulseVal.toFixed(1)}p`;
-    if (isAtTrigger) {
-      return `<span style="color: #00f0ff; font-weight: 900; text-shadow: 0 0 6px rgba(0, 240, 255, 0.75);">⚡${formatted}</span>`;
-    }
-    const color = impulseVal > 0 ? '#10b981' : (impulseVal < 0 ? '#ef4444' : '#94a3b8');
-    return `<span style="color: ${color}; font-weight: 700;">${formatted}</span>`;
-  };
+  const lastBar = dataList[dataList.length - 1];
+  const spotPrice = (lastBar && lastBar.close) ? lastBar.close : ((typeof window !== 'undefined' && window.__lastKnownSpot) || null);
+
+  const badgeEl = document.getElementById('tvBoxOfHudBadge');
+  const emptyWarn = document.getElementById('tvBoxOfEmptyWarning');
+  const emptyRangeText = document.getElementById('tvBoxEmptyRangeText');
+  const dualWrap = document.getElementById('tvBoxOfDualWrap');
 
   // Handle Empty Box (drawn in empty space where no candles touched or traded)
-  const badgeEl = document.getElementById('tvBoxOfHudBadge');
-  const statVol = document.getElementById('tvBoxOfStatVol');
-  const statBars = document.getElementById('tvBoxOfStatBars');
-  const statDelta = document.getElementById('tvBoxOfStatDelta');
-  const statDeltaRatio = document.getElementById('tvBoxOfStatDeltaRatio');
-  const statKer = document.getElementById('tvBoxOfStatKer');
-  const statFriction = document.getElementById('tvBoxOfStatFriction');
-  const statExcursion = document.getElementById('tvBoxOfStatExcursion');
-  const statSpan = document.getElementById('tvBoxOfStatSpan');
-  const tbody = document.getElementById('tvBoxOfTableRows');
-  const fpState = document.getElementById('tvBoxOfFootprintState');
-  const spotDist = document.getElementById('tvBoxOfSpotDist');
-
   if (res.isEmpty) {
     if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (EMPTY)`;
-    if (statVol) statVol.textContent = '0';
-    if (statBars) statBars.textContent = `0 bars (${res.totalSpanBars} span)`;
-    if (statDelta) {
-      statDelta.textContent = '0 CVD';
-      statDelta.className = 'tv-box-of-stat-val';
-    }
-    if (statDeltaRatio) statDeltaRatio.textContent = '--';
-    if (statKer) statKer.textContent = '-- (No Trades)';
-    if (statFriction) statFriction.textContent = '0% Friction';
-    if (statExcursion) {
-      statExcursion.textContent = '0.00 pts';
-      statExcursion.className = 'tv-box-of-stat-val';
-    }
-    if (statSpan) statSpan.textContent = `Box: ${res.height.toFixed(2)}p`;
-
-    if (tbody) {
-      tbody.innerHTML = `
-        <tr>
-          <td colspan="9" style="text-align: center; padding: 18px 8px; color: #64748b; font-family: monospace;">
-            <div style="font-weight: 800; color: #94a3b8; font-size: 10.5px; margin-bottom: 4px;">⚠️ EMPTY SPACE — ZERO CANDLES IN RANGE</div>
-            <div style="font-size: 9px; color: #64748b;">Traded Price Window: $${res.bottomPrice.toFixed(2)} — $${res.topPrice.toFixed(2)}</div>
-            <div style="margin-top: 5px; font-size: 8.5px; color: #475569;">No order flow executed inside this box. Drag or resize over active candles.</div>
-          </td>
-        </tr>
-      `;
-    }
-
-    if (fpState) {
-      fpState.innerHTML = `AUCTION: <strong style="color: #64748b;">EMPTY SPACE (NO TRADES)</strong>`;
-    }
-    if (spotDist) {
-      spotDist.textContent = `SPOT: $${spotPrice.toFixed(2)} (Empty Box)`;
-    }
+    if (emptyWarn) emptyWarn.style.display = 'block';
+    if (emptyRangeText) emptyRangeText.textContent = `Traded Price Window: $${res.bottomPrice.toFixed(2)} — $${res.topPrice.toFixed(2)}`;
+    if (dualWrap) dualWrap.style.display = 'none';
     hudEl.style.display = 'block';
     return;
   }
 
-  // --- NON-EMPTY BOX: True Physical Orderflow Rendering ---
-  if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (${res.isUp ? 'ACCUM' : 'DISTRIB'})`;
+  // Active Non-Empty Box
+  if (badgeEl) badgeEl.textContent = `BOX ${boxIdx}`;
+  if (emptyWarn) emptyWarn.style.display = 'none';
+  if (dualWrap) dualWrap.style.display = 'flex';
 
-  if (statVol) statVol.textContent = fmtVol(res.totalVol);
-  if (statBars) statBars.textContent = `${res.barCount} bars in box`;
-  if (statDelta) {
-    statDelta.textContent = `${fmtDelta(res.totalDelta)} CVD`;
-    statDelta.className = `tv-box-of-stat-val ${deltaClass(res.totalDelta)}`;
+  // 1. Header & Summary Stats
+  const rangeText = document.getElementById('tvBoxVpRangeText');
+  if (rangeText) {
+    rangeText.textContent = `BULL/BEAR RANGE: $${res.bottomPrice.toFixed(2)} - $${res.topPrice.toFixed(2)}`;
   }
-  if (statDeltaRatio) statDeltaRatio.textContent = `${res.buyPct}% B / ${res.sellPct}% S`;
-  if (statKer) {
-    const kerTag = res.ker >= 0.65 ? 'Slick' : (res.ker <= 0.35 ? 'Churn' : 'Normal');
-    statKer.textContent = `${res.ker.toFixed(2)} (${kerTag})`;
-  }
-  if (statFriction) statFriction.textContent = `+${res.frictionPct}% Friction`;
-  if (statExcursion) {
-    const excDir = res.waveExcursion >= 0 ? '+' : '';
-    statExcursion.textContent = `${excDir}${res.waveExcursion.toFixed(2)} pts`;
-    statExcursion.className = `tv-box-of-stat-val ${res.waveExcursion >= 0 ? 'delta-pos' : 'delta-neg'}`;
-  }
-  if (statSpan) statSpan.textContent = `Box: ${res.height.toFixed(2)}p`;
 
-  // Update Dynamic Table Rows strictly from genuine physical lines
-  if (tbody) {
-    tbody.innerHTML = (res.lines || []).map(line => `
-      <tr>
-        <td><span class="tv-box-of-swatch" style="${line.style === 'solid' ? `background: ${line.color}; box-shadow: 0 0 5px ${line.color};` : `border-top: 2px ${line.style} ${line.color};`}"></span></td>
-        <td style="color: ${line.color}; font-weight: 700;">${line.name}</td>
-        <td style="text-align: right; color: #ffffff; font-weight: 700;">$${line.price.toFixed(2)}</td>
-        <td style="text-align: right; color: #e2e8f0;">${fmtVol(line.vol)}</td>
-        <td style="text-align: right; color: ${line.color}; font-weight: 700;">${line.sharePct}</td>
-        <td style="text-align: right;" class="${deltaClass(line.delta)}">${fmtDelta(line.delta)}</td>
-        <td style="text-align: right; color: ${line.buyPct >= 50 ? '#10b981' : '#ef4444'}; font-weight: 700;">${line.buyPct}%</td>
-        <td style="text-align: right; color: #e2e8f0;">${line.tests}x</td>
-        <td style="text-align: right;">${fmtImpulse(line.impulse, line.price)}</td>
+  const spreadVal = document.getElementById('tvBoxVpSpreadVal');
+  if (spreadVal) {
+    spreadVal.textContent = `$${res.height.toFixed(2)} (${(res.height * 10).toFixed(1)}p)`;
+  }
+
+  const totalVolEl = document.getElementById('tvBoxVpTotalVol');
+  if (totalVolEl) {
+    totalVolEl.textContent = `${res.totalRangeVol}v`;
+  }
+
+  const ratioEl = document.getElementById('tvBoxVpRatio');
+  if (ratioEl) {
+    ratioEl.textContent = `${res.bullRatio}% / ${res.bearRatio}%`;
+  }
+
+  // 2. Volume Profile Table Rows
+  const vpTbody = document.getElementById('tvBoxVpTableRows');
+  if (vpTbody && Array.isArray(res.topNodes)) {
+    let rowsHtml = '';
+
+    // Live Pivot row (if spot is inside the box)
+    if (spotPrice !== null && spotPrice >= res.bottomPrice && spotPrice <= res.topPrice) {
+      const isUp = lastBar ? (lastBar.close >= lastBar.open) : true;
+      const liveVol = lastBar ? Math.round(Number(lastBar.volume || lastBar.tick_volume || 1) * 0.1) : 3;
+      const liveBull = isUp ? liveVol : 0;
+      const liveBear = isUp ? 0 : liveVol;
+      rowsHtml += `
+        <tr class="tv-box-vp-live-row" style="background: rgba(0, 240, 255, 0.08);">
+          <td style="color: #00f0ff; text-align: center;"><span class="tv-box-dot-cyan animate-pulse">●</span></td>
+          <td style="color: #ffffff; font-weight: 800;">$${spotPrice.toFixed(2)} <span class="tv-box-vp-tag">PIVOT</span></td>
+          <td style="text-align: right; color: #fbbf24; font-weight: 700;">${liveVol}v</td>
+          <td style="text-align: right; color: #10b981;">${liveBull}v</td>
+          <td style="text-align: right; color: #ef4444;">${liveBear}v</td>
+          <td style="text-align: center; font-weight: 800;" class="${isUp ? 'text-bull' : 'text-bear'}">${isUp ? '▲' : '▼'}</td>
+        </tr>
+      `;
+    }
+
+    // Historical Section Divider
+    rowsHtml += `
+      <tr class="tv-box-vp-divider-row">
+        <td colspan="6">─── HISTORICAL VOLUME PROFILE (TOP 8) ───</td>
       </tr>
-    `).join('');
+    `;
+
+    // Top Nodes
+    res.topNodes.forEach(node => {
+      const isInspected = (node.rank === _currentInspectedNodeRank);
+      rowsHtml += `
+        <tr class="tv-box-vp-node-row ${isInspected ? 'active-inspect' : ''}" data-rank="${node.rank}">
+          <td style="color: #00f0ff; font-weight: 800;">#${node.rank}</td>
+          <td style="color: #ffffff; font-weight: 800;">
+            $${node.price.toFixed(2)} ${node.isVpoc ? '<span class="tv-box-vpoc-tag">VPOC</span>' : ''}
+          </td>
+          <td style="text-align: right; color: #fbbf24; font-weight: 700;">${node.volStr}</td>
+          <td style="text-align: right; color: #10b981;">${node.bullStr}</td>
+          <td style="text-align: right; color: #ef4444;">${node.bearStr}</td>
+          <td style="text-align: center; font-weight: 800;" class="${node.bias === '▲' ? 'text-bull' : 'text-bear'}">${node.bias}</td>
+        </tr>
+      `;
+    });
+
+    vpTbody.innerHTML = rowsHtml;
+
+    // Attach row inspection listeners
+    vpTbody.querySelectorAll('.tv-box-vp-node-row').forEach(row => {
+      const rank = parseInt(row.getAttribute('data-rank'), 10);
+      row.addEventListener('mouseenter', () => {
+        _currentInspectedNodeRank = rank;
+        vpTbody.querySelectorAll('.tv-box-vp-node-row').forEach(r => r.classList.remove('active-inspect'));
+        row.classList.add('active-inspect');
+        renderTrailWavesPanel(res, rank);
+      });
+      row.addEventListener('click', () => {
+        _currentInspectedNodeRank = rank;
+        vpTbody.querySelectorAll('.tv-box-vp-node-row').forEach(r => r.classList.remove('active-inspect'));
+        row.classList.add('active-inspect');
+        renderTrailWavesPanel(res, rank);
+      });
+    });
+
+    const auditInput = document.getElementById('tvBoxAuditInput');
+    if (auditInput && !auditInput.__boundListener) {
+      auditInput.__boundListener = true;
+      auditInput.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value.replace(/[^0-9.]/g, ''));
+        if (!isNaN(val) && val > 0 && res.topNodes.length > 0) {
+          let closest = res.topNodes[0];
+          let minDist = Math.abs(closest.price - val);
+          res.topNodes.forEach(n => {
+            const d = Math.abs(n.price - val);
+            if (d < minDist) {
+              minDist = d;
+              closest = n;
+            }
+          });
+          _currentInspectedNodeRank = closest.rank;
+          vpTbody.querySelectorAll('.tv-box-vp-node-row').forEach(r => {
+            const rRank = parseInt(r.getAttribute('data-rank'), 10);
+            if (rRank === closest.rank) r.classList.add('active-inspect');
+            else r.classList.remove('active-inspect');
+          });
+          renderTrailWavesPanel(res, closest.rank);
+        }
+      });
+    }
   }
 
-  // Update Footer
-  if (fpState) {
-    const stateStr = res.ker >= 0.65 ? 'DIRECTIONAL CONVICTION' : (res.frictionPct >= 50 ? 'HIGH FRICTION CHURN' : 'BALANCED VALUE ROTATION');
-    fpState.innerHTML = `AUCTION: <strong style="color: ${res.isUp ? '#10b981' : '#ef4444'};">${stateStr}</strong>`;
-  }
-  if (spotDist) {
-    const vpocLine = (res.lines || []).find(l => l.id === 'vpoc');
-    const vpocP = vpocLine ? vpocLine.price : res.bottomPrice;
-    const distToVpoc = (spotPrice - vpocP).toFixed(1);
-    const distSign = spotPrice >= vpocP ? '+' : '';
-    spotDist.textContent = `SPOT: $${spotPrice.toFixed(2)} (${distSign}${distToVpoc}p to VPOC)`;
-  }
+  // 3. Render Panel B (Physical Trail Waves Inspector)
+  renderTrailWavesPanel(res, _currentInspectedNodeRank);
 
   hudEl.style.display = 'block';
+}
+window.__updateBoxOrderflowMetricsHud = updateBoxOrderflowMetricsHud;
+
+/**
+ * Renders Panel B (True Physical Trail Waves Inspector) for the given node rank.
+ */
+function renderTrailWavesPanel(res, targetRank) {
+  if (!res || !res.topNodes) return;
+
+  const node = res.topNodes.find(n => n.rank === targetRank) || res.topNodes[0];
+  if (!node) return;
+
+  const wavesData = (res.wavesMap && res.wavesMap[node.rank]) || computeNodeWaves(node, [], 0.1);
+
+  const rankEl = document.getElementById('tvBoxTrailNodeRank');
+  if (rankEl) rankEl.textContent = `#${node.rank}`;
+
+  const priceEl = document.getElementById('tvBoxTrailNodePrice');
+  if (priceEl) priceEl.textContent = `$${node.price.toFixed(2)}`;
+
+  const vpocEl = document.getElementById('tvBoxTrailNodeVpoc');
+  if (vpocEl) vpocEl.style.display = node.isVpoc ? 'inline-block' : 'none';
+
+  const biasEl = document.getElementById('tvBoxTrailNodeBias');
+  if (biasEl) {
+    biasEl.textContent = node.bias;
+    biasEl.className = `tv-box-trail-bias ${node.bias === '▲' ? 'text-bull' : 'text-bear'}`;
+  }
+
+  const volSplitEl = document.getElementById('tvBoxTrailNodeVolSplit');
+  if (volSplitEl) {
+    volSplitEl.textContent = `${node.vol}v (${node.bullVol}b/${node.bearVol}s)`;
+  }
+
+  const patternEl = document.getElementById('tvBoxTrailPatternName');
+  if (patternEl) {
+    patternEl.textContent = wavesData.pattern;
+  }
+
+  const vectorEl = document.getElementById('tvBoxTrailVectorStr');
+  if (vectorEl) {
+    vectorEl.textContent = wavesData.vectorStr;
+  }
+
+  const wavesTbody = document.getElementById('tvBoxTrailWavesRows');
+  if (wavesTbody) {
+    if (!wavesData.waves || wavesData.waves.length === 0) {
+      wavesTbody.innerHTML = `
+        <tr>
+          <td colspan="8" style="text-align: center; color: #64748b; padding: 12px 6px;">
+            No wave interactions recorded at this price node.
+          </td>
+        </tr>
+      `;
+    } else {
+      wavesTbody.innerHTML = wavesData.waves.map((w, idx) => {
+        const isLatest = (idx === wavesData.waves.length - 1);
+        return `
+          <tr class="${isLatest ? 'active-wave' : ''}">
+            <td style="color: #00f0ff; font-weight: 700;">${w.wave}</td>
+            <td style="text-align: center; color: #94a3b8;">${w.gap}</td>
+            <td style="color: #ffffff;">${w.origin}</td>
+            <td style="text-align: center; color: #fbbf24; font-weight: 700;">${w.dwell}</td>
+            <td style="text-align: right; color: #e2e8f0;">${w.vol}</td>
+            <td style="text-align: right; color: ${w.slip.startsWith('+') ? '#10b981' : '#ef4444'}; font-weight: 700;">${w.slip}</td>
+            <td style="text-align: right; color: ${w.disp.startsWith('+') ? '#10b981' : '#ef4444'}; font-weight: 800;">${w.disp}</td>
+            <td style="text-align: right; color: #00f0ff; font-weight: 700;">${w.eff}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+  }
 }
 window.__updateBoxOrderflowMetricsHud = updateBoxOrderflowMetricsHud;
 

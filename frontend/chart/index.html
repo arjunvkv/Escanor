@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611112355">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611121145">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -343,13 +343,13 @@
           <span id="tvLatencyBadge" style="color: var(--tv-text-secondary);">-- ms</span>
         </div>
 
-        <!-- Floating In-Box Order Flow & Physical Trail Metrics Table HUD (Under MT5 LIVE Pill) -->
+        <!-- Floating In-Box Volume Profile // Top 8 Nodes & True Physical Trail Waves Inspector HUD -->
         <div id="tvBoxOrderflowMetricsHud" class="tv-box-of-hud" style="display: none;">
           <div id="tvBoxOfHudHeader" class="tv-box-of-hud-header">
             <div class="tv-box-of-hud-title">
               <span class="tv-box-of-hud-pulse"></span>
               <span class="tv-box-of-hud-icon">⚡</span>
-              <span class="tv-box-of-hud-text">IN-BOX ORDERFLOW & PHYSICAL TRAIL</span>
+              <span class="tv-box-of-hud-text">IN-BOX VOLUME PROFILE & TRUE PHYSICAL TRAIL</span>
             </div>
             <div class="tv-box-of-hud-controls">
               <span id="tvBoxOfHudBadge" class="tv-box-of-badge">BOX 1</span>
@@ -357,54 +357,132 @@
             </div>
           </div>
           <div id="tvBoxOfHudBody" class="tv-box-of-hud-body">
-            <!-- Global Box Area Physical Trail Metrics Grid -->
-            <div class="tv-box-of-area-grid">
-              <div class="tv-box-of-stat-item">
-                <span class="tv-box-of-stat-label">BOX VOLUME</span>
-                <span id="tvBoxOfStatVol" class="tv-box-of-stat-val">--</span>
-                <span id="tvBoxOfStatBars" class="tv-box-of-stat-sub">-- bars</span>
-              </div>
-              <div class="tv-box-of-stat-item">
-                <span class="tv-box-of-stat-label">NET CVD / DELTA</span>
-                <span id="tvBoxOfStatDelta" class="tv-box-of-stat-val">-- CVD</span>
-                <span id="tvBoxOfStatDeltaRatio" class="tv-box-of-stat-sub">--% B / --% S</span>
-              </div>
-              <div class="tv-box-of-stat-item">
-                <span class="tv-box-of-stat-label">EFFICIENCY (KER)</span>
-                <span id="tvBoxOfStatKer" class="tv-box-of-stat-val text-cyan">--</span>
-                <span id="tvBoxOfStatFriction" class="tv-box-of-stat-sub">+0% Friction</span>
-              </div>
-              <div class="tv-box-of-stat-item">
-                <span class="tv-box-of-stat-label">WAVE EXCURSION</span>
-                <span id="tvBoxOfStatExcursion" class="tv-box-of-stat-val text-amber">-- pts</span>
-                <span id="tvBoxOfStatSpan" class="tv-box-of-stat-sub">Box: --p</span>
-              </div>
+            <!-- Empty Space Warning (shown when box is drawn where no candles exist) -->
+            <div id="tvBoxOfEmptyWarning" class="tv-box-empty-wrap" style="display: none;">
+              <div class="tv-box-empty-title">⚠️ EMPTY SPACE — ZERO CANDLES IN RANGE</div>
+              <div id="tvBoxEmptyRangeText" class="tv-box-empty-sub">Traded Price Window: $0.00 — $0.00</div>
+              <div class="tv-box-empty-note">No order flow executed inside this box. Drag or resize over active candles.</div>
             </div>
-            <!-- Lines Orderflow Table: Pure Numbers & Physical Values -->
-            <div class="tv-box-of-table-wrap">
-              <table class="tv-box-of-table">
-                <thead>
-                  <tr>
-                    <th style="width: 14px;">LINE</th>
-                    <th style="text-align: left;">LEVEL</th>
-                    <th style="text-align: right;">PRICE</th>
-                    <th style="text-align: right;">VOL</th>
-                    <th style="text-align: right;">SHARE%</th>
-                    <th style="text-align: right;">DELTA</th>
-                    <th style="text-align: right;">BUY%</th>
-                    <th style="text-align: right;">TESTS</th>
-                    <th style="text-align: right;" title="Breakout Impulse Displacement & Entry Launch Trigger">IMPULSE</th>
-                  </tr>
-                </thead>
-                <tbody id="tvBoxOfTableRows">
-                  <!-- Dynamically populated -->
-                </tbody>
-              </table>
-            </div>
-            <!-- Bottom Physical Footprint Trail Bar -->
-            <div class="tv-box-of-hud-footer">
-              <span id="tvBoxOfFootprintState">AUCTION: <strong>ANALYZING...</strong></span>
-              <span id="tvBoxOfSpotDist">SPOT: --</span>
+
+            <!-- Dual Panel Layout matching Image 2 -->
+            <div id="tvBoxOfDualWrap" class="tv-box-dual-wrap">
+              <!-- PANEL A: VOLUME PROFILE // TOP 8 NODES -->
+              <div class="tv-box-vp-panel">
+                <!-- Panel Header -->
+                <div class="tv-box-panel-hdr">
+                  <div class="tv-box-panel-title">
+                    <span class="tv-box-dot-cyan">●</span>
+                    <span>VOLUME PROFILE // TOP 8 NODES</span>
+                  </div>
+                  <div id="tvBoxVpRangeText" class="tv-box-range-sub">BULL/BEAR RANGE: $0.00 - $0.00</div>
+                </div>
+
+                <!-- 3-Stat Summary Box -->
+                <div class="tv-box-vp-stats-box">
+                  <div class="tv-box-vp-stat-col">
+                    <span class="tv-box-vp-stat-lbl">RANGE SPREAD</span>
+                    <span id="tvBoxVpSpreadVal" class="tv-box-vp-stat-num">$0.00 (0.0p)</span>
+                  </div>
+                  <div class="tv-box-vp-stat-col">
+                    <span class="tv-box-vp-stat-lbl">TOTAL RANGE VOL</span>
+                    <span id="tvBoxVpTotalVol" class="tv-box-vp-stat-num text-amber">0v</span>
+                  </div>
+                  <div class="tv-box-vp-stat-col">
+                    <span class="tv-box-vp-stat-lbl">BULL / BEAR RATIO</span>
+                    <span id="tvBoxVpRatio" class="tv-box-vp-stat-num text-cyan">50% / 50%</span>
+                  </div>
+                </div>
+
+                <!-- Audit Price Input Filter -->
+                <div class="tv-box-audit-input-wrap">
+                  <span class="tv-box-audit-dot">●</span>
+                  <input type="text" id="tvBoxAuditInput" class="tv-box-audit-input" placeholder="AUDIT $: Type any price (e.g. 3996.70)...">
+                </div>
+
+                <!-- Volume Profile Nodes Table -->
+                <div class="tv-box-vp-table-wrap">
+                  <table class="tv-box-vp-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 22px;">#</th>
+                        <th style="text-align: left;">PRICE</th>
+                        <th style="text-align: right;">VOLUME</th>
+                        <th style="text-align: right;">BULL</th>
+                        <th style="text-align: right;">BEAR</th>
+                        <th style="text-align: center; width: 34px;">BIAS</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tvBoxVpTableRows">
+                      <!-- Live Pivot Row & Top 8 Nodes -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Footer Subline -->
+                <div class="tv-box-vp-footer">
+                  <span class="tv-box-dot-green">●</span> <span>LIVE TICK ACCUMULATION</span>
+                  <span class="tv-box-footer-hint">HOVER ROW TO INSPECT REAL AUCTION</span>
+                </div>
+              </div>
+
+              <!-- PANEL B: TRUE PHYSICAL TRAIL WAVES INSPECTOR -->
+              <div class="tv-box-trail-panel">
+                <!-- Panel Header -->
+                <div class="tv-box-trail-hdr">
+                  <div class="tv-box-trail-hdr-left">
+                    <span id="tvBoxTrailNodeRank" class="tv-box-trail-rank">#1</span>
+                    <span id="tvBoxTrailNodePrice" class="tv-box-trail-price">$0.00</span>
+                    <span id="tvBoxTrailNodeVpoc" class="tv-box-trail-vpoc-badge">VPOC</span>
+                    <span id="tvBoxTrailNodeBias" class="tv-box-trail-bias text-bull">▲</span>
+                  </div>
+                  <div class="tv-box-trail-hdr-right">
+                    <span id="tvBoxTrailNodeVolSplit" class="tv-box-trail-vol-split">0v (0b/0s)</span>
+                    <span class="tv-box-trail-insp-tag">HOVER INSPECTOR</span>
+                  </div>
+                </div>
+
+                <!-- Pattern Banner -->
+                <div class="tv-box-trail-pattern-bar">
+                  <div class="tv-box-trail-pattern-left">
+                    <span class="tv-box-dot-cyan animate-pulse">●</span>
+                    <span>TRUE PHYSICAL TRAIL:</span>
+                  </div>
+                  <span id="tvBoxTrailPatternName" class="tv-box-trail-pattern-val">ABSORPTION WALL DECAY</span>
+                </div>
+
+                <!-- 8-Column Audited Waves Table -->
+                <div class="tv-box-trail-table-wrap">
+                  <table class="tv-box-trail-table">
+                    <thead>
+                      <tr>
+                        <th style="text-align: left;">WAVE</th>
+                        <th style="text-align: center;">GAP</th>
+                        <th style="text-align: left;">ORIGIN</th>
+                        <th style="text-align: center;" class="text-amber">DWELL</th>
+                        <th style="text-align: right;">VOL (Δ)</th>
+                        <th style="text-align: right;">SLIP</th>
+                        <th style="text-align: right;">EXIT DISP</th>
+                        <th style="text-align: right;" class="text-cyan">EFFORT/RES</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tvBoxTrailWavesRows">
+                      <!-- Dynamic Wave History -->
+                    </tbody>
+                  </table>
+                </div>
+
+                <!-- Displacement Vector Box -->
+                <div class="tv-box-trail-vector-box">
+                  <span class="tv-box-trail-vector-lbl">DISPLACEMENT VECTOR:</span>
+                  <span id="tvBoxTrailVectorStr" class="tv-box-trail-vector-val">+0.00p (BALANCED)</span>
+                </div>
+
+                <!-- Footer Subline -->
+                <div class="tv-box-trail-footer">
+                  <span class="text-cyan">100% AUDITED TICK AUCTION TRAIL</span>
+                  <span class="text-muted">GLIDE CURSOR OVER ROWS TO COMPARE</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1417,29 +1495,19 @@
                     <!-- 1. VPOC -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
                       <span style="display: inline-block; width: 20px; height: 3px; background: #00f0ff; margin-top: 5px; flex-shrink: 0; box-shadow: 0 0 6px #00f0ff; border-radius: 1px;"></span>
-                      <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0; font-weight: 600;">VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Point of maximum auction volume & institutional consensus.</span></div>
+                      <div><strong style="color: #00f0ff;">Solid Cyan:</strong> <span style="color: #e2e8f0; font-weight: 600;">#1 VPOC Core Anchor</span><br><span style="color: #94a3b8; font-size: 10px;">Peak transacted volume node inside the box (#1 VPOC).</span></div>
                     </div>
-                    <!-- 2. Thinned Drop Shelf (Red) -->
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #ef4444; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #ef4444;">Dashed Red (Crimson):</strong> <span style="color: #e2e8f0; font-weight: 600;">Thinned Drop Shelf (Distribution)</span><br><span style="color: #94a3b8; font-size: 10px;">Ceiling & floor where bids thinned out into a downward breakdown.</span></div>
-                    </div>
-                    <!-- 3. Thinned Launchpad Shelf (Green) -->
+                    <!-- 2. Bull-Dominated Secondary Node (Green) -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
                       <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #10b981; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #10b981;">Dashed Emerald Green:</strong> <span style="color: #e2e8f0; font-weight: 600;">Thinned Launchpad Shelf (Accumulation)</span><br><span style="color: #94a3b8; font-size: 10px;">Ceiling & floor where asks thinned out into an upward launch.</span></div>
+                      <div><strong style="color: #10b981;">Dashed Emerald Green:</strong> <span style="color: #e2e8f0; font-weight: 600;">Bull Volume Profile Node (▲)</span><br><span style="color: #94a3b8; font-size: 10px;">High-volume cluster dominated by aggressive buyer volume.</span></div>
                     </div>
-                    <!-- 4. Vacuum Void -->
+                    <!-- 3. Bear-Dominated Secondary Node (Red) -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #f59e0b; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #f59e0b;">Dashed Amber:</strong> <span style="color: #e2e8f0; font-weight: 600;">Vacuum Void Pocket (LVN)</span><br><span style="color: #94a3b8; font-size: 10px;">Low-volume liquidity gap (&lt; 150 ticks). Rapid pass-thru / sweep trap.</span></div>
+                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dashed #ef4444; margin-top: 6px; flex-shrink: 0;"></span>
+                      <div><strong style="color: #ef4444;">Dashed Rose / Crimson:</strong> <span style="color: #e2e8f0; font-weight: 600;">Bear Volume Profile Node (▼)</span><br><span style="color: #94a3b8; font-size: 10px;">High-volume cluster dominated by aggressive seller volume.</span></div>
                     </div>
-                    <!-- 5. Retest Fulcrum -->
-                    <div style="display: flex; align-items: flex-start; gap: 8px;">
-                      <span style="display: inline-block; width: 20px; height: 0; border-top: 2.5px dotted #fbbf24; margin-top: 6px; flex-shrink: 0;"></span>
-                      <div><strong style="color: #fbbf24;">Dotted Gold:</strong> <span style="color: #e2e8f0; font-weight: 600;">Invariant Retest Fulcrum</span><br><span style="color: #94a3b8; font-size: 10px;">50% structural mean between acceptance & rejection. Pivot trigger.</span></div>
-                    </div>
-                    <!-- 6. In-Box Vector & Anchor -->
+                    <!-- 4. In-Box Vector & Anchor -->
                     <div style="display: flex; align-items: flex-start; gap: 8px;">
                       <span style="display: inline-flex; align-items: center; justify-content: center; width: 20px; margin-top: 2px; flex-shrink: 0; font-size: 11px; font-weight: 900; color: #ef4444;">✕ ➔</span>
                       <div><strong style="color: #00e5ff;">Red ✕ Anchor & Cyan Vector:</strong> <span style="color: #e2e8f0; font-weight: 600;">Trend Excursion Trajectory</span><br><span style="color: #94a3b8; font-size: 10px;">Red ✕ marks entry origin; Cyan arrow shows volume excursion push.</span></div>
@@ -1565,6 +1633,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611112355"></script>
+  <script type="module" src="/chart/js/app.js?v=202611121145"></script>
 </body>
 </html>
