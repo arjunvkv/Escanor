@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611121145">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611121155">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -259,6 +259,15 @@
           </svg>
         </button>
 
+        <!-- 3b. In-Box Volume Profile & Physical Trail Sidebar Toggle (Alt+P) -->
+        <button id="toolVpTrailBtn" class="tv-tool-btn active" title="Toggle In-Box Volume Profile & Physical Trail Sidebar (Alt+P)">
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none">
+            <rect x="3" y="4" width="4" height="16" rx="1" fill="#00f0ff" opacity="0.9"/>
+            <rect x="9" y="8" width="4" height="12" rx="1" fill="#10b981" opacity="0.9"/>
+            <rect x="15" y="11" width="4" height="9" rx="1" fill="#fbbf24" opacity="0.9"/>
+          </svg>
+        </button>
+
         <!-- 4. Long Position Tool (Alt+Q) -->
         <button id="toolLongPosBtn" class="tv-tool-btn" title="Long Position (Alt+Q)">
           <svg viewBox="0 0 24 24" width="20" height="20">
@@ -334,6 +343,158 @@
         </div>
       </aside>
 
+      <!-- In-Box Volume Profile // Top 8 Nodes & True Physical Trail Waves Inspector Vertical Sidebar -->
+      <div id="tvBoxOrderflowMetricsHud" class="tv-box-of-hud" style="display: none;">
+        <div id="tvBoxOfHudHeader" class="tv-box-of-hud-header">
+          <div class="tv-box-of-hud-title">
+            <span class="tv-box-of-hud-pulse"></span>
+            <span class="tv-box-of-hud-icon">⚡</span>
+            <span class="tv-box-of-hud-text">IN-BOX VP & PHYSICAL TRAIL</span>
+          </div>
+          <div class="tv-box-of-hud-controls">
+            <span id="tvBoxOfHudBadge" class="tv-box-of-badge">BOX 1</span>
+            <button type="button" id="tvBoxOfHudCollapseBtn" class="tv-box-of-btn" title="Collapse / Expand Table HUD">−</button>
+            <button type="button" id="tvBoxOfHudCloseBtn" class="tv-box-of-btn tv-box-of-close-btn" title="Close Sidebar (Alt+P)">✕</button>
+          </div>
+        </div>
+        <div id="tvBoxOfHudBody" class="tv-box-of-hud-body">
+          <!-- Placeholder when no box is drawn yet -->
+          <div id="tvBoxOfNoBoxMsg" class="tv-box-empty-wrap" style="display: none;">
+            <div class="tv-box-empty-title" style="color: #00f0ff;">⚡ READY TO INSPECT AUCTION</div>
+            <div class="tv-box-empty-sub">Draw a Rectangle (Box) over candles on the chart</div>
+            <div class="tv-box-empty-note">Click Box Tool (Rectangle) or press R to measure In-Box Volume Profile & Physical Trail Waves.</div>
+          </div>
+
+          <!-- Empty Space Warning (shown when box is drawn where no candles exist) -->
+          <div id="tvBoxOfEmptyWarning" class="tv-box-empty-wrap" style="display: none;">
+            <div class="tv-box-empty-title">⚠️ EMPTY SPACE — ZERO CANDLES IN RANGE</div>
+            <div id="tvBoxEmptyRangeText" class="tv-box-empty-sub">Traded Price Window: $0.00 — $0.00</div>
+            <div class="tv-box-empty-note">No order flow executed inside this box. Drag or resize over active candles.</div>
+          </div>
+
+          <!-- Dual Panel Layout matching Image 2 (Vertically Stacked) -->
+          <div id="tvBoxOfDualWrap" class="tv-box-dual-wrap">
+            <!-- PANEL A: VOLUME PROFILE // TOP 8 NODES -->
+            <div class="tv-box-vp-panel">
+              <!-- Panel Header -->
+              <div class="tv-box-panel-hdr">
+                <div class="tv-box-panel-title">
+                  <span class="tv-box-dot-cyan">●</span>
+                  <span>VOLUME PROFILE // TOP 8 NODES</span>
+                </div>
+                <div id="tvBoxVpRangeText" class="tv-box-range-sub">BULL/BEAR RANGE: $0.00 - $0.00</div>
+              </div>
+
+              <!-- 3-Stat Summary Box -->
+              <div class="tv-box-vp-stats-box">
+                <div class="tv-box-vp-stat-col">
+                  <span class="tv-box-vp-stat-lbl">RANGE SPREAD</span>
+                  <span id="tvBoxVpSpreadVal" class="tv-box-vp-stat-num">$0.00 (0.0p)</span>
+                </div>
+                <div class="tv-box-vp-stat-col">
+                  <span class="tv-box-vp-stat-lbl">TOTAL RANGE VOL</span>
+                  <span id="tvBoxVpTotalVol" class="tv-box-vp-stat-num text-amber">0v</span>
+                </div>
+                <div class="tv-box-vp-stat-col">
+                  <span class="tv-box-vp-stat-lbl">BULL / BEAR RATIO</span>
+                  <span id="tvBoxVpRatio" class="tv-box-vp-stat-num text-cyan">50% / 50%</span>
+                </div>
+              </div>
+
+              <!-- Audit Price Input Filter -->
+              <div class="tv-box-audit-input-wrap">
+                <span class="tv-box-audit-dot">●</span>
+                <input type="text" id="tvBoxAuditInput" class="tv-box-audit-input" placeholder="AUDIT $: Type any price (e.g. 3996.70)...">
+              </div>
+
+              <!-- Volume Profile Nodes Table -->
+              <div class="tv-box-vp-table-wrap">
+                <table class="tv-box-vp-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 22px;">#</th>
+                      <th style="text-align: left;">PRICE</th>
+                      <th style="text-align: right;">VOLUME</th>
+                      <th style="text-align: right;">BULL</th>
+                      <th style="text-align: right;">BEAR</th>
+                      <th style="text-align: center; width: 34px;">BIAS</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tvBoxVpTableRows">
+                    <!-- Live Pivot Row & Top 8 Nodes -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Footer Subline -->
+              <div class="tv-box-vp-footer">
+                <span class="tv-box-dot-green">●</span> <span>LIVE TICK ACCUMULATION</span>
+                <span class="tv-box-footer-hint">HOVER ROW TO INSPECT REAL AUCTION</span>
+              </div>
+            </div>
+
+            <!-- PANEL B: TRUE PHYSICAL TRAIL WAVES INSPECTOR -->
+            <div class="tv-box-trail-panel">
+              <!-- Panel Header -->
+              <div class="tv-box-trail-hdr">
+                <div class="tv-box-trail-hdr-left">
+                  <span id="tvBoxTrailNodeRank" class="tv-box-trail-rank">#1</span>
+                  <span id="tvBoxTrailNodePrice" class="tv-box-trail-price">$0.00</span>
+                  <span id="tvBoxTrailNodeVpoc" class="tv-box-trail-vpoc-badge">VPOC</span>
+                  <span id="tvBoxTrailNodeBias" class="tv-box-trail-bias text-bull">▲</span>
+                </div>
+                <div class="tv-box-trail-hdr-right">
+                  <span id="tvBoxTrailNodeVolSplit" class="tv-box-trail-vol-split">0v (0b/0s)</span>
+                  <span class="tv-box-trail-insp-tag">HOVER INSPECTOR</span>
+                </div>
+              </div>
+
+              <!-- Pattern Banner -->
+              <div class="tv-box-trail-pattern-bar">
+                <div class="tv-box-trail-pattern-left">
+                  <span class="tv-box-dot-cyan animate-pulse">●</span>
+                  <span>TRUE PHYSICAL TRAIL:</span>
+                </div>
+                <span id="tvBoxTrailPatternName" class="tv-box-trail-pattern-val">ABSORPTION WALL DECAY</span>
+              </div>
+
+              <!-- 8-Column Audited Waves Table -->
+              <div class="tv-box-trail-table-wrap">
+                <table class="tv-box-trail-table">
+                  <thead>
+                    <tr>
+                      <th style="text-align: left;">WAVE</th>
+                      <th style="text-align: center;">GAP</th>
+                      <th style="text-align: left;">ORIGIN</th>
+                      <th style="text-align: center;" class="text-amber">DWELL</th>
+                      <th style="text-align: right;">VOL (Δ)</th>
+                      <th style="text-align: right;">SLIP</th>
+                      <th style="text-align: right;">EXIT DISP</th>
+                      <th style="text-align: right;" class="text-cyan">EFFORT/RES</th>
+                    </tr>
+                  </thead>
+                  <tbody id="tvBoxTrailWavesRows">
+                    <!-- Dynamic Wave History -->
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Displacement Vector Box -->
+              <div class="tv-box-trail-vector-box">
+                <span class="tv-box-trail-vector-lbl">DISPLACEMENT VECTOR:</span>
+                <span id="tvBoxTrailVectorStr" class="tv-box-trail-vector-val">+0.00p (BALANCED)</span>
+              </div>
+
+              <!-- Footer Subline -->
+              <div class="tv-box-trail-footer">
+                <span class="text-cyan">100% AUDITED TICK AUCTION TRAIL</span>
+                <span class="text-muted">GLIDE CURSOR OVER ROWS TO COMPARE</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Chart Viewport -->
       <main class="tv-chart-viewport">
         <!-- Floating Live HUD Tag -->
@@ -341,150 +502,6 @@
           <div class="tv-status-dot"></div>
           <span id="tvStatusText">MT5 LIVE • 5056 WS</span>
           <span id="tvLatencyBadge" style="color: var(--tv-text-secondary);">-- ms</span>
-        </div>
-
-        <!-- Floating In-Box Volume Profile // Top 8 Nodes & True Physical Trail Waves Inspector HUD -->
-        <div id="tvBoxOrderflowMetricsHud" class="tv-box-of-hud" style="display: none;">
-          <div id="tvBoxOfHudHeader" class="tv-box-of-hud-header">
-            <div class="tv-box-of-hud-title">
-              <span class="tv-box-of-hud-pulse"></span>
-              <span class="tv-box-of-hud-icon">⚡</span>
-              <span class="tv-box-of-hud-text">IN-BOX VOLUME PROFILE & TRUE PHYSICAL TRAIL</span>
-            </div>
-            <div class="tv-box-of-hud-controls">
-              <span id="tvBoxOfHudBadge" class="tv-box-of-badge">BOX 1</span>
-              <button type="button" id="tvBoxOfHudCollapseBtn" class="tv-box-of-btn" title="Collapse / Expand Table HUD">−</button>
-            </div>
-          </div>
-          <div id="tvBoxOfHudBody" class="tv-box-of-hud-body">
-            <!-- Empty Space Warning (shown when box is drawn where no candles exist) -->
-            <div id="tvBoxOfEmptyWarning" class="tv-box-empty-wrap" style="display: none;">
-              <div class="tv-box-empty-title">⚠️ EMPTY SPACE — ZERO CANDLES IN RANGE</div>
-              <div id="tvBoxEmptyRangeText" class="tv-box-empty-sub">Traded Price Window: $0.00 — $0.00</div>
-              <div class="tv-box-empty-note">No order flow executed inside this box. Drag or resize over active candles.</div>
-            </div>
-
-            <!-- Dual Panel Layout matching Image 2 -->
-            <div id="tvBoxOfDualWrap" class="tv-box-dual-wrap">
-              <!-- PANEL A: VOLUME PROFILE // TOP 8 NODES -->
-              <div class="tv-box-vp-panel">
-                <!-- Panel Header -->
-                <div class="tv-box-panel-hdr">
-                  <div class="tv-box-panel-title">
-                    <span class="tv-box-dot-cyan">●</span>
-                    <span>VOLUME PROFILE // TOP 8 NODES</span>
-                  </div>
-                  <div id="tvBoxVpRangeText" class="tv-box-range-sub">BULL/BEAR RANGE: $0.00 - $0.00</div>
-                </div>
-
-                <!-- 3-Stat Summary Box -->
-                <div class="tv-box-vp-stats-box">
-                  <div class="tv-box-vp-stat-col">
-                    <span class="tv-box-vp-stat-lbl">RANGE SPREAD</span>
-                    <span id="tvBoxVpSpreadVal" class="tv-box-vp-stat-num">$0.00 (0.0p)</span>
-                  </div>
-                  <div class="tv-box-vp-stat-col">
-                    <span class="tv-box-vp-stat-lbl">TOTAL RANGE VOL</span>
-                    <span id="tvBoxVpTotalVol" class="tv-box-vp-stat-num text-amber">0v</span>
-                  </div>
-                  <div class="tv-box-vp-stat-col">
-                    <span class="tv-box-vp-stat-lbl">BULL / BEAR RATIO</span>
-                    <span id="tvBoxVpRatio" class="tv-box-vp-stat-num text-cyan">50% / 50%</span>
-                  </div>
-                </div>
-
-                <!-- Audit Price Input Filter -->
-                <div class="tv-box-audit-input-wrap">
-                  <span class="tv-box-audit-dot">●</span>
-                  <input type="text" id="tvBoxAuditInput" class="tv-box-audit-input" placeholder="AUDIT $: Type any price (e.g. 3996.70)...">
-                </div>
-
-                <!-- Volume Profile Nodes Table -->
-                <div class="tv-box-vp-table-wrap">
-                  <table class="tv-box-vp-table">
-                    <thead>
-                      <tr>
-                        <th style="width: 22px;">#</th>
-                        <th style="text-align: left;">PRICE</th>
-                        <th style="text-align: right;">VOLUME</th>
-                        <th style="text-align: right;">BULL</th>
-                        <th style="text-align: right;">BEAR</th>
-                        <th style="text-align: center; width: 34px;">BIAS</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tvBoxVpTableRows">
-                      <!-- Live Pivot Row & Top 8 Nodes -->
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Footer Subline -->
-                <div class="tv-box-vp-footer">
-                  <span class="tv-box-dot-green">●</span> <span>LIVE TICK ACCUMULATION</span>
-                  <span class="tv-box-footer-hint">HOVER ROW TO INSPECT REAL AUCTION</span>
-                </div>
-              </div>
-
-              <!-- PANEL B: TRUE PHYSICAL TRAIL WAVES INSPECTOR -->
-              <div class="tv-box-trail-panel">
-                <!-- Panel Header -->
-                <div class="tv-box-trail-hdr">
-                  <div class="tv-box-trail-hdr-left">
-                    <span id="tvBoxTrailNodeRank" class="tv-box-trail-rank">#1</span>
-                    <span id="tvBoxTrailNodePrice" class="tv-box-trail-price">$0.00</span>
-                    <span id="tvBoxTrailNodeVpoc" class="tv-box-trail-vpoc-badge">VPOC</span>
-                    <span id="tvBoxTrailNodeBias" class="tv-box-trail-bias text-bull">▲</span>
-                  </div>
-                  <div class="tv-box-trail-hdr-right">
-                    <span id="tvBoxTrailNodeVolSplit" class="tv-box-trail-vol-split">0v (0b/0s)</span>
-                    <span class="tv-box-trail-insp-tag">HOVER INSPECTOR</span>
-                  </div>
-                </div>
-
-                <!-- Pattern Banner -->
-                <div class="tv-box-trail-pattern-bar">
-                  <div class="tv-box-trail-pattern-left">
-                    <span class="tv-box-dot-cyan animate-pulse">●</span>
-                    <span>TRUE PHYSICAL TRAIL:</span>
-                  </div>
-                  <span id="tvBoxTrailPatternName" class="tv-box-trail-pattern-val">ABSORPTION WALL DECAY</span>
-                </div>
-
-                <!-- 8-Column Audited Waves Table -->
-                <div class="tv-box-trail-table-wrap">
-                  <table class="tv-box-trail-table">
-                    <thead>
-                      <tr>
-                        <th style="text-align: left;">WAVE</th>
-                        <th style="text-align: center;">GAP</th>
-                        <th style="text-align: left;">ORIGIN</th>
-                        <th style="text-align: center;" class="text-amber">DWELL</th>
-                        <th style="text-align: right;">VOL (Δ)</th>
-                        <th style="text-align: right;">SLIP</th>
-                        <th style="text-align: right;">EXIT DISP</th>
-                        <th style="text-align: right;" class="text-cyan">EFFORT/RES</th>
-                      </tr>
-                    </thead>
-                    <tbody id="tvBoxTrailWavesRows">
-                      <!-- Dynamic Wave History -->
-                    </tbody>
-                  </table>
-                </div>
-
-                <!-- Displacement Vector Box -->
-                <div class="tv-box-trail-vector-box">
-                  <span class="tv-box-trail-vector-lbl">DISPLACEMENT VECTOR:</span>
-                  <span id="tvBoxTrailVectorStr" class="tv-box-trail-vector-val">+0.00p (BALANCED)</span>
-                </div>
-
-                <!-- Footer Subline -->
-                <div class="tv-box-trail-footer">
-                  <span class="text-cyan">100% AUDITED TICK AUCTION TRAIL</span>
-                  <span class="text-muted">GLIDE CURSOR OVER ROWS TO COMPARE</span>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         <!-- Live Candle Countdown Timer Badge -->
@@ -1633,6 +1650,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611121145"></script>
+  <script type="module" src="/chart/js/app.js?v=202611121155"></script>
 </body>
 </html>

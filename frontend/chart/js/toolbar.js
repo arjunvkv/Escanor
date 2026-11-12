@@ -277,10 +277,51 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     tooltipEl.addEventListener('mouseleave', hide);
   });
 
-  // Setup Collapse / Expand Toggle for Box Orderflow Metrics Table HUD
+  // Setup In-Box Volume Profile & Physical Trail Vertical Sidebar Toggle
   const boxOfHud = document.getElementById('tvBoxOrderflowMetricsHud');
   const boxOfCollapseBtn = document.getElementById('tvBoxOfHudCollapseBtn');
+  const boxOfCloseBtn = document.getElementById('tvBoxOfHudCloseBtn');
   const boxOfHeader = document.getElementById('tvBoxOfHudHeader');
+  const toolVpTrailBtn = document.getElementById('toolVpTrailBtn');
+
+  // Initialize sidebar toggle state (defaults to true so if boxes exist they are visible)
+  window.__isBoxSidebarOpen = true;
+
+  window.__toggleBoxOrderflowSidebar = function(forceState = null) {
+    const hud = document.getElementById('tvBoxOrderflowMetricsHud');
+    const btn = document.getElementById('toolVpTrailBtn');
+    if (!hud) return;
+
+    if (forceState !== null) {
+      window.__isBoxSidebarOpen = Boolean(forceState);
+    } else {
+      window.__isBoxSidebarOpen = !window.__isBoxSidebarOpen;
+    }
+
+    if (window.__isBoxSidebarOpen) {
+      hud.style.display = 'flex';
+      btn?.classList.add('active');
+      if (typeof window.__updateBoxOrderflowMetricsHud === 'function') {
+        window.__updateBoxOrderflowMetricsHud(chart);
+      }
+      if (typeof showChartToast === 'function') showChartToast('In-Box Volume Profile Sidebar Opened (Alt+P)');
+    } else {
+      hud.style.display = 'none';
+      btn?.classList.remove('active');
+      if (typeof showChartToast === 'function') showChartToast('In-Box Volume Profile Sidebar Closed');
+    }
+  };
+
+  toolVpTrailBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.__toggleBoxOrderflowSidebar();
+  });
+
+  boxOfCloseBtn?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    window.__toggleBoxOrderflowSidebar(false);
+  });
+
   if (boxOfHud && boxOfCollapseBtn) {
     const toggleHud = (e) => {
       e?.stopPropagation?.();
@@ -290,7 +331,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     };
     boxOfCollapseBtn.addEventListener('click', toggleHud);
     boxOfHeader?.addEventListener('click', (e) => {
-      if (e.target !== boxOfCollapseBtn) toggleHud(e);
+      if (e.target !== boxOfCollapseBtn && e.target !== boxOfCloseBtn) toggleHud(e);
     });
   }
 
@@ -1603,6 +1644,14 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       setActive(toolLinesBtn, 'verticalStraightLine');
       createDrawing('verticalStraightLine');
       showChartToast('Vertical Line Tool (Alt+V)');
+    }
+
+    // 10. Alt + P -> Shortcut to toggle In-Box Volume Profile & Physical Trail Sidebar
+    if (isAltActive && (e.key === 'p' || e.key === 'P' || e.code === 'KeyP') && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      if (typeof window.__toggleBoxOrderflowSidebar === 'function') {
+        window.__toggleBoxOrderflowSidebar();
+      }
     }
   });
 

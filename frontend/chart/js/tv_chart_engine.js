@@ -5876,8 +5876,24 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay, inspectRankOv
   const hudEl = document.getElementById('tvBoxOrderflowMetricsHud');
   if (!hudEl) return;
 
-  if (!c || typeof c.getOverlays !== 'function') {
+  // Respect sidebar toggle state if user explicitly closed it
+  if (typeof window !== 'undefined' && window.__isBoxSidebarOpen === false) {
     hudEl.style.display = 'none';
+    return;
+  }
+
+  const badgeEl = document.getElementById('tvBoxOfHudBadge');
+  const emptyWarn = document.getElementById('tvBoxOfEmptyWarning');
+  const emptyRangeText = document.getElementById('tvBoxEmptyRangeText');
+  const dualWrap = document.getElementById('tvBoxOfDualWrap');
+  const noBoxMsg = document.getElementById('tvBoxOfNoBoxMsg');
+
+  if (!c || typeof c.getOverlays !== 'function') {
+    if (noBoxMsg) noBoxMsg.style.display = 'block';
+    if (emptyWarn) emptyWarn.style.display = 'none';
+    if (dualWrap) dualWrap.style.display = 'none';
+    if (badgeEl) badgeEl.textContent = 'NO BOX';
+    hudEl.style.display = 'flex';
     return;
   }
 
@@ -5885,19 +5901,31 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay, inspectRankOv
   const rects = existing.filter(o => o.name === 'rect' && o.points && o.points.length >= 2);
 
   if (rects.length === 0 && !targetOverlay) {
-    hudEl.style.display = 'none';
+    if (noBoxMsg) noBoxMsg.style.display = 'block';
+    if (emptyWarn) emptyWarn.style.display = 'none';
+    if (dualWrap) dualWrap.style.display = 'none';
+    if (badgeEl) badgeEl.textContent = 'NO BOX';
+    hudEl.style.display = 'flex';
     return;
   }
 
   const dataList = c.getDataList?.() || [];
   if (!dataList || dataList.length < 2) {
-    hudEl.style.display = 'none';
+    if (noBoxMsg) noBoxMsg.style.display = 'block';
+    if (emptyWarn) emptyWarn.style.display = 'none';
+    if (dualWrap) dualWrap.style.display = 'none';
+    if (badgeEl) badgeEl.textContent = 'NO BOX';
+    hudEl.style.display = 'flex';
     return;
   }
 
   const rect = targetOverlay || (rects.length > 0 ? rects[rects.length - 1] : null);
   if (!rect) {
-    hudEl.style.display = 'none';
+    if (noBoxMsg) noBoxMsg.style.display = 'block';
+    if (emptyWarn) emptyWarn.style.display = 'none';
+    if (dualWrap) dualWrap.style.display = 'none';
+    if (badgeEl) badgeEl.textContent = 'NO BOX';
+    hudEl.style.display = 'flex';
     return;
   }
 
@@ -5908,6 +5936,8 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay, inspectRankOv
     return;
   }
 
+  if (noBoxMsg) noBoxMsg.style.display = 'none';
+
   if (inspectRankOverride !== null) {
     _currentInspectedNodeRank = inspectRankOverride;
   }
@@ -5915,18 +5945,13 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay, inspectRankOv
   const lastBar = dataList[dataList.length - 1];
   const spotPrice = (lastBar && lastBar.close) ? lastBar.close : ((typeof window !== 'undefined' && window.__lastKnownSpot) || null);
 
-  const badgeEl = document.getElementById('tvBoxOfHudBadge');
-  const emptyWarn = document.getElementById('tvBoxOfEmptyWarning');
-  const emptyRangeText = document.getElementById('tvBoxEmptyRangeText');
-  const dualWrap = document.getElementById('tvBoxOfDualWrap');
-
   // Handle Empty Box (drawn in empty space where no candles touched or traded)
   if (res.isEmpty) {
     if (badgeEl) badgeEl.textContent = `BOX ${boxIdx} (EMPTY)`;
     if (emptyWarn) emptyWarn.style.display = 'block';
     if (emptyRangeText) emptyRangeText.textContent = `Traded Price Window: $${res.bottomPrice.toFixed(2)} — $${res.topPrice.toFixed(2)}`;
     if (dualWrap) dualWrap.style.display = 'none';
-    hudEl.style.display = 'block';
+    hudEl.style.display = 'flex';
     return;
   }
 
@@ -6052,7 +6077,7 @@ export function updateBoxOrderflowMetricsHud(chart, targetOverlay, inspectRankOv
   // 3. Render Panel B (Physical Trail Waves Inspector)
   renderTrailWavesPanel(res, _currentInspectedNodeRank);
 
-  hudEl.style.display = 'block';
+  hudEl.style.display = 'flex';
 }
 window.__updateBoxOrderflowMetricsHud = updateBoxOrderflowMetricsHud;
 
