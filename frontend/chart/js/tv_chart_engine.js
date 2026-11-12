@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121400';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121510';
 import { registerLivingFootprintIndicator, applyCandleFootprintStyles, isFootprintEnabled } from './living_candle_engine.js?v=202611031455';
 
 // Global reference for chart instance
@@ -1380,7 +1380,7 @@ function registerCustomOverlays() {
   try {
     klinecharts.registerOverlay({
       name: 'boxUserItemDottedLine',
-      totalStep: 2,
+      totalStep: 1,
       needDefaultPointFigure: false,
       needDefaultXAxisFigure: false,
       needDefaultYAxisFigure: true,
@@ -1445,7 +1445,7 @@ function registerCustomOverlays() {
 
         return figures;
       },
-      createYAxisFigures: ({ overlay, coordinates, yAxis }) => {
+      createYAxisFigures: ({ overlay, coordinates, bounding, yAxis }) => {
         const data = overlay.extendData || {};
         const price = overlay.points?.[0]?.value;
         const y = (yAxis && typeof yAxis.convertToPixel === 'function' && typeof price === 'number')
@@ -1454,11 +1454,12 @@ function registerCustomOverlays() {
 
         const color = data.color || '#00f0ff';
         const label = data.yLabel || (typeof price === 'number' ? `$${price.toFixed(2)}` : '');
+        const xPos = (bounding && typeof bounding.width === 'number') ? bounding.width : 0;
 
         return [
           {
             type: 'text',
-            attrs: { x: 0, y, text: label, baseline: 'middle', align: 'left' },
+            attrs: { x: xPos, y, text: label, baseline: 'middle', align: 'right' },
             styles: {
               color: '#000000',
               size: 10,
@@ -6028,11 +6029,19 @@ export function toggleBoxItemLine(chart, price, label) {
     // Turn ON
     const color = window.__boxItemLineColor || '#00f0ff';
 
-    // Native horizontalStraightLine with dashed styling (guaranteed visible across all devices)
+    // Native horizontalStraightLine with dashed styling (2 points guarantees complete committed overlay in KlineCharts)
+    const dataList = (typeof c.getDataList === 'function' ? c.getDataList() : []) || [];
+    const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+    const lastTs = lastBar?.timestamp || Date.now();
+
+    // Use dedicated boxUserItemDottedLine with native horizontalStraightLine fallback
     const overlayOptions = {
       id: overlayId,
-      name: 'horizontalStraightLine',
-      points: [{ value: price }],
+      name: 'boxUserItemDottedLine',
+      points: [
+        { timestamp: lastTs, value: price },
+        { timestamp: lastTs, value: price }
+      ],
       lock: true,
       styles: {
         line: {
@@ -6056,10 +6065,18 @@ export function toggleBoxItemLine(chart, price, label) {
       if (existing.some(o => o.id === overlayId)) {
         c.overrideOverlay(overlayOptions);
       } else {
-        c.createOverlay(overlayOptions);
+        const createdId = c.createOverlay(overlayOptions);
+        if (!createdId) {
+          overlayOptions.name = 'horizontalStraightLine';
+          c.createOverlay(overlayOptions);
+        }
       }
     } catch (e) {
-      console.warn('[toggleBoxItemLine] Overlay create error:', e);
+      console.warn('[toggleBoxItemLine] Primary overlay create error, falling back:', e);
+      try {
+        overlayOptions.name = 'horizontalStraightLine';
+        c.createOverlay(overlayOptions);
+      } catch (_) {}
     }
 
     window.__activeBoxItemLines.set(priceKey, {
@@ -6095,13 +6112,14 @@ window.__toggleBoxItemLine = toggleBoxItemLine;
  */
 window.__toggleBoxTrailWaveClick = function(rowEl, evt) {
   if (evt) {
-    try { evt.stopPropagation(); evt.preventDefault(); } catch (_) {}
+    try { evt.stopPropagation(); } catch (_) {}
   }
   if (!rowEl) return;
-  const waveKey = rowEl.getAttribute('data-wave-key') || 'W';
-  let price = parseFloat(rowEl.getAttribute('data-origin-price'));
+  const targetRow = rowEl.closest ? (rowEl.closest('.tv-box-trail-wave-row') || rowEl) : rowEl;
+  const waveKey = targetRow.getAttribute('data-wave-key') || 'W';
+  let price = parseFloat(targetRow.getAttribute('data-origin-price'));
   if (isNaN(price) || price <= 0) {
-    const originCell = rowEl.cells?.[2];
+    const originCell = targetRow.cells?.[2];
     if (originCell) {
       const match = originCell.textContent.match(/\$([0-9.]+)/);
       if (match) price = parseFloat(match[1]);
@@ -6120,10 +6138,13 @@ window.__toggleBoxTrailWaveClick = function(rowEl, evt) {
  */
 window.__toggleBoxTrailNodePriceClick = function(priceEl, evt) {
   if (evt) {
-    try { evt.stopPropagation(); evt.preventDefault(); } catch (_) {}
+    try { evt.stopPropagation(); } catch (_) {}
   }
   if (!priceEl) return;
-  const rawText = priceEl.textContent.replace(/[^0-9.]/g, '');
+  const targetPriceEl = (priceEl.id === 'tvBoxTrailNodePrice')
+    ? priceEl
+    : (priceEl.querySelector?.('#tvBoxTrailNodePrice') || document.getElementById('tvBoxTrailNodePrice') || priceEl);
+  const rawText = targetPriceEl ? targetPriceEl.textContent.replace(/[^0-9.]/g, '') : priceEl.textContent.replace(/[^0-9.]/g, '');
   const price = parseFloat(rawText);
   if (!isNaN(price) && price > 0) {
     const rankEl = document.getElementById('tvBoxTrailNodeRank');
@@ -6520,11 +6541,25 @@ function renderTrailWavesPanel(res, targetRank) {
     priceEl.textContent = `$${nodePriceStr}`;
     priceEl.style.cursor = 'pointer';
     priceEl.title = `Click to toggle extended dotted line at $${nodePriceStr}`;
-    priceEl.setAttribute('onclick', 'window.__toggleBoxTrailNodePriceClick(this, event)');
+    priceEl.onclick = (e) => {
+      window.__toggleBoxTrailNodePriceClick(priceEl, e);
+    };
     if (activeMap.has(nodePriceStr)) {
       priceEl.classList.add('active-line-on');
       priceEl.style.color = color;
+    } else {
+      priceEl.classList.remove('active-line-on');
+      priceEl.style.color = '#ffffff';
     }
+  }
+
+  const hdrLeft = document.querySelector('.tv-box-trail-hdr-left');
+  if (hdrLeft) {
+    hdrLeft.style.cursor = 'pointer';
+    hdrLeft.title = `Click to toggle extended dotted line at $${node.price.toFixed(2)}`;
+    hdrLeft.onclick = (e) => {
+      window.__toggleBoxTrailNodePriceClick(hdrLeft, e);
+    };
   }
 
   const vpocEl = document.getElementById('tvBoxTrailNodeVpoc');
@@ -6595,6 +6630,14 @@ function renderTrailWavesPanel(res, targetRank) {
           </tr>
         `;
       }).join('');
+
+      // Wire direct click listeners on each wave row
+      wavesTbody.querySelectorAll('.tv-box-trail-wave-row').forEach(row => {
+        row.style.cursor = 'pointer';
+        row.onclick = (e) => {
+          window.__toggleBoxTrailWaveClick(row, e);
+        };
+      });
     }
   }
 

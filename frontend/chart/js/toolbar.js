@@ -373,7 +373,25 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     });
   }
 
-  // True Physical Trail click handlers are cleanly bound via inline and direct event dispatchers
+  // Permanent delegated click listener on HUD sidebar to guarantee 100% reliable clicks on wave rows and header price
+  if (boxOfHud && !boxOfHud.__trailClicksDelegated) {
+    boxOfHud.__trailClicksDelegated = true;
+    boxOfHud.addEventListener('click', (e) => {
+      // 1. Check if clicked inside a wave row in Section 2
+      const waveRow = e.target.closest('#tvBoxTrailWavesRows tr, .tv-box-trail-wave-row');
+      if (waveRow && typeof window.__toggleBoxTrailWaveClick === 'function') {
+        window.__toggleBoxTrailWaveClick(waveRow, e);
+        return;
+      }
+
+      // 2. Check if clicked inside Section 2 header node price, VPOC badge, or header left
+      const trailHdr = e.target.closest('#tvBoxTrailNodePrice, .tv-box-trail-hdr-left');
+      if (trailHdr && typeof window.__toggleBoxTrailNodePriceClick === 'function') {
+        window.__toggleBoxTrailNodePriceClick(trailHdr, e);
+        return;
+      }
+    });
+  }
 
   const isLineOverlay = (name) => ['segment', 'rayLine', 'straightLine', 'horizontalStraightLine'].includes(name);
 
@@ -483,7 +501,7 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     const ovName = params.name;
 
     // Internal execution & structural overlays bypass user drawing wrappers
-    if (ovName === 'lineSlTpMarking' || ovName === 'activeTradeOrder' || ovName === 'structuralLevel' || ovName === 'boxOrderflowZone') {
+    if (ovName === 'lineSlTpMarking' || ovName === 'activeTradeOrder' || ovName === 'structuralLevel' || ovName === 'boxOrderflowZone' || ovName === 'boxUserItemDottedLine' || params?.extendData?.isBoxItemLine || (params?.id && params.id.startsWith('box_user_item_line_'))) {
       return origCreateOverlay(params);
     }
 
