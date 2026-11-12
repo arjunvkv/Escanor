@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Escanor — TradingView Terminal</title>
-  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611121155">
+  <link rel="stylesheet" href="/chart/css/tradingview_theme.css?v=202611121310">
   <script src="/shared/klinecharts.min.js"></script>
 </head>
 <body>
@@ -352,6 +352,15 @@
             <span class="tv-box-of-hud-text">IN-BOX VP & PHYSICAL TRAIL</span>
           </div>
           <div class="tv-box-of-hud-controls">
+            <!-- Single Box Color Palette for all In-Box Extended Dotted Lines -->
+            <div class="tv-box-color-picker-wrap" title="Dotted Line Color Palette (Click box to choose line color for all items)">
+              <span class="tv-box-color-lbl">LINE</span>
+              <label class="tv-box-color-box-lbl" title="Choose color for all extended dotted lines">
+                <input type="color" id="tvBoxItemLineColorPicker" class="tv-box-color-input" value="#00f0ff">
+                <span id="tvBoxItemLineColorBox" class="tv-box-color-box" style="background-color: #00f0ff;"></span>
+              </label>
+            </div>
+            <span id="tvBoxActiveLinesBadge" class="tv-box-active-lines-badge" style="display: none;" title="Active Dotted Lines (Click to clear all)">0 lines ✕</span>
             <span id="tvBoxOfHudBadge" class="tv-box-of-badge">BOX 1</span>
             <button type="button" id="tvBoxOfHudCollapseBtn" class="tv-box-of-btn" title="Collapse / Expand Table HUD">−</button>
             <button type="button" id="tvBoxOfHudCloseBtn" class="tv-box-of-btn tv-box-of-close-btn" title="Close Sidebar (Alt+P)">✕</button>
@@ -429,7 +438,7 @@
               <!-- Footer Subline -->
               <div class="tv-box-vp-footer">
                 <span class="tv-box-dot-green">●</span> <span>LIVE TICK ACCUMULATION</span>
-                <span class="tv-box-footer-hint">HOVER ROW TO INSPECT REAL AUCTION</span>
+                <span class="tv-box-footer-hint">CLICK ROW TO SWITCH INSPECTOR</span>
               </div>
             </div>
 
@@ -488,7 +497,7 @@
               <!-- Footer Subline -->
               <div class="tv-box-trail-footer">
                 <span class="text-cyan">100% AUDITED TICK AUCTION TRAIL</span>
-                <span class="text-muted">GLIDE CURSOR OVER ROWS TO COMPARE</span>
+                <span class="text-muted">CLICK ANY WAVE TO EXTEND DOTTED LINE</span>
               </div>
             </div>
           </div>
@@ -1650,6 +1659,6 @@
 
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611121155"></script>
+  <script type="module" src="/chart/js/app.js?v=202611121310"></script>
 </body>
 </html>

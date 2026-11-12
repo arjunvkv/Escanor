@@ -202,10 +202,13 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
       // Purge any remaining orphaned orderflow or fulcrum lines
       const allOverlays = chart.getOverlays() || [];
       allOverlays.forEach(o => {
-        if (o.id && (o.id.startsWith('box_of_') || o.id.startsWith('box_vacuum_') || o.id.startsWith('box_fulcrum_') || o.name === 'boxOrderflowZone')) {
+        if (o.id && (o.id.startsWith('box_of_') || o.id.startsWith('box_vacuum_') || o.id.startsWith('box_fulcrum_') || o.id.startsWith('box_user_item_line_') || o.name === 'boxOrderflowZone')) {
           try { chart.removeOverlay({ id: o.id }); } catch (_) {}
         }
       });
+      if (typeof window.__clearAllBoxItemLines === 'function') {
+        window.__clearAllBoxItemLines(chart);
+      }
       if (typeof window.__syncBoxOrderflowShading === 'function') {
         window.__syncBoxOrderflowShading(chart);
       }
@@ -331,7 +334,32 @@ export function initToolbar(chart, currentSymbol = 'XAUUSD') {
     };
     boxOfCollapseBtn.addEventListener('click', toggleHud);
     boxOfHeader?.addEventListener('click', (e) => {
-      if (e.target !== boxOfCollapseBtn && e.target !== boxOfCloseBtn) toggleHud(e);
+      if (e.target !== boxOfCollapseBtn && e.target !== boxOfCloseBtn && !e.target.closest?.('.tv-box-color-picker-wrap') && !e.target.closest?.('.tv-box-active-lines-badge')) toggleHud(e);
+    });
+  }
+
+  // Single Box Color Palette for In-Box Extended Dotted Lines
+  const colorPicker = document.getElementById('tvBoxItemLineColorPicker');
+  if (colorPicker) {
+    colorPicker.addEventListener('input', (e) => {
+      if (typeof window.__setBoxItemLinesColor === 'function') {
+        window.__setBoxItemLinesColor(e.target.value, chart);
+      }
+    });
+    colorPicker.addEventListener('change', (e) => {
+      if (typeof window.__setBoxItemLinesColor === 'function') {
+        window.__setBoxItemLinesColor(e.target.value, chart);
+      }
+    });
+  }
+
+  const activeLinesBadge = document.getElementById('tvBoxActiveLinesBadge');
+  if (activeLinesBadge) {
+    activeLinesBadge.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (typeof window.__clearAllBoxItemLines === 'function') {
+        window.__clearAllBoxItemLines(chart);
+      }
     });
   }
 

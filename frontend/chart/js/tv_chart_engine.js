@@ -1297,13 +1297,14 @@ function registerCustomOverlays() {
 
         const figures = [];
 
-        // Full-width horizontal reference line (ultra-thin, 30% opacity)
+        // Full-width horizontal reference line
+        const dashedVal = data.dashedValue || (lineStyle === 'dotted' ? [2, 3] : [4, 4]);
         figures.push({
           type: 'line',
           attrs: { coordinates: [{ x: 0, y }, { x: width, y }] },
           styles: {
-            style: lineStyle,
-            dashedValue: [4, 4],
+            style: lineStyle === 'solid' ? 'solid' : 'dashed',
+            dashedValue: dashedVal,
             color: lineRgba,
             size: lineSize
           }
@@ -5786,6 +5787,8 @@ function computeNodeWaves(node, intersectingBars, binStep) {
 
     waveRows.push({
       wave: `${waveNum} ${timeStr}`,
+      waveKey: waveNum,
+      originPrice: firstB.open,
       gap: gapStr,
       origin: originStr,
       dwell: dwellStr,
@@ -5866,6 +5869,219 @@ window.__scheduleBoxOfHudUpdate = scheduleBoxOfHudUpdate;
 
 // Current inspected node rank inside HUD (defaults to 1 = VPOC)
 let _currentInspectedNodeRank = 1;
+
+// State for active extended dotted lines: Map of priceKey ("4136.44") -> { priceKey, price, label, overlayId }
+if (typeof window !== 'undefined' && !window.__activeBoxItemLines) {
+  window.__activeBoxItemLines = new Map();
+}
+if (typeof window !== 'undefined' && !window.__boxItemLineColor) {
+  try {
+    window.__boxItemLineColor = localStorage.getItem('escanor_box_dotted_line_color') || '#00f0ff';
+  } catch (_) {
+    window.__boxItemLineColor = '#00f0ff';
+  }
+}
+
+/**
+ * Toggles an extended dotted line at the specified price point on the chart.
+ * Triggered strictly from the True Physical Trail section.
+ */
+export function toggleBoxItemLine(chart, price, label) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+  if (!c || typeof price !== 'number' || isNaN(price)) return;
+
+  if (typeof window === 'undefined') return;
+  if (!window.__activeBoxItemLines) {
+    window.__activeBoxItemLines = new Map();
+  }
+
+  const priceKey = price.toFixed(2);
+  const overlayId = `box_user_item_line_${priceKey.replace('.', '_')}`;
+  const isAlreadyActive = window.__activeBoxItemLines.has(priceKey);
+
+  if (isAlreadyActive) {
+    // Turn OFF
+    try { c.removeOverlay({ id: overlayId }); } catch (_) {}
+    window.__activeBoxItemLines.delete(priceKey);
+    if (typeof showChartToast === 'function') {
+      showChartToast(`Removed Dotted Line at $${priceKey}`);
+    }
+  } else {
+    // Turn ON
+    const color = window.__boxItemLineColor || '#00f0ff';
+    const dataList = c.getDataList?.() || [];
+    const lastBar = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+    const lastTs = lastBar?.timestamp || Date.now();
+
+    try {
+      c.createOverlay({
+        id: overlayId,
+        name: 'structuralLevel',
+        points: [{ timestamp: lastTs, value: price }],
+        lock: true,
+        extendData: {
+          key: overlayId,
+          title: `┄ ${label} $${priceKey}`,
+          yLabel: `$${priceKey}`,
+          color: color,
+          lineStyle: 'dotted',
+          dashedValue: [2, 3],
+          lineSize: 1.5,
+          opacity: 0.95
+        }
+      });
+    } catch (e) {
+      console.warn('[toggleBoxItemLine] Overlay create error:', e);
+    }
+
+    window.__activeBoxItemLines.set(priceKey, {
+      priceKey,
+      price,
+      label,
+      overlayId
+    });
+
+    if (typeof showChartToast === 'function') {
+      showChartToast(`Added Extended Dotted Line at $${priceKey}`);
+    }
+  }
+
+  updateBoxItemLinesUI(c);
+}
+window.__toggleBoxItemLine = toggleBoxItemLine;
+
+/**
+ * Updates color of all active item lines on chart and in sidebar.
+ */
+export function setBoxItemLinesColor(newColor, chart) {
+  if (!newColor) return;
+  const c = chart || chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+  if (typeof window !== 'undefined') {
+    window.__boxItemLineColor = newColor;
+    try { localStorage.setItem('escanor_box_dotted_line_color', newColor); } catch (_) {}
+  }
+
+  const activeMap = (typeof window !== 'undefined' && window.__activeBoxItemLines) || new Map();
+  if (c && activeMap.size > 0) {
+    activeMap.forEach((item) => {
+      try {
+        c.overrideOverlay({
+          id: item.overlayId,
+          extendData: {
+            key: item.overlayId,
+            title: `┄ ${item.label} $${item.priceKey}`,
+            yLabel: `$${item.priceKey}`,
+            color: newColor,
+            lineStyle: 'dotted',
+            dashedValue: [2, 3],
+            lineSize: 1.5,
+            opacity: 0.95
+          }
+        });
+      } catch (_) {}
+    });
+  }
+
+  updateBoxItemLinesUI(c);
+}
+window.__setBoxItemLinesColor = setBoxItemLinesColor;
+
+/**
+ * Clears all active extended dotted lines.
+ */
+export function clearAllBoxItemLines(chart) {
+  const c = chart || chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+  const activeMap = (typeof window !== 'undefined' && window.__activeBoxItemLines) || new Map();
+  if (c && activeMap.size > 0) {
+    activeMap.forEach((item) => {
+      try { c.removeOverlay({ id: item.overlayId }); } catch (_) {}
+    });
+  }
+  activeMap.clear();
+  updateBoxItemLinesUI(c);
+  if (typeof showChartToast === 'function') {
+    showChartToast('Cleared all in-box extended dotted lines');
+  }
+}
+window.__clearAllBoxItemLines = clearAllBoxItemLines;
+
+/**
+ * Updates visual badges and highlights on rows in True Physical Trail section.
+ */
+export function updateBoxItemLinesUI(chart) {
+  const activeMap = (typeof window !== 'undefined' && window.__activeBoxItemLines) || new Map();
+  const color = (typeof window !== 'undefined' && window.__boxItemLineColor) || '#00f0ff';
+
+  // 1. Color box swatch in header
+  const colorBox = document.getElementById('tvBoxItemLineColorBox');
+  const colorPicker = document.getElementById('tvBoxItemLineColorPicker');
+  if (colorBox) {
+    colorBox.style.backgroundColor = color;
+    colorBox.style.borderColor = color;
+    colorBox.style.boxShadow = `0 0 8px ${color}80`;
+  }
+  if (colorPicker && colorPicker.value !== color) {
+    colorPicker.value = color;
+  }
+
+  // 2. Clear all lines badge
+  const badge = document.getElementById('tvBoxActiveLinesBadge');
+  if (badge) {
+    const count = activeMap.size;
+    if (count > 0) {
+      badge.textContent = `${count} line${count > 1 ? 's' : ''} ✕`;
+      badge.style.display = 'inline-block';
+      badge.style.borderColor = color;
+      badge.style.color = color;
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+
+  // 3. Trail Header Node Price
+  const trailPriceEl = document.getElementById('tvBoxTrailNodePrice');
+  if (trailPriceEl) {
+    const rawText = trailPriceEl.textContent.replace(/[^0-9.]/g, '');
+    const price = parseFloat(rawText);
+    const isActive = !isNaN(price) && activeMap.has(price.toFixed(2));
+    if (isActive) {
+      trailPriceEl.classList.add('active-line-on');
+      trailPriceEl.style.color = color;
+    } else {
+      trailPriceEl.classList.remove('active-line-on');
+      trailPriceEl.style.color = '#ffffff';
+    }
+  }
+
+  // 4. Trail Waves Rows (Only Physical Trail items mark lines)
+  document.querySelectorAll('#tvBoxTrailWavesRows tr').forEach(row => {
+    const priceStr = row.getAttribute('data-origin-price');
+    if (!priceStr) return;
+    const isActive = activeMap.has(priceStr);
+    const existingBadge = row.querySelector('.tv-box-row-line-badge');
+    if (isActive) {
+      row.classList.add('active-line-on');
+      row.style.borderLeft = `3px solid ${color}`;
+      if (!existingBadge) {
+        const waveCell = row.cells[0];
+        if (waveCell) {
+          const badgeEl = document.createElement('span');
+          badgeEl.className = 'tv-box-row-line-badge';
+          badgeEl.style.color = color;
+          badgeEl.textContent = '┄┄';
+          waveCell.appendChild(badgeEl);
+        }
+      } else {
+        existingBadge.style.color = color;
+      }
+    } else {
+      row.classList.remove('active-line-on');
+      row.style.borderLeft = '';
+      if (existingBadge) existingBadge.remove();
+    }
+  });
+}
+window.__updateBoxItemLinesUI = updateBoxItemLinesUI;
 
 /**
  * Updates the floating In-Box Volume Profile // Top 8 Nodes & True Physical Trail Waves Inspector HUD
@@ -6090,13 +6306,34 @@ function renderTrailWavesPanel(res, targetRank) {
   const node = res.topNodes.find(n => n.rank === targetRank) || res.topNodes[0];
   if (!node) return;
 
+  const activeMap = (typeof window !== 'undefined' && window.__activeBoxItemLines) || new Map();
+  const color = (typeof window !== 'undefined' && window.__boxItemLineColor) || '#00f0ff';
+
   const wavesData = (res.wavesMap && res.wavesMap[node.rank]) || computeNodeWaves(node, [], 0.1);
 
   const rankEl = document.getElementById('tvBoxTrailNodeRank');
   if (rankEl) rankEl.textContent = `#${node.rank}`;
 
   const priceEl = document.getElementById('tvBoxTrailNodePrice');
-  if (priceEl) priceEl.textContent = `$${node.price.toFixed(2)}`;
+  if (priceEl) {
+    const nodePriceStr = node.price.toFixed(2);
+    priceEl.textContent = `$${nodePriceStr}`;
+    priceEl.style.cursor = 'pointer';
+    priceEl.title = `Click to toggle extended dotted line at $${nodePriceStr}`;
+    if (activeMap.has(nodePriceStr)) {
+      priceEl.classList.add('active-line-on');
+      priceEl.style.color = color;
+    } else {
+      priceEl.classList.remove('active-line-on');
+      priceEl.style.color = '#ffffff';
+    }
+    priceEl.onclick = (e) => {
+      e.stopPropagation();
+      const c = chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+      const lbl = node.isVpoc ? '#1 VPOC' : (`NODE #${node.rank}`);
+      toggleBoxItemLine(c, node.price, lbl);
+    };
+  }
 
   const vpocEl = document.getElementById('tvBoxTrailNodeVpoc');
   if (vpocEl) vpocEl.style.display = node.isVpoc ? 'inline-block' : 'none';
@@ -6135,9 +6372,19 @@ function renderTrailWavesPanel(res, targetRank) {
     } else {
       wavesTbody.innerHTML = wavesData.waves.map((w, idx) => {
         const isLatest = (idx === wavesData.waves.length - 1);
+        const origPrice = (typeof w.originPrice === 'number' && !isNaN(w.originPrice))
+          ? w.originPrice
+          : parseFloat(w.origin.replace(/[^0-9.]/g, ''));
+        const origPriceStr = origPrice.toFixed(2);
+        const isWaveActive = activeMap.has(origPriceStr);
+        const waveKey = w.waveKey || (`W${idx + 1}`);
+
         return `
-          <tr class="${isLatest ? 'active-wave' : ''}">
-            <td style="color: #00f0ff; font-weight: 700;">${w.wave}</td>
+          <tr class="tv-box-trail-wave-row ${isLatest ? 'active-wave' : ''} ${isWaveActive ? 'active-line-on' : ''}" data-wave-key="${waveKey}" data-origin-price="${origPriceStr}" style="cursor: pointer; ${isWaveActive ? `border-left: 3px solid ${color};` : ''}" title="Click to toggle extended dotted line at $${origPriceStr}">
+            <td style="color: #00f0ff; font-weight: 700;">
+              ${w.wave}
+              ${isWaveActive ? `<span class="tv-box-row-line-badge" style="color: ${color};">┄┄</span>` : ''}
+            </td>
             <td style="text-align: center; color: #94a3b8;">${w.gap}</td>
             <td style="color: #ffffff;">${w.origin}</td>
             <td style="text-align: center; color: #fbbf24; font-weight: 700;">${w.dwell}</td>
@@ -6148,8 +6395,21 @@ function renderTrailWavesPanel(res, targetRank) {
           </tr>
         `;
       }).join('');
+
+      // Wire click listener on each wave row to toggle extended dotted line
+      wavesTbody.querySelectorAll('.tv-box-trail-wave-row').forEach(row => {
+        const waveKey = row.getAttribute('data-wave-key');
+        const price = parseFloat(row.getAttribute('data-origin-price'));
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const c = chartInstance || (typeof window !== 'undefined' && (window.__chart || window.__chartInstance));
+          toggleBoxItemLine(c, price, `TRAIL ${waveKey}`);
+        });
+      });
     }
   }
+
+  updateBoxItemLinesUI();
 }
 window.__updateBoxOrderflowMetricsHud = updateBoxOrderflowMetricsHud;
 
