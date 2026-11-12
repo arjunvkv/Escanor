@@ -4,7 +4,7 @@
  * and registers custom box & measurement ruler tools matching TradingView exactly.
  */
 
-import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121535';
+import { expandRectPointsToSix, normalizeRectPoints, handleRectPressedMove, recalculateRectZLevels, showChartToast } from './drawings_storage.js?v=202611121545';
 import { registerLivingFootprintIndicator, applyCandleFootprintStyles, isFootprintEnabled } from './living_candle_engine.js?v=202611031455';
 
 // Global reference for chart instance
@@ -5751,7 +5751,7 @@ export function computeBoxOrderflowShading(overlay, dataList) {
   // 8. Physical Trail Wave Ledger Calculator for Top Nodes
   const wavesMap = {};
   topNodes.forEach(node => {
-    wavesMap[node.rank] = computeNodeWaves(node, intersectingBars, binStep);
+    wavesMap[node.rank] = computeNodeWaves(node, intersectingBars, binStep, topPrice, bottomPrice);
   });
 
   return {
@@ -5779,7 +5779,7 @@ window.__computeBoxOrderflowShading = computeBoxOrderflowShading;
  * Computes the True Physical Trail Wave Ledger (W1...WN, GAP, ORIGIN, DWELL, VOL, SLIP, EXIT DISP, EFFORT)
  * for a specific price node based on intersecting bars.
  */
-function computeNodeWaves(node, intersectingBars, binStep) {
+function computeNodeWaves(node, intersectingBars, binStep, topPrice = Infinity, bottomPrice = -Infinity) {
   if (!node || !intersectingBars || intersectingBars.length === 0) {
     return { waves: [], pattern: 'AUCTION ROTATION', vectorStr: '+0.00p (BALANCED)' };
   }
@@ -5839,10 +5839,13 @@ function computeNodeWaves(node, intersectingBars, binStep) {
     }
     prevEndTime = lastB.timestamp;
 
-    // ORIGIN
-    const originDelta = firstB.open - targetPrice;
+    // ORIGIN - CLAMP STRICTLY TO BOX PRICE BOUNDS [bottomPrice, topPrice]
+    const clampedOpen = (topPrice < Infinity && bottomPrice > -Infinity)
+      ? Math.max(bottomPrice, Math.min(topPrice, firstB.open))
+      : firstB.open;
+    const originDelta = clampedOpen - targetPrice;
     const originSign = originDelta >= 0 ? '▲' : '▼';
-    const originStr = `$${firstB.open.toFixed(2)} (${originSign}${Math.abs(originDelta).toFixed(2)})`;
+    const originStr = `$${clampedOpen.toFixed(2)} (${originSign}${Math.abs(originDelta).toFixed(2)})`;
 
     // DWELL
     const tfMins = (typeof window !== 'undefined' && window.__currentTimeframeMinutes) || 5;
@@ -5854,12 +5857,19 @@ function computeNodeWaves(node, intersectingBars, binStep) {
       dwellStr = s > 0 ? `${m}m ${s}s` : `${m}m`;
     }
 
-    // VOL (Δ)
+    // VOL (Δ) - Prorated to in-box fraction of candle span
     let wVol = 0;
     let wBull = 0;
     let wBear = 0;
     wBars.forEach(b => {
-      const v = Number(b.volume || b.tick_volume || 1);
+      const bLo = b.low;
+      const bHi = b.high;
+      const span = Math.max(0.01, bHi - bLo);
+      const overlap = (topPrice < Infinity && bottomPrice > -Infinity)
+        ? Math.max(0, Math.min(bHi, topPrice) - Math.max(bLo, bottomPrice))
+        : span;
+      const frac = span > 0 ? (overlap / span) : 1;
+      const v = Number(b.volume || b.tick_volume || 1) * frac;
       wVol += v;
       if (b.close >= b.open) wBull += v * 0.6;
       else wBear += v * 0.6;
@@ -5869,17 +5879,24 @@ function computeNodeWaves(node, intersectingBars, binStep) {
     const dSign = wDelta >= 0 ? '+' : '';
     const volStr = `${wVol}v (Δ${dSign}${wDelta})`;
 
-    // SLIP
-    const minLow = Math.min(...wBars.map(b => b.low));
-    const maxHigh = Math.max(...wBars.map(b => b.high));
-    const slipVal = (targetPrice >= (firstB.open + firstB.close) / 2)
+    // SLIP - Clamped strictly to box price bounds
+    const minLow = (bottomPrice > -Infinity)
+      ? Math.max(bottomPrice, Math.min(...wBars.map(b => b.low)))
+      : Math.min(...wBars.map(b => b.low));
+    const maxHigh = (topPrice < Infinity)
+      ? Math.min(topPrice, Math.max(...wBars.map(b => b.high)))
+      : Math.max(...wBars.map(b => b.high));
+    const slipVal = (targetPrice >= (clampedOpen + lastB.close) / 2)
       ? (targetPrice - minLow)
       : (maxHigh - targetPrice);
     const slipSign = slipVal >= 0 ? '+' : '-';
     const slipStr = `${slipSign}${Math.abs(slipVal).toFixed(2)}p`;
 
-    // EXIT DISP
-    const exitDispVal = parseFloat((lastB.close - targetPrice).toFixed(2));
+    // EXIT DISP - Clamped strictly to box price bounds
+    const clampedClose = (topPrice < Infinity && bottomPrice > -Infinity)
+      ? Math.max(bottomPrice, Math.min(topPrice, lastB.close))
+      : lastB.close;
+    const exitDispVal = parseFloat((clampedClose - targetPrice).toFixed(2));
     const exitSign = exitDispVal >= 0 ? '+' : '';
     const exitDispStr = `${exitSign}${exitDispVal.toFixed(2)}p`;
     dispVector.push(exitDispStr);
@@ -5892,7 +5909,7 @@ function computeNodeWaves(node, intersectingBars, binStep) {
     waveRows.push({
       wave: `${waveNum} ${timeStr}`,
       waveKey: waveNum,
-      originPrice: firstB.open,
+      originPrice: clampedOpen,
       gap: gapStr,
       origin: originStr,
       dwell: dwellStr,
@@ -6519,7 +6536,7 @@ function renderTrailWavesPanel(res, targetRank) {
   const activeMap = (typeof window !== 'undefined' && window.__activeBoxItemLines) || new Map();
   const color = (typeof window !== 'undefined' && window.__boxItemLineColor) || '#00f0ff';
 
-  const wavesData = (res.wavesMap && res.wavesMap[node.rank]) || computeNodeWaves(node, [], 0.1);
+  const wavesData = (res.wavesMap && res.wavesMap[node.rank]) || computeNodeWaves(node, [], 0.1, res.topPrice, res.bottomPrice);
 
   const rankEl = document.getElementById('tvBoxTrailNodeRank');
   if (rankEl) rankEl.textContent = `#${node.rank}`;
