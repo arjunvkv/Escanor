@@ -961,9 +961,9 @@ Return ONLY valid JSON matching this exact structure:
   <!-- MODAL: TOP 8 VOLUME NODES IN BULL/BEAR RANGE                              -->
   <!-- ========================================================================= -->
   <div id="rangeVolProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) toggleRangeVolumeProfileModal()">
-    <div class="relative flex flex-col md:flex-row items-start gap-3 max-w-5xl" onclick="event.stopPropagation()">
+    <div class="relative flex flex-row items-start gap-3 max-w-6xl overflow-x-auto" onclick="event.stopPropagation()">
       <!-- Main Volume Profile Table Window -->
-      <div class="hud-panel rounded-lg w-[410px] p-4 border border-cyan-500/50 shadow-2xl flex flex-col gap-3">
+      <div class="hud-panel rounded-lg p-3.5 border border-cyan-500/50 shadow-2xl flex flex-col gap-3" style="width: 440px; min-width: 440px; max-width: 440px;">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <div>
@@ -1020,8 +1020,8 @@ Return ONLY valid JSON matching this exact structure:
         <!-- Table Header -->
         <div class="grid grid-cols-12 px-2.5 py-1.5 bg-black/80 border border-slate-700 rounded text-[11px] font-bold text-slate-300 uppercase font-hud-tech">
           <div class="col-span-1">#</div>
-          <div class="col-span-3">PRICE</div>
-          <div class="col-span-3 text-right">VOLUME</div>
+          <div class="col-span-4">PRICE</div>
+          <div class="col-span-2 text-right">VOL</div>
           <div class="col-span-2 text-right text-emerald-400">BULL</div>
           <div class="col-span-2 text-right text-red-400">BEAR</div>
           <div class="col-span-1 text-center">BIAS</div>
@@ -1052,7 +1052,7 @@ Return ONLY valid JSON matching this exact structure:
       </div>
 
       <!-- FLOATING INSPECTION BOX ON THE RIGHT (APPEARS WHEN HOVERED) -->
-      <div id="nodeHoverFlyoutBox" class="w-[680px] bg-slate-950/98 border-2 border-cyan-400/90 rounded-xl p-4 shadow-2xl backdrop-blur-md flex flex-col gap-2.5 transition-all">
+      <div id="nodeHoverFlyoutBox" class="bg-slate-950/98 border-2 border-cyan-400/90 rounded-xl p-4 shadow-2xl backdrop-blur-md flex flex-col gap-2.5 transition-all" style="width: 680px; min-width: 680px;">
         <!-- Flyout Header -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <div class="flex items-center gap-2.5">
@@ -2549,16 +2549,6 @@ Return ONLY valid JSON matching this exact structure:
     }
     window.toggleTapeFreeze = toggleTapeFreeze;
 
-    // Toggle Range Volume Profile Info Popover
-    function toggleRangeVolumeProfileModal() {
-      const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
-      if (!currentDay) return;
-      const span = currentDay.stats.range_pts;
-      const spot = currentDay.stats.spot;
-      alert(`📊 ESCANOR SESSION LIQUIDITY NODES (${currentDay.date}):\n\n• Spot: $${spot.toFixed(2)}\n• Range: ${span.toFixed(2)} pts\n• High: $${currentDay.stats.high.toFixed(2)}\n• Low: $${currentDay.stats.low.toFixed(2)}\n• Bars: ${currentDay.stats.bars_count} M1\n• Capacitor Zone: ${currentDay.capacitor_zone ? currentDay.capacitor_zone.title : 'None'}`);
-    }
-    window.toggleRangeVolumeProfileModal = toggleRangeVolumeProfileModal;
-
     // Core Engine: Update Left Panel with Live or Lookback Telemetry
     function updateTapeAndTriedExtremes(targetTime = null) {
       const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
@@ -2701,6 +2691,17 @@ Return ONLY valid JSON matching this exact structure:
         const sign = tlDist >= 0 ? "+" : "-";
         elTlDist.textContent = `${sign}$${Math.abs(tlDist).toFixed(2)} (${tlPts.toFixed(1)}p)`;
         elTlDist.className = "font-mono font-bold " + (tlDist >= 0 ? "text-cyan-400" : "text-rose-400");
+      }
+
+      // Store Tested & Failed Extremes
+      triedHighPrice = thPrice;
+      triedHighTime = thTimeStr;
+      triedLowPrice = tlPrice;
+      triedLowTime = tlTimeStr;
+
+      if (isRangeVolProfileModalOpen) {
+        buildSessionRangeVolumeProfile(effTime);
+        renderRangeVolumeProfileModal();
       }
 
       // 4. Generate Time & Sales Prints Stream
@@ -3334,50 +3335,120 @@ Return ONLY valid JSON matching this exact structure:
     }
 
     // 11b. Bull/Bear Range Volume Profile Modal & Real-Time Accumulation
+    function buildSessionRangeVolumeProfile(targetTime = null) {
+      const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
+      if (!currentDay || !currentDay.candles || currentDay.candles.length === 0) return [];
+
+      const effTime = (vLineTime !== null) ? vLineTime : ((targetTime !== null) ? targetTime : currentDay.candles[currentDay.candles.length - 1].time);
+      const pastCandles = currentDay.candles.filter(c => c.time <= effTime);
+      if (pastCandles.length === 0) return [];
+
+      // Ensure tried extremes are calculated if null
+      if (triedLowPrice === null || triedHighPrice === null) {
+        updateTapeAndTriedExtremes(effTime);
+      }
+
+      // Range boundaries
+      const rMin = (triedLowPrice !== null && triedHighPrice !== null) ? Math.min(triedLowPrice, triedHighPrice) : (currentDay.stats?.low || 3870.0);
+      const rMax = (triedLowPrice !== null && triedHighPrice !== null) ? Math.max(triedLowPrice, triedHighPrice) : (currentDay.stats?.high || 3930.0);
+      const spread = Math.max(0.50, rMax - rMin);
+      const step = spread >= 30.0 ? 0.20 : 0.10;
+
+      // Group candle volume into price bins
+      const bins = {};
+      for (let i = 0; i < pastCandles.length; i++) {
+        const c = pastCandles[i];
+        const cLow = (c.low !== undefined) ? c.low : c.close;
+        const cHigh = (c.high !== undefined) ? c.high : c.close;
+        const cOpen = (c.open !== undefined) ? c.open : c.close;
+        const cClose = c.close;
+        const vol = c.volume || 100;
+
+        const bStart = Math.round((Math.round(cLow / step) * step) * 100) / 100;
+        const bEnd = Math.round((Math.round(cHigh / step) * step) * 100) / 100;
+        const numSteps = Math.max(1, Math.round((bEnd - bStart) / step) + 1);
+        const volPerStep = vol / numSteps;
+
+        let bullRatio = (cHigh > cLow) ? (0.5 + 0.5 * (cClose - cOpen) / Math.max(0.05, cHigh - cLow)) : (cClose >= cOpen ? 0.7 : 0.3);
+        bullRatio = Math.max(0.0, Math.min(1.0, bullRatio));
+
+        let curP = bStart;
+        for (let s = 0; s < numSteps; s++) {
+          const pKey = Math.round(curP * 100) / 100;
+          if (!bins[pKey]) {
+            bins[pKey] = { price: pKey, volume: 0, bull_vol: 0, bear_vol: 0 };
+          }
+          bins[pKey].volume += volPerStep;
+          bins[pKey].bull_vol += volPerStep * bullRatio;
+          bins[pKey].bear_vol += volPerStep * (1.0 - bullRatio);
+          curP += step;
+        }
+      }
+
+      // Sort descending by volume: highest on top
+      const allNodes = Object.values(bins).map(n => ({
+        price: n.price,
+        volume: Math.round(n.volume),
+        bull_vol: Math.round(n.bull_vol),
+        bear_vol: Math.round(n.bear_vol)
+      }));
+
+      allNodes.sort((a, b) => b.volume - a.volume);
+      currentRangeVolumeNodes = allNodes.slice(0, 8);
+      return currentRangeVolumeNodes;
+    }
+
     function toggleRangeVolumeProfileModal() {
       const modal = document.getElementById("rangeVolProfileModal");
       if (!modal) return;
       modal.classList.toggle("hidden");
       isRangeVolProfileModalOpen = !modal.classList.contains("hidden");
       if (isRangeVolProfileModalOpen) {
-        if (!currentRangeVolumeNodes || currentRangeVolumeNodes.length === 0) {
-          fetchTapeExtremes();
-        } else {
-          renderRangeVolumeProfileModal();
-        }
+        buildSessionRangeVolumeProfile();
+        renderRangeVolumeProfileModal();
       } else {
         currentlyInspectedPrice = null;
       }
     }
+    window.toggleRangeVolumeProfileModal = toggleRangeVolumeProfileModal;
 
     function renderLivePivotRow() {
       const container = document.getElementById("rangeVolLivePivotContainer");
       if (!container) return;
 
-      const livePrice = (activeShelfPrice !== null) ? activeShelfPrice : (lastTapePrice || (currentRangeVolumeNodes && currentRangeVolumeNodes[0] ? currentRangeVolumeNodes[0].price : 0));
+      const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
+      const effTime = (vLineTime !== null) ? vLineTime : ((currentDay && currentDay.candles) ? currentDay.candles[currentDay.candles.length - 1].time : 0);
+      const pastCandles = (currentDay && currentDay.candles) ? currentDay.candles.filter(c => c.time <= effTime) : [];
+      const spotFromCandle = pastCandles.length > 0 ? pastCandles[pastCandles.length - 1].close : currentSpot;
+
+      const livePrice = (typeof activeShelfPrice !== 'undefined' && activeShelfPrice !== null)
+        ? activeShelfPrice
+        : ((typeof lastTapePrice !== 'undefined' && lastTapePrice)
+            ? lastTapePrice
+            : ((currentRangeVolumeNodes && currentRangeVolumeNodes[0]) ? currentRangeVolumeNodes[0].price : spotFromCandle));
       if (!livePrice) {
         container.innerHTML = "";
         return;
       }
 
       let liveNode = currentRangeVolumeNodes ? currentRangeVolumeNodes.find(n => Math.abs(n.price - livePrice) < 0.05) : null;
-      const liveVol = liveNode ? liveNode.volume : (activeShelfVol || 1);
-      const liveBull = liveNode ? liveNode.bull_vol : (activeShelfDelta > 0 ? activeShelfVol : 0);
-      const liveBear = liveNode ? liveNode.bear_vol : (activeShelfDelta < 0 ? activeShelfVol : 0);
+      const liveVol = liveNode ? liveNode.volume : ((typeof activeShelfVol !== 'undefined' && activeShelfVol) ? activeShelfVol : 85);
+      const liveBull = liveNode ? liveNode.bull_vol : ((typeof activeShelfDelta !== 'undefined' && activeShelfDelta > 0) ? liveVol : Math.round(liveVol * 0.5));
+      const liveBear = liveNode ? liveNode.bear_vol : (liveVol - liveBull);
       const liveDelta = liveBull - liveBear;
       const isBull = liveDelta >= 0;
 
       container.innerHTML = `
         <div onmouseenter="onHoverNodeItem(${livePrice}, 'LIVE', ${liveVol}, ${liveBull}, ${liveBear})" 
-             class="grid grid-cols-12 px-2.5 py-2 items-center bg-cyan-950/40 border border-cyan-500/80 hover:border-cyan-300 hover:bg-cyan-900/50 cursor-pointer rounded-lg text-[11.5px] font-mono transition-all shadow-md shadow-cyan-950/40">
-          <div class="col-span-1 font-bold text-cyan-400 flex items-center gap-1.5">
+             class="grid grid-cols-12 px-2.5 py-1.5 items-center bg-cyan-950/40 border border-cyan-500/80 hover:border-cyan-300 hover:bg-cyan-900/50 cursor-pointer rounded-lg text-[11px] font-mono transition-all shadow-md shadow-cyan-950/40">
+          <div class="col-span-1 font-bold text-cyan-400 flex items-center gap-1">
             <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
           </div>
-          <div class="col-span-3 font-bold text-white flex items-center gap-1.5">
+          <div class="col-span-4 font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
             $${Number(livePrice).toFixed(2)}
-            <span class="px-1.5 py-0.5 rounded text-[8.5px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 font-bold tracking-wider animate-pulse">PIVOT</span>
+            <span class="px-1 py-0.5 rounded text-[8px] bg-cyan-950 text-cyan-300 border border-cyan-500/60 font-bold tracking-wider animate-pulse">PIVOT</span>
           </div>
-          <div class="col-span-3 text-right font-bold text-cyan-300 pr-1">
+          <div class="col-span-2 text-right font-bold text-cyan-300 pr-1">
             ${Number(liveVol).toLocaleString()}v
           </div>
           <div class="col-span-2 text-right font-bold text-emerald-400">${Number(liveBull).toLocaleString()}v</div>
@@ -3397,18 +3468,22 @@ Return ONLY valid JSON matching this exact structure:
       const ratioEl = document.getElementById("rangeVolRatio");
       if (!list) return;
 
+      if (!currentRangeVolumeNodes || currentRangeVolumeNodes.length === 0) {
+        buildSessionRangeVolumeProfile();
+      }
+
       renderLivePivotRow();
 
-      const rMin = Math.min(triedLowPrice || 0, triedHighPrice || 0);
-      const rMax = Math.max(triedLowPrice || 0, triedHighPrice || 0);
+      const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
+      const effTime = (vLineTime !== null) ? vLineTime : ((currentDay && currentDay.candles) ? currentDay.candles[currentDay.candles.length - 1].time : 0);
+      const pastCandles = (currentDay && currentDay.candles) ? currentDay.candles.filter(c => c.time <= effTime) : [];
+
+      const rMin = (triedLowPrice !== null && triedHighPrice !== null) ? Math.min(triedLowPrice, triedHighPrice) : (currentDay?.stats?.low || 3870.0);
+      const rMax = (triedLowPrice !== null && triedHighPrice !== null) ? Math.max(triedLowPrice, triedHighPrice) : (currentDay?.stats?.high || 3930.0);
       const spread = Math.abs(rMax - rMin);
 
       if (sub) {
-        if (triedLowPrice !== null && triedHighPrice !== null) {
-          sub.textContent = `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`;
-        } else {
-          sub.textContent = `BULL/BEAR RANGE: INITIALIZING...`;
-        }
+        sub.textContent = `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`;
       }
       if (spreadEl) spreadEl.textContent = `$${spread.toFixed(2)} (${(spread * 10).toFixed(1)}p)`;
 
@@ -3417,7 +3492,6 @@ Return ONLY valid JSON matching this exact structure:
       const totalVol = sorted.reduce((acc, n) => acc + (n.volume || 0), 0);
       const totalBull = sorted.reduce((acc, n) => acc + (n.bull_vol || 0), 0);
       const totalBear = sorted.reduce((acc, n) => acc + (n.bear_vol || 0), 0);
-      const maxVol = sorted.length > 0 ? Math.max(...sorted.map(n => n.volume || 1)) : 1;
 
       if (totalEl) totalEl.textContent = `${totalVol.toLocaleString()}v`;
       if (ratioEl) {
@@ -3437,13 +3511,13 @@ Return ONLY valid JSON matching this exact structure:
         const isBullDominant = (n.bull_vol || 0) >= (n.bear_vol || 0);
 
         return `
-          <div onmouseenter="onHoverNodeItem(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" class="grid grid-cols-12 px-2.5 py-2 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer rounded-lg text-[11.5px] font-mono transition-all">
+          <div onmouseenter="onHoverNodeItem(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" class="grid grid-cols-12 px-2.5 py-1.5 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer rounded-lg text-[11px] font-mono transition-all">
             <div class="col-span-1 font-bold ${isVpoc ? 'text-amber-400' : 'text-slate-400'}">#${rank}</div>
-            <div class="col-span-3 font-bold text-white flex items-center gap-1.5">
+            <div class="col-span-4 font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
               $${Number(n.price).toFixed(2)}
-              ${isVpoc ? '<span class="px-1.5 py-0.5 rounded text-[8.5px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold">VPOC</span>' : ''}
+              ${isVpoc ? '<span class="px-1 py-0.5 rounded text-[8px] bg-amber-950 text-amber-300 border border-amber-500/40 font-bold">VPOC</span>' : ''}
             </div>
-            <div class="col-span-3 text-right font-bold text-amber-300 pr-1">
+            <div class="col-span-2 text-right font-bold text-amber-300 pr-1">
               ${Number(n.volume).toLocaleString()}v
             </div>
             <div class="col-span-2 text-right font-bold text-emerald-400">${Number(n.bull_vol || 0).toLocaleString()}v</div>
@@ -3455,12 +3529,14 @@ Return ONLY valid JSON matching this exact structure:
         `;
       }).join("");
 
-      // Only initialize flyout on initial open if nothing has been inspected yet and user is not typing
+      // Default inspection on launch: inspect node #1 (VPOC) so flyout is immediately populated
       const customInput = document.getElementById("customPriceAuditInput");
       const isTypingCustom = customInput && (customInput.value.trim().length > 0 || document.activeElement === customInput);
-      if (currentlyInspectedPrice === null && !isTypingCustom && sorted.length > 0) {
-        currentlyInspectedPrice = sorted[0].price;
-        showNodeHoverFlyout(sorted[0].price, 1, sorted[0].volume, sorted[0].bull_vol || 0, sorted[0].bear_vol || 0);
+      if (!isTypingCustom && sorted.length > 0) {
+        if (currentlyInspectedPrice === null || !sorted.some(n => Math.abs(n.price - currentlyInspectedPrice) < 0.05)) {
+          currentlyInspectedPrice = sorted[0].price;
+          showNodeHoverFlyout(sorted[0].price, 1, sorted[0].volume, sorted[0].bull_vol || 0, sorted[0].bear_vol || 0);
+        }
       }
     }
 
@@ -3489,15 +3565,244 @@ Return ONLY valid JSON matching this exact structure:
       }
     }
 
-    // 11c. Node Provenance & Values Trail Box (100% True MT5 Tick Audit)
-    const NODE_PROVENANCE_DATA = {"3977.60": {"price": 3977.6, "total_waves": 5, "waves": [{"wave": "W1 19:17", "gap": "Init", "origin": "$3977.60", "dwell": "6s", "dwell_sec": 6, "vol": "10v (\u0394-2)", "tot_vol": 10, "delta": -2, "slip": "+0.05p", "disp": "-3.58p", "disp_val": -3.58, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W2 19:26", "gap": "+9m", "origin": "$3977.60", "dwell": "2m 59s", "dwell_sec": 179, "vol": "150v (\u0394-8)", "tot_vol": 150, "delta": -8, "slip": "+0.05p", "disp": "+4.20p", "disp_val": 4.2, "eff_res": "36 v/pt", "eff_num": 36}, {"wave": "W3 19:39", "gap": "+10m", "origin": "$3977.60", "dwell": "10s", "dwell_sec": 10, "vol": "33v (\u0394-13)", "tot_vol": 33, "delta": -13, "slip": "+0.05p", "disp": "+1.93p", "disp_val": 1.93, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W4 19:40", "gap": "+55s", "origin": "$3977.78 (\u25bc0.18)", "dwell": "1m 57s", "dwell_sec": 117, "vol": "65v (\u0394-7)", "tot_vol": 65, "delta": -7, "slip": "-0.05p", "disp": "-3.81p", "disp_val": -3.81, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W5 19:43", "gap": "+1m", "origin": "$3977.51 (\u25b20.09)", "dwell": "48s", "dwell_sec": 48, "vol": "39v (\u0394+7)", "tot_vol": 39, "delta": 7, "slip": "+0.05p", "disp": "-5.99p", "disp_val": -5.99, "eff_res": "7 v/pt", "eff_num": 7}], "displacement_vector": "+4.20p \u2192 +1.93p \u2192 -3.81p \u2192 -5.99p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3977.6": {"price": 3977.6, "total_waves": 5, "waves": [{"wave": "W1 19:17", "gap": "Init", "origin": "$3977.60", "dwell": "6s", "dwell_sec": 6, "vol": "10v (\u0394-2)", "tot_vol": 10, "delta": -2, "slip": "+0.05p", "disp": "-3.58p", "disp_val": -3.58, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W2 19:26", "gap": "+9m", "origin": "$3977.60", "dwell": "2m 59s", "dwell_sec": 179, "vol": "150v (\u0394-8)", "tot_vol": 150, "delta": -8, "slip": "+0.05p", "disp": "+4.20p", "disp_val": 4.2, "eff_res": "36 v/pt", "eff_num": 36}, {"wave": "W3 19:39", "gap": "+10m", "origin": "$3977.60", "dwell": "10s", "dwell_sec": 10, "vol": "33v (\u0394-13)", "tot_vol": 33, "delta": -13, "slip": "+0.05p", "disp": "+1.93p", "disp_val": 1.93, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W4 19:40", "gap": "+55s", "origin": "$3977.78 (\u25bc0.18)", "dwell": "1m 57s", "dwell_sec": 117, "vol": "65v (\u0394-7)", "tot_vol": 65, "delta": -7, "slip": "-0.05p", "disp": "-3.81p", "disp_val": -3.81, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W5 19:43", "gap": "+1m", "origin": "$3977.51 (\u25b20.09)", "dwell": "48s", "dwell_sec": 48, "vol": "39v (\u0394+7)", "tot_vol": 39, "delta": 7, "slip": "+0.05p", "disp": "-5.99p", "disp_val": -5.99, "eff_res": "7 v/pt", "eff_num": 7}], "displacement_vector": "+4.20p \u2192 +1.93p \u2192 -3.81p \u2192 -5.99p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.60": {"price": 3980.6, "total_waves": 6, "waves": [{"wave": "W1 18:59", "gap": "Init", "origin": "$3980.78 (\u25bc0.18)", "dwell": "1m 9s", "dwell_sec": 69, "vol": "51v (\u0394-5)", "tot_vol": 51, "delta": -5, "slip": "-0.05p", "disp": "+2.84p", "disp_val": 2.84, "eff_res": "18 v/pt", "eff_num": 18}, {"wave": "W2 19:07", "gap": "+6m", "origin": "$3980.79 (\u25bc0.19)", "dwell": "53s", "dwell_sec": 53, "vol": "41v (\u0394-19)", "tot_vol": 41, "delta": -19, "slip": "-0.05p", "disp": "+2.11p", "disp_val": 2.11, "eff_res": "19 v/pt", "eff_num": 19}, {"wave": "W3 19:09", "gap": "+51s", "origin": "$3980.39 (\u25b20.21)", "dwell": "1s", "dwell_sec": 1, "vol": "7v (\u0394+5)", "tot_vol": 7, "delta": 5, "slip": "+0.03p", "disp": "+2.11p", "disp_val": 2.11, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W4 19:12", "gap": "+2m", "origin": "$3980.72 (\u25bc0.12)", "dwell": "1s", "dwell_sec": 1, "vol": "4v (\u0394-4)", "tot_vol": 4, "delta": -4, "slip": "-0.01p", "disp": "-4.71p", "disp_val": -4.71, "eff_res": "1 v/pt", "eff_num": 1}, {"wave": "W5 19:30", "gap": "+17m", "origin": "$3980.60", "dwell": "3m 55s", "dwell_sec": 235, "vol": "406v (\u0394+16)", "tot_vol": 406, "delta": 16, "slip": "+0.05p", "disp": "-2.13p", "disp_val": -2.13, "eff_res": "191 v/pt", "eff_num": 191}, {"wave": "W6 19:37", "gap": "+3m", "origin": "$3980.60", "dwell": "55s", "dwell_sec": 55, "vol": "16v (\u0394-6)", "tot_vol": 16, "delta": -6, "slip": "-0.05p", "disp": "-4.03p", "disp_val": -4.03, "eff_res": "4 v/pt", "eff_num": 4}], "displacement_vector": "+2.11p \u2192 -4.71p \u2192 -2.13p \u2192 -4.03p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.6": {"price": 3980.6, "total_waves": 6, "waves": [{"wave": "W1 18:59", "gap": "Init", "origin": "$3980.78 (\u25bc0.18)", "dwell": "1m 9s", "dwell_sec": 69, "vol": "51v (\u0394-5)", "tot_vol": 51, "delta": -5, "slip": "-0.05p", "disp": "+2.84p", "disp_val": 2.84, "eff_res": "18 v/pt", "eff_num": 18}, {"wave": "W2 19:07", "gap": "+6m", "origin": "$3980.79 (\u25bc0.19)", "dwell": "53s", "dwell_sec": 53, "vol": "41v (\u0394-19)", "tot_vol": 41, "delta": -19, "slip": "-0.05p", "disp": "+2.11p", "disp_val": 2.11, "eff_res": "19 v/pt", "eff_num": 19}, {"wave": "W3 19:09", "gap": "+51s", "origin": "$3980.39 (\u25b20.21)", "dwell": "1s", "dwell_sec": 1, "vol": "7v (\u0394+5)", "tot_vol": 7, "delta": 5, "slip": "+0.03p", "disp": "+2.11p", "disp_val": 2.11, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W4 19:12", "gap": "+2m", "origin": "$3980.72 (\u25bc0.12)", "dwell": "1s", "dwell_sec": 1, "vol": "4v (\u0394-4)", "tot_vol": 4, "delta": -4, "slip": "-0.01p", "disp": "-4.71p", "disp_val": -4.71, "eff_res": "1 v/pt", "eff_num": 1}, {"wave": "W5 19:30", "gap": "+17m", "origin": "$3980.60", "dwell": "3m 55s", "dwell_sec": 235, "vol": "406v (\u0394+16)", "tot_vol": 406, "delta": 16, "slip": "+0.05p", "disp": "-2.13p", "disp_val": -2.13, "eff_res": "191 v/pt", "eff_num": 191}, {"wave": "W6 19:37", "gap": "+3m", "origin": "$3980.60", "dwell": "55s", "dwell_sec": 55, "vol": "16v (\u0394-6)", "tot_vol": 16, "delta": -6, "slip": "-0.05p", "disp": "-4.03p", "disp_val": -4.03, "eff_res": "4 v/pt", "eff_num": 4}], "displacement_vector": "+2.11p \u2192 -4.71p \u2192 -2.13p \u2192 -4.03p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.50": {"price": 3980.5, "total_waves": 5, "waves": [{"wave": "W1 18:59", "gap": "Init", "origin": "$3980.57 (\u25bc0.07)", "dwell": "1m 8s", "dwell_sec": 68, "vol": "58v (\u0394-8)", "tot_vol": 58, "delta": -8, "slip": "-0.05p", "disp": "+2.94p", "disp_val": 2.94, "eff_res": "20 v/pt", "eff_num": 20}, {"wave": "W2 19:08", "gap": "+6m", "origin": "$3980.56 (\u25bc0.06)", "dwell": "1m 43s", "dwell_sec": 103, "vol": "92v (\u0394+20)", "tot_vol": 92, "delta": 20, "slip": "-0.05p", "disp": "+2.21p", "disp_val": 2.21, "eff_res": "42 v/pt", "eff_num": 42}, {"wave": "W3 19:12", "gap": "+2m", "origin": "$3980.50", "dwell": "1s", "dwell_sec": 1, "vol": "2v (\u0394-2)", "tot_vol": 2, "delta": -2, "slip": "-0.03p", "disp": "-4.61p", "disp_val": -4.61, "eff_res": "0 v/pt", "eff_num": 0}, {"wave": "W4 19:30", "gap": "+17m", "origin": "$3980.58 (\u25bc0.08)", "dwell": "4m 9s", "dwell_sec": 249, "vol": "345v (\u0394-23)", "tot_vol": 345, "delta": -23, "slip": "-0.05p", "disp": "-2.70p", "disp_val": -2.7, "eff_res": "128 v/pt", "eff_num": 128}, {"wave": "W5 19:37", "gap": "+3m", "origin": "$3980.71 (\u25bc0.21)", "dwell": "2s", "dwell_sec": 2, "vol": "5v (\u0394-5)", "tot_vol": 5, "delta": -5, "slip": "-0.03p", "disp": "-3.93p", "disp_val": -3.93, "eff_res": "1 v/pt", "eff_num": 1}], "displacement_vector": "+2.21p \u2192 -4.61p \u2192 -2.70p \u2192 -3.93p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.5": {"price": 3980.5, "total_waves": 5, "waves": [{"wave": "W1 18:59", "gap": "Init", "origin": "$3980.57 (\u25bc0.07)", "dwell": "1m 8s", "dwell_sec": 68, "vol": "58v (\u0394-8)", "tot_vol": 58, "delta": -8, "slip": "-0.05p", "disp": "+2.94p", "disp_val": 2.94, "eff_res": "20 v/pt", "eff_num": 20}, {"wave": "W2 19:08", "gap": "+6m", "origin": "$3980.56 (\u25bc0.06)", "dwell": "1m 43s", "dwell_sec": 103, "vol": "92v (\u0394+20)", "tot_vol": 92, "delta": 20, "slip": "-0.05p", "disp": "+2.21p", "disp_val": 2.21, "eff_res": "42 v/pt", "eff_num": 42}, {"wave": "W3 19:12", "gap": "+2m", "origin": "$3980.50", "dwell": "1s", "dwell_sec": 1, "vol": "2v (\u0394-2)", "tot_vol": 2, "delta": -2, "slip": "-0.03p", "disp": "-4.61p", "disp_val": -4.61, "eff_res": "0 v/pt", "eff_num": 0}, {"wave": "W4 19:30", "gap": "+17m", "origin": "$3980.58 (\u25bc0.08)", "dwell": "4m 9s", "dwell_sec": 249, "vol": "345v (\u0394-23)", "tot_vol": 345, "delta": -23, "slip": "-0.05p", "disp": "-2.70p", "disp_val": -2.7, "eff_res": "128 v/pt", "eff_num": 128}, {"wave": "W5 19:37", "gap": "+3m", "origin": "$3980.71 (\u25bc0.21)", "dwell": "2s", "dwell_sec": 2, "vol": "5v (\u0394-5)", "tot_vol": 5, "delta": -5, "slip": "-0.03p", "disp": "-3.93p", "disp_val": -3.93, "eff_res": "1 v/pt", "eff_num": 1}], "displacement_vector": "+2.21p \u2192 -4.61p \u2192 -2.70p \u2192 -3.93p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.70": {"price": 3980.7, "total_waves": 7, "waves": [{"wave": "W2 19:06", "gap": "+5m", "origin": "$3980.85 (\u25bc0.15)", "dwell": "38s", "dwell_sec": 38, "vol": "4v (\u0394-2)", "tot_vol": 4, "delta": -2, "slip": "+0.02p", "disp": "+2.01p", "disp_val": 2.01, "eff_res": "2 v/pt", "eff_num": 2}, {"wave": "W3 19:07", "gap": "+1m", "origin": "$3980.79 (\u25bc0.09)", "dwell": "29s", "dwell_sec": 29, "vol": "42v (\u0394-8)", "tot_vol": 42, "delta": -8, "slip": "-0.05p", "disp": "+2.01p", "disp_val": 2.01, "eff_res": "21 v/pt", "eff_num": 21}, {"wave": "W4 19:09", "gap": "+1m", "origin": "$3980.59 (\u25b20.11)", "dwell": "1s", "dwell_sec": 1, "vol": "1v (\u0394+1)", "tot_vol": 1, "delta": 1, "slip": "+0.04p", "disp": "+2.01p", "disp_val": 2.01, "eff_res": "0 v/pt", "eff_num": 0}, {"wave": "W5 19:12", "gap": "+2m", "origin": "$3980.95 (\u25bc0.25)", "dwell": "3s", "dwell_sec": 3, "vol": "11v (\u0394-7)", "tot_vol": 11, "delta": -7, "slip": "-0.05p", "disp": "-4.81p", "disp_val": -4.81, "eff_res": "2 v/pt", "eff_num": 2}, {"wave": "W6 19:30", "gap": "+17m", "origin": "$3980.58 (\u25b20.12)", "dwell": "3m 53s", "dwell_sec": 233, "vol": "240v (\u0394+30)", "tot_vol": 240, "delta": 30, "slip": "+0.05p", "disp": "-2.23p", "disp_val": -2.23, "eff_res": "108 v/pt", "eff_num": 108}, {"wave": "W7 19:37", "gap": "+3m", "origin": "$3980.57 (\u25b20.13)", "dwell": "20s", "dwell_sec": 20, "vol": "23v (\u0394-3)", "tot_vol": 23, "delta": -3, "slip": "+0.05p", "disp": "-4.13p", "disp_val": -4.13, "eff_res": "6 v/pt", "eff_num": 6}], "displacement_vector": "+2.01p \u2192 -4.81p \u2192 -2.23p \u2192 -4.13p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.7": {"price": 3980.7, "total_waves": 7, "waves": [{"wave": "W2 19:06", "gap": "+5m", "origin": "$3980.85 (\u25bc0.15)", "dwell": "38s", "dwell_sec": 38, "vol": "4v (\u0394-2)", "tot_vol": 4, "delta": -2, "slip": "+0.02p", "disp": "+2.01p", "disp_val": 2.01, "eff_res": "2 v/pt", "eff_num": 2}, {"wave": "W3 19:07", "gap": "+1m", "origin": "$3980.79 (\u25bc0.09)", "dwell": "29s", "dwell_sec": 29, "vol": "42v (\u0394-8)", "tot_vol": 42, "delta": -8, "slip": "-0.05p", "disp": "+2.01p", "disp_val": 2.01, "eff_res": "21 v/pt", "eff_num": 21}, {"wave": "W4 19:09", "gap": "+1m", "origin": "$3980.59 (\u25b20.11)", "dwell": "1s", "dwell_sec": 1, "vol": "1v (\u0394+1)", "tot_vol": 1, "delta": 1, "slip": "+0.04p", "disp": "+2.01p", "disp_val": 2.01, "eff_res": "0 v/pt", "eff_num": 0}, {"wave": "W5 19:12", "gap": "+2m", "origin": "$3980.95 (\u25bc0.25)", "dwell": "3s", "dwell_sec": 3, "vol": "11v (\u0394-7)", "tot_vol": 11, "delta": -7, "slip": "-0.05p", "disp": "-4.81p", "disp_val": -4.81, "eff_res": "2 v/pt", "eff_num": 2}, {"wave": "W6 19:30", "gap": "+17m", "origin": "$3980.58 (\u25b20.12)", "dwell": "3m 53s", "dwell_sec": 233, "vol": "240v (\u0394+30)", "tot_vol": 240, "delta": 30, "slip": "+0.05p", "disp": "-2.23p", "disp_val": -2.23, "eff_res": "108 v/pt", "eff_num": 108}, {"wave": "W7 19:37", "gap": "+3m", "origin": "$3980.57 (\u25b20.13)", "dwell": "20s", "dwell_sec": 20, "vol": "23v (\u0394-3)", "tot_vol": 23, "delta": -3, "slip": "+0.05p", "disp": "-4.13p", "disp_val": -4.13, "eff_res": "6 v/pt", "eff_num": 6}], "displacement_vector": "+2.01p \u2192 -4.81p \u2192 -2.23p \u2192 -4.13p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.40": {"price": 3980.4, "total_waves": 7, "waves": [{"wave": "W2 19:00", "gap": "+57s", "origin": "$3980.53 (\u25bc0.13)", "dwell": "7s", "dwell_sec": 7, "vol": "27v (\u0394-11)", "tot_vol": 27, "delta": -11, "slip": "-0.05p", "disp": "+3.04p", "disp_val": 3.04, "eff_res": "9 v/pt", "eff_num": 9}, {"wave": "W3 19:08", "gap": "+6m", "origin": "$3980.56 (\u25bc0.16)", "dwell": "1m 42s", "dwell_sec": 102, "vol": "88v (\u0394-2)", "tot_vol": 88, "delta": -2, "slip": "-0.05p", "disp": "+2.31p", "disp_val": 2.31, "eff_res": "38 v/pt", "eff_num": 38}, {"wave": "W4 19:12", "gap": "+2m", "origin": "$3980.47 (\u25bc0.07)", "dwell": "4s", "dwell_sec": 4, "vol": "8v (\u0394-8)", "tot_vol": 8, "delta": -8, "slip": "-0.04p", "disp": "-4.60p", "disp_val": -4.6, "eff_res": "2 v/pt", "eff_num": 2}, {"wave": "W5 19:30", "gap": "+17m", "origin": "$3980.28 (\u25b20.12)", "dwell": "4m 27s", "dwell_sec": 267, "vol": "220v (\u0394-6)", "tot_vol": 220, "delta": -6, "slip": "+0.05p", "disp": "-3.01p", "disp_val": -3.01, "eff_res": "73 v/pt", "eff_num": 73}, {"wave": "W6 19:36", "gap": "+2m", "origin": "$3980.21 (\u25b20.19)", "dwell": "4s", "dwell_sec": 4, "vol": "11v (\u0394+1)", "tot_vol": 11, "delta": 1, "slip": "+0.04p", "disp": "-3.02p", "disp_val": -3.02, "eff_res": "4 v/pt", "eff_num": 4}, {"wave": "W7 19:38", "gap": "+1m", "origin": "$3980.47 (\u25bc0.07)", "dwell": "1s", "dwell_sec": 1, "vol": "1v (\u0394-1)", "tot_vol": 1, "delta": -1, "slip": "-0.05p", "disp": "-3.83p", "disp_val": -3.83, "eff_res": "0 v/pt", "eff_num": 0}], "displacement_vector": "-4.60p \u2192 -3.01p \u2192 -3.02p \u2192 -3.83p (BEAR EXPANSION)", "structural_role": "DISTRIBUTION CEILING DEFENSE", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.4": {"price": 3980.4, "total_waves": 7, "waves": [{"wave": "W2 19:00", "gap": "+57s", "origin": "$3980.53 (\u25bc0.13)", "dwell": "7s", "dwell_sec": 7, "vol": "27v (\u0394-11)", "tot_vol": 27, "delta": -11, "slip": "-0.05p", "disp": "+3.04p", "disp_val": 3.04, "eff_res": "9 v/pt", "eff_num": 9}, {"wave": "W3 19:08", "gap": "+6m", "origin": "$3980.56 (\u25bc0.16)", "dwell": "1m 42s", "dwell_sec": 102, "vol": "88v (\u0394-2)", "tot_vol": 88, "delta": -2, "slip": "-0.05p", "disp": "+2.31p", "disp_val": 2.31, "eff_res": "38 v/pt", "eff_num": 38}, {"wave": "W4 19:12", "gap": "+2m", "origin": "$3980.47 (\u25bc0.07)", "dwell": "4s", "dwell_sec": 4, "vol": "8v (\u0394-8)", "tot_vol": 8, "delta": -8, "slip": "-0.04p", "disp": "-4.60p", "disp_val": -4.6, "eff_res": "2 v/pt", "eff_num": 2}, {"wave": "W5 19:30", "gap": "+17m", "origin": "$3980.28 (\u25b20.12)", "dwell": "4m 27s", "dwell_sec": 267, "vol": "220v (\u0394-6)", "tot_vol": 220, "delta": -6, "slip": "+0.05p", "disp": "-3.01p", "disp_val": -3.01, "eff_res": "73 v/pt", "eff_num": 73}, {"wave": "W6 19:36", "gap": "+2m", "origin": "$3980.21 (\u25b20.19)", "dwell": "4s", "dwell_sec": 4, "vol": "11v (\u0394+1)", "tot_vol": 11, "delta": 1, "slip": "+0.04p", "disp": "-3.02p", "disp_val": -3.02, "eff_res": "4 v/pt", "eff_num": 4}, {"wave": "W7 19:38", "gap": "+1m", "origin": "$3980.47 (\u25bc0.07)", "dwell": "1s", "dwell_sec": 1, "vol": "1v (\u0394-1)", "tot_vol": 1, "delta": -1, "slip": "-0.05p", "disp": "-3.83p", "disp_val": -3.83, "eff_res": "0 v/pt", "eff_num": 0}], "displacement_vector": "-4.60p \u2192 -3.01p \u2192 -3.02p \u2192 -3.83p (BEAR EXPANSION)", "structural_role": "DISTRIBUTION CEILING DEFENSE", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.00": {"price": 3980.0, "total_waves": 7, "waves": [{"wave": "W2 19:12", "gap": "+3m", "origin": "$3980.06 (\u25bc0.06)", "dwell": "2m 17s", "dwell_sec": 137, "vol": "175v (\u0394+11)", "tot_vol": 175, "delta": 11, "slip": "-0.05p", "disp": "-4.88p", "disp_val": -4.88, "eff_res": "36 v/pt", "eff_num": 36}, {"wave": "W3 19:30", "gap": "+15m", "origin": "$3979.78 (\u25b20.22)", "dwell": "1s", "dwell_sec": 1, "vol": "16v (\u0394+0)", "tot_vol": 16, "delta": 0, "slip": "+0.05p", "disp": "+1.80p", "disp_val": 1.8, "eff_res": "9 v/pt", "eff_num": 9}, {"wave": "W4 19:31", "gap": "+1m", "origin": "$3980.07 (\u25bc0.07)", "dwell": "54s", "dwell_sec": 54, "vol": "80v (\u0394-10)", "tot_vol": 80, "delta": -10, "slip": "-0.05p", "disp": "+1.80p", "disp_val": 1.8, "eff_res": "44 v/pt", "eff_num": 44}, {"wave": "W5 19:32", "gap": "+55s", "origin": "$3980.15 (\u25bc0.15)", "dwell": "1m 43s", "dwell_sec": 103, "vol": "56v (\u0394-2)", "tot_vol": 56, "delta": -2, "slip": "-0.05p", "disp": "-2.61p", "disp_val": -2.61, "eff_res": "21 v/pt", "eff_num": 21}, {"wave": "W6 19:36", "gap": "+1m", "origin": "$3979.92 (\u25b20.08)", "dwell": "20s", "dwell_sec": 20, "vol": "20v (\u0394+2)", "tot_vol": 20, "delta": 2, "slip": "+0.05p", "disp": "-2.77p", "disp_val": -2.77, "eff_res": "7 v/pt", "eff_num": 7}, {"wave": "W7 19:38", "gap": "+1m", "origin": "$3980.00", "dwell": "1s", "dwell_sec": 1, "vol": "6v (\u0394-2)", "tot_vol": 6, "delta": -2, "slip": "+0.04p", "disp": "-3.43p", "disp_val": -3.43, "eff_res": "2 v/pt", "eff_num": 2}], "displacement_vector": "+1.80p \u2192 -2.61p \u2192 -2.77p \u2192 -3.43p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.0": {"price": 3980.0, "total_waves": 7, "waves": [{"wave": "W2 19:12", "gap": "+3m", "origin": "$3980.06 (\u25bc0.06)", "dwell": "2m 17s", "dwell_sec": 137, "vol": "175v (\u0394+11)", "tot_vol": 175, "delta": 11, "slip": "-0.05p", "disp": "-4.88p", "disp_val": -4.88, "eff_res": "36 v/pt", "eff_num": 36}, {"wave": "W3 19:30", "gap": "+15m", "origin": "$3979.78 (\u25b20.22)", "dwell": "1s", "dwell_sec": 1, "vol": "16v (\u0394+0)", "tot_vol": 16, "delta": 0, "slip": "+0.05p", "disp": "+1.80p", "disp_val": 1.8, "eff_res": "9 v/pt", "eff_num": 9}, {"wave": "W4 19:31", "gap": "+1m", "origin": "$3980.07 (\u25bc0.07)", "dwell": "54s", "dwell_sec": 54, "vol": "80v (\u0394-10)", "tot_vol": 80, "delta": -10, "slip": "-0.05p", "disp": "+1.80p", "disp_val": 1.8, "eff_res": "44 v/pt", "eff_num": 44}, {"wave": "W5 19:32", "gap": "+55s", "origin": "$3980.15 (\u25bc0.15)", "dwell": "1m 43s", "dwell_sec": 103, "vol": "56v (\u0394-2)", "tot_vol": 56, "delta": -2, "slip": "-0.05p", "disp": "-2.61p", "disp_val": -2.61, "eff_res": "21 v/pt", "eff_num": 21}, {"wave": "W6 19:36", "gap": "+1m", "origin": "$3979.92 (\u25b20.08)", "dwell": "20s", "dwell_sec": 20, "vol": "20v (\u0394+2)", "tot_vol": 20, "delta": 2, "slip": "+0.05p", "disp": "-2.77p", "disp_val": -2.77, "eff_res": "7 v/pt", "eff_num": 7}, {"wave": "W7 19:38", "gap": "+1m", "origin": "$3980.00", "dwell": "1s", "dwell_sec": 1, "vol": "6v (\u0394-2)", "tot_vol": 6, "delta": -2, "slip": "+0.04p", "disp": "-3.43p", "disp_val": -3.43, "eff_res": "2 v/pt", "eff_num": 2}], "displacement_vector": "+1.80p \u2192 -2.61p \u2192 -2.77p \u2192 -3.43p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.80": {"price": 3980.8, "total_waves": 8, "waves": [{"wave": "W3 19:05", "gap": "+3m", "origin": "$3980.80", "dwell": "47s", "dwell_sec": 47, "vol": "26v (\u0394-8)", "tot_vol": 26, "delta": -8, "slip": "-0.04p", "disp": "+1.91p", "disp_val": 1.91, "eff_res": "14 v/pt", "eff_num": 14}, {"wave": "W4 19:07", "gap": "+1m", "origin": "$3980.80", "dwell": "31s", "dwell_sec": 31, "vol": "41v (\u0394-1)", "tot_vol": 41, "delta": -1, "slip": "-0.05p", "disp": "+1.91p", "disp_val": 1.91, "eff_res": "21 v/pt", "eff_num": 21}, {"wave": "W5 19:09", "gap": "+1m", "origin": "$3980.59 (\u25b20.21)", "dwell": "1s", "dwell_sec": 1, "vol": "5v (\u0394+3)", "tot_vol": 5, "delta": 3, "slip": "+0.05p", "disp": "+1.91p", "disp_val": 1.91, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W6 19:12", "gap": "+2m", "origin": "$3980.95 (\u25bc0.15)", "dwell": "3s", "dwell_sec": 3, "vol": "14v (\u0394-4)", "tot_vol": 14, "delta": -4, "slip": "-0.05p", "disp": "-4.82p", "disp_val": -4.82, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W7 19:30", "gap": "+17m", "origin": "$3980.58 (\u25b20.22)", "dwell": "3m 49s", "dwell_sec": 229, "vol": "127v (\u0394+17)", "tot_vol": 127, "delta": 17, "slip": "+0.05p", "disp": "-2.33p", "disp_val": -2.33, "eff_res": "55 v/pt", "eff_num": 55}, {"wave": "W8 19:37", "gap": "+3m", "origin": "$3980.61 (\u25b20.19)", "dwell": "54s", "dwell_sec": 54, "vol": "26v (\u0394+4)", "tot_vol": 26, "delta": 4, "slip": "+0.05p", "disp": "-4.23p", "disp_val": -4.23, "eff_res": "6 v/pt", "eff_num": 6}], "displacement_vector": "+1.91p \u2192 -4.82p \u2192 -2.33p \u2192 -4.23p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.8": {"price": 3980.8, "total_waves": 8, "waves": [{"wave": "W3 19:05", "gap": "+3m", "origin": "$3980.80", "dwell": "47s", "dwell_sec": 47, "vol": "26v (\u0394-8)", "tot_vol": 26, "delta": -8, "slip": "-0.04p", "disp": "+1.91p", "disp_val": 1.91, "eff_res": "14 v/pt", "eff_num": 14}, {"wave": "W4 19:07", "gap": "+1m", "origin": "$3980.80", "dwell": "31s", "dwell_sec": 31, "vol": "41v (\u0394-1)", "tot_vol": 41, "delta": -1, "slip": "-0.05p", "disp": "+1.91p", "disp_val": 1.91, "eff_res": "21 v/pt", "eff_num": 21}, {"wave": "W5 19:09", "gap": "+1m", "origin": "$3980.59 (\u25b20.21)", "dwell": "1s", "dwell_sec": 1, "vol": "5v (\u0394+3)", "tot_vol": 5, "delta": 3, "slip": "+0.05p", "disp": "+1.91p", "disp_val": 1.91, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W6 19:12", "gap": "+2m", "origin": "$3980.95 (\u25bc0.15)", "dwell": "3s", "dwell_sec": 3, "vol": "14v (\u0394-4)", "tot_vol": 14, "delta": -4, "slip": "-0.05p", "disp": "-4.82p", "disp_val": -4.82, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W7 19:30", "gap": "+17m", "origin": "$3980.58 (\u25b20.22)", "dwell": "3m 49s", "dwell_sec": 229, "vol": "127v (\u0394+17)", "tot_vol": 127, "delta": 17, "slip": "+0.05p", "disp": "-2.33p", "disp_val": -2.33, "eff_res": "55 v/pt", "eff_num": 55}, {"wave": "W8 19:37", "gap": "+3m", "origin": "$3980.61 (\u25b20.19)", "dwell": "54s", "dwell_sec": 54, "vol": "26v (\u0394+4)", "tot_vol": 26, "delta": 4, "slip": "+0.05p", "disp": "-4.23p", "disp_val": -4.23, "eff_res": "6 v/pt", "eff_num": 6}], "displacement_vector": "+1.91p \u2192 -4.82p \u2192 -2.33p \u2192 -4.23p (FLOOR BROKEN)", "structural_role": "FLOOR BROKEN / BEAR BREAKDOWN", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.20": {"price": 3980.2, "total_waves": 8, "waves": [{"wave": "W3 19:14", "gap": "+1m", "origin": "$3980.20", "dwell": "35s", "dwell_sec": 35, "vol": "14v (\u0394+0)", "tot_vol": 14, "delta": 0, "slip": "+0.02p", "disp": "-5.08p", "disp_val": -5.08, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W4 19:30", "gap": "+15m", "origin": "$3980.07 (\u25b20.13)", "dwell": "1s", "dwell_sec": 1, "vol": "6v (\u0394+4)", "tot_vol": 6, "delta": 4, "slip": "+0.02p", "disp": "+1.60p", "disp_val": 1.6, "eff_res": "4 v/pt", "eff_num": 4}, {"wave": "W5 19:31", "gap": "+1m", "origin": "$3980.31 (\u25bc0.11)", "dwell": "59s", "dwell_sec": 59, "vol": "44v (\u0394-4)", "tot_vol": 44, "delta": -4, "slip": "-0.05p", "disp": "-1.73p", "disp_val": -1.73, "eff_res": "25 v/pt", "eff_num": 25}, {"wave": "W6 19:32", "gap": "+54s", "origin": "$3980.20", "dwell": "1m 38s", "dwell_sec": 98, "vol": "133v (\u0394-9)", "tot_vol": 133, "delta": -9, "slip": "+0.05p", "disp": "-2.81p", "disp_val": -2.81, "eff_res": "47 v/pt", "eff_num": 47}, {"wave": "W7 19:36", "gap": "+2m", "origin": "$3980.13 (\u25b20.07)", "dwell": "28s", "dwell_sec": 28, "vol": "25v (\u0394-1)", "tot_vol": 25, "delta": -1, "slip": "+0.05p", "disp": "-3.03p", "disp_val": -3.03, "eff_res": "8 v/pt", "eff_num": 8}, {"wave": "W8 19:38", "gap": "+57s", "origin": "$3980.20", "dwell": "1s", "dwell_sec": 1, "vol": "2v (\u0394-2)", "tot_vol": 2, "delta": -2, "slip": "-0.05p", "disp": "-3.63p", "disp_val": -3.63, "eff_res": "1 v/pt", "eff_num": 1}], "displacement_vector": "-1.73p \u2192 -2.81p \u2192 -3.03p \u2192 -3.63p (BEAR EXPANSION)", "structural_role": "DISTRIBUTION CEILING DEFENSE", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.2": {"price": 3980.2, "total_waves": 8, "waves": [{"wave": "W3 19:14", "gap": "+1m", "origin": "$3980.20", "dwell": "35s", "dwell_sec": 35, "vol": "14v (\u0394+0)", "tot_vol": 14, "delta": 0, "slip": "+0.02p", "disp": "-5.08p", "disp_val": -5.08, "eff_res": "3 v/pt", "eff_num": 3}, {"wave": "W4 19:30", "gap": "+15m", "origin": "$3980.07 (\u25b20.13)", "dwell": "1s", "dwell_sec": 1, "vol": "6v (\u0394+4)", "tot_vol": 6, "delta": 4, "slip": "+0.02p", "disp": "+1.60p", "disp_val": 1.6, "eff_res": "4 v/pt", "eff_num": 4}, {"wave": "W5 19:31", "gap": "+1m", "origin": "$3980.31 (\u25bc0.11)", "dwell": "59s", "dwell_sec": 59, "vol": "44v (\u0394-4)", "tot_vol": 44, "delta": -4, "slip": "-0.05p", "disp": "-1.73p", "disp_val": -1.73, "eff_res": "25 v/pt", "eff_num": 25}, {"wave": "W6 19:32", "gap": "+54s", "origin": "$3980.20", "dwell": "1m 38s", "dwell_sec": 98, "vol": "133v (\u0394-9)", "tot_vol": 133, "delta": -9, "slip": "+0.05p", "disp": "-2.81p", "disp_val": -2.81, "eff_res": "47 v/pt", "eff_num": 47}, {"wave": "W7 19:36", "gap": "+2m", "origin": "$3980.13 (\u25b20.07)", "dwell": "28s", "dwell_sec": 28, "vol": "25v (\u0394-1)", "tot_vol": 25, "delta": -1, "slip": "+0.05p", "disp": "-3.03p", "disp_val": -3.03, "eff_res": "8 v/pt", "eff_num": 8}, {"wave": "W8 19:38", "gap": "+57s", "origin": "$3980.20", "dwell": "1s", "dwell_sec": 1, "vol": "2v (\u0394-2)", "tot_vol": 2, "delta": -2, "slip": "-0.05p", "disp": "-3.63p", "disp_val": -3.63, "eff_res": "1 v/pt", "eff_num": 1}], "displacement_vector": "-1.73p \u2192 -2.81p \u2192 -3.03p \u2192 -3.63p (BEAR EXPANSION)", "structural_role": "DISTRIBUTION CEILING DEFENSE", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3980.99": {"price": 3980.99, "total_waves": 8, "waves": [{"wave": "W3 19:05", "gap": "+2m", "origin": "$3981.10 (\u25bc0.11)", "dwell": "2m 27s", "dwell_sec": 147, "vol": "90v (\u0394-4)", "tot_vol": 90, "delta": -4, "slip": "-0.05p", "disp": "+1.72p", "disp_val": 1.72, "eff_res": "52 v/pt", "eff_num": 52}, {"wave": "W4 19:09", "gap": "+1m", "origin": "$3980.83 (\u25b20.16)", "dwell": "7s", "dwell_sec": 7, "vol": "29v (\u0394+5)", "tot_vol": 29, "delta": 5, "slip": "+0.05p", "disp": "+1.72p", "disp_val": 1.72, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W5 19:12", "gap": "+2m", "origin": "$3980.99", "dwell": "1s", "dwell_sec": 1, "vol": "1v (\u0394-1)", "tot_vol": 1, "delta": -1, "slip": "-0.04p", "disp": "-3.62p", "disp_val": -3.62, "eff_res": "0 v/pt", "eff_num": 0}, {"wave": "W6 19:30", "gap": "+18m", "origin": "$3980.99", "dwell": "45s", "dwell_sec": 45, "vol": "41v (\u0394+17)", "tot_vol": 41, "delta": 17, "slip": "+0.04p", "disp": "-2.40p", "disp_val": -2.4, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W7 19:33", "gap": "+2m", "origin": "$3981.07 (\u25bc0.08)", "dwell": "19s", "dwell_sec": 19, "vol": "29v (\u0394-3)", "tot_vol": 29, "delta": -3, "slip": "-0.03p", "disp": "-2.52p", "disp_val": -2.52, "eff_res": "12 v/pt", "eff_num": 12}, {"wave": "W8 19:37", "gap": "+3m", "origin": "$3981.10 (\u25bc0.11)", "dwell": "52s", "dwell_sec": 52, "vol": "116v (\u0394+0)", "tot_vol": 116, "delta": 0, "slip": "-0.05p", "disp": "-4.42p", "disp_val": -4.42, "eff_res": "26 v/pt", "eff_num": 26}], "displacement_vector": "-3.62p \u2192 -2.40p \u2192 -2.52p \u2192 -4.42p (BEAR EXPANSION)", "structural_role": "DISTRIBUTION CEILING DEFENSE", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}, "3981.0": {"price": 3980.99, "total_waves": 8, "waves": [{"wave": "W3 19:05", "gap": "+2m", "origin": "$3981.10 (\u25bc0.11)", "dwell": "2m 27s", "dwell_sec": 147, "vol": "90v (\u0394-4)", "tot_vol": 90, "delta": -4, "slip": "-0.05p", "disp": "+1.72p", "disp_val": 1.72, "eff_res": "52 v/pt", "eff_num": 52}, {"wave": "W4 19:09", "gap": "+1m", "origin": "$3980.83 (\u25b20.16)", "dwell": "7s", "dwell_sec": 7, "vol": "29v (\u0394+5)", "tot_vol": 29, "delta": 5, "slip": "+0.05p", "disp": "+1.72p", "disp_val": 1.72, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W5 19:12", "gap": "+2m", "origin": "$3980.99", "dwell": "1s", "dwell_sec": 1, "vol": "1v (\u0394-1)", "tot_vol": 1, "delta": -1, "slip": "-0.04p", "disp": "-3.62p", "disp_val": -3.62, "eff_res": "0 v/pt", "eff_num": 0}, {"wave": "W6 19:30", "gap": "+18m", "origin": "$3980.99", "dwell": "45s", "dwell_sec": 45, "vol": "41v (\u0394+17)", "tot_vol": 41, "delta": 17, "slip": "+0.04p", "disp": "-2.40p", "disp_val": -2.4, "eff_res": "17 v/pt", "eff_num": 17}, {"wave": "W7 19:33", "gap": "+2m", "origin": "$3981.07 (\u25bc0.08)", "dwell": "19s", "dwell_sec": 19, "vol": "29v (\u0394-3)", "tot_vol": 29, "delta": -3, "slip": "-0.03p", "disp": "-2.52p", "disp_val": -2.52, "eff_res": "12 v/pt", "eff_num": 12}, {"wave": "W8 19:37", "gap": "+3m", "origin": "$3981.10 (\u25bc0.11)", "dwell": "52s", "dwell_sec": 52, "vol": "116v (\u0394+0)", "tot_vol": 116, "delta": 0, "slip": "-0.05p", "disp": "-4.42p", "disp_val": -4.42, "eff_res": "26 v/pt", "eff_num": 26}], "displacement_vector": "-3.62p \u2192 -2.40p \u2192 -2.52p \u2192 -4.42p (BEAR EXPANSION)", "structural_role": "DISTRIBUTION CEILING DEFENSE", "role_color": "rose", "structural_bias": "\u25bc", "status": "OK"}};
+    // 11c. Node Provenance & Physical Waves Decomposition Engine
+    const NODE_PROVENANCE_DATA = {};
     const _IN_FLIGHT_PROVENANCE_FETCHES = {};
 
     let currentlyInspectedPrice = null;
     let customPriceAuditTimer = null;
 
+    function computeNodeWavesData(targetPrice, candles) {
+      if (!candles || candles.length === 0) {
+        return {
+          price: targetPrice,
+          total_waves: 0,
+          waves: [],
+          displacement_vector: "ZERO RECENT TOUCHES",
+          structural_role: "RANGE CORE EQUILIBRIUM",
+          role_color: "amber",
+          structural_bias: "▲",
+          status: "ZERO_TOUCHES"
+        };
+      }
+
+      const band = 0.15;
+      const pNum = Number(targetPrice);
+      const visits = [];
+      let inVisit = false;
+      let curVisit = null;
+      let lastSwingExtreme = (candles[0].close !== undefined) ? candles[0].close : pNum;
+
+      for (let i = 0; i < candles.length; i++) {
+        const c = candles[i];
+        const cLow = (c.low !== undefined) ? c.low : c.close;
+        const cHigh = (c.high !== undefined) ? c.high : c.close;
+        const cOpen = (c.open !== undefined) ? c.open : c.close;
+        const cClose = c.close;
+        const cTime = c.time;
+
+        if (cHigh > lastSwingExtreme + 0.50) {
+          lastSwingExtreme = cHigh;
+        } else if (cLow < lastSwingExtreme - 0.50) {
+          lastSwingExtreme = cLow;
+        }
+
+        const touches = (cLow <= pNum + band && cHigh >= pNum - band);
+
+        if (touches) {
+          if (!inVisit) {
+            inVisit = true;
+            const appDiff = lastSwingExtreme - pNum;
+            let origStr = `$${pNum.toFixed(2)}`;
+            if (Math.abs(appDiff) >= 0.15) {
+              origStr = `$${lastSwingExtreme.toFixed(2)} (${appDiff > 0 ? '▼' : '▲'}${Math.abs(appDiff).toFixed(2)})`;
+            }
+            const vol = c.volume || 100;
+            const bullRatio = (cClose >= cOpen) ? 0.65 : 0.35;
+            curVisit = {
+              start_idx: i,
+              start_time: cTime,
+              end_time: cTime,
+              origin_str: origStr,
+              approach_dir: appDiff > 0 ? "down" : "up",
+              min_price: cLow,
+              max_price: cHigh,
+              bars: 1,
+              volume: vol,
+              bull_vol: Math.round(vol * bullRatio),
+              bear_vol: Math.round(vol * (1 - bullRatio))
+            };
+          } else {
+            curVisit.end_time = cTime;
+            curVisit.bars += 1;
+            curVisit.min_price = Math.min(curVisit.min_price, cLow);
+            curVisit.max_price = Math.max(curVisit.max_price, cHigh);
+            const vol = c.volume || 100;
+            const bullRatio = (cClose >= cOpen) ? 0.65 : 0.35;
+            curVisit.volume += vol;
+            curVisit.bull_vol += Math.round(vol * bullRatio);
+            curVisit.bear_vol += Math.round(vol * (1 - bullRatio));
+          }
+        } else {
+          if (inVisit) {
+            inVisit = false;
+            visits.push(curVisit);
+            curVisit = null;
+          }
+        }
+      }
+
+      if (inVisit && curVisit) {
+        visits.push(curVisit);
+      }
+
+      // Cluster visits with gaps <= 3 minutes (180s)
+      const clustered = [];
+      let act = null;
+      for (let v of visits) {
+        if (!act) {
+          act = Object.assign({}, v);
+        } else {
+          if ((v.start_time - act.end_time) <= 180) {
+            act.end_time = v.end_time;
+            act.bars += v.bars;
+            act.volume += v.volume;
+            act.bull_vol += v.bull_vol;
+            act.bear_vol += v.bear_vol;
+            act.min_price = Math.min(act.min_price, v.min_price);
+            act.max_price = Math.max(act.max_price, v.max_price);
+          } else {
+            clustered.push(act);
+            act = Object.assign({}, v);
+          }
+        }
+      }
+      if (act) clustered.push(act);
+
+      // Take last 6 waves
+      const activeWaves = clustered.length > 6 ? clustered.slice(clustered.length - 6) : clustered;
+      if (activeWaves.length === 0) {
+        return {
+          price: pNum,
+          total_waves: 0,
+          waves: [],
+          displacement_vector: "ZERO RECENT TOUCHES",
+          structural_role: "RANGE CORE EQUILIBRIUM",
+          role_color: "amber",
+          structural_bias: "▲",
+          status: "ZERO_TOUCHES"
+        };
+      }
+
+      const wavesOut = [];
+      let prevEnd = null;
+
+      for (let wIdx = 0; wIdx < activeWaves.length; wIdx++) {
+        const w = activeWaves[wIdx];
+        const dwellSec = Math.max(60, (w.end_time - w.start_time) + 60);
+        const dwellStr = dwellSec < 60 ? `${dwellSec}s` : `${Math.floor(dwellSec / 60)}m`;
+
+        let gapStr = "Init";
+        if (prevEnd !== null) {
+          const gapSec = Math.max(0, w.start_time - prevEnd);
+          gapStr = gapSec >= 60 ? `+${Math.floor(gapSec / 60)}m` : `+${gapSec}s`;
+        }
+        prevEnd = w.end_time;
+
+        const slipVal = (w.approach_dir === "down") ? (w.min_price - pNum) : (w.max_price - pNum);
+        const slipStr = `${slipVal >= 0 ? '+' : ''}${slipVal.toFixed(2)}p`;
+
+        const endIdx = w.start_idx + w.bars;
+        const subseq = candles.slice(endIdx, endIdx + 15);
+        let dispVal = 0.0;
+        if (subseq.length > 0) {
+          if (w.approach_dir === "down") {
+            const maxFav = Math.max(...subseq.map(s => (s.high !== undefined ? s.high : s.close))) - pNum;
+            const minAdv = Math.min(...subseq.map(s => (s.low !== undefined ? s.low : s.close))) - pNum;
+            dispVal = Math.abs(maxFav) >= Math.abs(minAdv) ? maxFav : minAdv;
+          } else {
+            const maxFav = Math.min(...subseq.map(s => (s.low !== undefined ? s.low : s.close))) - pNum;
+            const minAdv = Math.max(...subseq.map(s => (s.high !== undefined ? s.high : s.close))) - pNum;
+            dispVal = Math.abs(maxFav) >= Math.abs(minAdv) ? maxFav : minAdv;
+          }
+        }
+        dispVal = Math.round(dispVal * 100) / 100;
+        const dispStr = `${dispVal >= 0 ? '+' : ''}${dispVal.toFixed(2)}p`;
+        const absDisp = Math.max(0.1, Math.abs(dispVal));
+        const effRatio = Math.round(w.volume / absDisp);
+        const effStr = `${effRatio} v/pt`;
+
+        const delta = Math.round(w.bull_vol - w.bear_vol);
+        const deltaStr = `Δ${delta >= 0 ? '+' : ''}${delta}`;
+        const waveTimeStr = formatEpochToIst(w.start_time);
+        const waveLabel = `W${wIdx + 1} ${waveTimeStr.slice(0, 5)}`;
+
+        wavesOut.push({
+          wave: waveLabel,
+          gap: gapStr,
+          origin: w.origin_str,
+          dwell: dwellStr,
+          dwell_sec: dwellSec,
+          vol: `${w.volume}v (${deltaStr})`,
+          tot_vol: w.volume,
+          delta: delta,
+          slip: slipStr,
+          disp: dispStr,
+          disp_val: dispVal,
+          eff_res: effStr,
+          eff_num: effRatio
+        });
+      }
+
+      const dispVector = wavesOut.slice(-4).map(w => w.disp).join(" → ");
+      const lastW = wavesOut[wavesOut.length - 1];
+      const lastDisp = lastW ? lastW.disp_val : 0;
+      const priorDisps = wavesOut.slice(-4, -1).map(w => w.disp_val);
+
+      let statusNote = "(DECAY/ABSORBED)";
+      let roleText = "RANGE CORE EQUILIBRIUM";
+      let roleColor = "amber";
+      let bias = (lastW && lastW.delta >= 0) ? "▲" : "▼";
+
+      if (lastDisp >= 1.0) {
+        if (priorDisps.some(d => d < -1.0)) {
+          statusNote = "(CEILING RECLAIMED)";
+          roleText = "CEILING RECLAIMED / SQUEEZE BREAKOUT";
+          roleColor = "emerald";
+          bias = "▲";
+        } else {
+          statusNote = "(SOLID DEFENSE)";
+          roleText = "BULL ABSORPTION FLOOR";
+          roleColor = "emerald";
+          bias = "▲";
+        }
+      } else if (lastDisp <= -1.0) {
+        if (priorDisps.some(d => d > 1.0)) {
+          statusNote = "(FLOOR BROKEN)";
+          roleText = "FLOOR BROKEN / BEAR BREAKDOWN";
+          roleColor = "rose";
+          bias = "▼";
+        } else {
+          statusNote = "(BEAR EXPANSION)";
+          roleText = "DISTRIBUTION CEILING DEFENSE";
+          roleColor = "rose";
+          bias = "▼";
+        }
+      }
+
+      return {
+        price: pNum,
+        total_waves: wavesOut.length,
+        waves: wavesOut,
+        displacement_vector: `${dispVector} ${statusNote}`,
+        structural_role: roleText,
+        role_color: roleColor,
+        structural_bias: bias,
+        status: "OK"
+      };
+    }
+
     function onHoverNodeItem(price, rank, volume, bullVol, bearVol) {
-      // User explicitly hovered over an item in the list -> reset custom audit input
       const customInput = document.getElementById("customPriceAuditInput");
       if (customInput && customInput.value) {
         customInput.value = "";
@@ -3551,16 +3856,6 @@ Return ONLY valid JSON matching this exact structure:
       const pFixed1 = pNum.toFixed(1);
       const pStr = String(price);
 
-      let node = NODE_PROVENANCE_DATA[pFixed2] || NODE_PROVENANCE_DATA[pFixed1] || NODE_PROVENANCE_DATA[pStr] || null;
-      if (!node) {
-        for (const k in NODE_PROVENANCE_DATA) {
-          if (Math.abs(parseFloat(k) - pNum) < 0.06) {
-            node = NODE_PROVENANCE_DATA[k];
-            break;
-          }
-        }
-      }
-
       const rankEl = document.getElementById("npRankBadge");
       const priceEl = document.getElementById("npPriceTitle");
       const vpocEl = document.getElementById("npVpocBadge");
@@ -3587,108 +3882,37 @@ Return ONLY valid JSON matching this exact structure:
         }
       }
 
-      // Fetch or refresh authentic tick audit from server
-      const isStale = !node || !node._fetched_at || (Date.now() - node._fetched_at > 12000);
-      if (isStale && !_IN_FLIGHT_PROVENANCE_FETCHES[pFixed2]) {
-        _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = true;
-
-        // Only show loading placeholder if we have never loaded this price before
-        if (!node && tableBodyEl) {
-          tableBodyEl.innerHTML = `
-            <tr>
-              <td colspan="8" class="p-3 text-center text-xs text-cyan-400 font-mono animate-pulse">
-                Auditing MT5 tick history for $${pFixed2}...
-              </td>
-            </tr>
-          `;
-          if (trailVectorEl) trailVectorEl.textContent = "Auditing live tick auction trail...";
+      // Check cache first
+      let node = NODE_PROVENANCE_DATA[pFixed2] || NODE_PROVENANCE_DATA[pFixed1] || NODE_PROVENANCE_DATA[pStr] || null;
+      if (!node) {
+        for (const k in NODE_PROVENANCE_DATA) {
+          if (Math.abs(parseFloat(k) - pNum) < 0.06) {
+            node = NODE_PROVENANCE_DATA[k];
+            break;
+          }
         }
+      }
 
-        fetch(`/api/node_provenance?price=${pNum}`)
-          .then(r => r.json())
-          .then(data => {
-            _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = false;
-            const res = (data && typeof data === 'object') ? data : { waves: [] };
-            res._fetched_at = Date.now();
-            NODE_PROVENANCE_DATA[pFixed2] = res;
-
-            const curPriceText = priceEl ? priceEl.textContent : "";
-            if (curPriceText.includes(pFixed2)) {
-              showNodeHoverFlyout(price, rank, volume, bullVol, bearVol);
-            }
-          })
-          .catch(err => {
-            _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = false;
-            console.error("Provenance fetch error:", err);
-          });
-
-        if (!node) return;
+      // If not in cache or has no waves, compute immediately from session candles
+      if (!node || !node.waves || node.waves.length === 0) {
+        const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
+        if (currentDay && currentDay.candles) {
+          const effTime = (vLineTime !== null) ? vLineTime : currentDay.candles[currentDay.candles.length - 1].time;
+          const pastCandles = currentDay.candles.filter(c => c.time <= effTime);
+          node = computeNodeWavesData(pNum, pastCandles);
+          NODE_PROVENANCE_DATA[pFixed2] = node;
+        }
       }
 
       const waves = node ? (node.waves || []) : [];
-      if (waves.length === 0) {
-        if (tableBodyEl) {
-          tableBodyEl.innerHTML = `
-            <tr>
-              <td colspan="8" class="p-3 text-center text-xs text-slate-400 font-mono italic">
-                Zero auction touches in session window
-              </td>
-            </tr>
-          `;
-        }
-        if (trailVectorEl) trailVectorEl.textContent = "ZERO RECENT TOUCHES";
-        return;
-      }
-
-      const lastW = waves.length > 0 ? waves[waves.length - 1] : null;
-      const priorWaves = waves.slice(0, -1);
-      const priorDisps = priorWaves.map(w => w.disp_val || 0);
-
-      let roleText = "MID-RANGE VALUE ROTATION";
+      let roleText = node?.structural_role || "RANGE CORE EQUILIBRIUM";
       let roleClass = "text-cyan-300 font-bold uppercase tracking-wide";
-      let biasIcon = (bullVol || 0) >= (bearVol || 0) ? "▲" : "▼";
-      let biasClass = biasIcon === "▲" ? "text-emerald-400" : "text-rose-400";
+      if (node?.role_color === "emerald") roleClass = "text-emerald-400 font-bold uppercase tracking-wide";
+      else if (node?.role_color === "rose") roleClass = "text-rose-400 font-bold uppercase tracking-wide";
+      else if (node?.role_color === "amber") roleClass = "text-amber-300 font-bold uppercase tracking-wide";
 
-      if (node.structural_role) {
-        roleText = node.structural_role;
-        biasIcon = node.structural_bias || (node.role_color === "emerald" ? "▲" : "▼");
-        if (node.role_color === "emerald") {
-          roleClass = "text-emerald-400 font-bold uppercase tracking-wide";
-          biasClass = "text-emerald-400";
-        } else if (node.role_color === "rose") {
-          roleClass = "text-rose-400 font-bold uppercase tracking-wide";
-          biasClass = "text-rose-400";
-        } else {
-          roleClass = "text-amber-300 font-bold uppercase tracking-wide";
-          biasClass = "text-amber-300";
-        }
-      } else if (lastW) {
-        const lastDisp = lastW.disp_val || 0;
-        if (lastDisp >= 1.0) {
-          if (priorDisps.some(d => d < -1.0)) {
-            roleText = "CEILING RECLAIMED / SQUEEZE BREAKOUT";
-          } else {
-            roleText = "BULL ABSORPTION FLOOR";
-          }
-          roleClass = "text-emerald-400 font-bold uppercase tracking-wide";
-          biasIcon = "▲";
-          biasClass = "text-emerald-400";
-        } else if (lastDisp <= -1.0) {
-          if (priorDisps.some(d => d > 1.0)) {
-            roleText = "FLOOR BROKEN / BEAR BREAKDOWN";
-          } else {
-            roleText = "DISTRIBUTION CEILING DEFENSE";
-          }
-          roleClass = "text-rose-400 font-bold uppercase tracking-wide";
-          biasIcon = "▼";
-          biasClass = "text-rose-400";
-        } else {
-          roleText = "ABSORPTION WALL DECAY";
-          roleClass = "text-amber-300 font-bold uppercase tracking-wide";
-          biasIcon = (lastW.delta || 0) >= 0 ? "▲" : "▼";
-          biasClass = biasIcon === "▲" ? "text-emerald-400" : "text-rose-400";
-        }
-      }
+      let biasIcon = node?.structural_bias || ((bullVol || 0) >= (bearVol || 0) ? "▲" : "▼");
+      let biasClass = biasIcon === "▲" ? "text-emerald-400" : "text-rose-400";
 
       if (roleEl) {
         roleEl.textContent = roleText;
@@ -3700,28 +3924,59 @@ Return ONLY valid JSON matching this exact structure:
       }
 
       if (trailVectorEl) {
-        trailVectorEl.textContent = node.displacement_vector || waves.map(w => `${w.disp_val >= 0 ? '+' : ''}${w.disp_val.toFixed(2)}p`).join(" → ");
+        trailVectorEl.textContent = node?.displacement_vector || (waves.length > 0 ? waves.map(w => w.disp).join(" → ") : "ZERO RECENT TOUCHES");
       }
 
       if (tableBodyEl) {
-        tableBodyEl.innerHTML = waves.map(w => {
-          const dispColor = (w.disp_val || 0) >= 0 ? "text-emerald-400" : "text-rose-400";
-          const slipColor = (w.slip || "").startsWith("-") ? "text-rose-400" : ((w.slip || "").startsWith("+") ? "text-emerald-400" : "text-slate-400");
-          const origClean = (w.origin || "").replace('v', '▼').replace('^', '▲');
-
-          return `
-            <tr class="hover:bg-slate-900/70 font-mono text-[12px] border-b border-slate-800/40">
-              <td class="py-2 px-2.5 font-bold text-cyan-300">${w.wave}</td>
-              <td class="py-2 px-2 text-center text-slate-300">${w.gap}</td>
-              <td class="py-2 px-2.5 text-slate-200">${origClean}</td>
-              <td class="py-2 px-2 text-center font-bold text-amber-300">${w.dwell}</td>
-              <td class="py-2 px-2.5 text-right font-bold text-white">${w.vol.replace('D', 'Δ')}</td>
-              <td class="py-2 px-2 text-right font-bold ${slipColor}">${w.slip}</td>
-              <td class="py-2 px-2.5 text-right font-bold ${dispColor}">${w.disp}</td>
-              <td class="py-2 px-2.5 text-right font-bold text-cyan-300">${w.eff_res}</td>
+        if (waves.length === 0) {
+          tableBodyEl.innerHTML = `
+            <tr>
+              <td colspan="8" class="p-3 text-center text-xs text-slate-400 font-mono italic">
+                Zero auction touches in session window
+              </td>
             </tr>
           `;
-        }).join("");
+        } else {
+          tableBodyEl.innerHTML = waves.map(w => {
+            const dispColor = (w.disp_val || 0) >= 0 ? "text-emerald-400" : "text-rose-400";
+            const slipColor = (w.slip || "").startsWith("-") ? "text-rose-400" : ((w.slip || "").startsWith("+") ? "text-emerald-400" : "text-slate-400");
+            const origClean = (w.origin || "").replace('v', '▼').replace('^', '▲');
+
+            return `
+              <tr class="hover:bg-slate-900/70 font-mono text-[12px] border-b border-slate-800/40">
+                <td class="py-2 px-2.5 font-bold text-cyan-300">${w.wave}</td>
+                <td class="py-2 px-2 text-center text-slate-300">${w.gap}</td>
+                <td class="py-2 px-2.5 text-slate-200">${origClean}</td>
+                <td class="py-2 px-2 text-center font-bold text-amber-300">${w.dwell}</td>
+                <td class="py-2 px-2.5 text-right font-bold text-white">${(w.vol || "").replace('D', 'Δ')}</td>
+                <td class="py-2 px-2 text-right font-bold ${slipColor}">${w.slip}</td>
+                <td class="py-2 px-2.5 text-right font-bold ${dispColor}">${w.disp}</td>
+                <td class="py-2 px-2.5 text-right font-bold text-cyan-300">${w.eff_res}</td>
+              </tr>
+            `;
+          }).join("");
+        }
+      }
+
+      // Background asynchronous MT5 tick fetch to enrich if live server has microsecond data
+      if (!_IN_FLIGHT_PROVENANCE_FETCHES[pFixed2]) {
+        _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = true;
+        fetch(`/api/node_provenance?price=${pNum}`)
+          .then(r => r.json())
+          .then(data => {
+            _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = false;
+            if (data && data.status === "OK" && data.waves && data.waves.length > 0) {
+              data._fetched_at = Date.now();
+              NODE_PROVENANCE_DATA[pFixed2] = data;
+              const curPriceText = priceEl ? priceEl.textContent : "";
+              if (curPriceText.includes(pFixed2)) {
+                showNodeHoverFlyout(price, rank, volume, bullVol, bearVol);
+              }
+            }
+          })
+          .catch(err => {
+            _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = false;
+          });
       }
     }
 
