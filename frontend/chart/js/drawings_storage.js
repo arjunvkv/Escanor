@@ -396,3 +396,40 @@ export function showChartToast(msg) {
     t.classList.remove('visible');
   }, 2200);
 }
+
+export function showPersistentFailureToast(title, msg, details = null) {
+  let container = document.getElementById('tvTopRightToastContainer');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'tvTopRightToastContainer';
+    container.className = 'tv-top-right-toast-container';
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement('div');
+  toast.className = 'tv-persistent-failure-toast';
+
+  const toastId = 'toast_' + Date.now() + '_' + Math.floor(Math.random() * 1000);
+  toast.id = toastId;
+
+  const nowStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  toast.innerHTML = `
+    <div class="tv-pt-header">
+      <div class="tv-pt-title-wrap">
+        <span class="tv-pt-icon">⚠️</span>
+        <span class="tv-pt-title">${title || 'STRATEGY ALERT'}</span>
+      </div>
+      <button class="tv-pt-close" title="Dismiss Alert" onclick="document.getElementById('${toastId}')?.remove()">✕</button>
+    </div>
+    <div class="tv-pt-body">${msg}</div>
+    ${details ? `<div class="tv-pt-details">${details}</div>` : ''}
+    <div class="tv-pt-footer">
+      <span class="tv-pt-time">${nowStr}</span>
+      <span class="tv-pt-hint">Persistent until dismissed</span>
+    </div>
+  `;
+
+  container.appendChild(toast);
+}
+

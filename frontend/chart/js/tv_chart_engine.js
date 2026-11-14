@@ -870,8 +870,12 @@ function registerCustomOverlays() {
         overlay._dragStartPointsSnapshot = null;
 
         if (didActuallyChange) {
-          if (typeof window !== 'undefined' && window.__liveSovereignEngine && window.__liveSovereignEngine.isAutoTradingEnabled) {
-            window.__liveSovereignEngine.disarmAutoTrading('Box moved/resized');
+          if (typeof window !== 'undefined' && window.__liveSovereignEngine) {
+            if (typeof window.__liveSovereignEngine.onBoxCoordinatesChanged === 'function') {
+              window.__liveSovereignEngine.onBoxCoordinatesChanged();
+            } else if (window.__liveSovereignEngine.isAutoTradingEnabled) {
+              window.__liveSovereignEngine.disarmAutoTrading('Box moved/resized');
+            }
           }
         }
 
@@ -1746,9 +1750,11 @@ function registerCustomOverlays() {
         const vol = Number(data.volume || 0.50);
         const dist = Math.abs(price - data.openPrice);
         const dollar = dist * vol * 100;
-        const isFavorable = data.isBuy ? (price >= data.openPrice) : (price <= data.openPrice);
-        const sign = isFavorable ? '+' : '-';
-        title = `${vol}L  ${sign}$${dollar.toFixed(2)}`;
+        const isFavorable = isTp ? (data.isBuy ? price >= data.openPrice : price <= data.openPrice)
+                                : (data.isBuy ? price >= data.openPrice : price <= data.openPrice);
+        const sign = isTp ? '+' : (isFavorable ? '+' : '-');
+        const prefix = isSl ? '🛑 SL' : '🎯 TP';
+        title = `${prefix}: $${price.toFixed(2)} [${sign}$${dollar.toFixed(2)} • ${sign}${dist.toFixed(1)} pt] (${vol}L) ⇅`;
       }
 
       const figures = [];
@@ -1820,8 +1826,8 @@ function registerCustomOverlays() {
       else if (data.isPending) color = '#f59e0b';
       else color = data.isBuy ? '#00f5a0' : '#ef4444';
 
-      // When a trade is active, show only lots and dollars on the order axis label as well
-      const text = data.title || `${data.orderType || 'ORDER'}: ${typeof price === 'number' ? price.toFixed(2) : ''}`;
+      const prefix = isSl ? '🛑 SL' : (isTp ? '🎯 TP' : (data.isPending ? '⏳ PENDING' : '⚡ TRIGGER'));
+      const text = `${prefix} $${typeof price === 'number' ? price.toFixed(2) : ''}`;
 
       return [
         {
@@ -5477,9 +5483,6 @@ export function syncBoxFulcrumAndVacuumLines(chart) {
   if (typeof window !== 'undefined') {
     if (window.__replayEngine && typeof window.__replayEngine.recomputeAllBoxTrades === 'function') {
       try { window.__replayEngine.recomputeAllBoxTrades(); } catch (_) {}
-    }
-    if (window.__liveSovereignEngine && typeof window.__liveSovereignEngine.onBoxCoordinatesChanged === 'function') {
-      try { window.__liveSovereignEngine.onBoxCoordinatesChanged(); } catch (_) {}
     }
   }
 }

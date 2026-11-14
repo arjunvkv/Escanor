@@ -4,16 +4,16 @@
  * restores server drawings, and powers the top ribbon and quick order pad.
  */
 
-import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611121545';
+import { initTradingViewChart, startCandleCountdown } from './tv_chart_engine.js?v=202611131505';
 import { initToolbar, showTvConfirm, evaluateRectangleAlarms, evaluatePositionTriggers, evaluateVerticalLineAlarms } from './toolbar.js?v=202611121545';
 import { fetchServerDrawings, restoreDrawings, showChartToast, syncDrawingsToServer } from './drawings_storage.js?v=202611121545';
-import { ActiveOrdersEngine } from './active_orders_engine.js?v=202610131355';
+import { ActiveOrdersEngine } from './active_orders_engine.js?v=202611131505';
 import { LineTradingManager } from './line_trading.js?v=202611121545';
 import { StructuralLevelsEngine } from './structural_levels_engine.js?v=202610131355';
 import { isFootprintEnabled, setFootprintEnabled, computeFootprintMetrics } from './living_candle_engine.js?v=202611031455';
 import { initTrapAlerts, evaluateTrapLiveAlert } from './trap_alerts.js?v=202610141615';
 import { ReplayStrategyEngine } from './replay_engine.js?v=202611021832';
-import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611031445';
+import { LiveStrategyEngine } from './live_strategy_engine.js?v=202611131710';
 
 let chart = null;
 let currentSymbol = 'XAUUSD';
@@ -2015,8 +2015,12 @@ function handleLiveTelemetry(tel) {
   }
 
   // 3b. Feed Live Positions to Live Sovereign Strategy Engine
-  if (liveSovereignEngine) {
-    liveSovereignEngine.reconcileWithPositions(activePositions);
+  if (liveSovereignEngine && typeof liveSovereignEngine.reconcileWithPositions === 'function') {
+    try {
+      liveSovereignEngine.reconcileWithPositions(activePositions);
+    } catch (e) {
+      console.warn('[handleLiveTelemetry] reconcile error:', e);
+    }
   }
 
   // 4. Update Active Trades & Pending Orders on Chart

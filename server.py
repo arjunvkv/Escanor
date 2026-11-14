@@ -212,6 +212,68 @@ async def get_telemetry():
     return JSONResponse(content=snap)
 
 
+@app.get("/api/macro_lockout")
+async def get_macro_lockout():
+    """
+    Evaluates whether an automated trading lockout is in effect:
+    1. Daily Rollover Blackout: 21:00 UTC - 23:15 UTC (illiquid spread blowout window).
+    2. Scheduled Tier-1 Macro Releases: 15 minutes before and 5 minutes after (CPI, NFP, FOMC, PPI, PCE, GDP).
+    3. Live Spread Gate: If live spread > 1.20 pts (120 points on Gold).
+    """
+    import datetime
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    total_minutes = now_utc.hour * 60 + now_utc.minute
+
+    # 1. Rollover Blackout (21:00 UTC = 1260 mins, 23:15 UTC = 1395 mins)
+    if 1260 <= total_minutes <= 1395:
+        return JSONResponse(content={
+            "is_locked": True,
+            "lock_type": "ROLLOVER_BLACKOUT",
+            "reason": "Daily Rollover Blackout (21:00 - 23:15 UTC). Spreads widened & liquidity thin.",
+            "minutes_remaining": 1395 - total_minutes
+        })
+
+    # 2. Check Live Spread blowout (> 1.20 pts / 120 points on XAUUSD)
+    try:
+        import MetaTrader5 as mt5_mod
+        tick = mt5_mod.symbol_info_tick("XAUUSD")
+        if tick and (tick.ask - tick.bid) > 1.20:
+            spread_pts = round((tick.ask - tick.bid) * 100, 1)
+            return JSONResponse(content={
+                "is_locked": True,
+                "lock_type": "SPREAD_BLOWOUT",
+                "reason": f"Live Spread Gate ({spread_pts} pts > 120 pts max). High slippage risk.",
+                "minutes_remaining": 5
+            })
+    except Exception:
+        pass
+
+    # 3. Check Tier-1 Economic Calendar
+    try:
+        import sys
+        if r"C:\Trading\Alpha" not in sys.path:
+            sys.path.insert(0, r"C:\Trading\Alpha")
+        from tradingagents.economic_calendar import EconomicCalendarEngine
+        cal_engine = EconomicCalendarEngine()
+        summary = cal_engine.get_news_countdown_summary()
+        if summary.get("shield_status") == "BLACKOUT":
+            return JSONResponse(content={
+                "is_locked": True,
+                "lock_type": "TIER1_BLACKOUT",
+                "reason": summary.get("shield_message", "Tier-1 Macro Blackout Window Active"),
+                "minutes_remaining": 15
+            })
+    except Exception as e:
+        logger.debug(f"Calendar check fallback: {e}")
+
+    return JSONResponse(content={
+        "is_locked": False,
+        "lock_type": "NONE",
+        "reason": "CLEAR — No Macro Blackout Active",
+        "minutes_remaining": 0
+    })
+
+
 @app.get("/api/candles")
 async def get_candles_endpoint(symbol: str = "XAUUSD", timeframe: str = "5", count: int = 300, end_time: Optional[int] = None):
     """Fetch MT5 OHLCV candles formatted for KLineCharts.
@@ -222,6 +284,21 @@ async def get_candles_endpoint(symbol: str = "XAUUSD", timeframe: str = "5", cou
         c_int = 300
     candles = get_candles(symbol=symbol, timeframe=str(timeframe), count=c_int, end_time=end_time)
     return JSONResponse(content={"status": "OK", "symbol": symbol, "timeframe": timeframe, "candles": candles})
+
+
+@app.get("/api/multiday_data")
+async def get_multiday_data_endpoint():
+    """Serve verified multi-day M1 tick-parity dataset with physical dwell boundaries."""
+    data_path = BASE_DIR / "data" / "multiday_data.json"
+    if data_path.exists():
+        try:
+            with open(data_path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            return JSONResponse(content={"status": "OK", "data": data})
+        except Exception as e:
+            logger.error(f"Failed to read multiday_data.json: {e}")
+    return JSONResponse(content={"status": "ERROR", "message": "Dataset not found"})
+
 
 
 @app.get("/api/drawings")
@@ -745,6 +822,106 @@ async def trade_execute(request: Request):
     data = await request.json()
     res = await execute_trade_request(data)
     return JSONResponse(content=res)
+
+
+@app.post("/api/testone/execute_dual")
+async def testone_execute_dual(request: Request):
+    """
+    Atomic Dual-Tranche Execution Engine for testOne:
+    - Splits volume from header into Ticket 1 (50% with TP1) and Ticket 2 (50% with trailing SL)
+    - Enforces strictly 1 active trade sequence
+    - Returns tickets, fill prices, and status
+    """
+    async with trade_execution_lock:
+        data = await request.json()
+        sym = data.get("symbol", config.get("symbol", "XAUUSD"))
+        side = data.get("side") or data.get("direction") or "BUY"
+        total_vol = float(data.get("volume", 0.50))
+        sl = float(data.get("sl_price") or data.get("sl") or 0.0)
+        tp1 = float(data.get("tp1_price") or data.get("tp1") or 0.0)
+        tp2 = float(data.get("tp2_price") or data.get("tp2") or 0.0)
+        trail_enabled = bool(data.get("trailing_enabled", True))
+        
+        # Check active positions on sym
+        active_pos = get_positions(sym)
+        if active_pos and len(active_pos) > 0:
+            testone_pos = [p for p in active_pos if (p.get("magic", 0) if isinstance(p, dict) else getattr(p, "magic", 0)) in (234001, 234002)]
+            if len(testone_pos) >= 2 or (len(testone_pos) == 0 and len(active_pos) > 0):
+                return JSONResponse(content={
+                    "status": "BLOCKED",
+                    "error": f"Another trade is already active on {sym} ({len(active_pos)} active). Only 1 active trade permitted.",
+                    "active_positions": len(active_pos)
+                })
+
+        try:
+            import MetaTrader5 as mt5
+            s_info = mt5.symbol_info(sym) if mt5 else None
+            step = getattr(s_info, "volume_step", 0.01) or 0.01
+            v_min = getattr(s_info, "volume_min", 0.01) or 0.01
+        except Exception:
+            step = 0.01
+            v_min = 0.01
+
+        import math
+        half_vol = total_vol / 2.0
+        t1_vol = round(math.floor(half_vol / step) * step, 2)
+        t2_vol = round(total_vol - t1_vol, 2)
+
+        if t1_vol < v_min:
+            t1_vol = total_vol
+            t2_vol = 0.0
+
+        orders = []
+        errors = []
+
+        # Execute Ticket 1 (Tranche 1: Fixed TP1)
+        res1 = execute_market_order(
+            symbol=sym, side=side, volume=t1_vol, sl=sl, tp=tp1,
+            comment="testOne T1 (TP1)", magic=234001
+        )
+        if res1 and res1.get("status") in ("EXECUTED", "OK"):
+            orders.append(res1)
+        else:
+            errors.append(f"Tranche 1 Failed: {res1.get('error', 'Execution error')}")
+
+        # Execute Ticket 2 (Tranche 2: Trailing Runner) if t2_vol > 0 and Ticket 1 succeeded
+        res2 = None
+        if len(orders) > 0 and t2_vol >= v_min:
+            t2_tp = tp2 if not trail_enabled else 0.0
+            res2 = execute_market_order(
+                symbol=sym, side=side, volume=t2_vol, sl=sl, tp=t2_tp,
+                comment="testOne T2 (Trail)", magic=234002
+            )
+            if res2 and res2.get("status") in ("EXECUTED", "OK"):
+                orders.append(res2)
+            else:
+                errors.append(f"Tranche 2 Failed: {res2.get('error', 'Execution error')}")
+
+        if len(orders) == 0:
+            return JSONResponse(content={
+                "status": "FAILED",
+                "error": "; ".join(errors) if errors else "Both tranches failed to execute",
+                "details": errors
+            })
+
+        t1_ticket = orders[0].get("ticket") or orders[0].get("order")
+        t2_ticket = orders[1].get("ticket") or orders[1].get("order") if len(orders) > 1 else None
+        fill_price = orders[0].get("price", 0.0)
+
+        logger.info(f"🏛️ testOne Dual-Tranche Executed: T1 #{t1_ticket} ({t1_vol}L @ TP ${tp1:.2f}) | T2 #{t2_ticket} ({t2_vol}L @ Trail)")
+
+        return JSONResponse(content={
+            "status": "OK",
+            "execution_status": "EXECUTED",
+            "symbol": sym,
+            "side": side,
+            "fill_price": fill_price,
+            "total_volume": total_vol,
+            "t1": {"ticket": t1_ticket, "volume": t1_vol, "tp": tp1, "sl": sl},
+            "t2": {"ticket": t2_ticket, "volume": t2_vol, "tp": tp2 if not trail_enabled else 0.0, "sl": sl} if t2_ticket else None,
+            "errors": errors if errors else None
+        })
+
 
 
 @app.post("/api/trade/place_pending")
@@ -1413,12 +1590,26 @@ async def trade_ticket_result(ticket: int):
         if not mt5.initialize():
             return JSONResponse(content={"status": "ERROR", "message": "MT5 not initialized"})
 
+        # 1. First check if the position is actively open in MT5
+        open_pos = mt5.positions_get(ticket=ticket)
+        if open_pos and len(open_pos) > 0:
+            p = open_pos[0]
+            return JSONResponse(content={
+                "status": "OPEN",
+                "ticket": ticket,
+                "profit": float(p.profit),
+                "is_loss": float(p.profit) < 0,
+                "price_open": float(p.price_open),
+                "price_current": float(p.price_current)
+            })
+
+        # 2. If not open in active positions, check closed deal history
         deals = mt5.history_deals_get(position=ticket)
         if not deals:
             return JSONResponse(content={"status": "NOT_FOUND", "ticket": ticket, "is_loss": False, "profit": 0.0})
 
         # Find the exit deal (entry == 1 or deal with non-zero profit)
-        exit_deals = [d for d in deals if d.entry == 1 or d.profit != 0]
+        exit_deals = [d for d in deals if d.entry == 1]
         if exit_deals:
             exit_deal = exit_deals[-1]
             profit = float(exit_deal.profit)
@@ -1431,12 +1622,23 @@ async def trade_ticket_result(ticket: int):
                 "comment": getattr(exit_deal, "comment", "")
             })
 
+        # If only entry deal exists (d.entry == 0), the position is either still opening or pending
         total_profit = sum(float(d.profit) for d in deals)
+        has_exit = any(d.entry == 1 for d in deals)
+        if has_exit or total_profit != 0.0:
+            return JSONResponse(content={
+                "status": "CLOSED",
+                "ticket": ticket,
+                "profit": total_profit,
+                "is_loss": total_profit < 0
+            })
+
+        # Default fallback: still open / pending
         return JSONResponse(content={
-            "status": "CLOSED",
+            "status": "OPEN",
             "ticket": ticket,
-            "profit": total_profit,
-            "is_loss": total_profit < 0
+            "profit": 0.0,
+            "is_loss": False
         })
     except Exception as e:
         logger.error(f"Error checking ticket result for #{ticket}: {e}")

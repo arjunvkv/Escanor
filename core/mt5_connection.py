@@ -247,6 +247,8 @@ def get_positions(symbol: Optional[str] = None) -> List[Dict[str, Any]]:
                 "tp": round(float(p.tp), 2) if p.tp else None,
                 "profit": round(float(p.profit), 2),
                 "profit_pts": profit_pts,
+                "magic": int(getattr(p, "magic", 0)),
+                "comment": str(getattr(p, "comment", "")),
                 "time": int(p.time),
                 "elapsed_sec": elapsed_sec,
                 "open_epoch_utc": open_epoch_utc

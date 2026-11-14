@@ -5923,5 +5923,173 @@ input[type="number"] {
   color: #f87171;
 }
 
+/* ========================================================================= */
+/* 🏛️ testOne SOVEREIGN CONTROL BAR & PERSISTENT TOAST SYSTEM                */
+/* ========================================================================= */
+.tv-top-right-toast-container {
+  position: fixed;
+  top: 70px;
+  right: 20px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 380px;
+  pointer-events: none;
+}
+
+.tv-persistent-failure-toast {
+  pointer-events: auto;
+  background: rgba(22, 14, 20, 0.95);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  border-left: 4px solid #ef4444;
+  border-radius: 8px;
+  padding: 12px 14px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85), 0 0 15px rgba(239, 68, 68, 0.25);
+  backdrop-filter: blur(10px);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  animation: tvToastSlideInRight 0.25s ease-out;
+}
+
+@keyframes tvToastSlideInRight {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.tv-pt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+.tv-pt-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.tv-pt-icon {
+  font-size: 14px;
+}
+.tv-pt-title {
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.tv-pt-close {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.tv-pt-close:hover {
+  color: #ffffff;
+}
+.tv-pt-body {
+  color: #f1f5f9;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+  margin-bottom: 6px;
+}
+.tv-pt-details {
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 4px;
+  padding: 5px 8px;
+  color: #cbd5e1;
+  font-size: 10.5px;
+  font-family: monospace;
+  margin-bottom: 6px;
+}
+.tv-pt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #64748b;
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+/* Redesigned testOne Floating Bar */
+.tv-live-control-bar.testone-bar {
+  background: rgba(13, 17, 28, 0.95);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9px;
+  padding: 6px 14px;
+  gap: 10px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.9), 0 0 1px rgba(255, 255, 255, 0.15);
+  white-space: nowrap;
+}
+
+.tv-live-control-bar.testone-bar .tv-replay-divider {
+  width: 1px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tv-tranche-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 6px;
+  color: #38bdf8;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+}
+.tv-tranche-icon {
+  font-size: 12px;
+}
+
+.tv-live-auto-btn.testone-armed {
+  background: rgba(6, 182, 212, 0.22);
+  border: 1px solid rgba(6, 182, 212, 0.7);
+  color: #22d3ee;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.35);
+  animation: tvArmedPulse 2s infinite ease-in-out;
+}
+@keyframes tvArmedPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(6, 182, 212, 0.3); }
+  50% { box-shadow: 0 0 14px rgba(6, 182, 212, 0.6); }
+}
+
+.tv-live-auto-btn.in-trade {
+  background: rgba(245, 158, 11, 0.25);
+  border: 1px solid rgba(245, 158, 11, 0.85);
+  color: #fbbf24;
+  font-weight: 800;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.45);
+}
+
+.tv-live-control-bar.testone-bar .tv-replay-exit-trade-btn {
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.8);
+  color: #fca5a5;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.tv-live-control-bar.testone-bar .tv-replay-exit-trade-btn:hover {
+  background: rgba(239, 68, 68, 0.45);
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+
 
 

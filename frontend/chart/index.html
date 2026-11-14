@@ -579,20 +579,19 @@
           <button id="tvReplayExitBtn" class="tv-replay-exit-btn" title="Exit Replay & Return to Live MT5 (Esc)">✕</button>
         </div>
 
-        <!-- ⚡ Floating Live Sovereign Execution Desk Bar -->
-        <div id="tvLiveControlBar" class="tv-live-control-bar" style="display: none;">
+        <!-- ⚡ Floating Live Sovereign Execution Desk Bar (testOne Nodal Architecture) -->
+        <div id="tvLiveControlBar" class="tv-live-control-bar testone-bar" style="display: none;">
           <div class="tv-replay-drag-handle" title="Drag Live Bar">⋮⋮</div>
-          <div id="tvLiveStatusBadge" class="tv-live-badge">
-            <span class="tv-live-pulse-emerald"></span>
-            <span>LIVE DESK</span>
+          <button id="tvLiveAutoToggleBtn" class="tv-replay-btn tv-live-auto-btn off" title="Toggle testOne Auto Trading. Automatically turns OFF when boxes are moved or cleared.">🤖 AUTO: OFF</button>
+          <button id="tvLiveManualExitBtn" class="tv-replay-btn tv-replay-exit-trade-btn" style="display: none;" title="Manually Close Active Trade at Current Market Price (Ctrl+End)">🛑 CLOSE (+0.00p / +$0.00)</button>
+          <div class="tv-replay-divider"></div>
+          <div id="tvLiveTranchePill" class="tv-tranche-pill" title="Asymmetric 2-Tranche Architecture (T1: Cash Anchor TP1 • T2: Trailing Runner)">
+            <span class="tv-tranche-icon">🎯</span>
+            <span>2-TRANCHE (T1+T2)</span>
           </div>
           <div class="tv-replay-divider"></div>
-          <button id="tvLiveAutoToggleBtn" class="tv-replay-btn tv-live-auto-btn off" title="Toggle Live Auto Trading. Automatically turns OFF when boxes are moved or cleared to prevent accidental trade triggers.">🤖 AUTO: OFF</button>
-          <button id="tvLiveTrailToggleBtn" class="tv-replay-btn tv-replay-trail-btn active" title="Toggle Live Profit Trailing (Milestones & Peak Trail). Breakeven remains always active.">⚡ TRAIL: ON</button>
-          <button id="tvLiveManualExitBtn" class="tv-replay-btn tv-replay-exit-trade-btn" style="display: none;" title="Manually Close Active Trade at Current Market Price (Ctrl+End)">🛑 CLOSE TRADE</button>
-          <div class="tv-replay-divider"></div>
-          <div id="tvLiveStatsBadge" class="tv-replay-stats-badge" title="Live Sovereign Strategy Performance">
-            <span class="tv-strat-dot">📈</span>
+          <div id="tvLiveStatsBadge" class="tv-replay-stats-badge" title="Live testOne Nodal Strategy Performance">
+            <span class="tv-strat-dot">📊</span>
             <span id="tvLiveStatsText">0 Trades | $0.00</span>
           </div>
         </div>
@@ -1657,8 +1656,12 @@
     <!-- Notification Toast -->
     <div id="tvToast" class="tv-toast">Drawing Saved</div>
 
+    <!-- ⚠️ Persistent Top-Right Failure / Alert Toast Container -->
+    <div id="tvTopRightToastContainer" class="tv-top-right-toast-container"></div>
+
+
   </div>
 
-  <script type="module" src="/chart/js/app.js?v=202611121545"></script>
+  <script type="module" src="/chart/js/app.js?v=202611131710"></script>
 </body>
 </html>

@@ -92,9 +92,10 @@ export class ActiveOrdersEngine {
       const sign = profitPts >= 0 ? '+' : '';
       const pnlText = `${sign}$${profitDollar.toFixed(2)} (${sign}${profitPts.toFixed(1)} pt)`;
 
-      // Entry line (Locked) — User requirement: only show lots and dollars nothing else
+      // Entry line (Locked) — Explicit Trigger / Entry marking
       const entryKey = `pos_${ticket}_entry`;
-      const entryTitle = `${volume}L  ${sign}$${profitDollar.toFixed(2)}`;
+      const sideLabel = isBuy ? 'BUY' : 'SELL';
+      const entryTitle = `⚡ TRIGGER (${sideLabel}): $${openPrice.toFixed(2)} [${sign}$${profitDollar.toFixed(2)} • ${sign}${profitPts.toFixed(1)} pt] (${volume}L)`;
       this._syncOrderLine(entryKey, {
         points: [{ value: openPrice }],
         lock: true,
@@ -183,7 +184,7 @@ export class ActiveOrdersEngine {
         const slDollar = (slDist * volume * 100);
         const isFavorable = isBuy ? (slPrice >= openPrice) : (slPrice <= openPrice);
         const slSign = isFavorable ? '+' : '-';
-        const slTitle = `${volume}L  ${slSign}$${slDollar.toFixed(2)}`;
+        const slTitle = `🛑 SL: $${slPrice.toFixed(2)} [${slSign}$${slDollar.toFixed(2)} • ${slSign}${slDist.toFixed(1)} pt] (${volume}L) ⇅`;
 
         this._syncOrderLine(slKey, {
           points: [{ value: slPrice }],
@@ -219,7 +220,7 @@ export class ActiveOrdersEngine {
         const tpDollar = (tpDist * volume * 100);
         const isFavorable = isBuy ? (tpPrice >= openPrice) : (tpPrice <= openPrice);
         const tpSign = isFavorable ? '+' : '-';
-        const tpTitle = `${volume}L  ${tpSign}$${tpDollar.toFixed(2)}`;
+        const tpTitle = `🎯 TP: $${tpPrice.toFixed(2)} [${tpSign}$${tpDollar.toFixed(2)} • ${tpSign}${tpDist.toFixed(1)} pt] (${volume}L) ⇅`;
 
         this._syncOrderLine(tpKey, {
           points: [{ value: tpPrice }],

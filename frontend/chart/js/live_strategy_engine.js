@@ -1,21 +1,19 @@
 /**
- * Escanor — Live Sovereign Execution Desk & Structural Strategy Engine
+ * Escanor — testOne Nodal Orderflow Execution Engine (Live Desk)
  * 
- * Executes live on real-world MT5 ticks (15ms feed) matching 100% of the
- * replay auction strategy with 0 lookahead, 0 overfit, and 0 miss.
- * 
- * Features:
- * - Direct execution into MetaTrader 5 via /api/trade/execute
- * - Guaranteed Broker-Level Breakeven Lock at MFE >= 1.80p (/api/trade/modify)
- * - Stalling Decay Protection at Dwell >= 90s with MFE >= 0.80p
- * - Trailing ON/OFF Switch (controls profit milestones, BE remains always active)
- * - Dynamic Live Manual Exit Button (🛑 CLOSE (+X.Xp / +$XXX))
- * - Emergency Ctrl+End / Alt+End Hotkey Exit
- * - Real-time lot size calculation from #tvHeaderLotInput ($ PnL = pts * 100 * lot)
- * - Live On-Chart Overlay tracking (live stretching trade box + entry markers)
+ * Clean, audited implementation of the testOne Nodal Strategy:
+ * - Pre-formed in-box nodal geometry extraction (Rank #1 VPOC, VAH, VAL)
+ * - Boundary Pressure Ratio (BPR) Retest Depth Predictor (STOP vs LIMIT)
+ * - Macro Box Rule (TP1 capped at 15.0p for H > 20p)
+ * - Atomic Asymmetric 2-Tranche Execution (T1: Cash Anchor TP1 • T2: Trailing Runner)
+ * - Box Energy Exhaustion Gate (One-and-done upon banking TP1)
+ * - Zero Ticket Mutation: Dual independent tickets (magic=234001, 234002)
+ * - Spread Gate (<= 1.20p) & Stale Price Disarm (> 1.0p past trigger)
+ * - Auto-Disarm on box movement / modification
+ * - Persistent Top-Right Failure / Alert Toasts
  */
 
-import { showChartToast, syncDrawingsToServer } from './drawings_storage.js';
+import { showChartToast, showPersistentFailureToast } from './drawings_storage.js';
 
 export class LiveStrategyEngine {
   constructor({ chartEngine, symbol = 'XAUUSD' }) {
@@ -23,13 +21,16 @@ export class LiveStrategyEngine {
     this.chart = (chartEngine && chartEngine.chart) ? chartEngine.chart : chartEngine;
     this.symbol = symbol;
 
-    this.boxTradeStates = new Map(); // boxId -> { inTrade, activeTrade, tradesHistory, lastExitTime, fulcrumPrice, vacuumPrice, levelStates }
-    this.isAutoTradingEnabled = false; // Disarmed by default for safety; turns OFF on box move/clear
-    this.isTrailingEnabled = true; // Trailing enabled by default; BE is always active
+    this.boxTradeStates = new Map(); // boxId -> { state, setup, inTrade, activeTrade, tradesHistory }
+    this.isAutoTradingEnabled = false;
+    this.isTrailingEnabled = true;
+    this.activeTrade = null; // Strictly 1 active trade sequence
     this.lastEvaluatedPrice = null;
-    this.lastEvaluatedTimeSec = null;
+    this.lastTickTimeMs = null;
     this.lastBrokerModifyTime = 0;
+    this.lastModifiedSL = 0.0;
     this.lastDisarmNotificationTime = 0;
+    this.lastBoxesSnapshot = '';
     this.isExecutingOrder = false;
 
     // UI Elements
@@ -39,13 +40,13 @@ export class LiveStrategyEngine {
     this.manualExitBtn = null;
     this.statsBadge = null;
     this.statusBadge = null;
-    this.spawnedOverlayIds = new Set();
+    this.tranchePill = null;
 
     this.bindUI();
   }
 
   /**
-   * Helper to fetch the current lot size dynamically from the top header input
+   * Helper to fetch current lot size dynamically from the top header input
    */
   getLotSize() {
     if (typeof document !== 'undefined') {
@@ -64,10 +65,9 @@ export class LiveStrategyEngine {
 
     this.controlBar = document.getElementById('tvLiveControlBar');
     this.autoToggleBtn = document.getElementById('tvLiveAutoToggleBtn');
-    this.trailToggleBtn = document.getElementById('tvLiveTrailToggleBtn');
     this.manualExitBtn = document.getElementById('tvLiveManualExitBtn');
     this.statsBadge = document.getElementById('tvLiveStatsText');
-    this.statusBadge = document.getElementById('tvLiveStatusBadge');
+    this.tranchePill = document.getElementById('tvLiveTranchePill');
 
     // 1. Auto Trading Toggle Switch
     if (this.autoToggleBtn) {
@@ -80,57 +80,25 @@ export class LiveStrategyEngine {
       });
     }
 
-    // 2. Trailing Toggle Switch
-    if (this.trailToggleBtn) {
-      this.trailToggleBtn.addEventListener('click', () => {
-        this.isTrailingEnabled = !this.isTrailingEnabled;
-        if (this.isTrailingEnabled) {
-          this.trailToggleBtn.classList.remove('off');
-          this.trailToggleBtn.classList.add('active');
-          this.trailToggleBtn.textContent = '⚡ TRAIL: ON';
-          showChartToast('⚡ Live Profit Trailing: ENABLED (Milestones & Peak Trail Active)');
-        } else {
-          this.trailToggleBtn.classList.remove('active');
-          this.trailToggleBtn.classList.add('off');
-          this.trailToggleBtn.textContent = '🛡️ TRAIL: OFF';
-          showChartToast('🛡️ Live Profit Trailing: OFF (Runners Uncapped • Breakeven Remains 100% Active)');
-        }
-        this.updateManualExitBtnState();
-      });
-    }
-
-    // 3. Manual Exit Button
+    // 2. Manual Exit Button
     if (this.manualExitBtn) {
       this.manualExitBtn.addEventListener('click', () => {
         this.manualExitActiveTrade();
       });
     }
 
-    // 4. Header Lot Selector Dynamic Listener (Debounced to guarantee 0ms typing latency)
+    // 4. Header Lot Selector Dynamic Listener
     const headerLotInp = document.getElementById('tvHeaderLotInput');
     if (headerLotInp) {
-      let lotDebounceTimer = null;
-      const updateLotDisplay = (immediate = false) => {
-        const doUpdate = () => {
-          const lot = this.getLotSize();
-          if (this.isAutoTradingEnabled && this.autoToggleBtn) {
-            this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
-          }
-          this.updateStatsDisplay();
-          this.updateManualExitBtnState();
-        };
-        if (immediate) {
-          if (lotDebounceTimer) clearTimeout(lotDebounceTimer);
-          lotDebounceTimer = null;
-          doUpdate();
-        } else {
-          if (lotDebounceTimer) clearTimeout(lotDebounceTimer);
-          lotDebounceTimer = setTimeout(doUpdate, 300);
+      const updateLotDisplay = () => {
+        const lot = this.getLotSize();
+        if (this.isAutoTradingEnabled && this.autoToggleBtn && !this.activeTrade) {
+          this.autoToggleBtn.textContent = `⚡ AUTO: testOne (${lot}L)`;
         }
+        this.updateStatsDisplay();
       };
-      headerLotInp.addEventListener('input', () => updateLotDisplay(false));
-      headerLotInp.addEventListener('change', () => updateLotDisplay(true));
-      headerLotInp.addEventListener('blur', () => updateLotDisplay(true));
+      headerLotInp.addEventListener('input', updateLotDisplay);
+      headerLotInp.addEventListener('change', updateLotDisplay);
     }
 
     const lotPills = document.querySelectorAll('.tv-top-lot-pill');
@@ -138,11 +106,10 @@ export class LiveStrategyEngine {
       p.addEventListener('click', () => {
         setTimeout(() => {
           const lot = this.getLotSize();
-          if (this.isAutoTradingEnabled && this.autoToggleBtn) {
-            this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
+          if (this.isAutoTradingEnabled && this.autoToggleBtn && !this.activeTrade) {
+            this.autoToggleBtn.textContent = `⚡ AUTO: testOne (${lot}L)`;
           }
           this.updateStatsDisplay();
-          this.updateManualExitBtnState();
         }, 50);
       });
     });
@@ -154,42 +121,104 @@ export class LiveStrategyEngine {
   }
 
   /**
-   * Arm Auto Trading: Enable live MT5 trade entries
+   * Arm Auto Trading for testOne
    */
-  armAutoTrading() {
+  async armAutoTrading() {
+    if (this.activeTrade) {
+      showPersistentFailureToast(
+        'CANNOT ARM AUTO TRADING',
+        `A trade is already active on XAUUSD (${this.activeTrade.dir} ${this.activeTrade.totalLot}L). Only 1 active trade permitted.`,
+        'Wait for current trade to reach TP/SL, or close it via the red button.'
+      );
+      return;
+    }
+
+    // Macro Gate Lockout Pre-check
+    try {
+      const lockRes = await fetch('/api/macro_lockout');
+      const lockData = await lockRes.json();
+      if (lockData && lockData.is_locked) {
+        showPersistentFailureToast(
+          '🛡️ MACRO GATE AUTO-LOCKOUT ACTIVE',
+          lockData.reason || 'Auto trading locked during Tier-1 Blackout window.',
+          `Time remaining: ~${lockData.minutes_remaining || 15} minutes`
+        );
+        this.disarmAutoTrading(lockData.reason);
+        return;
+      }
+    } catch (e) {
+      // Non-fatal if server offline
+    }
+
+    const overlays = this.chart?.getOverlays?.() || [];
+    const rects = overlays.filter((ov) => ov.name === 'rect');
+
+    if (rects.length === 0) {
+      showPersistentFailureToast(
+        'CANNOT ARM AUTO TRADING',
+        'No drawn box found on chart. Draw a consolidation box around pre-formed market structure first.',
+        'Draw rectangle tool (Alt+B / Box tool)'
+      );
+      return;
+    }
+
     this.isAutoTradingEnabled = true;
+    this.lastBoxesSnapshot = this.getBoxesSnapshot();
     const lot = this.getLotSize();
+
     if (this.autoToggleBtn) {
       this.autoToggleBtn.classList.remove('off');
-      this.autoToggleBtn.classList.add('active');
-      this.autoToggleBtn.textContent = `⚡ AUTO: ON (${lot}L)`;
-      this.autoToggleBtn.title = 'Live Auto Trading is ACTIVE. Automatically turns OFF if any box is moved or deleted.';
+      this.autoToggleBtn.classList.add('testone-armed');
+      this.autoToggleBtn.textContent = `🎯 HUNTING (${lot}L)`;
+      this.autoToggleBtn.title = 'testOne is ARMED & HUNTING. Waiting for Shelf Sweep & Reclaim before entry.';
     }
+
     if (this.statusBadge) {
       this.statusBadge.classList.add('hunting');
     }
-    showChartToast(`🟢 Live Auto Trading ARMED & ACTIVE (${lot} L) — Monitoring level entries`);
+
+    showChartToast(`🟢 testOne ARMED (${lot}L) — State: HUNTING (Waiting for Shelf Sweep & Reclaim)`);
   }
 
   /**
-   * Disarm Auto Trading: Turn OFF entry triggers to prevent accidental execution
+   * Snapshot current box coordinates to detect actual displacement vs clicks
+   */
+  getBoxesSnapshot() {
+    const overlays = this.chart?.getOverlays?.() || [];
+    const rects = overlays.filter((ov) => ov.name === 'rect' && ov.points && ov.points.length >= 2);
+    return rects.map((r) => {
+      const validPts = (r.points || []).filter((p) => p && typeof p.value === 'number');
+      if (validPts.length < 2) return `${r.id}:empty`;
+      const t0 = Math.min(...validPts.map((p) => p.timestamp || 0));
+      const t1 = Math.max(...validPts.map((p) => p.timestamp || 0));
+      const pHigh = Math.max(...validPts.map((p) => p.value || 0)).toFixed(2);
+      const pLow = Math.min(...validPts.map((p) => p.value || 0)).toFixed(2);
+      return `${r.id}_${t0}_${t1}_${pHigh}_${pLow}`;
+    }).sort().join('|');
+  }
+
+  /**
+   * Disarm Auto Trading
    */
   disarmAutoTrading(reason = 'Box Modified') {
     const wasActive = this.isAutoTradingEnabled;
     this.isAutoTradingEnabled = false;
+
     if (this.autoToggleBtn) {
-      this.autoToggleBtn.classList.remove('active');
+      this.autoToggleBtn.classList.remove('testone-armed', 'in-trade');
       this.autoToggleBtn.classList.add('off');
       this.autoToggleBtn.textContent = '🤖 AUTO: OFF';
       this.autoToggleBtn.title = 'Live Auto Trading is OFF. Click to arm once boxes are configured.';
     }
-    if (this.statusBadge && !this.hasActiveTrade()) {
-      this.statusBadge.classList.remove('hunting');
+
+    if (this.statusBadge && !this.activeTrade) {
+      this.statusBadge.classList.remove('hunting', 'in-trade');
     }
+
     const now = Date.now();
     if (wasActive || (now - this.lastDisarmNotificationTime > 2500)) {
       this.lastDisarmNotificationTime = now;
-      showChartToast(`🛡️ ${reason} — Auto Trading turned OFF. Re-arm AUTO when ready.`);
+      showChartToast(`🛡️ ${reason} — Auto Trading turned OFF.`);
     }
   }
 
@@ -197,52 +226,27 @@ export class LiveStrategyEngine {
    * Hook called when box coordinates are moved or dragged
    */
   onBoxCoordinatesChanged() {
+    const curSnapshot = this.getBoxesSnapshot();
+    if (this.lastBoxesSnapshot && this.lastBoxesSnapshot === curSnapshot) {
+      // Coordinates have not actually changed (e.g. simple box click, selection, or hover)
+      return;
+    }
+    this.lastBoxesSnapshot = curSnapshot;
     this.disarmAutoTrading('Box Coordinates Moved / Modified');
     this.boxTradeStates.forEach((st) => {
-      if (!st.inTrade && st.levelStates) {
-        st.levelStates.clear();
+      if (!st.inTrade) {
+        st.setup = null; // Recompute nodal geometry on next evaluation
       }
     });
   }
 
   /**
-   * Get current chart timeline timestamp (synchronized with MT5 broker candles)
-   */
-  getChartTimestamp() {
-    if (this.lastTickTimeMs && this.lastTickTimeMs > 1000000000000) {
-      return this.lastTickTimeMs;
-    }
-    const fullList = this.chart?.getDataList?.() || [];
-    if (fullList.length > 0) {
-      return fullList[fullList.length - 1].timestamp;
-    }
-    return Date.now();
-  }
-
-  /**
-   * Hook called when an individual overlay/box is removed or deleted
+   * Hook called when an overlay/box is removed or deleted
    */
   onOverlayRemoved(overlayId) {
     if (this.boxTradeStates.has(overlayId)) {
-      const state = this.boxTradeStates.get(overlayId);
-      if (state.activeTrade) {
-        if (state.activeTrade.markerId) {
-          try { this.chart.removeOverlay({ id: state.activeTrade.markerId }); } catch (e) {}
-        }
-        if (state.activeTrade.boxOverlayId) {
-          try { this.chart.removeOverlay({ id: state.activeTrade.boxOverlayId }); } catch (e) {}
-        }
-      }
-      (state.tradesHistory || []).forEach((t) => {
-        if (t.markerId) {
-          try { this.chart.removeOverlay({ id: t.markerId }); } catch (e) {}
-        }
-        if (t.boxOverlayId) {
-          try { this.chart.removeOverlay({ id: t.boxOverlayId }); } catch (e) {}
-        }
-      });
       this.boxTradeStates.delete(overlayId);
-      this.disarmAutoTrading('Box Cleared / Removed');
+      this.disarmAutoTrading('Box Removed');
       this.updateStatsDisplay();
     }
   }
@@ -251,63 +255,164 @@ export class LiveStrategyEngine {
    * Hook called when all drawings are cleared
    */
   onClearAllDrawings() {
-    this.spawnedOverlayIds.forEach((id) => {
-      try { this.chart.removeOverlay({ id }); } catch (e) {}
-    });
-    this.spawnedOverlayIds.clear();
     this.boxTradeStates.clear();
+    this.activeTrade = null;
     this.disarmAutoTrading('All Drawings Cleared');
     this.updateStatsDisplay();
-    if (this.controlBar && !this.hasActiveTrade()) {
+    if (this.controlBar) {
       this.controlBar.style.display = 'none';
     }
   }
 
   /**
-   * Check if any active trade currently exists in the live engine
+   * Extract in-box volume profile and nodal parameters (pure testOne)
    */
-  hasActiveTrade() {
-    for (const st of this.boxTradeStates.values()) {
-      if (st.inTrade && st.activeTrade) return true;
+  extractBoxNodalProfile(rect) {
+    const pts = rect.points || [];
+    if (pts.length < 2) return null;
+
+    const prices = pts.map((p) => p.value).filter((v) => typeof v === 'number' && !isNaN(v));
+    const times = pts.map((p) => p.timestamp).filter((t) => typeof t === 'number' && !isNaN(t));
+    if (prices.length < 2 || times.length < 2) return null;
+
+    const topPrice = Math.max(...prices);
+    const bottomPrice = Math.min(...prices);
+    const h = Math.round((topPrice - bottomPrice) * 100) / 100;
+    const midPrice = Math.round(((topPrice + bottomPrice) / 2.0) * 100) / 100;
+    const tStart = Math.min(...times);
+    const tEnd = Math.max(...times);
+
+    const fullList = this.chart?.getDataList?.() || [];
+    const inBoxCandles = fullList.filter((c) => c.timestamp >= tStart && c.timestamp <= tEnd);
+
+    if (inBoxCandles.length < 3) {
+      return {
+        topPrice, bottomPrice, h, midPrice, tStart, tEnd,
+        vpoc: midPrice, vah: Math.round((topPrice - 0.2 * h) * 100) / 100, val: Math.round((bottomPrice + 0.2 * h) * 100) / 100,
+        bpr: 1.0, volSkew: 1.0, isLong: true,
+        orderType: 'LIMIT', entryPrice: midPrice, setupName: 'Origin VPOC Sweep (Fallback)'
+      };
     }
-    return false;
+
+    // 1. In-box volume profile across 0.10p bins
+    const bins = [];
+    for (let p = bottomPrice; p <= topPrice + 0.05; p += 0.10) {
+      bins.push(Math.round(p * 100) / 100);
+    }
+
+    const vols = [];
+    for (let i = 0; i < bins.length - 1; i++) {
+      const p0 = bins[i];
+      const p1 = bins[i + 1];
+      const pm = Math.round(((p0 + p1) / 2.0) * 100) / 100;
+      let tv = 0;
+      for (const c of inBoxCandles) {
+        if (c.low <= p1 && c.high >= p0) {
+          tv += (c.volume || 1);
+        }
+      }
+      vols.push({ p: pm, v: tv });
+    }
+
+    vols.sort((a, b) => b.v - a.v);
+    const vpoc = vols[0]?.p || midPrice;
+
+    vols.sort((a, b) => a.p - b.p);
+    const totalVol = vols.reduce((acc, curr) => acc + curr.v, 0);
+    let cum = 0;
+    let vah = topPrice;
+    let val = bottomPrice;
+    for (const item of vols) {
+      cum += item.v;
+      const ratio = cum / (totalVol || 1);
+      if (ratio >= 0.20 && val === bottomPrice) {
+        val = item.p;
+      }
+      if (ratio >= 0.80) {
+        vah = item.p;
+        break;
+      }
+    }
+
+    // 2. Skew and Boundary Pressure Ratio (BPR)
+    let vUpper = 0;
+    let vLower = 0;
+    for (const c of inBoxCandles) {
+      if (c.close >= midPrice) vUpper += (c.volume || 1);
+      else vLower += (c.volume || 1);
+    }
+    const volSkew = Math.round((vUpper / (vLower || 1)) * 100) / 100;
+
+    const topThresh = topPrice - 0.15 * h;
+    const botThresh = bottomPrice + 0.15 * h;
+    let ceilingTaps = 0;
+    let floorTaps = 0;
+    for (const c of inBoxCandles) {
+      if (c.high >= topThresh) ceilingTaps++;
+      if (c.low <= botThresh) floorTaps++;
+    }
+    const bpr = Math.round((ceilingTaps / (floorTaps || 1)) * 100) / 100;
+
+    // 3. Direction & Retest Depth Predictor
+    const isLong = (bpr >= 1.0 || volSkew >= 1.0);
+    const boundary = isLong ? topPrice : bottomPrice;
+    const vaEdge = isLong ? vah : val;
+
+    let orderType = 'LIMIT';
+    let entryPrice = vpoc;
+    let slPrice = isLong ? (bottomPrice - 0.50) : (topPrice + 0.50);
+    let setupName = '';
+
+    if (bpr >= 3.0) {
+      orderType = 'STOP';
+      entryPrice = Math.round((isLong ? (boundary + 0.15) : (boundary - 0.15)) * 100) / 100;
+      slPrice = Math.round((isLong ? (topPrice - 0.35 * h) : (bottomPrice + 0.35 * h)) * 100) / 100;
+      setupName = 'Runaway Boundary Vacuum Stop';
+    } else {
+      const isHighPressure = (bpr >= 1.20 || volSkew >= 1.80);
+      entryPrice = isHighPressure ? vaEdge : vpoc;
+      setupName = isHighPressure ? (isLong ? 'VAH Edge Retest' : 'VAL Edge Retest') : 'Origin VPOC Sweep';
+    }
+
+    // Hard Stop Cap <= 7.50 points
+    const slDist = Math.abs(entryPrice - slPrice);
+    if (slDist > 7.50) {
+      slPrice = Math.round((isLong ? (entryPrice - 7.50) : (entryPrice + 7.50)) * 100) / 100;
+    }
+
+    // Macro Box Cap: TP1 min(h, 15.0p)
+    const tp1Dist = h > 20.0 ? Math.min(h, 15.0) : h;
+    const tp1Price = Math.round((isLong ? (entryPrice + tp1Dist) : (entryPrice - tp1Dist)) * 100) / 100;
+    const tp2Price = Math.round((isLong ? (entryPrice + 1.618 * h) : (entryPrice - 1.618 * h)) * 100) / 100;
+
+    return {
+      topPrice, bottomPrice, h, midPrice, tStart, tEnd,
+      vpoc, vah, val, bpr, volSkew, ceilingTaps, floorTaps,
+      isLong, orderType, entryPrice, slPrice, tp1Price, tp2Price, setupName
+    };
   }
 
   /**
-   * Get the primary active trade object
-   */
-  getActiveTrade() {
-    for (const st of this.boxTradeStates.values()) {
-      if (st.inTrade && st.activeTrade) return st.activeTrade;
-    }
-    return null;
-  }
-
-  /**
-   * Fast evaluation on every live 15ms MT5 tick
+   * Fast evaluation on every live MT5 tick
    */
   onPriceTick(bid, ask, tickTimeMs = null) {
-    if (typeof window !== 'undefined' && window.__replayActive) {
-      if (this.controlBar && this.controlBar.style.display !== 'none') {
-        this.controlBar.style.display = 'none';
-      }
-      return;
-    }
+    if (typeof window !== 'undefined' && window.__replayActive) return;
 
-    const curPrice = Number(bid);
-    if (!curPrice || isNaN(curPrice)) return;
-    this.lastEvaluatedPrice = curPrice;
+    const curBid = Number(bid);
+    const curAsk = Number(ask);
+    if (!curBid || !curAsk || isNaN(curBid) || isNaN(curAsk)) return;
+
+    this.lastEvaluatedPrice = curBid;
     if (tickTimeMs) this.lastTickTimeMs = Number(tickTimeMs);
 
-    const curTimeSec = Math.floor((tickTimeMs || this.getChartTimestamp()) / 1000);
-    this.lastEvaluatedTimeSec = curTimeSec;
+    const spread = Math.round((curAsk - curBid) * 100) / 100;
 
     const overlays = this.chart?.getOverlays?.() || [];
     const rects = overlays.filter((ov) => ov.name === 'rect');
 
-    // Auto-update bar visibility: show bar if boxes exist or trade is active
+    // Bar visibility
     if (this.controlBar) {
-      if (rects.length > 0 || this.hasActiveTrade()) {
+      if (rects.length > 0 || this.activeTrade) {
         if (this.controlBar.style.display === 'none') {
           this.controlBar.style.display = 'flex';
         }
@@ -318,909 +423,572 @@ export class LiveStrategyEngine {
       }
     }
 
-    // Auto-reconciliation: Purge states for deleted boxes
-    const currentRectIds = new Set(rects.map((r) => r.id));
-    for (const trackedId of this.boxTradeStates.keys()) {
-      if (!currentRectIds.has(trackedId)) {
-        this.boxTradeStates.delete(trackedId);
-      }
+    // Manage active trade if open
+    if (this.activeTrade) {
+      this.manageActiveTradeTick(curBid, curAsk);
+      this.updateManualExitBtnState();
+      this.updateStatsDisplay();
+      return;
     }
 
-    rects.forEach((rect) => {
-      this.evaluateBoxLive(rect, curPrice, curTimeSec);
-    });
+    // Only evaluate new triggers if Auto Trading is armed
+    if (!this.isAutoTradingEnabled || this.isExecutingOrder) return;
 
-    this.updateManualExitBtnState();
+    rects.forEach((rect) => {
+      this.evaluateBoxForEntry(rect, curBid, curAsk, spread);
+    });
   }
 
   /**
-   * Evaluate a single sovereign box on current live tick
+   * Evaluate a single box for live entry trigger via Order Flow Shelf Sweep & Absorption Reclaim
    */
-  evaluateBoxLive(rect, curPrice, curTimeSec) {
-    let levels = null;
-    const fullList = this.chart?.getDataList?.() || [];
-
-    if (typeof window !== 'undefined' && typeof window.__computeBoxFulcrumAndVacuum === 'function') {
-      levels = window.__computeBoxFulcrumAndVacuum(rect, fullList);
-    }
-
-    if (!levels) {
-      const pts = rect.points || [];
-      if (pts.length < 2) return;
-      const prices = pts.map((p) => p.value).filter((v) => typeof v === 'number' && !isNaN(v));
-      const times = pts.map((p) => p.timestamp).filter((t) => typeof t === 'number' && !isNaN(t));
-      if (prices.length < 2 || times.length < 2) return;
-      const topPrice = Math.max(...prices);
-      const bottomPrice = Math.min(...prices);
-      levels = {
-        topPrice,
-        bottomPrice,
-        fulcrumPrice: Math.round(((topPrice + bottomPrice) / 2) * 100) / 100,
-        vacuumPrice: Math.round((bottomPrice + (topPrice - bottomPrice) * 0.12) * 100) / 100,
-        leftTime: Math.min(...times),
-        rightTime: Math.max(...times)
-      };
-    }
-
-    const { fulcrumPrice, vacuumPrice, rightTime } = levels;
-    if (!fulcrumPrice || !vacuumPrice) return;
-
-    // In live execution: the box is active as long as the chart timeline has reached its starting point (leftTime)
-    // (We do NOT block when rightTime is extended into the future, as traders routinely extend boxes forward into blank space to see the active zone!)
-    const leftTime = levels.leftTime || 0;
-    const lastBar = (fullList.length > 0) ? fullList[fullList.length - 1] : null;
-    const currentChartTime = lastBar ? (lastBar.timestamp + 5 * 60 * 1000) : (this.lastTickTimeMs || Date.now());
-    if (leftTime > 0 && currentChartTime < leftTime) return;
-
+  evaluateBoxForEntry(rect, curBid, curAsk, spread) {
     if (!this.boxTradeStates.has(rect.id)) {
       this.boxTradeStates.set(rect.id, {
-        inTrade: false,
-        activeTrade: null,
+        retired: false,
+        setup: null,
         tradesHistory: [],
-        lastExitTime: 0,
-        fulcrumPrice,
-        vacuumPrice
+        phase: 'HUNTING', // 'HUNTING' | 'SWEEPING' | 'EXECUTED'
+        sweepExtreme: null,
+        sweepStartTime: 0
       });
-    } else {
-      const st = this.boxTradeStates.get(rect.id);
-      st.fulcrumPrice = fulcrumPrice;
-      st.vacuumPrice = vacuumPrice;
     }
 
     const state = this.boxTradeStates.get(rect.id);
+    if (state.retired || state.phase === 'EXECUTED') return; // Box Energy Exhausted
 
-    // Dual-Layer Safety: If box coordinates moved or shifted, immediately disarm auto trading
-    const ptsKey = (rect.points || []).map(p => `${Math.round(p.value * 100) / 100}_${p.timestamp}`).join('|');
-    if (state.lastKnownPtsKey && state.lastKnownPtsKey !== ptsKey) {
-      state.lastKnownPtsKey = ptsKey;
-      state.fulcrumPrice = fulcrumPrice;
-      state.vacuumPrice = vacuumPrice;
-      this.disarmAutoTrading('Box Coordinates Moved / Shifted');
-      if (state.levelStates) state.levelStates.clear();
+    if (!state.setup) {
+      state.setup = this.extractBoxNodalProfile(rect);
+      state.phase = 'HUNTING';
+    }
+
+    const s = state.setup;
+    if (!s) return;
+
+    // 1. Spread Gate: Must be <= 1.20 points
+    if (spread > 1.20) {
+      return; // Skip execution during spread spike
+    }
+
+    const shelfPrice = s.entryPrice;
+    let shouldTrigger = false;
+
+    // 2. TRIGGER LOGIC: Physical Formation Check (ZERO Immediate Tick-1 Entries)
+    if (s.orderType === 'STOP') {
+      // Runaway Breakout Vacuum: Price must physically cross beyond the box boundary + 0.15p
+      if (s.isLong) {
+        if (curAsk >= s.topPrice + 0.15) shouldTrigger = true;
+      } else {
+        if (curBid <= s.bottomPrice - 0.15) shouldTrigger = true;
+      }
     } else {
-      state.lastKnownPtsKey = ptsKey;
-    }
-
-    const targetLevels = [
-      { lvl: vacuumPrice, isFastTransit: true, name: 'VACUUM_VOID' },
-      { lvl: fulcrumPrice, isFastTransit: false, name: 'RETEST_AXIS' }
-    ];
-
-    if (!state.levelStates) {
-      state.levelStates = new Map();
-    }
-
-    // 1. UPDATE LEVEL STATES ON EVERY LIVE TICK
-    for (const tl of targetLevels) {
-      const lvl = tl.lvl;
-      const isFt = tl.isFastTransit;
-      let st = state.levelStates.get(lvl);
-      if (!st) {
-        st = {
-          inWave: false,
-          canStartWave: true,
-          waveNum: 0,
-          approachDir: null,
-          startTimeSec: 0,
-          lastTouchSec: 0,
-          minPrice: curPrice,
-          maxPrice: curPrice,
-          macroOrigin: null,
-          prevPrice: curPrice
-        };
-        state.levelStates.set(lvl, st);
-      }
-
-      // Cycle Reset: away from level for > 15 mins (900s), wave count resets to 0
-      if (st.lastTouchSec > 0 && (curTimeSec - st.lastTouchSec > 900)) {
-        st.waveNum = 0;
-        st.inWave = false;
-        st.canStartWave = true;
-      }
-
-      const dist = Math.abs(curPrice - lvl);
-      // Macro Origin memory: anchored to genuine multi-point departure outside the line envelope
-      if (curPrice <= lvl - 1.00) {
-        st.macroOrigin = 'below';
-      } else if (curPrice >= lvl + 1.00) {
-        st.macroOrigin = 'above';
-      }
-
-      const depThreshold = isFt ? 0.60 : 1.00;
-      if (dist >= depThreshold) {
-        st.canStartWave = true;
-      }
-
-      // Crossing check between prevPrice and curPrice (captures fast velocity ticks that slice across line)
-      const crossedFromBelow = (st.prevPrice > 0 && st.prevPrice <= lvl && curPrice >= lvl);
-      const crossedFromAbove = (st.prevPrice > 0 && st.prevPrice >= lvl && curPrice <= lvl);
-      const isTouch = (dist <= 0.50) || crossedFromBelow || crossedFromAbove;
-
-      const timeSinceLastTouch = st.lastTouchSec > 0 ? (curTimeSec - st.lastTouchSec) : 999;
-
-      if (!st.inWave) {
-        // Debounce new waves: require at least 45s between separate wave attempts to prevent micro-tick wave exhaustion
-        if (st.canStartWave && isTouch && (st.lastTouchSec === 0 || timeSinceLastTouch >= 45)) {
-          st.inWave = true;
-          st.canStartWave = false;
-          st.waveNum += 1;
-          st.startTimeSec = curTimeSec;
-          st.lastTouchSec = curTimeSec;
-          st.minPrice = curPrice;
-          st.maxPrice = curPrice;
-          if (crossedFromBelow) {
-            st.approachDir = 'below';
-          } else if (crossedFromAbove) {
-            st.approachDir = 'above';
+      // LIMIT / Shelf Sweep & Absorption Reclaim:
+      if (s.isLong) {
+        // Phase A: Detect Liquidity Sweep (price penetrates below the Core Shelf by >= 0.20p)
+        if (curBid <= shelfPrice - 0.20) {
+          if (state.phase !== 'SWEEPING') {
+            state.phase = 'SWEEPING';
+            state.sweepExtreme = curBid;
+            state.sweepStartTime = Date.now();
+            showChartToast(`🎯 testOne: Shelf Liquidity Sweep Active at $${curBid.toFixed(2)} — Waiting for Absorption Reclaim`);
           } else {
-            st.approachDir = st.macroOrigin || (st.prevPrice <= lvl ? 'below' : 'above');
+            if (curBid < state.sweepExtreme) state.sweepExtreme = curBid;
+          }
+        }
+
+        // Phase B: Confirm Absorption Reclaim (price snaps back and closes above shelf by >= +0.15p)
+        if (state.phase === 'SWEEPING' && curAsk >= shelfPrice + 0.15) {
+          const sweepDepth = Math.round((shelfPrice - state.sweepExtreme) * 100) / 100;
+          if (sweepDepth >= 0.20 && sweepDepth <= 7.50) {
+            // Anti-Fakeout: Check candle upper rejection wick
+            const dataList = this.chart?.getDataList?.() || [];
+            const curCandle = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+            if (curCandle) {
+              const cRange = Math.max(0.01, curCandle.high - curCandle.low);
+              const upperWick = curCandle.high - Math.max(curCandle.open, curCandle.close);
+              if (upperWick / cRange > 0.45) {
+                return; // Upper rejection wick > 45%: fakeout risk, skip entry
+              }
+            }
+
+            shouldTrigger = true;
+            // Dynamically anchor SL 0.70p below the sweep tip (Anti-Spread Minor Scratch Stop)
+            s.slPrice = Math.round((state.sweepExtreme - 0.70) * 100) / 100;
+            s.entryPrice = Math.round(curAsk * 100) / 100;
+            state.phase = 'EXECUTED';
+            showChartToast(`🏛️ Absorption Reclaim Confirmed! Long entry at $${s.entryPrice.toFixed(2)} (Sweep: -$${sweepDepth.toFixed(2)}p, SL: $${s.slPrice.toFixed(2)})`);
           }
         }
       } else {
-        if (isTouch) {
-          st.lastTouchSec = curTimeSec;
-          st.minPrice = Math.min(st.minPrice, curPrice);
-          st.maxPrice = Math.max(st.maxPrice, curPrice);
-        } else if (dist > 3.00) {
-          // Macro departure: only cancel wave when genuinely 3.00+ points away (not on 1.2p intra-candle noise)
-          st.inWave = false;
-          st.canStartWave = true;
-        }
-      }
-      st.prevPrice = curPrice;
-    }
-
-    // 2. MANAGE ACTIVE TRADE (Evaluated on every tick)
-    if (state.inTrade && state.activeTrade) {
-      this.manageLiveActiveTrade(rect.id, state, curPrice, curTimeSec, fulcrumPrice, vacuumPrice);
-      return;
-    }
-
-    // 3. EVALUATE ENTRY TRIGGER IF NOT IN TRADE (STRICTLY GATED BY AUTO TRADING)
-    if (state.inTrade || this.isExecutingOrder) return;
-    if (!this.isAutoTradingEnabled) {
-      // Auto trading is currently OFF: level state tracking continues seamlessly,
-      // but live MT5 market execution is strictly BLOCKED until user turns it ON.
-      return;
-    }
-
-    for (const tl of targetLevels) {
-      const lvl = tl.lvl;
-      const isFt = tl.isFastTransit;
-      const st = state.levelStates.get(lvl);
-      if (!st || !st.inWave) continue;
-
-      const dist = Math.abs(curPrice - lvl);
-      if (dist <= 0.25) continue;
-
-      const departSec = curTimeSec - st.lastTouchSec;
-      const totalDwellSec = curTimeSec - st.startTimeSec;
-      const disp = Math.round((curPrice - lvl) * 100) / 100;
-      const reqDisp = isFt ? 0.40 : 0.60;
-
-      // Strict Wave Order Gate (W1 to W3) with Institutional Dwell & Confirmation Runway
-      if (st.waveNum <= 3 && totalDwellSec <= 240 && departSec <= 60) {
-        // PATTERN 3: SOVEREIGN ABSORPTION SWEEP & RECLAIM (Spring Wick / Upthrust Reclaim)
-        // Price sweeps past the level (absorbing liquidity), then reclaims back across the level.
-        if (st.minPrice <= lvl - 0.40 && curPrice >= lvl + 0.35) {
-          const entryPrice = Math.round(curPrice * 100) / 100;
-          const scratchSl = Math.max(Math.round((entryPrice - 1.80) * 100) / 100, Math.round((st.minPrice - 0.20) * 100) / 100);
-          const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
-
-          if (risk >= 0.40 && risk <= 1.80) {
-            st.inWave = false;
-            st.canStartWave = false;
-            this.executeLiveTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, lvl);
-            return;
-          }
-        } else if (st.maxPrice >= lvl + 0.40 && curPrice <= lvl - 0.35) {
-          const entryPrice = Math.round(curPrice * 100) / 100;
-          const scratchSl = Math.min(Math.round((entryPrice + 1.80) * 100) / 100, Math.round((st.maxPrice + 0.20) * 100) / 100);
-          const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
-
-          if (risk >= 0.40 && risk <= 1.80) {
-            st.inWave = false;
-            st.canStartWave = false;
-            this.executeLiveTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, lvl);
-            return;
+        // SHORT: Sweep above shelf by >= +0.20p, then reclaim below shelf by >= -0.15p
+        if (curAsk >= shelfPrice + 0.20) {
+          if (state.phase !== 'SWEEPING') {
+            state.phase = 'SWEEPING';
+            state.sweepExtreme = curAsk;
+            state.sweepStartTime = Date.now();
+            showChartToast(`🎯 testOne: Shelf Liquidity Sweep Active at $${curAsk.toFixed(2)} — Waiting for Distribution Reclaim`);
+          } else {
+            if (curAsk > state.sweepExtreme) state.sweepExtreme = curAsk;
           }
         }
 
-        // PATTERN 1: PINPOINT REJECTION (Clean Touch, slip <= 0.50p, displacement >= reqDisp)
-        if (st.approachDir === 'below' && st.maxPrice <= lvl + 0.50 && disp <= -reqDisp) {
-          const entryPrice = Math.round(curPrice * 100) / 100;
-          const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
-          const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
+        if (state.phase === 'SWEEPING' && curBid <= shelfPrice - 0.15) {
+          const sweepDepth = Math.round((state.sweepExtreme - shelfPrice) * 100) / 100;
+          if (sweepDepth >= 0.20 && sweepDepth <= 7.50) {
+            // Anti-Fakeout: Check candle lower rejection wick
+            const dataList = this.chart?.getDataList?.() || [];
+            const curCandle = dataList.length > 0 ? dataList[dataList.length - 1] : null;
+            if (curCandle) {
+              const cRange = Math.max(0.01, curCandle.high - curCandle.low);
+              const lowerWick = Math.min(curCandle.open, curCandle.close) - curCandle.low;
+              if (lowerWick / cRange > 0.45) {
+                return; // Lower rejection wick > 45%: fakeout risk, skip entry
+              }
+            }
 
-          if (risk >= 0.40 && risk <= 1.60) {
-            st.inWave = false;
-            st.canStartWave = false;
-            this.executeLiveTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, lvl);
-            return;
-          }
-        } else if (st.approachDir === 'above' && st.minPrice >= lvl - 0.50 && disp >= +reqDisp) {
-          const entryPrice = Math.round(curPrice * 100) / 100;
-          const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
-          const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
-
-          if (risk >= 0.40 && risk <= 1.60) {
-            st.inWave = false;
-            st.canStartWave = false;
-            this.executeLiveTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, lvl);
-            return;
-          }
-        }
-
-        // PATTERN 2: MOMENTUM VACUUM BREAKAWAY (departSec <= 30)
-        else if (st.approachDir === 'above' && disp <= -reqDisp && departSec <= 30) {
-          const entryPrice = Math.round(curPrice * 100) / 100;
-          const scratchSl = Math.round((lvl + 0.50) * 100) / 100;
-          const risk = Math.round((scratchSl - entryPrice) * 100) / 100;
-
-          if (risk >= 0.40 && risk <= 1.60) {
-            st.inWave = false;
-            st.canStartWave = false;
-            this.executeLiveTrade(rect.id, 'SELL', entryPrice, scratchSl, risk, lvl);
-            return;
-          }
-        } else if (st.approachDir === 'below' && disp >= +reqDisp && departSec <= 30) {
-          const entryPrice = Math.round(curPrice * 100) / 100;
-          const scratchSl = Math.round((lvl - 0.50) * 100) / 100;
-          const risk = Math.round((entryPrice - scratchSl) * 100) / 100;
-
-          if (risk >= 0.40 && risk <= 1.60) {
-            st.inWave = false;
-            st.canStartWave = false;
-            this.executeLiveTrade(rect.id, 'BUY', entryPrice, scratchSl, risk, lvl);
-            return;
+            shouldTrigger = true;
+            s.slPrice = Math.round((state.sweepExtreme + 0.70) * 100) / 100;
+            s.entryPrice = Math.round(curBid * 100) / 100;
+            state.phase = 'EXECUTED';
+            showChartToast(`🏛️ Distribution Reclaim Confirmed! Short entry at $${s.entryPrice.toFixed(2)} (Sweep: +$${sweepDepth.toFixed(2)}p, SL: $${s.slPrice.toFixed(2)})`);
           }
         }
       }
     }
+
+    if (!shouldTrigger) return;
+
+    // 3. Stale-Price Runaway Check (> 1.0p past trigger)
+    const slipDist = s.isLong ? (curAsk - s.entryPrice) : (s.entryPrice - curBid);
+    if (slipDist > 1.00) {
+      state.retired = true;
+      this.disarmAutoTrading('Stale Price Missed');
+      showPersistentFailureToast(
+        'STALE PRICE RUNAWAY — DISARMED',
+        `Live price escaped by +${slipDist.toFixed(2)}p past intended entry (${s.entryPrice.toFixed(2)}).`,
+        `Prevented chasing the high at $${curAsk.toFixed(2)}. Structure marked RETIRED.`
+      );
+      return;
+    }
+
+    // 4. Fire Dual-Tranche Execution
+    this.executeDualTrancheTrade(rect, s, curBid, curAsk);
   }
 
   /**
-   * Execute Live Trade into MetaTrader 5 via /api/trade/execute
+   * Execute live dual-tranche order via /api/testone/execute_dual
    */
-  async executeLiveTrade(boxId, dir, entryPrice, scratchSl, risk, testedLevel) {
-    if (this.isExecutingOrder) return;
+  async executeDualTrancheTrade(rect, setup, curBid, curAsk) {
+    if (this.isExecutingOrder || this.activeTrade) return;
     this.isExecutingOrder = true;
 
     const lot = this.getLotSize();
 
+    // Macro Gate Lockout Pre-flight Execution Guard
     try {
-      showChartToast(`⚡ Executing Live ${dir} ${lot}L @ $${entryPrice} (SL $${scratchSl})...`);
+      const lockRes = await fetch('/api/macro_lockout');
+      const lockData = await lockRes.json();
+      if (lockData && lockData.is_locked) {
+        showPersistentFailureToast(
+          '🛡️ MACRO GATE AUTO-LOCKOUT',
+          `Execution Blocked: ${lockData.reason}`,
+          'Refusing to execute order during high-impact news / rollover window.'
+        );
+        this.disarmAutoTrading(lockData.reason);
+        return;
+      }
+    } catch (e) {}
+
+    try {
       const payload = {
         symbol: this.symbol,
-        side: dir,
-        order_type: 'MARKET',
+        side: setup.isLong ? 'BUY' : 'SELL',
         volume: lot,
-        sl: scratchSl,
-        comment: 'SOVEREIGN_BOX',
-        source: 'live_sovereign_engine',
-        auto_be_enabled: true,
-        auto_be_displacement_pips: 18.0, // 1.80 pts physical displacement trigger
-        auto_be_offset_pips: 1.0,         // +0.10 pt Breakeven lock
-        trigger_price: entryPrice
+        sl_price: setup.slPrice,
+        tp1_price: setup.tp1Price,
+        tp2_price: setup.tp2Price,
+        trailing_enabled: this.isTrailingEnabled
       };
 
-      const res = await fetch('/api/trade/execute', {
+      const res = await fetch('/api/testone/execute_dual', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+
       const data = await res.json();
 
-      if (data && (data.status === 'OK' || data.success || data.ticket || data.order)) {
-        const ticket = Number(data.ticket || data.order || 0);
-        const fillPrice = Number(data.price || entryPrice);
-
-        const state = this.boxTradeStates.get(boxId);
-        if (!state) {
-          this.isExecutingOrder = false;
-          return;
-        }
-
-        const tradeId = `trade_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
-        const nowMs = this.getChartTimestamp();
-        const trade = {
-          id: tradeId,
-          ticket,
-          parentBoxId: boxId,
-          dir,
-          entry: fillPrice,
-          entryTime: nowMs,
-          entryBarTimestamp: nowMs,
-          lastBarTimestamp: nowMs,
-          lastPrice: fillPrice,
-          peakPrice: fillPrice,
-          sl: scratchSl,
-          initialSl: scratchSl,
-          risk,
-          lot,
-          beActive: false,
-          milestone: 0,
-          maxMfe: 0.0,
-          maxMae: 0.0,
-          testedLevel
-        };
-
-        state.inTrade = true;
-        state.activeTrade = trade;
-
-        // Visual Entry Marker
-        try {
-          const markerId = this.chart.createOverlay({
-            name: 'replayTradeMarker',
-            points: [{ timestamp: nowMs, value: fillPrice }],
-            extendData: {
-              parentBoxId: boxId,
-              tradeId,
-              ticket,
-              trade: { ...trade },
-              dir,
-              price: fillPrice,
-              testedLevel,
-              lot
-            }
-          });
-          if (markerId) {
-            trade.markerId = markerId;
-            this.spawnedOverlayIds.add(markerId);
-          }
-        } catch (err) {
-          console.warn('[LiveSovereign] Marker overlay error:', err);
-        }
-
-        // Visual Live Trade Box
-        try {
-          let topVal = Math.max(fillPrice, scratchSl);
-          let botVal = Math.min(fillPrice, scratchSl);
-          if (topVal - botVal < 1.00) {
-            topVal += 0.50;
-            botVal -= 0.50;
-          }
-          const boxOverlayId = this.chart.createOverlay({
-            name: 'replayTradeBox',
-            points: [
-              { timestamp: nowMs, value: topVal },
-              { timestamp: nowMs, value: botVal }
-            ],
-            extendData: {
-              parentBoxId: boxId,
-              tradeId,
-              ticket,
-              trade: { ...trade },
-              dir,
-              entry: fillPrice,
-              sl: scratchSl,
-              risk,
-              testedLevel,
-              entryTime: nowMs,
-              isLive: true,
-              outcome: 'ACTIVE'
-            }
-          });
-          if (boxOverlayId) {
-            trade.boxOverlayId = boxOverlayId;
-            this.spawnedOverlayIds.add(boxOverlayId);
-          }
-        } catch (err) {
-          console.warn('[LiveSovereign] Box overlay error:', err);
-        }
-
-        showChartToast(`🟢 Live #${ticket} ${dir} Filled @ $${fillPrice.toFixed(2)} (SL $${scratchSl.toFixed(2)})`);
-        this.updateStatsDisplay();
-      } else {
-        showChartToast(`⚠️ Live Order Blocked: ${data?.error || 'Rejected by broker'}`);
+      if (!data || data.status !== 'OK') {
+        const errMsg = data?.error || 'Broker execution rejected';
+        showPersistentFailureToast(
+          'ORDER EXECUTION FAILED',
+          errMsg,
+          `Setup: ${setup.setupName} | Lots: ${lot}L | Side: ${setup.isLong ? 'BUY' : 'SELL'}`
+        );
+        this.disarmAutoTrading('Execution Error');
+        return;
       }
+
+      // Successful Execution
+      const t1Ticket = data.t1?.ticket;
+      const t2Ticket = data.t2?.ticket;
+      const fillPrice = Number(data.fill_price || (setup.isLong ? curAsk : curBid));
+
+      this.activeTrade = {
+        boxId: rect.id,
+        setupName: setup.setupName,
+        isLong: setup.isLong,
+        dir: setup.isLong ? 'BUY' : 'SELL',
+        totalLot: lot,
+        t1Ticket,
+        t2Ticket,
+        t1Lot: data.t1?.volume || (lot / 2),
+        t2Lot: data.t2?.volume || (lot / 2),
+        entry: fillPrice,
+        sl: setup.slPrice,
+        tp1: setup.tp1Price,
+        tp2: setup.tp2Price,
+        tp1Banked: false,
+        peakPrice: fillPrice,
+        minPrice: fillPrice,
+        openTime: Date.now(),
+        lastSlModifyPrice: setup.slPrice
+      };
+
+      if (this.autoToggleBtn) {
+        this.autoToggleBtn.classList.remove('testone-armed');
+        this.autoToggleBtn.classList.add('in-trade');
+        this.autoToggleBtn.textContent = `🔥 IN TRADE (${this.activeTrade.dir} ${lot}L)`;
+      }
+
+      // Immediately render Trigger, SL, and TP lines on chart via ActiveOrdersEngine
+      if (typeof window !== 'undefined' && window.__activeOrdersEngine) {
+        const positions = [];
+        if (t1Ticket) {
+          positions.push({
+            ticket: t1Ticket,
+            type: setup.isLong ? 'BUY' : 'SELL',
+            volume: data.t1?.volume || (lot / 2),
+            price_open: fillPrice,
+            sl: setup.slPrice,
+            tp: setup.tp1Price,
+            profit_pts: 0.0
+          });
+        }
+        if (t2Ticket) {
+          positions.push({
+            ticket: t2Ticket,
+            type: setup.isLong ? 'BUY' : 'SELL',
+            volume: data.t2?.volume || (lot / 2),
+            price_open: fillPrice,
+            sl: setup.slPrice,
+            tp: setup.tp2Price,
+            profit_pts: 0.0
+          });
+        }
+        if (positions.length > 0) {
+          window.__activeOrdersEngine.updateData({
+            positions,
+            bid: curBid,
+            ask: curAsk
+          });
+        }
+      }
+
+      showChartToast(`🏛️ testOne Filled! T1 #${t1Ticket} (TP1: $${setup.tp1Price.toFixed(2)}) • T2 #${t2Ticket || 'N/A'} (Trail)`);
     } catch (err) {
-      showChartToast(`🚨 Execution Error: ${err.message}`);
+      showPersistentFailureToast(
+        'NETWORK / EXECUTION ERROR',
+        err.message || 'Failed to communicate with MT5 backend',
+        'Verify Escanor server is running on port 5055'
+      );
+      this.disarmAutoTrading('Network Error');
     } finally {
       this.isExecutingOrder = false;
     }
   }
 
   /**
-   * Manage Active Live Trade on every tick
+   * Monitor and trail active position on live ticks
    */
-  manageLiveActiveTrade(boxId, state, curPrice, curTimeSec, fulcrumPrice, vacuumPrice) {
-    const tr = state.activeTrade;
-    const pos = tr.dir;
-    const entry = tr.entry;
-    const tradeDwellSec = curTimeSec - Math.floor(tr.entryTime / 1000);
+  async manageActiveTradeTick(curBid, curAsk) {
+    const tr = this.activeTrade;
+    if (!tr) return;
 
-    tr.lastPrice = curPrice;
-    if (tr.peakPrice === undefined) {
-      tr.peakPrice = curPrice;
+    const pEval = tr.isLong ? curBid : curAsk;
+
+    // Track extremes
+    if (tr.isLong) {
+      if (curBid > tr.peakPrice) tr.peakPrice = curBid;
+      if (curBid < tr.minPrice) tr.minPrice = curBid;
+    } else {
+      if (curAsk < tr.peakPrice) tr.peakPrice = curAsk;
+      if (curAsk > tr.minPrice) tr.minPrice = curAsk;
     }
 
-    // OPPOSITE TARGET HARVEST (ONLY IF TRAIL IS ON)
-    if (this.isTrailingEnabled) {
-      const otherLvl = (Math.abs(tr.testedLevel - vacuumPrice) < 0.05) ? fulcrumPrice : vacuumPrice;
-      const isOppositeTarget = (pos === 'BUY' && otherLvl > entry) || (pos === 'SELL' && otherLvl < entry);
-      if (isOppositeTarget) {
-        const targetReached = (pos === 'BUY' && curPrice >= otherLvl - 0.25 && curPrice >= entry + 3.00) ||
-                              (pos === 'SELL' && curPrice <= otherLvl + 0.25 && curPrice <= entry - 3.00);
-        if (targetReached) {
-          showChartToast(`🎯 Opposite Target Harvest Reached @ $${curPrice.toFixed(2)}! Banking Profit...`);
-          this.manualExitActiveTrade();
-          return;
-        }
-      }
-    }
+    const mfe = tr.isLong ? (tr.peakPrice - tr.entry) : (tr.entry - tr.peakPrice);
 
-    if (pos === 'SELL') {
-      const mfe = entry - curPrice;
-      const mae = curPrice - entry;
-      if (mfe > tr.maxMfe) tr.maxMfe = mfe;
-      if (mae > tr.maxMae) tr.maxMae = mae;
-      if (curPrice < tr.peakPrice) tr.peakPrice = curPrice;
-
-      // 1. BE Lock upon Physical Displacement >= 1.80p (MUST-HAVE, ALWAYS ACTIVE)
-      if (mfe >= 1.80 && !tr.beActive && tr.milestone === 0) {
-        const targetSl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
-        this.requestBrokerSlModify(tr, targetSl, () => {
-          tr.beActive = true;
-          showChartToast(`🛡️ Breakeven Locked! #${tr.ticket} SL moved to $${targetSl.toFixed(2)} (+0.10p)`);
-        });
-      }
-
-      // 2. Physical Trail Milestones (ONLY IF TRAILING IS ENABLED)
-      if (this.isTrailingEnabled) {
-        // Milestone 1: Lock +1.80p profit at MFE >= 3.20p
-        if (mfe >= 3.20 && tr.milestone < 1) {
-          const targetSl = Math.min(tr.sl, Math.round((entry - 1.80) * 100) / 100);
-          this.requestBrokerSlModify(tr, targetSl, () => {
-            tr.milestone = 1;
-            showChartToast(`⚡ Milestone 1 (+1.80p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
-          });
-        }
-
-        // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
-        if (mfe >= 5.00 && tr.milestone < 2) {
-          const targetSl = Math.min(tr.sl, Math.round((entry - 3.00) * 100) / 100);
-          this.requestBrokerSlModify(tr, targetSl, () => {
-            tr.milestone = 2;
-            showChartToast(`⚡ Milestone 2 (+3.00p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
-          });
-        }
-
-        // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
-        if (mfe >= 8.50) {
-          const peakTrailSl = Math.round((tr.peakPrice + 3.00) * 100) / 100;
-          const targetSl = Math.min(tr.sl, Math.round((entry - 5.00) * 100) / 100, peakTrailSl);
-          if (targetSl < tr.sl) {
-            this.requestBrokerSlModify(tr, targetSl, () => {
-              tr.milestone = 3;
-            });
-          }
-        }
-      }
-
-      // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p)
-      if (tradeDwellSec >= 90 && tr.maxMfe >= 0.80 && tr.maxMfe < 1.50 && !tr.beActive && curPrice <= entry - 0.10) {
-        const targetSl = Math.min(tr.sl, Math.round((entry - 0.10) * 100) / 100);
-        this.requestBrokerSlModify(tr, targetSl, () => {
-          tr.beActive = true;
-          showChartToast(`⏱️ Stalling Decay Protection! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
-        });
-      }
-    } else if (pos === 'BUY') {
-      const mfe = curPrice - entry;
-      const mae = entry - curPrice;
-      if (mfe > tr.maxMfe) tr.maxMfe = mfe;
-      if (mae > tr.maxMae) tr.maxMae = mae;
-      if (curPrice > tr.peakPrice) tr.peakPrice = curPrice;
-
-      // 1. BE Lock upon Physical Displacement >= 1.80p (MUST-HAVE, ALWAYS ACTIVE)
-      if (mfe >= 1.80 && !tr.beActive && tr.milestone === 0) {
-        const targetSl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
-        this.requestBrokerSlModify(tr, targetSl, () => {
-          tr.beActive = true;
-          showChartToast(`🛡️ Breakeven Locked! #${tr.ticket} SL moved to $${targetSl.toFixed(2)} (+0.10p)`);
-        });
-      }
-
-      // 2. Physical Trail Milestones (ONLY IF TRAILING IS ENABLED)
-      if (this.isTrailingEnabled) {
-        // Milestone 1: Lock +1.80p profit at MFE >= 3.20p
-        if (mfe >= 3.20 && tr.milestone < 1) {
-          const targetSl = Math.max(tr.sl, Math.round((entry + 1.80) * 100) / 100);
-          this.requestBrokerSlModify(tr, targetSl, () => {
-            tr.milestone = 1;
-            showChartToast(`⚡ Milestone 1 (+1.80p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
-          });
-        }
-
-        // Milestone 2: Lock +3.00p profit at MFE >= 5.00p
-        if (mfe >= 5.00 && tr.milestone < 2) {
-          const targetSl = Math.max(tr.sl, Math.round((entry + 3.00) * 100) / 100);
-          this.requestBrokerSlModify(tr, targetSl, () => {
-            tr.milestone = 2;
-            showChartToast(`⚡ Milestone 2 (+3.00p)! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
-          });
-        }
-
-        // Milestone 3: Dynamic Peak Trail at MFE >= 8.50p
-        if (mfe >= 8.50) {
-          const peakTrailSl = Math.round((tr.peakPrice - 3.00) * 100) / 100;
-          const targetSl = Math.max(tr.sl, Math.round((entry + 5.00) * 100) / 100, peakTrailSl);
-          if (targetSl > tr.sl) {
-            this.requestBrokerSlModify(tr, targetSl, () => {
-              tr.milestone = 3;
-            });
-          }
-        }
-      }
-
-      // 3. Stalling / Exhaustion Decay Protection: Dwell >= 90s with modest profit (mfe >= 0.80p)
-      if (tradeDwellSec >= 90 && tr.maxMfe >= 0.80 && tr.maxMfe < 1.50 && !tr.beActive && curPrice >= entry + 0.10) {
-        const targetSl = Math.max(tr.sl, Math.round((entry + 0.10) * 100) / 100);
-        this.requestBrokerSlModify(tr, targetSl, () => {
-          tr.beActive = true;
-          showChartToast(`⏱️ Stalling Decay Protection! #${tr.ticket} SL moved to $${targetSl.toFixed(2)}`);
-        });
+    // 0A. Ratchet 1: Risk Compression at +1.20p MFE (Cuts initial risk down to an ultra-tight -0.80p scratch)
+    if (!tr.riskCompressed && mfe >= 1.20) {
+      tr.riskCompressed = true;
+      const tightSL = Math.round((tr.isLong ? (tr.entry - 0.80) : (tr.entry + 0.80)) * 100) / 100;
+      const isTighter = tr.isLong ? (tightSL > tr.sl) : (tightSL < tr.sl);
+      if (isTighter) {
+        tr.sl = tightSL;
+        tr.lastSlModifyPrice = tightSL;
+        if (tr.t1Ticket) await this.modifyBrokerSL(tr.t1Ticket, tightSL);
+        if (tr.t2Ticket) await this.modifyBrokerSL(tr.t2Ticket, tightSL);
+        showChartToast(`🛡️ Risk Compressed (+1.20p MFE)! Max loss capped at -0.80p`);
       }
     }
 
-    // Dynamically stretch visual live trade box
-    if (this.chart && tr.boxOverlayId) {
-      const nowMs = this.getChartTimestamp();
-      const curTop = Math.max(tr.entry, tr.sl, curPrice);
-      const curBot = Math.min(tr.entry, tr.sl, curPrice);
-      try {
-        this.chart.overrideOverlay({
-          id: tr.boxOverlayId,
-          points: [
-            { timestamp: tr.entryBarTimestamp || tr.entryTime, value: curTop },
-            { timestamp: nowMs, value: curBot }
-          ],
-          extendData: {
-            parentBoxId: boxId,
-            tradeId: tr.id,
-            ticket: tr.ticket,
-            trade: { ...tr },
-            dir: tr.dir,
-            entry: tr.entry,
-            sl: tr.sl,
-            risk: tr.risk,
-            testedLevel: tr.testedLevel,
-            entryTime: tr.entryTime,
-            isLive: true,
-            outcome: 'ACTIVE'
-          }
-        });
-      } catch (err) {
-        // ignore
+    // 0B. Ratchet 2: Early Universal Scratch Lock at +2.50p MFE (BE+0.20p)
+    // Ensures any trade reaching +2.50p to +4.80p profit CANNOT turn into a loss!
+    if (!tr.earlyBeLocked && mfe >= 2.50) {
+      tr.earlyBeLocked = true;
+      const beSL = Math.round((tr.isLong ? (tr.entry + 0.20) : (tr.entry - 0.20)) * 100) / 100;
+      tr.sl = beSL;
+      tr.lastSlModifyPrice = beSL;
+
+      if (tr.t1Ticket) await this.modifyBrokerSL(tr.t1Ticket, beSL);
+      if (tr.t2Ticket) await this.modifyBrokerSL(tr.t2Ticket, beSL);
+
+      showChartToast(`🛡️ Early Scratch Lock Activated (+${mfe.toFixed(2)}p MFE)! Broker SL locked at BE+ ($${beSL.toFixed(2)})`);
+    }
+
+    // 1. Check TP1 Hit (Tranche 1 Banked)
+    const tp1Hit = tr.isLong ? (curBid >= tr.tp1) : (curAsk <= tr.tp1);
+    if (!tr.tp1Banked && tp1Hit) {
+      tr.tp1Banked = true;
+      const beSL = Math.round((tr.isLong ? (tr.entry + 0.20) : (tr.entry - 0.20)) * 100) / 100;
+      tr.sl = beSL;
+
+      // Promote Tranche 2 SL to Breakeven+
+      if (tr.t2Ticket) {
+        await this.modifyBrokerSL(tr.t2Ticket, beSL);
+      }
+
+      showChartToast(`🎯 Tranche 1 BANKED at TP1 (+${Math.abs(tr.tp1 - tr.entry).toFixed(2)}p)! Tranche 2 locked at BE+ ($${beSL.toFixed(2)})`);
+    }
+
+    // 2. Dynamic Trailing on Tranche 2 AFTER TP1
+    if (tr.tp1Banked && this.isTrailingEnabled && mfe >= 8.50 && tr.t2Ticket) {
+      const peakSL = Math.round((tr.isLong ? (tr.peakPrice - 3.00) : (tr.peakPrice + 3.00)) * 100) / 100;
+
+      // Trailing Hysteresis check (delta SL >= 0.30p)
+      if (Math.abs(peakSL - tr.lastSlModifyPrice) >= 0.30) {
+        tr.sl = peakSL;
+        tr.lastSlModifyPrice = peakSL;
+        await this.modifyBrokerSL(tr.t2Ticket, peakSL);
       }
     }
+
+    // Trailing check complete for this tick
   }
 
   /**
-   * Request Broker SL Modify with in-flight lock to prevent duplicate async requests
+   * Modify Broker SL on MT5 via /api/trade/modify
    */
-  requestBrokerSlModify(tr, targetSl, onSuccess) {
-    if (!tr || !tr.ticket || tr.isModifyingBrokerSl) return;
-    tr.isModifyingBrokerSl = true;
-
-    this.modifyBrokerSl(tr.ticket, targetSl).then((ok) => {
-      tr.isModifyingBrokerSl = false;
-      if (ok) {
-        tr.sl = targetSl;
-        if (typeof onSuccess === 'function') onSuccess();
-      }
-    }).catch(() => {
-      tr.isModifyingBrokerSl = false;
-    });
-  }
-
-  /**
-   * Modify Broker SL on MT5 Server via /api/trade/modify
-   * Returns true IF AND ONLY IF the broker confirmed the modification.
-   */
-  async modifyBrokerSl(ticket, newSl) {
-    if (!ticket) return false;
-    const now = Date.now();
-    // Throttle modifications to at most once per 450ms
-    if (now - this.lastBrokerModifyTime < 450) return false;
-
+  async modifyBrokerSL(ticket, newSL) {
+    if (!ticket || ticket <= 0) return;
     try {
-      const res = await fetch('/api/trade/modify', {
+      await fetch('/api/trade/modify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticket, sl: newSl, symbol: this.symbol })
+        body: JSON.stringify({ ticket, sl: newSL })
       });
-      const data = await res.json();
-      this.lastBrokerModifyTime = Date.now();
-
-      if (data && (data.status === 'OK' || data.status === 'MODIFIED' || data.success)) {
-        console.log(`[LiveSovereign] Broker SL modified successfully for #${ticket} -> $${newSl}`);
-        return true;
-      } else {
-        console.warn(`[LiveSovereign] Broker SL modify rejected for #${ticket}:`, data?.error || data);
-        return false;
-      }
-    } catch (err) {
-      console.warn(`[LiveSovereign] Failed to modify broker SL for #${ticket}:`, err);
-      return false;
+    } catch (e) {
+      console.warn('[testOne] Failed to modify broker SL:', e);
     }
   }
 
   /**
-   * Reconcile Engine State with MT5 Live Positions
-   * Called whenever positions list arrives from MT5
+   * Reconcile position state with MT5 history
    */
-  async reconcileWithPositions(positions) {
-    const liveTickets = new Set((positions || []).map((p) => Number(p.ticket)));
-    const closingPromises = [];
-
-    this.boxTradeStates.forEach((state, boxId) => {
-      if (state.inTrade && state.activeTrade) {
-        const tr = state.activeTrade;
-        if (tr.ticket && !liveTickets.has(Number(tr.ticket))) {
-          // Trade was closed on broker (SL hit, TP hit, or closed externally)
-          closingPromises.push(this.finalizeClosedTrade(boxId, tr));
-        } else if (tr.ticket) {
-          // Sync live broker SL if it was modified externally (e.g. by server daemon)
-          const livePos = (positions || []).find((p) => Number(p.ticket) === Number(tr.ticket));
-          if (livePos) {
-            const brokerSl = Number(livePos.sl || 0);
-            if (brokerSl > 0 && Math.abs(brokerSl - tr.sl) > 0.01) {
-              tr.sl = brokerSl;
-              const isBuy = tr.dir === 'BUY';
-              if ((isBuy && brokerSl >= tr.entry + 0.05) || (!isBuy && brokerSl <= tr.entry - 0.05)) {
-                tr.beActive = true;
-              }
-            }
-          }
-        }
-      }
-    });
-
-    if (closingPromises.length > 0) {
-      await Promise.all(closingPromises);
-    }
-
-    this.updateStatsDisplay();
-    this.updateManualExitBtnState();
-  }
-
-  /**
-   * Finalize closed trade by querying exact realized profit from broker deal history
-   */
-  async finalizeClosedTrade(boxId, trade) {
-    const state = this.boxTradeStates.get(boxId);
-    if (!state) return;
-
-    let pnlPts = 0;
-    let pnlUsd = 0;
-    let outcome = 'LOSS';
-    const exitPrice = trade.lastPrice || trade.entry;
+  async reconcileActivePosition() {
+    const tr = this.activeTrade;
+    if (!tr || this._isReconcilingClose) return;
 
     try {
-      const res = await fetch(`/api/trade/ticket_result?ticket=${trade.ticket}`);
+      this._isReconcilingClose = true;
+      const checkTicket = tr.t2Ticket || tr.t1Ticket;
+      const res = await fetch(`/api/trade/ticket_result?ticket=${checkTicket}`);
       const data = await res.json();
+
       if (data && data.status === 'CLOSED') {
-        pnlUsd = Number(data.profit || 0);
-        const lot = trade.lot || this.getLotSize();
-        pnlPts = Math.round((pnlUsd / (100.0 * lot)) * 100) / 100;
-        if (pnlPts >= 0.30) {
-          outcome = 'WIN';
-        } else if (pnlPts >= -0.05) {
-          outcome = 'BE';
-        } else {
-          outcome = 'LOSS';
+        // Trade closed!
+        const profit = data.profit || 0.0;
+        const state = tr.boxId ? this.boxTradeStates.get(tr.boxId) : null;
+        if (state) {
+          state.retired = true; // Box Energy Exhaustion: RETIRED
+          state.tradesHistory.push({
+            dir: tr.dir,
+            lot: tr.totalLot,
+            pnlUsd: profit,
+            pnlPts: profit / (tr.totalLot * 100.0)
+          });
         }
-      } else {
-        // Fallback calculation from last price
-        pnlPts = (trade.dir === 'BUY')
-          ? Math.round((exitPrice - trade.entry) * 100) / 100
-          : Math.round((trade.entry - exitPrice) * 100) / 100;
-        const lot = trade.lot || this.getLotSize();
-        pnlUsd = Math.round(pnlPts * 100.0 * lot * 100) / 100;
-        if (pnlPts >= 0.30) outcome = 'WIN';
-        else if (pnlPts >= -0.05) outcome = 'BE';
-        else outcome = 'LOSS';
+
+        this.activeTrade = null;
+        this.disarmAutoTrading('Trade Sequence Complete (Structure Retired)');
+        this.updateStatsDisplay();
+        showChartToast(`🏁 Trade Closed: ${profit >= 0 ? '+' : ''}$${profit.toFixed(2)} USD. Structure RETIRED.`);
       }
-    } catch (err) {
-      console.warn('[LiveSovereign] Error fetching ticket result:', err);
+    } catch (e) {
+      // Reconcile network error (non-fatal)
+    } finally {
+      this._isReconcilingClose = false;
     }
-
-    const nowMs = this.getChartTimestamp();
-    trade.outcome = outcome;
-    trade.pnlPts = pnlPts;
-    trade.pnlUsd = pnlUsd;
-    trade.exitPrice = exitPrice;
-    trade.exitTime = nowMs;
-
-    state.tradesHistory.push({ ...trade });
-    state.inTrade = false;
-    state.activeTrade = null;
-    state.lastExitTime = nowMs;
-
-    // Lock final visual box on chart
-    if (this.chart && trade.boxOverlayId) {
-      try {
-        let topVal = Math.max(trade.entry, trade.sl, exitPrice);
-        let botVal = Math.min(trade.entry, trade.sl, exitPrice);
-        if (topVal - botVal < 1.00) {
-          topVal += 0.50;
-          botVal -= 0.50;
-        }
-        this.chart.overrideOverlay({
-          id: trade.boxOverlayId,
-          points: [
-            { timestamp: trade.entryBarTimestamp || trade.entryTime, value: topVal },
-            { timestamp: nowMs, value: botVal }
-          ],
-          extendData: {
-            parentBoxId: boxId,
-            tradeId: trade.id,
-            ticket: trade.ticket,
-            trade: { ...trade },
-            dir: trade.dir,
-            entry: trade.entry,
-            sl: trade.sl,
-            risk: trade.risk,
-            testedLevel: trade.testedLevel,
-            entryTime: trade.entryTime,
-            exitTime: nowMs,
-            exitPrice,
-            outcome,
-            pnlPts,
-            pnlUsd,
-            isLive: false
-          }
-        });
-      } catch (err) {
-        // ignore
-      }
-    }
-
-    const sign = pnlUsd >= 0 ? '+' : '';
-    const icon = outcome === 'WIN' ? '🟢' : (outcome === 'BE' ? '⚪' : '🔴');
-    showChartToast(`${icon} Trade #${trade.ticket} Closed (${outcome}): ${sign}$${pnlUsd.toFixed(2)} (${sign}${pnlPts.toFixed(1)}p)`);
-
-    this.updateStatsDisplay();
   }
 
   /**
-   * Manually exit active trade at current market price (Market Close)
+   * Reconcile active trade state with MT5 active positions list
    */
-  async manualExitActiveTrade() {
-    let activeTr = null;
-    let activeBoxId = null;
+  reconcileWithPositions(activePositions = []) {
+    const posList = Array.isArray(activePositions) ? activePositions : [];
 
-    for (const [boxId, st] of this.boxTradeStates.entries()) {
-      if (st.inTrade && st.activeTrade) {
-        activeTr = st.activeTrade;
-        activeBoxId = boxId;
-        break;
-      }
-    }
+    // 1. If activeTrade is null (e.g. page refreshed) but MT5 has open position, restore activeTrade
+    if (!this.activeTrade && posList.length > 0) {
+      const p = posList[0];
+      const isLong = p.type === 'BUY' || p.type === 0;
+      this.activeTrade = {
+        boxId: null,
+        setupName: 'Restored Active Position',
+        isLong,
+        dir: isLong ? 'BUY' : 'SELL',
+        totalLot: Number(p.volume || 0.01),
+        t1Ticket: Number(p.ticket),
+        t2Ticket: null,
+        t1Lot: Number(p.volume || 0.01),
+        t2Lot: 0.0,
+        entry: Number(p.price_open),
+        sl: Number(p.sl || 0),
+        tp1: Number(p.tp || 0),
+        tp2: Number(p.tp || 0),
+        tp1Banked: false,
+        peakPrice: Number(p.price_open),
+        minPrice: Number(p.price_open),
+        openTime: Number(p.time ? p.time * 1000 : Date.now()),
+        lastSlModifyPrice: Number(p.sl || 0)
+      };
 
-    if (!activeTr) {
-      showChartToast('No active sovereign trade to close.');
+      this.updateManualExitBtnState();
+      this.updateStatsDisplay();
       return;
     }
 
-    const ticket = activeTr.ticket;
-    showChartToast(`🛑 Closing Live #${ticket} at Market...`);
+    if (!this.activeTrade) return;
 
-    try {
-      const res = await fetch('/api/trade/close', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticket, source: 'live_sovereign_manual' })
-      });
-      const data = await res.json();
-      if (data && (data.status === 'OK' || data.status === 'CLOSED' || data.success)) {
-        await this.finalizeClosedTrade(activeBoxId, activeTr);
-      } else {
-        showChartToast(`Close rejected: ${data?.error || data?.message || 'Error closing trade'}`);
-      }
-    } catch (err) {
-      showChartToast(`Error closing #${ticket}: ${err.message}`);
+    // 2. Position is active: check if our tickets are still open in broker
+    const openTickets = new Set(posList.map((p) => Number(p.ticket)));
+    const t1Open = this.activeTrade.t1Ticket ? openTickets.has(Number(this.activeTrade.t1Ticket)) : false;
+    const t2Open = this.activeTrade.t2Ticket ? openTickets.has(Number(this.activeTrade.t2Ticket)) : false;
+
+    // If neither ticket is found in active positions, the trade has closed on broker
+    if (!t1Open && !t2Open && posList.length === 0) {
+      this.reconcileActivePosition();
+    } else {
+      // Ensure button and display stay locked solidly in IN TRADE state without flickering
+      this.updateManualExitBtnState();
+      this.updateStatsDisplay();
     }
   }
 
   /**
-   * Update visibility and dynamic PnL text on the Manual Exit Button
+   * Manually exit active trade (Ctrl+End or button click)
+   */
+  async manualExitActiveTrade() {
+    const tr = this.activeTrade;
+    if (!tr) return;
+
+    try {
+      if (tr.t1Ticket) {
+        await fetch('/api/trade/close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticket: tr.t1Ticket })
+        });
+      }
+      if (tr.t2Ticket) {
+        await fetch('/api/trade/close', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ticket: tr.t2Ticket })
+        });
+      }
+      this.reconcileActivePosition();
+    } catch (err) {
+      showPersistentFailureToast('MANUAL CLOSE ERROR', err.message);
+    }
+  }
+
+  /**
+   * Update manual exit button visibility & text
    */
   updateManualExitBtnState() {
     if (!this.manualExitBtn) return;
-    const activeTr = this.getActiveTrade();
+    const tr = this.activeTrade;
 
-    if (!activeTr) {
+    if (!tr) {
       this.manualExitBtn.style.display = 'none';
-      if (this.statusBadge) {
-        this.statusBadge.innerHTML = `<span class="tv-live-pulse-emerald"></span> LIVE DESK`;
-        this.statusBadge.classList.remove('in-trade');
+      if (this.autoToggleBtn && !this.isAutoTradingEnabled) {
+        this.autoToggleBtn.classList.remove('in-trade');
+        this.autoToggleBtn.classList.add('off');
+        this.autoToggleBtn.textContent = '🤖 AUTO: OFF';
       }
       return;
     }
 
-    if (this.statusBadge) {
-      this.statusBadge.innerHTML = `<span class="tv-live-pulse-emerald"></span> IN TRADE (${activeTr.dir})`;
-      this.statusBadge.classList.add('in-trade');
-    }
+    this.manualExitBtn.style.display = 'inline-flex';
+    const curPrice = this.lastEvaluatedPrice || tr.entry;
+    const curPts = tr.isLong ? (curPrice - tr.entry) : (tr.entry - curPrice);
+    const curUsd = curPts * 100.0 * tr.totalLot;
+    const sign = curUsd >= 0 ? '+' : '';
+    this.manualExitBtn.textContent = `🛑 CLOSE (${sign}${curPts.toFixed(2)}p / ${sign}$${curUsd.toFixed(2)})`;
 
-    // When trailing is OFF, show manual close button prominently with live points & dollars!
-    if (!this.isTrailingEnabled) {
-      this.manualExitBtn.style.display = 'inline-flex';
-      const curPrice = this.lastEvaluatedPrice || activeTr.entry;
-      const pos = activeTr.dir;
-      const curPts = (pos === 'BUY')
-        ? Math.round((curPrice - activeTr.entry) * 100) / 100
-        : Math.round((activeTr.entry - curPrice) * 100) / 100;
-      const lot = activeTr.lot || this.getLotSize();
-      const curUsd = Math.round(curPts * 100.0 * lot * 100) / 100;
-      const usdSign = curUsd > 0.005 ? '+' : (curUsd < -0.005 ? '-' : '');
-      const ptsSign = curPts > 0.005 ? '+' : (curPts < -0.005 ? '-' : '');
-      this.manualExitBtn.textContent = `🛑 CLOSE (${ptsSign}${Math.abs(curPts).toFixed(2)}p / ${usdSign}$${Math.abs(curUsd).toFixed(2)})`;
-      this.manualExitBtn.title = 'Manually Close Active Trade at Current Market Price (Ctrl+End)';
-    } else {
-      this.manualExitBtn.style.display = 'none';
+    if (this.autoToggleBtn) {
+      this.autoToggleBtn.classList.remove('off', 'testone-armed');
+      this.autoToggleBtn.classList.add('in-trade');
+      this.autoToggleBtn.textContent = `🔥 IN TRADE (${tr.dir} ${tr.totalLot}L)`;
     }
   }
 
   /**
-   * Update Live Floating Control Bar Statistics
+   * Update stats display (accurately reports active trade progress or completed history)
    */
   updateStatsDisplay() {
     if (!this.statsBadge) return;
-
     let totalTrades = 0;
-    let netPts = 0.0;
     let netUsd = 0.0;
-    const curLot = this.getLotSize();
+    let netPts = 0.0;
 
     this.boxTradeStates.forEach((st) => {
-      st.tradesHistory.forEach((t) => {
-        totalTrades += 1;
+      (st.tradesHistory || []).forEach((t) => {
+        totalTrades++;
+        netUsd += (t.pnlUsd || 0);
         netPts += (t.pnlPts || 0);
-        const tradeLot = t.lot || curLot;
-        netUsd += (typeof t.pnlUsd === 'number') ? t.pnlUsd : ((t.pnlPts || 0) * 100.0 * tradeLot);
       });
-      if (st.inTrade) {
-        totalTrades += 1; // 1 active
-      }
     });
 
-    const sign = netUsd > 0.005 ? '+' : (netUsd < -0.005 ? '-' : '');
-    const usdStr = Math.abs(netUsd).toFixed(2);
-    const ptsSign = netPts > 0.005 ? '+' : (netPts < -0.005 ? '-' : '');
-    const ptsStr = Math.abs(netPts).toFixed(2);
-    this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${usdStr} (${ptsSign}${ptsStr}p)`;
-    this.updateManualExitBtnState();
+    if (this.activeTrade) {
+      const curPrice = this.lastEvaluatedPrice || this.activeTrade.entry;
+      const curPts = this.activeTrade.isLong ? (curPrice - this.activeTrade.entry) : (this.activeTrade.entry - curPrice);
+      const curUsd = curPts * 100.0 * this.activeTrade.totalLot;
+      const sign = curUsd >= 0 ? '+' : '';
+      const closedPart = totalTrades > 0 ? ` • ${totalTrades} Done` : '';
+      this.statsBadge.textContent = `1 Active | ${sign}$${curUsd.toFixed(2)} (${sign}${curPts.toFixed(1)}p)${closedPart}`;
+      return;
+    }
+
+    const sign = netUsd >= 0 ? '+' : '';
+    this.statsBadge.textContent = `${totalTrades} Trades | ${sign}$${netUsd.toFixed(2)} (${sign}${netPts.toFixed(2)}p)`;
   }
 
   /**
-   * Make any DOM element draggable
+   * Draggable utility
    */
   makeDraggable(element) {
-    if (!element || typeof window === 'undefined' || typeof window.addEventListener !== 'function') return;
+    if (!element || typeof window === 'undefined') return;
     let isDragging = false;
     let startX = 0;
     let startY = 0;
