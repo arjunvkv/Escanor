@@ -494,7 +494,7 @@
               <span id="tapeTopVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
-              <span class="text-red-400 font-bold uppercase tracking-tight">FAILED:</span>
+              <span class="text-red-400 font-bold uppercase tracking-tight">MAX DROP:</span>
               <span id="tapeTopDrop" class="font-mono text-slate-300 font-bold">-$--.--</span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
@@ -502,7 +502,7 @@
               <span class="font-mono font-bold text-red-300"><span id="tapeTopBearVol">--v</span> <span id="tapeTopBullVolSub" class="text-cyan-400/80 font-normal text-[7.5px]">(▲--v)</span></span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8.5px] border-t border-red-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
-              <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
+              <span class="text-slate-500 uppercase tracking-tight">SPOT DIST:</span>
               <span id="tapeTopDist" class="font-mono text-red-300 font-bold">-- pts</span>
             </div>
           </div>
@@ -518,7 +518,7 @@
               <span id="tapeLowVol" class="text-[9px] font-mono text-amber-300 font-bold">--v</span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
-              <span class="text-cyan-400 font-bold uppercase tracking-tight">HELD:</span>
+              <span class="text-cyan-400 font-bold uppercase tracking-tight">MAX RALLY:</span>
               <span id="tapeLowRally" class="font-mono text-slate-300 font-bold">+$--.--</span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8px] text-slate-400">
@@ -526,7 +526,7 @@
               <span class="font-mono font-bold text-cyan-300"><span id="tapeLowBullVol">--v</span> <span id="tapeLowBearVolSub" class="text-red-400/80 font-normal text-[7.5px]">(▼--v)</span></span>
             </div>
             <div class="flex items-center justify-between mt-0.5 text-[8.5px] border-t border-cyan-500/20 pt-0.5 whitespace-nowrap overflow-hidden">
-              <span class="text-slate-500 uppercase tracking-tight">DIST:</span>
+              <span class="text-slate-500 uppercase tracking-tight">SPOT DIST:</span>
               <span id="tapeLowDist" class="font-mono text-cyan-300 font-bold">-- pts</span>
             </div>
           </div>
@@ -2566,6 +2566,35 @@ Return ONLY valid JSON matching this exact structure:
       const spotCandle = pastCandles[pastCandles.length - 1];
       const spot = (spotCandle.close !== undefined) ? spotCandle.close : (spotCandle.value || 3895.0);
 
+      // Synchronize Chart A HUD metrics (SPOT, RANGE, HIGH, LOW) to lookback or live effTime
+      const spotEl = document.getElementById("chartSpotPrice");
+      const rangeEl = document.getElementById("chartDayRange");
+      const highEl = document.getElementById("chartWindowHigh");
+      const lowEl = document.getElementById("chartWindowLow");
+
+      if (isLookback) {
+        const lbHigh = Math.max(...pastCandles.map(c => c.high || c.close));
+        const lbLow = Math.min(...pastCandles.map(c => c.low || c.close));
+        const lbRange = (lbHigh - lbLow);
+        if (spotEl) {
+          spotEl.textContent = `$${spot.toFixed(2)}`;
+          spotEl.className = "text-cyan-300 font-mono font-bold";
+        }
+        if (rangeEl) rangeEl.textContent = `${lbRange.toFixed(2)}p`;
+        if (highEl) highEl.textContent = `$${lbHigh.toFixed(2)}`;
+        if (lowEl) lowEl.textContent = `$${lbLow.toFixed(2)}`;
+      } else {
+        if (currentDay && currentDay.stats) {
+          if (spotEl) {
+            spotEl.textContent = `$${currentDay.stats.spot.toFixed(2)}`;
+            spotEl.className = "text-white font-mono font-bold";
+          }
+          if (rangeEl) rangeEl.textContent = `${currentDay.stats.range_pts.toFixed(2)}p`;
+          if (highEl) highEl.textContent = `$${currentDay.stats.high.toFixed(2)}`;
+          if (lowEl) lowEl.textContent = `$${currentDay.stats.low.toFixed(2)}`;
+        }
+      }
+
       // 1. Calculate 1M CVD Delta & Velocity
       const recentCandles = pastCandles.slice(Math.max(0, pastCandles.length - 8));
       let cvdDelta = 0;
@@ -2614,7 +2643,7 @@ Return ONLY valid JSON matching this exact structure:
       }
 
       const thPrice = bestHighCandle.high || bestHighCandle.close;
-      const thVol = bestHighCandle.volume ? Math.round(bestHighCandle.volume * 0.05) : 38;
+      const thVol = bestHighCandle.volume ? Math.round(bestHighCandle.volume) : 250;
       const thDrop = maxDrop;
       const thTimeStr = formatEpochToIst(bestHighCandle.time);
       const thDist = spot - thPrice;
@@ -2667,7 +2696,7 @@ Return ONLY valid JSON matching this exact structure:
       }
 
       const tlPrice = bestLowCandle.low || bestLowCandle.close;
-      const tlVol = bestLowCandle.volume ? Math.round(bestLowCandle.volume * 0.05) : 42;
+      const tlVol = bestLowCandle.volume ? Math.round(bestLowCandle.volume) : 250;
       const tlRally = maxRally;
       const tlTimeStr = formatEpochToIst(bestLowCandle.time);
       const tlDist = spot - tlPrice;
