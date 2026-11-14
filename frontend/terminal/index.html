@@ -2471,26 +2471,55 @@ Return ONLY valid JSON matching this exact structure:
       for (let i = 0; i < m1Candles.length; i++) {
         const c = m1Candles[i];
         const val = (c.value !== undefined) ? c.value : ((c.close !== undefined) ? c.close : 0);
+        const o = (c.open !== undefined) ? c.open : val;
+        const h = (c.high !== undefined) ? c.high : val;
+        const l = (c.low !== undefined) ? c.low : val;
+        const cl = (c.close !== undefined) ? c.close : val;
+        const vol = (c.volume !== undefined) ? c.volume : 0;
         const bucketTime = Math.floor(c.time / 300) * 300;
         if (!currentBucket || currentBucket.time !== bucketTime) {
           if (currentBucket) m5.push(currentBucket);
           currentBucket = {
             time: bucketTime,
-            value: val,
-            open: val,
-            high: val,
-            low: val,
-            close: val
+            value: cl,
+            open: o,
+            high: h,
+            low: l,
+            close: cl,
+            volume: vol
           };
         } else {
-          currentBucket.value = val;
-          currentBucket.close = val;
-          if (val > currentBucket.high) currentBucket.high = val;
-          if (val < currentBucket.low) currentBucket.low = val;
+          currentBucket.value = cl;
+          currentBucket.close = cl;
+          if (h > currentBucket.high) currentBucket.high = h;
+          if (l < currentBucket.low) currentBucket.low = l;
+          currentBucket.volume += vol;
         }
       }
       if (currentBucket) m5.push(currentBucket);
       return m5;
+    }
+
+    function buildHighLowTrajectory(candles, intervalSec) {
+      if (!candles || candles.length === 0) return [];
+      const halfStep = Math.max(1, Math.floor(intervalSec / 2));
+      const pts = [];
+      for (let i = 0; i < candles.length; i++) {
+        const c = candles[i];
+        const t = c.time;
+        const o = (c.open !== undefined) ? c.open : (c.value || c.close);
+        const h = (c.high !== undefined) ? c.high : (c.value || c.close);
+        const l = (c.low !== undefined) ? c.low : (c.value || c.close);
+        const cl = (c.close !== undefined) ? c.close : (c.value || c.open);
+        if (cl >= o) {
+          pts.push({ time: t, value: l });
+          pts.push({ time: t + halfStep, value: h });
+        } else {
+          pts.push({ time: t, value: h });
+          pts.push({ time: t + halfStep, value: l });
+        }
+      }
+      return pts;
     }
 
     function setChartTf(tf) {
@@ -2532,12 +2561,13 @@ Return ONLY valid JSON matching this exact structure:
       });
       tvPriceLines = [];
 
-      // 2. Set series data (pure white line)
+      // 2. Set series data (pure white line traversing true High-Low wick extremes)
       let displayCandles = dayData.candles || [];
       if (currentChartTf === '5') {
         displayCandles = aggregateCandlesToM5(displayCandles);
       }
-      tvAreaSeries.setData(displayCandles);
+      const trajectoryPts = buildHighLowTrajectory(displayCandles, currentChartTf === '5' ? 300 : 60);
+      tvAreaSeries.setData(trajectoryPts);
 
       // 3. Set native markers (Climax, Iceberg Stall, Sweep, Trigger Reclaim)
       if (dayData.markers && Array.isArray(dayData.markers)) {
