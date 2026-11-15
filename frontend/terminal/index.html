@@ -1042,7 +1042,7 @@ Return ONLY valid JSON matching this exact structure:
         </div>
 
         <!-- Top 8 Price Nodes List (Sorted from highest volume on top) -->
-        <div id="rangeVolProfileNodesList" class="flex flex-col gap-1 max-h-72 overflow-y-auto">
+        <div id="rangeVolProfileNodesList" class="flex flex-col gap-1 max-h-72 overflow-y-auto" onmouseleave="if (currentRangeVolumeNodes && currentRangeVolumeNodes[0] && (!document.getElementById('customPriceAuditInput') || !document.getElementById('customPriceAuditInput').value)) highlightNodeOnChart(currentRangeVolumeNodes[0].price, 1)">
           <!-- Rendered dynamically -->
         </div>
 
@@ -1126,6 +1126,10 @@ Return ONLY valid JSON matching this exact structure:
     let currentVwap = 4010.44;
     let currentAnchors = [];
     let currentRangeVolumeNodes = [];
+    let currentFullRangeVolume = 0;
+    let currentFullRangeBull = 0;
+    let currentFullRangeBear = 0;
+    let activeNodeChartLine = null;
     let isRangeVolProfileModalOpen = false;
     let activeSovereignAudit = null;
     let userLedgerRecords = [];
@@ -2084,6 +2088,7 @@ Return ONLY valid JSON matching this exact structure:
         if (e.key === "Escape") {
           if (typeof clearMeasureBox === 'function') clearMeasureBox();
           if (typeof clearVerticalLookbackLine === 'function') clearVerticalLookbackLine();
+          if (isRangeVolProfileModalOpen && typeof toggleRangeVolumeProfileModal === 'function') toggleRangeVolumeProfileModal();
         } else if ((e.altKey || e.metaKey) && (e.key === "v" || e.key === "V" || e.code === "KeyV")) {
           e.preventDefault();
           if (typeof toggleVerticalLookbackLine === 'function') toggleVerticalLookbackLine();
@@ -3383,13 +3388,23 @@ Return ONLY valid JSON matching this exact structure:
         updateTapeAndTriedExtremes(effTime);
       }
 
-      // Range boundaries
-      const rMin = (triedLowPrice !== null && triedHighPrice !== null) ? Math.min(triedLowPrice, triedHighPrice) : (currentDay.stats?.low || 3870.0);
-      const rMax = (triedLowPrice !== null && triedHighPrice !== null) ? Math.max(triedLowPrice, triedHighPrice) : (currentDay.stats?.high || 3930.0);
+      // Range boundaries: Align 100% with what is drawn on Chart A (Capacitor Dwell Zone)
+      let rMin, rMax, isCapacitor = false;
+      if (currentDay.capacitor_zone && currentDay.capacitor_zone.bottom && currentDay.capacitor_zone.top) {
+        rMin = Math.min(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top);
+        rMax = Math.max(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top);
+        isCapacitor = true;
+      } else if (triedLowPrice !== null && triedHighPrice !== null) {
+        rMin = Math.min(triedLowPrice, triedHighPrice);
+        rMax = Math.max(triedLowPrice, triedHighPrice);
+      } else {
+        rMin = currentDay.stats?.low || 3870.0;
+        rMax = currentDay.stats?.high || 3930.0;
+      }
       const spread = Math.max(0.50, rMax - rMin);
       const step = spread >= 30.0 ? 0.20 : 0.10;
 
-      // Group candle volume into price bins
+      // Group candle volume into price bins strictly within [rMin, rMax]
       const bins = {};
       for (let i = 0; i < pastCandles.length; i++) {
         const c = pastCandles[i];
@@ -3398,6 +3413,8 @@ Return ONLY valid JSON matching this exact structure:
         const cOpen = (c.open !== undefined) ? c.open : c.close;
         const cClose = c.close;
         const vol = c.volume || 100;
+
+        if (cHigh < rMin || cLow > rMax) continue;
 
         const bStart = Math.round((Math.round(cLow / step) * step) * 100) / 100;
         const bEnd = Math.round((Math.round(cHigh / step) * step) * 100) / 100;
@@ -3410,12 +3427,14 @@ Return ONLY valid JSON matching this exact structure:
         let curP = bStart;
         for (let s = 0; s < numSteps; s++) {
           const pKey = Math.round(curP * 100) / 100;
-          if (!bins[pKey]) {
-            bins[pKey] = { price: pKey, volume: 0, bull_vol: 0, bear_vol: 0 };
+          if (pKey >= rMin - 0.05 && pKey <= rMax + 0.05) {
+            if (!bins[pKey]) {
+              bins[pKey] = { price: pKey, volume: 0, bull_vol: 0, bear_vol: 0 };
+            }
+            bins[pKey].volume += volPerStep;
+            bins[pKey].bull_vol += volPerStep * bullRatio;
+            bins[pKey].bear_vol += volPerStep * (1.0 - bullRatio);
           }
-          bins[pKey].volume += volPerStep;
-          bins[pKey].bull_vol += volPerStep * bullRatio;
-          bins[pKey].bear_vol += volPerStep * (1.0 - bullRatio);
           curP += step;
         }
       }
@@ -3430,6 +3449,9 @@ Return ONLY valid JSON matching this exact structure:
 
       allNodes.sort((a, b) => b.volume - a.volume);
       currentRangeVolumeNodes = allNodes.slice(0, 8);
+      currentFullRangeVolume = allNodes.reduce((acc, n) => acc + n.volume, 0);
+      currentFullRangeBull = allNodes.reduce((acc, n) => acc + n.bull_vol, 0);
+      currentFullRangeBear = allNodes.reduce((acc, n) => acc + n.bear_vol, 0);
       return currentRangeVolumeNodes;
     }
 
@@ -3441,8 +3463,12 @@ Return ONLY valid JSON matching this exact structure:
       if (isRangeVolProfileModalOpen) {
         buildSessionRangeVolumeProfile();
         renderRangeVolumeProfileModal();
+        if (currentRangeVolumeNodes && currentRangeVolumeNodes.length > 0 && typeof highlightNodeOnChart === 'function') {
+          highlightNodeOnChart(currentRangeVolumeNodes[0].price, 1);
+        }
       } else {
         currentlyInspectedPrice = null;
+        if (typeof clearNodeChartHighlight === 'function') clearNodeChartHighlight();
       }
     }
     window.toggleRangeVolumeProfileModal = toggleRangeVolumeProfileModal;
@@ -3513,20 +3539,27 @@ Return ONLY valid JSON matching this exact structure:
       const effTime = (vLineTime !== null) ? vLineTime : ((currentDay && currentDay.candles) ? currentDay.candles[currentDay.candles.length - 1].time : 0);
       const pastCandles = (currentDay && currentDay.candles) ? currentDay.candles.filter(c => c.time <= effTime) : [];
 
-      const rMin = (triedLowPrice !== null && triedHighPrice !== null) ? Math.min(triedLowPrice, triedHighPrice) : (currentDay?.stats?.low || 3870.0);
-      const rMax = (triedLowPrice !== null && triedHighPrice !== null) ? Math.max(triedLowPrice, triedHighPrice) : (currentDay?.stats?.high || 3930.0);
+      const isCapacitor = !!(currentDay?.capacitor_zone && currentDay.capacitor_zone.bottom && currentDay.capacitor_zone.top);
+      const rMin = isCapacitor
+        ? Math.min(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top)
+        : ((triedLowPrice !== null && triedHighPrice !== null) ? Math.min(triedLowPrice, triedHighPrice) : (currentDay?.stats?.low || 3870.0));
+      const rMax = isCapacitor
+        ? Math.max(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top)
+        : ((triedLowPrice !== null && triedHighPrice !== null) ? Math.max(triedLowPrice, triedHighPrice) : (currentDay?.stats?.high || 3930.0));
       const spread = Math.abs(rMax - rMin);
 
       if (sub) {
-        sub.textContent = `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`;
+        sub.textContent = isCapacitor
+          ? `CAPACITOR DWELL RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`
+          : `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`;
       }
       if (spreadEl) spreadEl.textContent = `$${spread.toFixed(2)} (${(spread * 10).toFixed(1)}p)`;
 
       // Sort descending by volume: highest on the top, slice top 8
       const sorted = [...(currentRangeVolumeNodes || [])].sort((a, b) => b.volume - a.volume).slice(0, 8);
-      const totalVol = sorted.reduce((acc, n) => acc + (n.volume || 0), 0);
-      const totalBull = sorted.reduce((acc, n) => acc + (n.bull_vol || 0), 0);
-      const totalBear = sorted.reduce((acc, n) => acc + (n.bear_vol || 0), 0);
+      const totalVol = (typeof currentFullRangeVolume !== 'undefined' && currentFullRangeVolume > 0) ? currentFullRangeVolume : sorted.reduce((acc, n) => acc + (n.volume || 0), 0);
+      const totalBull = (typeof currentFullRangeBull !== 'undefined' && currentFullRangeBull > 0) ? currentFullRangeBull : sorted.reduce((acc, n) => acc + (n.bull_vol || 0), 0);
+      const totalBear = (typeof currentFullRangeBear !== 'undefined' && currentFullRangeBear > 0) ? currentFullRangeBear : sorted.reduce((acc, n) => acc + (n.bear_vol || 0), 0);
 
       if (totalEl) totalEl.textContent = `${totalVol.toLocaleString()}v`;
       if (ratioEl) {
@@ -3571,6 +3604,7 @@ Return ONLY valid JSON matching this exact structure:
         if (currentlyInspectedPrice === null || !sorted.some(n => Math.abs(n.price - currentlyInspectedPrice) < 0.05)) {
           currentlyInspectedPrice = sorted[0].price;
           showNodeHoverFlyout(sorted[0].price, 1, sorted[0].volume, sorted[0].bull_vol || 0, sorted[0].bear_vol || 0);
+          highlightNodeOnChart(sorted[0].price, 1);
         }
       }
     }
@@ -3837,6 +3871,43 @@ Return ONLY valid JSON matching this exact structure:
       };
     }
 
+    function highlightNodeOnChart(price, rank) {
+      if (!tvAreaSeries) return;
+      if (activeNodeChartLine) {
+        try { tvAreaSeries.removePriceLine(activeNodeChartLine); } catch(e) {}
+        activeNodeChartLine = null;
+      }
+      const pNum = Number(price);
+      if (isNaN(pNum) || pNum <= 0) return;
+
+      try {
+        const isVpoc = rank === 1 || rank === "#1";
+        const isLive = rank === "LIVE";
+        const isAudit = rank === "CUSTOM" || rank === "AUDIT";
+        const titlePrefix = isAudit ? "AUDIT" : (isLive ? "LIVE PIVOT" : (isVpoc ? "VPOC" : `#${rank}`));
+        const lineColor = isLive ? '#38bdf8' : (isVpoc ? '#eab308' : (isAudit ? '#ec4899' : '#00f0ff'));
+
+        activeNodeChartLine = tvAreaSeries.createPriceLine({
+          price: pNum,
+          color: lineColor,
+          lineWidth: isVpoc || isLive ? 2 : 1,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: `${titlePrefix} $${pNum.toFixed(2)}`
+        });
+      } catch(e) {}
+    }
+    window.highlightNodeOnChart = highlightNodeOnChart;
+
+    function clearNodeChartHighlight() {
+      if (!tvAreaSeries || !activeNodeChartLine) return;
+      try {
+        tvAreaSeries.removePriceLine(activeNodeChartLine);
+      } catch(e) {}
+      activeNodeChartLine = null;
+    }
+    window.clearNodeChartHighlight = clearNodeChartHighlight;
+
     function onHoverNodeItem(price, rank, volume, bullVol, bearVol) {
       const customInput = document.getElementById("customPriceAuditInput");
       if (customInput && customInput.value) {
@@ -3846,6 +3917,7 @@ Return ONLY valid JSON matching this exact structure:
       }
       currentlyInspectedPrice = price;
       showNodeHoverFlyout(price, rank, volume, bullVol, bearVol);
+      highlightNodeOnChart(price, rank);
     }
 
     function handleCustomPriceAudit(val) {
@@ -3865,6 +3937,7 @@ Return ONLY valid JSON matching this exact structure:
         const bear = existing ? existing.bear_vol : 0;
 
         showNodeHoverFlyout(pNum, "CUSTOM", vol, bull, bear);
+        highlightNodeOnChart(pNum, "CUSTOM");
       }, 150);
     }
 
@@ -3878,6 +3951,9 @@ Return ONLY valid JSON matching this exact structure:
       if (sorted.length > 0) {
         currentlyInspectedPrice = sorted[0].price;
         showNodeHoverFlyout(sorted[0].price, 1, sorted[0].volume, sorted[0].bull_vol || 0, sorted[0].bear_vol || 0);
+        highlightNodeOnChart(sorted[0].price, 1);
+      } else {
+        clearNodeChartHighlight();
       }
     }
 
