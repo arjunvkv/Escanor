@@ -2892,9 +2892,14 @@ Return ONLY valid JSON matching this exact structure:
 
     function clearVerticalLookbackLine() {
       vLineTime = null;
+      currentlyInspectedPrice = null;
       const overlay = document.getElementById("tvVerticalLineOverlay");
       if (overlay) overlay.style.display = "none";
       updateTapeAndTriedExtremes(null);
+      if (isRangeVolProfileModalOpen) {
+        buildSessionRangeVolumeProfile();
+        renderRangeVolumeProfileModal();
+      }
     }
     window.clearVerticalLookbackLine = clearVerticalLookbackLine;
 
@@ -3042,6 +3047,11 @@ Return ONLY valid JSON matching this exact structure:
         };
         activeBoxCoords = activeMeasureCoords;
         updateMeasureBoxPosition();
+        if (isRangeVolProfileModalOpen) {
+          currentlyInspectedPrice = null;
+          buildSessionRangeVolumeProfile();
+          renderRangeVolumeProfileModal();
+        }
       } else {
         clearMeasureBox();
       }
@@ -3081,6 +3091,11 @@ Return ONLY valid JSON matching this exact structure:
           };
           activeBoxCoords = activeMeasureCoords;
           updateMeasureBoxPosition();
+          if (isRangeVolProfileModalOpen) {
+            currentlyInspectedPrice = null;
+            buildSessionRangeVolumeProfile();
+            renderRangeVolumeProfileModal();
+          }
         } else {
           clearMeasureBox();
         }
@@ -3259,6 +3274,7 @@ Return ONLY valid JSON matching this exact structure:
     function clearMeasureBox() {
       activeMeasureCoords = null;
       activeBoxCoords = null;
+      currentlyInspectedPrice = null;
       isShiftDrawing = false;
       isMeasureToolActive = false;
       measureStep = 0;
@@ -3268,6 +3284,10 @@ Return ONLY valid JSON matching this exact structure:
       if (svg) svg.style.display = "none";
       if (badge) badge.style.display = "none";
       if (container) container.style.cursor = "default";
+      if (isRangeVolProfileModalOpen) {
+        buildSessionRangeVolumeProfile();
+        renderRangeVolumeProfileModal();
+      }
     }
     window.clearMeasureBox = clearMeasureBox;
     window.clearShiftBox = clearMeasureBox; // alias
@@ -3375,39 +3395,93 @@ Return ONLY valid JSON matching this exact structure:
     }
 
     // 11b. Bull/Bear Range Volume Profile Modal & Real-Time Accumulation
-    function buildSessionRangeVolumeProfile(targetTime = null) {
+    function getActiveMarkingContext() {
       const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
-      if (!currentDay || !currentDay.candles || currentDay.candles.length === 0) return [];
+      if (!currentDay || !currentDay.candles || currentDay.candles.length === 0) return null;
 
-      const effTime = (vLineTime !== null) ? vLineTime : ((targetTime !== null) ? targetTime : currentDay.candles[currentDay.candles.length - 1].time);
-      const pastCandles = currentDay.candles.filter(c => c.time <= effTime);
-      if (pastCandles.length === 0) return [];
+      // 1. Check if Measurement Box marking is active
+      if (typeof activeMeasureCoords !== 'undefined' && activeMeasureCoords && 
+          activeMeasureCoords.time1 && activeMeasureCoords.time2 && 
+          activeMeasureCoords.price1 !== null && activeMeasureCoords.price2 !== null) {
+        const tMin = Math.min(activeMeasureCoords.time1, activeMeasureCoords.time2);
+        const tMax = Math.max(activeMeasureCoords.time1, activeMeasureCoords.time2);
+        const pMin = Math.min(activeMeasureCoords.price1, activeMeasureCoords.price2);
+        const pMax = Math.max(activeMeasureCoords.price1, activeMeasureCoords.price2);
+        const inBoxCandles = currentDay.candles.filter(c => c.time >= tMin && c.time <= tMax);
 
-      // Ensure tried extremes are calculated if null
-      if (triedLowPrice === null || triedHighPrice === null) {
-        updateTapeAndTriedExtremes(effTime);
+        return {
+          type: "BOX",
+          rMin: pMin,
+          rMax: pMax,
+          candles: inBoxCandles.length > 0 ? inBoxCandles : currentDay.candles,
+          subtitle: `MARKED BOX RANGE: $${pMin.toFixed(2)} – $${pMax.toFixed(2)}`,
+          tag: `BOX_${tMin}_${tMax}_${pMin.toFixed(1)}_${pMax.toFixed(1)}`
+        };
       }
 
-      // Range boundaries: Align 100% with what is drawn on Chart A (Capacitor Dwell Zone)
-      let rMin, rMax, isCapacitor = false;
-      if (currentDay.capacitor_zone && currentDay.capacitor_zone.bottom && currentDay.capacitor_zone.top) {
-        rMin = Math.min(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top);
-        rMax = Math.max(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top);
-        isCapacitor = true;
-      } else if (triedLowPrice !== null && triedHighPrice !== null) {
-        rMin = Math.min(triedLowPrice, triedHighPrice);
-        rMax = Math.max(triedLowPrice, triedHighPrice);
-      } else {
-        rMin = currentDay.stats?.low || 3870.0;
-        rMax = currentDay.stats?.high || 3930.0;
-      }
-      const spread = Math.max(0.50, rMax - rMin);
-      const step = spread >= 30.0 ? 0.20 : 0.10;
+      // 2. Check if Vertical Lookback Line marking is active
+      if (typeof vLineTime !== 'undefined' && vLineTime !== null) {
+        const pastCandles = currentDay.candles.filter(c => c.time <= vLineTime);
+        const lookbackCandles = pastCandles.slice(Math.max(0, pastCandles.length - 60));
+        let lbMin, lbMax;
+        if (triedLowPrice !== null && triedHighPrice !== null) {
+          lbMin = Math.min(triedLowPrice, triedHighPrice);
+          lbMax = Math.max(triedLowPrice, triedHighPrice);
+        } else if (lookbackCandles.length > 0) {
+          lbMin = Math.min(...lookbackCandles.map(c => c.low || c.close));
+          lbMax = Math.max(...lookbackCandles.map(c => c.high || c.close));
+        } else {
+          lbMin = currentDay.stats?.low || 3870.0;
+          lbMax = currentDay.stats?.high || 3930.0;
+        }
 
-      // Group candle volume into price bins strictly within [rMin, rMax]
+        const timeLabel = formatEpochToIst(vLineTime, false);
+        return {
+          type: "LINE",
+          rMin: lbMin,
+          rMax: lbMax,
+          candles: lookbackCandles.length > 0 ? lookbackCandles : pastCandles,
+          subtitle: `MARKED LINE RANGE: $${lbMin.toFixed(2)} – $${lbMax.toFixed(2)} (${timeLabel} IST)`,
+          tag: `LINE_${vLineTime}_${lbMin.toFixed(1)}_${lbMax.toFixed(1)}`
+        };
+      }
+
+      // 3. No marking active: full session mode (Capacitor Dwell Zone if present)
+      const isCapacitor = !!(currentDay.capacitor_zone && currentDay.capacitor_zone.bottom && currentDay.capacitor_zone.top);
+      const rMin = isCapacitor
+        ? Math.min(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top)
+        : (currentDay.stats?.low || 3870.0);
+      const rMax = isCapacitor
+        ? Math.max(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top)
+        : (currentDay.stats?.high || 3930.0);
+
+      return {
+        type: "SESSION",
+        rMin: rMin,
+        rMax: rMax,
+        candles: currentDay.candles,
+        subtitle: isCapacitor
+          ? `CAPACITOR DWELL RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`
+          : `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`,
+        tag: `SESSION_${dayKeys[currentTerminalDayIdx]}_${rMin.toFixed(1)}_${rMax.toFixed(1)}`
+      };
+    }
+    window.getActiveMarkingContext = getActiveMarkingContext;
+
+    function buildSessionRangeVolumeProfile(targetTime = null) {
+      const ctx = getActiveMarkingContext();
+      if (!ctx || !ctx.candles || ctx.candles.length === 0) return [];
+
+      const rMin = ctx.rMin;
+      const rMax = ctx.rMax;
+      const spread = Math.max(0.20, rMax - rMin);
+      const step = spread >= 30.0 ? 0.20 : (spread >= 2.0 ? 0.10 : 0.05);
+
+      const targetCandles = ctx.candles;
       const bins = {};
-      for (let i = 0; i < pastCandles.length; i++) {
-        const c = pastCandles[i];
+
+      for (let i = 0; i < targetCandles.length; i++) {
+        const c = targetCandles[i];
         const cLow = (c.low !== undefined) ? c.low : c.close;
         const cHigh = (c.high !== undefined) ? c.high : c.close;
         const cOpen = (c.open !== undefined) ? c.open : c.close;
@@ -3535,24 +3609,14 @@ Return ONLY valid JSON matching this exact structure:
 
       renderLivePivotRow();
 
-      const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
-      const effTime = (vLineTime !== null) ? vLineTime : ((currentDay && currentDay.candles) ? currentDay.candles[currentDay.candles.length - 1].time : 0);
-      const pastCandles = (currentDay && currentDay.candles) ? currentDay.candles.filter(c => c.time <= effTime) : [];
+      const ctx = getActiveMarkingContext();
+      if (!ctx) return;
 
-      const isCapacitor = !!(currentDay?.capacitor_zone && currentDay.capacitor_zone.bottom && currentDay.capacitor_zone.top);
-      const rMin = isCapacitor
-        ? Math.min(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top)
-        : ((triedLowPrice !== null && triedHighPrice !== null) ? Math.min(triedLowPrice, triedHighPrice) : (currentDay?.stats?.low || 3870.0));
-      const rMax = isCapacitor
-        ? Math.max(currentDay.capacitor_zone.bottom, currentDay.capacitor_zone.top)
-        : ((triedLowPrice !== null && triedHighPrice !== null) ? Math.max(triedLowPrice, triedHighPrice) : (currentDay?.stats?.high || 3930.0));
+      const rMin = ctx.rMin;
+      const rMax = ctx.rMax;
       const spread = Math.abs(rMax - rMin);
 
-      if (sub) {
-        sub.textContent = isCapacitor
-          ? `CAPACITOR DWELL RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`
-          : `BULL/BEAR RANGE: $${rMin.toFixed(2)} – $${rMax.toFixed(2)}`;
-      }
+      if (sub) sub.textContent = ctx.subtitle;
       if (spreadEl) spreadEl.textContent = `$${spread.toFixed(2)} (${(spread * 10).toFixed(1)}p)`;
 
       // Sort descending by volume: highest on the top, slice top 8
@@ -4023,26 +4087,21 @@ Return ONLY valid JSON matching this exact structure:
         }
       }
 
-      // Check cache first
-      let node = NODE_PROVENANCE_DATA[pFixed2] || NODE_PROVENANCE_DATA[pFixed1] || NODE_PROVENANCE_DATA[pStr] || null;
-      if (!node) {
-        for (const k in NODE_PROVENANCE_DATA) {
-          if (Math.abs(parseFloat(k) - pNum) < 0.06) {
-            node = NODE_PROVENANCE_DATA[k];
-            break;
-          }
-        }
-      }
+      // Check cache with marking-aware key
+      const ctx = (typeof getActiveMarkingContext === 'function') ? getActiveMarkingContext() : null;
+      const cacheTag = ctx ? ctx.tag : 'SESSION_DEFAULT';
+      const cacheKey = `${pFixed2}_${cacheTag}`;
 
-      // If not in cache or has no waves, compute immediately from session candles
+      let node = NODE_PROVENANCE_DATA[cacheKey] || null;
+
+      // If not in cache or has no waves, compute immediately from current active marking candles
       if (!node || !node.waves || node.waves.length === 0) {
         const currentDay = multidayDataset[dayKeys[currentTerminalDayIdx]];
-        if (currentDay && currentDay.candles) {
-          const effTime = (vLineTime !== null) ? vLineTime : currentDay.candles[currentDay.candles.length - 1].time;
-          const pastCandles = currentDay.candles.filter(c => c.time <= effTime);
-          node = computeNodeWavesData(pNum, pastCandles);
-          NODE_PROVENANCE_DATA[pFixed2] = node;
-        }
+        const targetCandles = (ctx && ctx.candles && ctx.candles.length > 0)
+          ? ctx.candles
+          : ((currentDay && currentDay.candles) ? currentDay.candles : []);
+        node = computeNodeWavesData(pNum, targetCandles);
+        NODE_PROVENANCE_DATA[cacheKey] = node;
       }
 
       const waves = node ? (node.waves || []) : [];
@@ -4099,16 +4158,17 @@ Return ONLY valid JSON matching this exact structure:
         }
       }
 
-      // Background asynchronous MT5 tick fetch to enrich if live server has microsecond data
-      if (!_IN_FLIGHT_PROVENANCE_FETCHES[pFixed2]) {
-        _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = true;
+      // Background asynchronous MT5 tick fetch: ONLY when in LIVE session mode with NO marking active on today's live feed
+      const isLiveSessionMode = (vLineTime === null && (!activeMeasureCoords || !activeMeasureCoords.time1) && currentTerminalDayIdx === dayKeys.length - 1);
+      if (isLiveSessionMode && !_IN_FLIGHT_PROVENANCE_FETCHES[cacheKey]) {
+        _IN_FLIGHT_PROVENANCE_FETCHES[cacheKey] = true;
         fetch(`/api/node_provenance?price=${pNum}`)
           .then(r => r.json())
           .then(data => {
-            _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = false;
+            _IN_FLIGHT_PROVENANCE_FETCHES[cacheKey] = false;
             if (data && data.status === "OK" && data.waves && data.waves.length > 0) {
               data._fetched_at = Date.now();
-              NODE_PROVENANCE_DATA[pFixed2] = data;
+              NODE_PROVENANCE_DATA[cacheKey] = data;
               const curPriceText = priceEl ? priceEl.textContent : "";
               if (curPriceText.includes(pFixed2)) {
                 showNodeHoverFlyout(price, rank, volume, bullVol, bearVol);
@@ -4116,7 +4176,7 @@ Return ONLY valid JSON matching this exact structure:
             }
           })
           .catch(err => {
-            _IN_FLIGHT_PROVENANCE_FETCHES[pFixed2] = false;
+            _IN_FLIGHT_PROVENANCE_FETCHES[cacheKey] = false;
           });
       }
     }
