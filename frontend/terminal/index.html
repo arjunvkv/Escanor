@@ -963,9 +963,9 @@ Return ONLY valid JSON matching this exact structure:
   <!-- MODAL: TOP 8 VOLUME NODES IN BULL/BEAR RANGE                              -->
   <!-- ========================================================================= -->
   <div id="rangeVolProfileModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden" onclick="if(event.target===this) toggleRangeVolumeProfileModal()">
-    <div class="relative flex flex-row items-start gap-3 max-w-6xl overflow-x-auto" onclick="event.stopPropagation()">
+    <div class="relative flex flex-row items-stretch gap-3 max-w-6xl" onclick="event.stopPropagation()">
       <!-- Main Volume Profile Table Window -->
-      <div class="hud-panel rounded-lg p-3.5 border border-cyan-500/50 shadow-2xl flex flex-col gap-3" style="width: 440px; min-width: 440px; max-width: 440px;">
+      <div class="hud-panel rounded-lg p-3.5 border border-cyan-500/50 shadow-2xl flex flex-col gap-2.5 bg-[#0b0e14]" style="width: 440px; min-width: 440px; max-width: 440px; height: 530px; max-height: 530px; flex-shrink: 0;">
         <!-- Header -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <div>
@@ -1042,7 +1042,7 @@ Return ONLY valid JSON matching this exact structure:
         </div>
 
         <!-- Top 8 Price Nodes List (Sorted from highest volume on top) -->
-        <div id="rangeVolProfileNodesList" class="flex flex-col gap-1 max-h-72 overflow-y-auto" onmouseleave="if (currentRangeVolumeNodes && currentRangeVolumeNodes[0] && (!document.getElementById('customPriceAuditInput') || !document.getElementById('customPriceAuditInput').value)) highlightNodeOnChart(currentRangeVolumeNodes[0].price, 1)">
+        <div id="rangeVolProfileNodesList" class="flex flex-col gap-1 flex-1 overflow-y-auto custom-scrollbar" onmouseleave="if (currentRangeVolumeNodes && currentRangeVolumeNodes[0] && (!document.getElementById('customPriceAuditInput') || !document.getElementById('customPriceAuditInput').value)) onHoverNodeItem(currentRangeVolumeNodes[0].price, 1, currentRangeVolumeNodes[0].volume, currentRangeVolumeNodes[0].bull_vol || 0, currentRangeVolumeNodes[0].bear_vol || 0)">
           <!-- Rendered dynamically -->
         </div>
 
@@ -1054,7 +1054,7 @@ Return ONLY valid JSON matching this exact structure:
       </div>
 
       <!-- FLOATING INSPECTION BOX ON THE RIGHT (APPEARS WHEN HOVERED) -->
-      <div id="nodeHoverFlyoutBox" class="bg-slate-950/98 border-2 border-cyan-400/90 rounded-xl p-4 shadow-2xl backdrop-blur-md flex flex-col gap-2.5 transition-all" style="width: 680px; min-width: 680px;">
+      <div id="nodeHoverFlyoutBox" class="hud-panel rounded-lg p-3.5 border border-cyan-400/80 shadow-2xl flex flex-col gap-2.5 bg-[#0b0e14]" style="width: 660px; min-width: 660px; max-width: 660px; height: 530px; max-height: 530px; flex-shrink: 0;">
         <!-- Flyout Header -->
         <div class="flex items-center justify-between border-b border-slate-800 pb-2">
           <div class="flex items-center gap-2.5">
@@ -1078,10 +1078,10 @@ Return ONLY valid JSON matching this exact structure:
           <span id="npRoleTitle" class="text-cyan-300 font-bold uppercase tracking-wide">BULL ABSORPTION FLOOR</span>
         </div>
 
-        <!-- Zero-Scroll 8-Column Comparison Table (Normal Reading Size) -->
-        <div class="overflow-x-auto my-0.5">
+        <!-- 8-Column Comparison Table with Sticky Header & Smooth Scrollable Body -->
+        <div class="flex-1 overflow-y-auto overflow-x-hidden border border-slate-800/80 rounded-lg bg-black/60 custom-scrollbar">
           <table class="w-full text-left text-xs border-collapse font-mono">
-            <thead class="bg-black/90 text-slate-300 uppercase text-[10.5px] font-bold border-b border-slate-700">
+            <thead class="sticky top-0 bg-[#0e121a] text-slate-300 uppercase text-[10px] font-bold border-b border-slate-700 z-10 shadow-sm">
               <tr>
                 <th class="py-2 px-2.5">WAVE</th>
                 <th class="py-2 px-2 text-center">GAP</th>
@@ -1090,7 +1090,7 @@ Return ONLY valid JSON matching this exact structure:
                 <th class="py-2 px-2.5 text-right">VOL (Δ)</th>
                 <th class="py-2 px-2 text-right">SLIP</th>
                 <th class="py-2 px-2.5 text-right">EXIT DISP</th>
-                <th class="py-2 px-2.5 text-right text-cyan-300">EFFORT/RES</th>
+                <th class="py-2 px-2.5 text-right text-cyan-300 pr-2.5">EFFORT/RES</th>
               </tr>
             </thead>
             <tbody id="npWavesTableBody" class="divide-y divide-slate-800/80">
@@ -1106,7 +1106,7 @@ Return ONLY valid JSON matching this exact structure:
         </div>
 
         <!-- Footer -->
-        <div class="flex items-center justify-between pt-1.5 border-t border-slate-800/80 text-[10px] font-mono">
+        <div class="flex items-center justify-between pt-1 border-t border-slate-800/80 text-[10px] font-mono">
           <span class="text-emerald-400 font-bold tracking-wide">100% AUDITED TICK AUCTION TRAIL</span>
           <span class="text-slate-400 font-medium">GLIDE CURSOR OVER ROWS TO COMPARE</span>
         </div>
@@ -3577,9 +3577,11 @@ Return ONLY valid JSON matching this exact structure:
         const rank = idx + 1;
         const isVpoc = rank === 1;
         const isBullDominant = (n.bull_vol || 0) >= (n.bear_vol || 0);
+        const isActive = currentlyInspectedPrice !== null && Math.abs(n.price - currentlyInspectedPrice) < 0.05;
 
         return `
-          <div onmouseenter="onHoverNodeItem(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" class="grid grid-cols-12 px-2.5 py-1.5 items-center bg-slate-900/60 border border-slate-800/80 hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer rounded-lg text-[11px] font-mono transition-all">
+          <div data-price="${n.price}" onmouseenter="onHoverNodeItem(${n.price}, ${rank}, ${n.volume}, ${n.bull_vol || 0}, ${n.bear_vol || 0})" 
+               class="node-row-item grid grid-cols-12 px-2.5 py-1.5 items-center ${isActive ? 'bg-cyan-950/40 border-cyan-400' : 'bg-slate-900/60 border-slate-800/80'} hover:border-cyan-400 hover:bg-slate-800/80 cursor-pointer rounded-lg text-[11px] font-mono transition-colors">
             <div class="col-span-1 font-bold ${isVpoc ? 'text-amber-400' : 'text-slate-400'}">#${rank}</div>
             <div class="col-span-4 font-bold text-white flex items-center gap-1.5 whitespace-nowrap">
               $${Number(n.price).toFixed(2)}
@@ -3871,14 +3873,19 @@ Return ONLY valid JSON matching this exact structure:
       };
     }
 
+    let activeNodeChartLinePrice = null;
+
     function highlightNodeOnChart(price, rank) {
       if (!tvAreaSeries) return;
+      const pNum = Number(price);
+      if (isNaN(pNum) || pNum <= 0) return;
+      if (activeNodeChartLine && activeNodeChartLinePrice === pNum) return;
+
       if (activeNodeChartLine) {
         try { tvAreaSeries.removePriceLine(activeNodeChartLine); } catch(e) {}
         activeNodeChartLine = null;
       }
-      const pNum = Number(price);
-      if (isNaN(pNum) || pNum <= 0) return;
+      activeNodeChartLinePrice = pNum;
 
       try {
         const isVpoc = rank === 1 || rank === "#1";
@@ -3900,6 +3907,7 @@ Return ONLY valid JSON matching this exact structure:
     window.highlightNodeOnChart = highlightNodeOnChart;
 
     function clearNodeChartHighlight() {
+      activeNodeChartLinePrice = null;
       if (!tvAreaSeries || !activeNodeChartLine) return;
       try {
         tvAreaSeries.removePriceLine(activeNodeChartLine);
@@ -3908,16 +3916,36 @@ Return ONLY valid JSON matching this exact structure:
     }
     window.clearNodeChartHighlight = clearNodeChartHighlight;
 
+    function updateActiveRowHighlight(price) {
+      const pNum = Number(price);
+      document.querySelectorAll(".node-row-item").forEach(el => {
+        const rowP = parseFloat(el.getAttribute("data-price"));
+        const isMatch = Math.abs(rowP - pNum) < 0.05;
+        if (isMatch) {
+          el.classList.add("border-cyan-400", "bg-cyan-950/40");
+          el.classList.remove("border-slate-800/80", "bg-slate-900/60");
+        } else {
+          el.classList.remove("border-cyan-400", "bg-cyan-950/40");
+          el.classList.add("border-slate-800/80", "bg-slate-900/60");
+        }
+      });
+    }
+
     function onHoverNodeItem(price, rank, volume, bullVol, bearVol) {
+      const pNum = Number(price);
+      if (currentlyInspectedPrice === pNum && !document.getElementById("nodeHoverFlyoutBox")?.classList.contains("hidden")) {
+        return;
+      }
       const customInput = document.getElementById("customPriceAuditInput");
       if (customInput && customInput.value) {
         customInput.value = "";
         const clearBtn = document.getElementById("customPriceClearBtn");
         if (clearBtn) clearBtn.classList.add("hidden");
       }
-      currentlyInspectedPrice = price;
-      showNodeHoverFlyout(price, rank, volume, bullVol, bearVol);
-      highlightNodeOnChart(price, rank);
+      currentlyInspectedPrice = pNum;
+      updateActiveRowHighlight(pNum);
+      showNodeHoverFlyout(pNum, rank, volume, bullVol, bearVol);
+      highlightNodeOnChart(pNum, rank);
     }
 
     function handleCustomPriceAudit(val) {
@@ -3931,6 +3959,7 @@ Return ONLY valid JSON matching this exact structure:
         if (isNaN(pNum) || pNum < 1000 || pNum > 9000) return;
 
         currentlyInspectedPrice = pNum;
+        updateActiveRowHighlight(pNum);
         let existing = currentRangeVolumeNodes ? currentRangeVolumeNodes.find(n => Math.abs(n.price - pNum) < 0.05) : null;
         const vol = existing ? existing.volume : 0;
         const bull = existing ? existing.bull_vol : 0;
@@ -3950,6 +3979,7 @@ Return ONLY valid JSON matching this exact structure:
       const sorted = [...(currentRangeVolumeNodes || [])].sort((a, b) => b.volume - a.volume);
       if (sorted.length > 0) {
         currentlyInspectedPrice = sorted[0].price;
+        updateActiveRowHighlight(sorted[0].price);
         showNodeHoverFlyout(sorted[0].price, 1, sorted[0].volume, sorted[0].bull_vol || 0, sorted[0].bear_vol || 0);
         highlightNodeOnChart(sorted[0].price, 1);
       } else {
